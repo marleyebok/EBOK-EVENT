@@ -90,9 +90,29 @@ L'app est **déjà prête pour Firebase** : elle fonctionne sur les données loc
 
 > `public/js/services.js` contient la couche API (`getAllEvents`, `createEvent`, `incrementViews`…). `firebase-init.js` fait le branchement. Rien d'autre à modifier.
 
-### Étapes suivantes du plan
+## 👤 Comptes diffuseurs & administration
 
-**Authentification diffuseurs** (comptes, « Mes événements ») puis **géolocalisation réelle** (Haversine + autocomplétion de ville) — détaillé dans `DEVELOPMENT_PLAN.md`.
+L'authentification par email/mot de passe est intégrée (modale de connexion/inscription dans la barre du haut).
+
+- **Diffuseur** : crée un compte, publie des événements (mis **en attente de validation**), les gère dans **« Mes événements »** (voir, supprimer).
+- **Public** : ne voit que les événements **validés** (`status: approved`).
+- **Admin** : voit **tous** les événements (y compris en attente), peut les **valider** ou les **supprimer**, et publie directement en ligne.
+
+### Activer côté Firebase (2 actions)
+
+1. **Activer la connexion par email** : console Firebase → **Authentication** → « Get started » → onglet **Sign-in method** → activer **Email/Password**.
+
+2. **Te déclarer admin** : console → **Firestore Database** → onglet **Données** →
+   - crée une collection `admins`,
+   - ajoute un document dont l'**ID est ton UID** (visible dans Authentication → Users après ta première connexion),
+   - contenu du document : peu importe (ex. champ `email` = le tien).
+   Recharge le site : le badge **Admin** apparaît dans la barre du haut.
+
+> La sécurité (qui peut créer / modifier / supprimer) est verrouillée par `firestore.rules` : un diffuseur ne touche qu'à ses propres événements, seul l'admin peut tout gérer, et le statut admin ne se donne que via la console.
+
+### Étape suivante du plan
+
+**Géolocalisation réelle** (distance Haversine + autocomplétion de ville) — détaillé dans `DEVELOPMENT_PLAN.md`.
 
 ### Déploiement
 

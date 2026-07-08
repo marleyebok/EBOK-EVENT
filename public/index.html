@@ -18,8 +18,17 @@
     <button class="navlink active" data-nav="home">Accueil</button>
     <button class="navlink" data-nav="search">Recherche</button>
     <button class="navlink" data-nav="create">Publier un événement</button>
+    <button class="navlink hidden" data-nav="mine" id="navMine">Mes événements</button>
   </div>
-  <button class="btn btn-outline nav-cta" data-nav="create">+ Espace diffuseur</button>
+  <div class="account-area" id="accountArea">
+    <!-- Déconnecté -->
+    <button class="btn btn-outline nav-cta" id="btnLogin">Connexion diffuseur</button>
+    <!-- Connecté (rempli par JS) -->
+    <div class="account-logged hidden" id="accountLogged">
+      <span class="account-name" id="accountName"></span>
+      <button class="btn btn-ghost" id="btnLogout">Déconnexion</button>
+    </div>
+  </div>
 </nav>
 
 <main>
@@ -410,11 +419,78 @@
     <div class="event-detail" id="eventDetail"></div>
   </section>
 
+  <!-- ===================== MES ÉVÉNEMENTS / ADMIN ===================== -->
+  <section id="page-mine" class="page">
+    <div class="page-head">
+      <p class="eyebrow" id="mineEyebrow">Espace diffuseur</p>
+      <h2 id="mineTitle">Mes événements</h2>
+      <p class="hero-sub" id="mineSub">Gère les événements que tu as publiés.</p>
+    </div>
+    <div class="mine-actions">
+      <button class="btn btn-primary" data-nav="create">+ Publier un événement</button>
+    </div>
+    <div class="results-grid" id="mineGrid"></div>
+  </section>
+
 </main>
 
 <div class="lightbox" id="lightbox">
   <button class="lightbox-close" id="lightboxClose">&times;</button>
   <div id="lightboxContent"></div>
+</div>
+
+<!-- ===================== MODALE CONNEXION / INSCRIPTION ===================== -->
+<div class="auth-modal" id="authModal" aria-hidden="true">
+  <div class="auth-box">
+    <button class="auth-close" id="authClose" aria-label="Fermer">&times;</button>
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-tab="login" id="tabLogin">Connexion</button>
+      <button class="auth-tab" data-tab="signup" id="tabSignup">Inscription</button>
+    </div>
+
+    <!-- Connexion -->
+    <form class="auth-form" id="loginForm">
+      <div class="field">
+        <label for="login-email">Email</label>
+        <input type="email" id="login-email" autocomplete="email" required>
+      </div>
+      <div class="field">
+        <label for="login-pass">Mot de passe</label>
+        <input type="password" id="login-pass" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-lg" style="width:100%;">Se connecter</button>
+    </form>
+
+    <!-- Inscription -->
+    <form class="auth-form hidden" id="signupForm">
+      <div class="field">
+        <label for="su-orgname">Nom du diffuseur / structure</label>
+        <input type="text" id="su-orgname" placeholder="Ex. Ligue C by Courtcuts" required>
+      </div>
+      <div class="field">
+        <label for="su-email">Email</label>
+        <input type="email" id="su-email" autocomplete="email" required>
+      </div>
+      <div class="field">
+        <label for="su-pass">Mot de passe (min. 6 caractères)</label>
+        <input type="password" id="su-pass" autocomplete="new-password" minlength="6" required>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label for="su-insta">Instagram</label>
+          <input type="text" id="su-insta" placeholder="@moncompte">
+        </div>
+        <div class="field">
+          <label for="su-tel">Téléphone</label>
+          <input type="tel" id="su-tel" placeholder="06 00 00 00 00">
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-lg" style="width:100%;">Créer mon compte</button>
+    </form>
+
+    <div class="auth-error hidden" id="authError"></div>
+    <p class="auth-note">Un compte diffuseur te permet de publier et gérer tes événements.</p>
+  </div>
 </div>
 
 <!-- Données (événements + constantes) chargées avant la logique applicative -->
