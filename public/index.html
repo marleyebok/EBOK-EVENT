@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EBOK Event — L'agenda collaboratif du basket français</title>
+<meta name="description" content="EBOK Event : l'agenda collaboratif du basketball français. Tournois, camps, 3x3, détections et plus, directement sur la carte.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+
+<nav class="topbar">
+  <div class="brand" data-nav="home"><span class="brand-mark">●</span>EBOK<span>Event</span></div>
+  <div class="nav-links">
+    <button class="navlink active" data-nav="home">Accueil</button>
+    <button class="navlink" data-nav="search">Recherche</button>
+    <button class="navlink" data-nav="create">Publier un événement</button>
+  </div>
+  <button class="btn btn-outline nav-cta" data-nav="create">+ Espace diffuseur</button>
+</nav>
+
+<main>
+
+  <!-- ===================== HOME / MAP ===================== -->
+  <section id="page-home" class="page active">
+    <div class="hero">
+      <p class="eyebrow">France · Été 2026</p>
+      <h1>L'agenda collaboratif<br>du Basket <span class="hl">Français</span></h1>
+      <p class="hero-sub">Tournois, camps, matchs, détections et bien plus. Repère chaque événement près de chez toi, directement sur la carte.</p>
+    </div>
+
+    <div id="featuredSlot">
+      <div class="featured-carousel">
+        <div class="carousel-wrapper">
+          <div class="carousel-track" id="carouselTrack"></div>
+          <button class="carousel-nav carousel-prev" id="carouselPrev" aria-label="Événement précédent">❮</button>
+          <button class="carousel-nav carousel-next" id="carouselNext" aria-label="Événement suivant">❯</button>
+        </div>
+        <div class="carousel-dots" id="carouselDots"></div>
+      </div>
+    </div>
+
+    <div class="content-header">
+      <span class="content-count" id="homeCount"></span>
+      <div class="view-toggle">
+        <button class="toggle-btn active" data-view="map" id="viewBtnMap">🗺️ Carte</button>
+        <button class="toggle-btn" data-view="list" id="viewBtnList">☰ Liste</button>
+      </div>
+    </div>
+
+    <div class="map-layout" id="mapLayout">
+      <aside class="filter-panel">
+        <div class="panel-head"><span class="tag-dot"></span>FILTRES</div>
+
+        <div class="filter-group">
+          <label>Statut</label>
+          <div class="status-toggle" id="statusFilterHome">
+            <button type="button" class="status-btn active" data-status="upcoming">À venir</button>
+            <button type="button" class="status-btn" data-status="archived">Archives</button>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label for="citySearch">Ville / Région</label>
+          <div class="search-input-wrap">
+            <input type="text" id="citySearch" placeholder="Cherche une ville ou région...">
+            <div class="city-suggestions hidden" id="citySuggestions"></div>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label for="radiusFilter">Rayon (km)</label>
+          <div class="radius-control">
+            <input type="range" id="radiusFilter" min="0" max="200" value="200" step="10">
+            <span id="radiusValue">Partout</span>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label for="periodSelector">Période</label>
+          <div class="period-selector" id="periodSelector">
+            <div class="period-display" id="periodDisplay">
+              <span id="periodText">Indifférent</span>
+              <span class="period-icon">📅</span>
+            </div>
+            <div class="period-picker hidden" id="periodPicker">
+              <div class="picker-header">
+                <button type="button" class="picker-nav" id="prevMonth">‹</button>
+                <span id="pickerMonth" class="picker-month">Juin 2026</span>
+                <button type="button" class="picker-nav" id="nextMonth">›</button>
+              </div>
+              <div class="picker-weekdays">
+                <div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div>
+              </div>
+              <div class="picker-days" id="pickerDays"></div>
+              <div class="picker-footer">
+                <div class="mode-toggle">
+                  <button type="button" class="mode-btn active" data-mode="range">Plage</button>
+                  <button type="button" class="mode-btn" data-mode="single">Jour unique</button>
+                </div>
+                <div class="picker-actions">
+                  <button type="button" class="btn btn-ghost" id="pickerClear" style="font-size:12px;padding:6px 12px;">Réinitialiser</button>
+                  <button type="button" class="btn btn-primary" id="pickerApply" style="font-size:12px;padding:6px 12px;">Appliquer</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label>Type d'événement</label>
+          <div class="check-list" id="typeFilterHome"></div>
+        </div>
+      </aside>
+
+      <div class="map-wrap" id="homeMapView">
+        <svg id="franceMap" viewBox="0 0 560 560" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="map-tooltip" id="mapTooltip"></div>
+      </div>
+
+      <div class="results-grid home-list hidden" id="homeListView"></div>
+    </div>
+  </section>
+
+  <!-- ===================== SEARCH ===================== -->
+  <section id="page-search" class="page">
+    <div class="page-head">
+      <p class="eyebrow">Recherche</p>
+      <h2>Trouve ton prochain événement</h2>
+      <p class="hero-sub">Filtre par lieu, type, date, public et niveau pour affiner les résultats.</p>
+    </div>
+
+    <form class="search-form" id="searchForm">
+      <div class="field">
+        <label for="f-lieu">Lieu</label>
+        <input type="text" id="f-lieu" placeholder="Ville ou région">
+      </div>
+      <div class="field">
+        <label for="f-type">Type d'événement</label>
+        <select id="f-type">
+          <option value="all">Tous les types</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f-date-start">À partir du</label>
+        <input type="date" id="f-date-start">
+      </div>
+      <div class="field">
+        <label for="f-date-end">Jusqu'au</label>
+        <input type="date" id="f-date-end">
+      </div>
+      <div class="field">
+        <label for="f-sexe">Public — sexe</label>
+        <select id="f-sexe">
+          <option value="all">Indifférent</option>
+          <option value="Masculin">Masculin</option>
+          <option value="Féminin">Féminin</option>
+          <option value="Mixte">Mixte</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f-age">Public — âge</label>
+        <select id="f-age">
+          <option value="all">Indifférent</option>
+          <option value="Enfants">Enfants (6-11 ans)</option>
+          <option value="Ados">Ados (12-17 ans)</option>
+          <option value="Séniors">Séniors (18-35 ans)</option>
+          <option value="Vétérans">Vétérans (35 ans et +)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f-niveau">Niveau</label>
+        <select id="f-niveau">
+          <option value="all">Tous niveaux</option>
+          <option value="Loisir">Loisir</option>
+          <option value="Amateur">Amateur</option>
+          <option value="Confirmé">Confirmé</option>
+          <option value="Semi-pro / Pro">Semi-pro / Pro</option>
+        </select>
+      </div>
+      <div class="field field-check" style="align-self:end;">
+        <input type="checkbox" id="f-affiche">
+        <label for="f-affiche">Avec affiche uniquement</label>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Rechercher</button>
+        <button type="button" class="link-reset" id="resetSearch">Réinitialiser les filtres</button>
+      </div>
+    </form>
+
+    <div class="results-head">
+      <span id="resultsCount">— résultats</span>
+      <span>Trié par date</span>
+    </div>
+    <div class="results-grid" id="resultsGrid"></div>
+  </section>
+
+  <!-- ===================== CREATE EVENT ===================== -->
+  <section id="page-create" class="page">
+    <div class="page-head">
+      <p class="eyebrow">Espace diffuseur</p>
+      <h2>Publie ton événement</h2>
+      <p class="hero-sub">Renseigne les infos, ajoute ton affiche : ton événement apparaît sur la carte et dans la recherche.</p>
+    </div>
+
+    <form class="create-form" id="createForm">
+      <div class="form-grid form-grid-3">
+        <div class="form-card">
+          <h3>Informations générales</h3>
+          <div class="field">
+            <label for="c-nom">Nom de l'événement</label>
+            <input type="text" id="c-nom" placeholder="Ex. La Ligue C" required>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label for="c-type">Type d'événement</label>
+              <select id="c-type" required>
+                <option value="Tournoi">Tournoi</option>
+                <option value="Camp">Camp</option>
+                <option value="Voyage">Voyage</option>
+                <option value="All-Star Game">All-Star Game</option>
+                <option value="Show">Show</option>
+                <option value="Détections">Détections</option>
+                <option value="Clinic Coachs">Clinic Coachs</option>
+                <option value="Circuit 3x3">Circuit 3x3</option>
+                <option value="Handibasket">Handibasket</option>
+                <option value="Matchs de Gala">Matchs de Gala</option>
+                <option value="Divers">Divers</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="c-niveau">Niveau</label>
+              <select id="c-niveau">
+                <option>Loisir</option>
+                <option>Amateur</option>
+                <option>Confirmé</option>
+                <option>Semi-pro / Pro</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label for="c-ville">Ville / lieu</label>
+              <input type="text" id="c-ville" placeholder="Ex. Montpellier — Gymnase Jean Bouin" required>
+            </div>
+            <div class="field">
+              <label for="c-region">Région</label>
+              <input type="text" id="c-region" placeholder="Ex. Occitanie">
+            </div>
+          </div>
+          <div class="field">
+            <label for="c-adresse">Adresse précise</label>
+            <input type="text" id="c-adresse" placeholder="Ex. 12 rue du Stade, 34000 Montpellier">
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label for="c-date-debut">Date de début</label>
+              <input type="date" id="c-date-debut" required>
+            </div>
+            <div class="field">
+              <label for="c-date-fin">Date de fin</label>
+              <input type="date" id="c-date-fin">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label for="c-sexe">Public — sexe</label>
+              <select id="c-sexe">
+                <option>Masculin</option>
+                <option>Féminin</option>
+                <option>Mixte</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="c-age">Public — âge</label>
+              <select id="c-age">
+                <option>Enfants (6-11 ans)</option>
+                <option>Ados (12-17 ans)</option>
+                <option selected>Séniors (18-35 ans)</option>
+                <option>Vétérans (35 ans et +)</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="c-desc">Description</label>
+            <textarea id="c-desc" placeholder="Format, déroulé..."></textarea>
+          </div>
+        </div>
+
+        <div>
+          <div class="form-card" style="margin-bottom:20px;">
+            <h3>Infos pratiques</h3>
+            <div class="field">
+              <label for="c-horaires">Horaires</label>
+              <input type="text" id="c-horaires" placeholder="Ex. Ouverture 18h30, début 19h">
+            </div>
+            <div class="field">
+              <label for="c-buvette">Buvette</label>
+              <input type="text" id="c-buvette" placeholder="Ex. Sur place, boissons et snacks">
+            </div>
+            <div class="field">
+              <label for="c-reservation">Réservation</label>
+              <input type="text" id="c-reservation" placeholder="Ex. Entrée libre / Lien billetterie">
+            </div>
+          </div>
+
+          <div class="form-card">
+            <h3>Photos d'éditions précédentes</h3>
+            <label class="dropzone dropzone-sm" id="galleryDropzone" for="c-gallery">
+              <div class="dz-label">
+                <div class="dz-icon">🖼</div>
+                <div style="font-weight:700;margin-top:6px;font-size:13px;">Ajoute des photos</div>
+                <div style="font-size:12px;color:var(--chalk-dim);margin-top:4px;">Plusieurs fichiers possibles</div>
+              </div>
+            </label>
+            <input type="file" id="c-gallery" accept="image/*" multiple>
+            <div class="gallery-thumbs" id="galleryThumbs"></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="form-card" style="margin-bottom:20px;">
+            <h3>Affiche</h3>
+            <label class="dropzone" id="dropzone" for="c-affiche">
+              <img id="dzPreview" class="hidden" alt="Aperçu affiche">
+              <div class="dz-label" id="dzLabel">
+                <div class="dz-icon">⬆</div>
+                <div style="font-weight:700;margin-top:6px;">Glisse ton affiche ici</div>
+                <div style="font-size:12px;color:var(--chalk-dim);margin-top:4px;">ou clique pour choisir un fichier (JPG, PNG)</div>
+              </div>
+            </label>
+            <input type="file" id="c-affiche" accept="image/*">
+          </div>
+
+          <div class="form-card">
+            <h3>Contact — organisateur</h3>
+            <div class="field">
+              <label for="c-orgname">Nom du diffuseur</label>
+              <input type="text" id="c-orgname" placeholder="Ex. Ligue C by Courtcuts">
+            </div>
+            <div class="field">
+              <label for="c-insta">Instagram</label>
+              <input type="text" id="c-insta" placeholder="@moncompte">
+            </div>
+            <div class="field">
+              <label for="c-site">Site web</label>
+              <input type="text" id="c-site" placeholder="https://...">
+            </div>
+            <div class="form-row">
+              <div class="field">
+                <label for="c-tel">Téléphone</label>
+                <input type="tel" id="c-tel" placeholder="06 00 00 00 00">
+              </div>
+              <div class="field">
+                <label for="c-email">Email</label>
+                <input type="email" id="c-email" placeholder="contact@...">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="visibility-block">
+        <h3 class="visibility-title">Booster ta visibilité <span>(optionnel)</span></h3>
+        <div class="pricing-grid">
+          <label class="price-card">
+            <input type="radio" name="visibility" value="standard" checked>
+            <div class="price-top">
+              <span class="price-name">Standard</span>
+              <span class="price-amount">Gratuit</span>
+            </div>
+            <p class="price-desc">Ton événement apparaît sur la carte et dans la recherche, comme tous les autres.</p>
+          </label>
+
+          <label class="price-card">
+            <input type="radio" name="visibility" value="boost">
+            <div class="price-top">
+              <span class="price-name">Mise en avant</span>
+              <span class="price-amount">29€</span>
+            </div>
+            <p class="price-desc">Ton événement passe en bandeau "à la une" sur la page d'accueil pendant 7 jours.</p>
+          </label>
+
+          <label class="price-card">
+            <input type="radio" name="visibility" value="boost-mail">
+            <div class="price-top">
+              <span class="price-name">Mise en avant + Mailing</span>
+              <span class="price-amount">59€</span>
+            </div>
+            <p class="price-desc">Bandeau "à la une" + envoi de ton événement à la communauté COURTMAP de ta région par email.</p>
+          </label>
+        </div>
+        <p class="visibility-note">Le paiement n'est pas encore disponible en ligne — notre équipe te recontacte après ta demande pour activer l'option choisie.</p>
+      </div>
+
+      <div class="submit-row">
+        <button type="submit" class="btn btn-primary btn-lg">Publier l'événement</button>
+        <span style="font-size:13px;color:var(--chalk-dim);">Ton événement est vérifié avant d'apparaître publiquement.</span>
+      </div>
+      <div class="success-banner hidden" id="createSuccess">✅ Événement envoyé — il apparaîtra sur la carte après validation.</div>
+    </form>
+  </section>
+
+  <!-- ===================== EVENT DETAIL ===================== -->
+  <section id="page-event" class="page">
+    <button class="back-link" data-nav="home">← Retour à la carte</button>
+    <div class="event-detail" id="eventDetail"></div>
+  </section>
+
+</main>
+
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" id="lightboxClose">&times;</button>
+  <div id="lightboxContent"></div>
+</div>
+
+<!-- Données (événements + constantes) chargées avant la logique applicative -->
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

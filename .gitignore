@@ -1,0 +1,20 @@
+# Dépendances
+node_modules/
+
+# Secrets / config d'environnement
+.env
+.env.local
+public/js/firebase-config.js
+
+# Logs & divers
+npm-debug.log*
+*.log
+.DS_Store
+
+# Build / cache
+dist/
+.cache/
+
+# Firebase
+.firebase/
+firebase-debug.log
