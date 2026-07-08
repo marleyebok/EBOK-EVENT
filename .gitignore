@@ -1,0 +1,22 @@
+# Dépendances
+node_modules/
+
+# Secrets / config d'environnement
+.env
+.env.local
+# NB : public/js/firebase-config.js EST versionné à dessein — les clés
+# Web Firebase ne sont pas secrètes et doivent être livrées avec le site.
+# La sécurité des données passe par les règles Firestore.
+
+# Logs & divers
+npm-debug.log*
+*.log
+.DS_Store
+
+# Build / cache
+dist/
+.cache/
+
+# Firebase
+.firebase/
+firebase-debug.log

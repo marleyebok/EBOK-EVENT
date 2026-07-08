@@ -1,0 +1,32 @@
+rules_version = '2';
+
+// Règles de sécurité Firestore — point de départ pour le MVP EBOK Event.
+// À coller dans : console Firebase > Firestore Database > Règles.
+// À durcir quand l'authentification des diffuseurs sera en place.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Événements : lecture publique, création ouverte (soumissions),
+    // modification/suppression fermées côté client (à faire via console
+    // ou plus tard réservées au propriétaire authentifié).
+    match /events/{eventId} {
+      allow read: if true;
+      allow create: if request.resource.data.title is string
+                    && request.resource.data.title.size() > 0;
+      allow update, delete: if false;
+    }
+
+    // Compteurs de "curieux" : lecture publique, écriture ouverte
+    // (l'app incrémente le compteur à chaque visite).
+    match /views/{eventId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Profils diffuseurs (préparé pour la phase authentification) :
+    // chacun ne lit/écrit que son propre document.
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

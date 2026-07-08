@@ -1,0 +1,23 @@
+{
+  "name": "ebok-event",
+  "version": "0.1.0",
+  "description": "EBOK Event — l'agenda collaboratif du basket français",
+  "private": true,
+  "scripts": {
+    "start": "npx http-server public -p 8080 -c-1 -o",
+    "dev": "npx http-server public -p 8080 -c-1 -o",
+    "serve": "npx http-server public -p 8080 -c-1"
+  },
+  "keywords": [
+    "basket",
+    "basketball",
+    "agenda",
+    "evenements",
+    "france"
+  ],
+  "author": "EBOK Event",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
