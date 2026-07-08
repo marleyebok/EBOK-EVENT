@@ -339,8 +339,8 @@ function computeHomeFilteredEvents(){
     if(periodStart && ev.dateEnd < periodStart) return false;
     if(periodEnd && ev.dateStart > periodEnd) return false;
     if(homeCity && ev.city !== homeCity && ev.region !== homeCity) return false;
-    const dist = getEventDistance(ev);
-    if(dist > homeRadius) return false;
+    // "Partout" (curseur au max, >= 200) = aucune limite de distance.
+    if(homeRadius < 200 && getEventDistance(ev) > homeRadius) return false;
     return true;
   });
 }
@@ -486,18 +486,87 @@ function initCreatePage(){
     if(e.dataTransfer.files.length){ galleryInput.files = e.dataTransfer.files; galleryInput.dispatchEvent(new Event('change')); }
   });
 
-  document.getElementById('createForm').addEventListener('submit',(e)=>{
+  const form = document.getElementById('createForm');
+  form.addEventListener('submit', async (e)=>{
     e.preventDefault();
+    const val = id => (document.getElementById(id)?.value || '').trim();
+
+    const dateStart = val('c-date-debut');
+    const dateEnd   = val('c-date-fin') || dateStart;
+    const city      = val('c-ville');
+    const region    = val('c-region');
+    const type      = val('c-type') || 'Divers';
+    const {x, y}    = guessCoords(city, region);
+    const posterSrc = (preview && !preview.classList.contains('hidden')) ? preview.src : null;
     const visibility = document.querySelector('input[name="visibility"]:checked')?.value || 'standard';
-    const banner = document.getElementById('createSuccess');
-    if(visibility === 'standard'){
-      banner.textContent = "✅ Événement envoyé — il apparaîtra sur la carte après validation.";
-    }else{
-      banner.textContent = "✅ Événement envoyé — notre équipe te recontacte sous 48h pour activer ton option de visibilité.";
+
+    const newEvent = {
+      id: 'evt-' + Date.now(),
+      title: val('c-nom') || 'Événement sans nom',
+      type,
+      city, region,
+      lieu: val('c-adresse') || city,
+      x, y,
+      dateStart, dateEnd,
+      sexe: val('c-sexe') || 'Mixte',
+      age: val('c-age') || 'Séniors (18-35 ans)',
+      niveau: val('c-niveau') || 'Loisir',
+      poster: posterSrc,
+      description: val('c-desc'),
+      infos: {
+        adresse: val('c-adresse'),
+        horaires: val('c-horaires'),
+        buvette: val('c-buvette'),
+        reservation: val('c-reservation')
+      },
+      gallery: [],
+      featured: visibility !== 'standard',
+      visibility,
+      org: {
+        name: val('c-orgname') || 'Organisateur',
+        insta: val('c-insta').replace(/^@/, ''),
+        site: val('c-site'),
+        tel: val('c-tel'),
+        email: val('c-email')
+      }
+    };
+
+    // Persistance : si Firebase est branché, on enregistre en base.
+    // Sinon l'événement reste en mémoire (visible jusqu'au rechargement).
+    if(window.EBOK_DATA && typeof window.EBOK_DATA.createEvent === 'function'){
+      try{ newEvent.id = await window.EBOK_DATA.createEvent(newEvent) || newEvent.id; }
+      catch(err){ console.warn('[EBOK] Enregistrement Firebase échoué — ajout local seulement.', err); }
     }
+
+    // Ajout à la liste + rafraîchissement carte/liste/recherche.
+    window.EBOK.addEvent(newEvent);
+
+    const banner = document.getElementById('createSuccess');
+    banner.textContent = visibility === 'standard'
+      ? "✅ Événement publié — retrouve-le sur la carte et dans la recherche."
+      : "✅ Événement publié en avant — notre équipe te recontacte sous 48h pour activer ton option de visibilité.";
     banner.classList.remove('hidden');
     banner.scrollIntoView({behavior:'smooth', block:'center'});
+
+    // Réinitialise le formulaire pour une éventuelle nouvelle publication.
+    form.reset();
+    galleryFiles.length = 0;
+    renderGalleryThumbs();
+    if(preview){ preview.src = ''; preview.classList.add('hidden'); }
+    if(label) label.style.display = '';
   });
+}
+
+/* Devine des coordonnées SVG à partir de la ville/région saisie, en
+   s'appuyant sur les villes connues. À remplacer par une vraie
+   géolocalisation (lat/lon + géocodage) à la phase géolocalisation. */
+function guessCoords(city, region){
+  const hay = ((city||'') + ' ' + (region||'')).toLowerCase();
+  for(const [name, [x, y]] of Object.entries(CITY_LABELS)){
+    if(hay.includes(name.toLowerCase())) return {x, y};
+  }
+  // Défaut : centre de la France, léger décalage pour éviter la superposition.
+  return {x: Math.round(280 + (Math.random()*50 - 25)), y: Math.round(300 + (Math.random()*50 - 25))};
 }
 
 /* =========================================================
@@ -631,8 +700,16 @@ function openEvent(id){
 async function loadAndAnimateViews(id){
   const seed = VIEW_SEEDS[id] || 120;
   let count = null;
+  // 1) Source privilégiée : Firebase (compteur partagé entre tous les visiteurs).
+  if(window.EBOK_DATA && typeof window.EBOK_DATA.incrementViews === 'function'){
+    try{
+      const c = await window.EBOK_DATA.incrementViews(id, seed);
+      if(typeof c === 'number' && !isNaN(c)) count = c;
+    }catch(e){ count = null; }
+  }
+  // 2) Sinon : stockage partagé de la plateforme s'il existe.
   try{
-    if(window.storage){
+    if(count === null && window.storage){
       let existing = null;
       try{ existing = await window.storage.get('views:'+id, true); }catch(e){ existing = null; }
       const current = existing ? parseInt(existing.value, 10) : seed;
@@ -744,8 +821,38 @@ document.querySelectorAll('[data-nav]').forEach(el=>{
 /* =========================================================
    INIT
    ========================================================= */
+
+/* Redessine tout ce qui dépend des données (carte, carrousel, listes).
+   Appelé au démarrage, quand un événement est publié, et quand une
+   source externe (Firebase) renvoie les données. Ne rebranche PAS les
+   écouteurs des filtres (faits une seule fois via initHomeFilters). */
+function renderAll(){
+  buildMap();
+  renderFeatured();
+  applyMapFilters();
+  renderResults();
+}
+
+/* Point d'entrée exposé pour la couche de données optionnelle (Firebase).
+   Tant que Firebase n'est pas branché, l'app tourne sur les données
+   locales de data.js. */
+window.EBOK = {
+  get events(){ return events; },
+  setEvents(list){ if(Array.isArray(list)) events = list; renderAll(); },
+  addEvent(ev){ events = [ev, ...events]; renderAll(); }
+};
+
+// Écouteurs (une seule fois) + premier rendu sur les données locales.
 buildMap();
 renderFeatured();
 initHomeFilters();
 initSearchPage();
 initCreatePage();
+
+// Si une source de données externe est branchée (firebase-init.js), on
+// remplace les données locales par celles de la base dès qu'elles arrivent.
+if(window.EBOK_DATA && typeof window.EBOK_DATA.getAllEvents === 'function'){
+  window.EBOK_DATA.getAllEvents()
+    .then(list=>{ if(Array.isArray(list) && list.length){ events = list; renderAll(); } })
+    .catch(err=> console.warn('[EBOK] Données Firebase indisponibles — affichage des données locales.', err));
+}

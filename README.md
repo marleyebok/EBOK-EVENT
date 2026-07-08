@@ -51,24 +51,48 @@ cd public && python3 -m http.server 8080
 - **Accueil** : carrousel « à la une » (5 événements), carte de France SVG interactive (pins par type, tooltips, clic → détail), bascule Carte / Liste.
 - **Filtres** : statut (À venir / Archives), ville, rayon, période (calendrier plage ou jour unique), type d'événement.
 - **Recherche** : formulaire multi-critères + grille de résultats.
-- **Publier** : formulaire diffuseur complet (infos, affiche, galerie, contact, options de visibilité).
+- **Publier** : formulaire diffuseur complet (infos, affiche, galerie, contact, options de visibilité). **L'événement publié apparaît immédiatement** sur la carte, dans la liste et la recherche (en mémoire tant que Firebase n'est pas branché ; enregistré en base ensuite).
 - **Détail événement** : affiche, infos pratiques, galerie photos (lightbox), compteur de « curieux », boutons se renseigner / partager.
 
 **Données actuelles** : 20 événements en dur dans `public/js/data.js`, 5 en avant.
 
 ---
 
-## 🔜 Prochaines étapes (backend)
+## 🔌 Brancher Firebase (base de données réelle)
 
-Le plan complet est dans `DEVELOPMENT_PLAN.md`. Résumé pour brancher Firebase :
+L'app est **déjà prête pour Firebase** : elle fonctionne sur les données locales tant que Firebase n'est pas activé, et bascule automatiquement dessus dès que tu ajoutes tes clés. Aucune réécriture nécessaire.
 
-1. **Créer un projet Firebase** (console.firebase.google.com) : activer Firestore + Authentication (Email/Password).
-2. **Config** : copier `public/js/firebase-config.example.js` → `firebase-config.js` et y coller tes clés (le vrai fichier est ignoré par git).
-3. **Migrer les données** : importer les 20 événements de `data.js` dans la collection `events`.
-4. **Brancher la lecture** : dans `app.js`, remplacer l'usage direct de `const events` par `getAllEvents()` (voir `services.js`).
-5. **Auth diffuseurs** puis **géolocalisation réelle** (Haversine) — phases 5 et 6 du plan.
+### Étapes (≈ 10 min)
 
-`public/js/services.js` contient déjà les fonctions Firestore (`getAllEvents`, `createEvent`, `incrementViews`…) prêtes à l'emploi.
+1. **Créer le projet** sur [console.firebase.google.com](https://console.firebase.google.com) :
+   - « Ajouter un projet » → nom `ebok-event`.
+   - Menu **Firestore Database** → « Créer une base » → mode production, région `europe-west`.
+   - Onglet **Règles** : coller le contenu de [`firestore.rules`](firestore.rules) → Publier.
+
+2. **Récupérer tes clés** : Paramètres du projet (⚙️) → « Tes applications » → icône Web `</>` → copier l'objet `firebaseConfig`.
+
+3. **Configurer le code** :
+   ```bash
+   cp public/js/firebase-config.example.js public/js/firebase-config.js
+   ```
+   Colle tes 6 valeurs dans `public/js/firebase-config.js` (ce fichier est ignoré par git — tes clés ne partent pas sur GitHub).
+
+4. **Activer** : dans `public/index.html`, décommenter la ligne :
+   ```html
+   <script type="module" src="js/firebase-init.js"></script>
+   ```
+
+5. **Importer les 20 événements** (une seule fois) : ouvrir le site, puis dans la **console du navigateur** (F12) taper :
+   ```js
+   EBOK_IMPORT()
+   ```
+   Recharger : l'app lit désormais depuis Firebase. Le formulaire de publication écrit en base, et le compteur de « curieux » est partagé entre tous les visiteurs.
+
+> `public/js/services.js` contient la couche API (`getAllEvents`, `createEvent`, `incrementViews`…). `firebase-init.js` fait le branchement. Rien d'autre à modifier.
+
+### Étapes suivantes du plan
+
+**Authentification diffuseurs** (comptes, « Mes événements ») puis **géolocalisation réelle** (Haversine + autocomplétion de ville) — détaillé dans `DEVELOPMENT_PLAN.md`.
 
 ### Déploiement
 

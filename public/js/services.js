@@ -20,6 +20,21 @@ import {
 const EVENTS = "events";
 const VIEWS = "views";
 
+/**
+ * Import initial : envoie une liste d'événements dans Firestore en
+ * conservant leur id d'origine (pour que les compteurs de vues suivent).
+ * Utilisé une seule fois pour migrer les données locales de data.js.
+ */
+export async function importEvents(list) {
+  let n = 0;
+  for (const ev of list) {
+    const { id, ...data } = ev;
+    await setDoc(doc(db, EVENTS, id), { ...data, status: "approved" }, { merge: true });
+    n++;
+  }
+  return n;
+}
+
 /** Récupère tous les événements. */
 export async function getAllEvents() {
   const snap = await getDocs(collection(db, EVENTS));
@@ -54,11 +69,15 @@ export async function updateEvent(id, patch) {
   await updateDoc(doc(db, EVENTS, id), patch);
 }
 
-/** Incrémente le compteur de "curieux" d'un événement. */
-export async function incrementViews(eventId) {
-  await setDoc(
-    doc(db, VIEWS, eventId),
-    { count: increment(1) },
-    { merge: true }
-  );
+/**
+ * Incrémente le compteur de "curieux" partagé d'un événement et renvoie
+ * la nouvelle valeur. `seed` sert de valeur de départ au tout premier vu.
+ */
+export async function incrementViews(eventId, seed = 0) {
+  const ref = doc(db, VIEWS, eventId);
+  const before = await getDoc(ref);
+  const base = before.exists() ? (before.data().count || 0) : seed;
+  const next = base + 1;
+  await setDoc(ref, { count: next }, { merge: true });
+  return next;
 }
