@@ -489,6 +489,10 @@ function initCreatePage(){
   const form = document.getElementById('createForm');
   form.addEventListener('submit', async (e)=>{
     e.preventDefault();
+
+    // Publication réservée aux diffuseurs connectés (quand l'auth est active).
+    if(window.EBOK_AUTH && !currentUser){ openAuth('login'); return; }
+
     const val = id => (document.getElementById(id)?.value || '').trim();
 
     const dateStart = val('c-date-debut');
@@ -499,6 +503,9 @@ function initCreatePage(){
     const {x, y}    = guessCoords(city, region);
     const posterSrc = (preview && !preview.classList.contains('hidden')) ? preview.src : null;
     const visibility = document.querySelector('input[name="visibility"]:checked')?.value || 'standard';
+
+    // L'admin publie directement en ligne ; un diffuseur passe en validation.
+    const status = currentIsAdmin ? 'approved' : (window.EBOK_AUTH ? 'pending' : 'approved');
 
     const newEvent = {
       id: 'evt-' + Date.now(),
@@ -522,31 +529,41 @@ function initCreatePage(){
       gallery: [],
       featured: visibility !== 'standard',
       visibility,
+      status,
+      userId: currentUser ? currentUser.uid : null,
       org: {
-        name: val('c-orgname') || 'Organisateur',
+        name: val('c-orgname') || (currentProfile && currentProfile.orgname) || 'Organisateur',
         insta: val('c-insta').replace(/^@/, ''),
         site: val('c-site'),
         tel: val('c-tel'),
-        email: val('c-email')
+        email: val('c-email') || (currentUser ? currentUser.email : '')
       }
     };
 
     // Persistance : si Firebase est branché, on enregistre en base.
     // Sinon l'événement reste en mémoire (visible jusqu'au rechargement).
+    let persisted = false;
     if(window.EBOK_DATA && typeof window.EBOK_DATA.createEvent === 'function'){
-      try{ newEvent.id = await window.EBOK_DATA.createEvent(newEvent) || newEvent.id; }
-      catch(err){ console.warn('[EBOK] Enregistrement Firebase échoué — ajout local seulement.', err); }
+      try{
+        newEvent.id = await window.EBOK_DATA.createEvent(newEvent) || newEvent.id;
+        persisted = true;
+      }catch(err){
+        console.warn('[EBOK] Enregistrement Firebase échoué.', err);
+        showCreateBanner("⚠️ Enregistrement impossible. Vérifie ta connexion et réessaie.");
+        return;
+      }
     }
 
-    // Ajout à la liste + rafraîchissement carte/liste/recherche.
-    window.EBOK.addEvent(newEvent);
-
-    const banner = document.getElementById('createSuccess');
-    banner.textContent = visibility === 'standard'
-      ? "✅ Événement publié — retrouve-le sur la carte et dans la recherche."
-      : "✅ Événement publié en avant — notre équipe te recontacte sous 48h pour activer ton option de visibilité.";
-    banner.classList.remove('hidden');
-    banner.scrollIntoView({behavior:'smooth', block:'center'});
+    // Un événement validé (admin, ou mode démo local) apparaît tout de suite.
+    // Un événement en attente n'est pas montré publiquement avant validation.
+    if(status === 'approved'){
+      window.EBOK.addEvent(newEvent);
+      showCreateBanner(visibility === 'standard'
+        ? "✅ Événement publié — retrouve-le sur la carte et dans la recherche."
+        : "✅ Événement publié en avant.");
+    }else{
+      showCreateBanner("✅ Événement envoyé — il apparaîtra sur la carte après validation. Retrouve-le dans « Mes événements ».");
+    }
 
     // Réinitialise le formulaire pour une éventuelle nouvelle publication.
     form.reset();
@@ -555,6 +572,13 @@ function initCreatePage(){
     if(preview){ preview.src = ''; preview.classList.add('hidden'); }
     if(label) label.style.display = '';
   });
+}
+
+function showCreateBanner(msg){
+  const banner = document.getElementById('createSuccess');
+  banner.textContent = msg;
+  banner.classList.remove('hidden');
+  banner.scrollIntoView({behavior:'smooth', block:'center'});
 }
 
 /* Devine des coordonnées SVG à partir de la ville/région saisie, en
@@ -572,8 +596,13 @@ function guessCoords(city, region){
 /* =========================================================
    EVENT DETAIL PAGE
    ========================================================= */
-function openEvent(id){
-  const ev = events.find(e=>e.id===id);
+async function openEvent(id){
+  let ev = events.find(e=>e.id===id);
+  // Événement absent de la liste publique (ex. en attente de validation) :
+  // on le récupère directement depuis Firebase si possible.
+  if(!ev && window.EBOK_DATA && typeof window.EBOK_DATA.getEvent === 'function'){
+    try{ ev = await window.EBOK_DATA.getEvent(id); }catch(e){ /* ignore */ }
+  }
   if(!ev) return;
   currentGallery = ev.gallery || [];
   const el = document.getElementById('eventDetail');
@@ -809,14 +838,197 @@ function renderFeatured(){
    NAVIGATION
    ========================================================= */
 function showPage(name){
+  // "Mes événements" est réservé aux comptes connectés (si l'auth est active).
+  if(name === 'mine' && !currentUser && window.EBOK_AUTH){ openAuth('login'); return; }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   document.querySelectorAll('.navlink').forEach(n=>n.classList.toggle('active', n.dataset.nav===name));
+  // Publier exige un compte : on propose la connexion sans masquer le formulaire.
+  if(name === 'create' && !currentUser && window.EBOK_AUTH){ openAuth('login'); }
+  if(name === 'mine') renderMine();
   window.scrollTo({top:0, behavior:'instant'});
 }
 document.querySelectorAll('[data-nav]').forEach(el=>{
   el.addEventListener('click', ()=> showPage(el.dataset.nav));
 });
+
+/* =========================================================
+   AUTHENTIFICATION & ESPACE DIFFUSEUR / ADMIN
+   ========================================================= */
+let currentUser = null;
+let currentProfile = null;
+let currentIsAdmin = false;
+
+function openAuth(tab){
+  switchAuthTab(tab || 'login');
+  document.getElementById('authError').classList.add('hidden');
+  const modal = document.getElementById('authModal');
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+}
+function closeAuth(){
+  const modal = document.getElementById('authModal');
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+}
+function switchAuthTab(tab){
+  document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+  document.getElementById('tabSignup').classList.toggle('active', tab === 'signup');
+  document.getElementById('loginForm').classList.toggle('hidden', tab !== 'login');
+  document.getElementById('signupForm').classList.toggle('hidden', tab !== 'signup');
+  document.getElementById('authError').classList.add('hidden');
+}
+function showAuthError(msg){
+  const e = document.getElementById('authError');
+  e.textContent = msg;
+  e.classList.remove('hidden');
+}
+function authMessage(err){
+  const c = (err && err.code) || '';
+  if(c.includes('email-already-in-use')) return "Cet email a déjà un compte. Essaie de te connecter.";
+  if(c.includes('invalid-email')) return "Adresse email invalide.";
+  if(c.includes('weak-password')) return "Mot de passe trop court (6 caractères minimum).";
+  if(c.includes('invalid-credential') || c.includes('wrong-password') || c.includes('user-not-found'))
+    return "Email ou mot de passe incorrect.";
+  if(c.includes('too-many-requests')) return "Trop de tentatives. Réessaie dans quelques minutes.";
+  return "Une erreur est survenue. Réessaie.";
+}
+
+function updateAuthUI(){
+  const loggedOut = !currentUser;
+  document.getElementById('btnLogin').classList.toggle('hidden', !loggedOut);
+  document.getElementById('accountLogged').classList.toggle('hidden', loggedOut);
+  document.getElementById('navMine').classList.toggle('hidden', loggedOut);
+  if(currentUser){
+    const name = (currentProfile && currentProfile.orgname) || currentUser.email;
+    document.getElementById('accountName').innerHTML =
+      `<b>${name}</b>${currentIsAdmin ? '<span class="account-badge-admin">Admin</span>' : ''}`;
+  }
+}
+
+function initAuth(){
+  const modal = document.getElementById('authModal');
+  document.getElementById('btnLogin').addEventListener('click', ()=> openAuth('login'));
+  document.getElementById('authClose').addEventListener('click', closeAuth);
+  modal.addEventListener('click', e=>{ if(e.target === modal) closeAuth(); });
+  document.getElementById('tabLogin').addEventListener('click', ()=> switchAuthTab('login'));
+  document.getElementById('tabSignup').addEventListener('click', ()=> switchAuthTab('signup'));
+
+  document.getElementById('loginForm').addEventListener('submit', async e=>{
+    e.preventDefault();
+    if(!window.EBOK_AUTH){ showAuthError("Connexion indisponible (Firebase non activé)."); return; }
+    try{
+      await window.EBOK_AUTH.signIn(
+        document.getElementById('login-email').value.trim(),
+        document.getElementById('login-pass').value
+      );
+      closeAuth();
+    }catch(err){ showAuthError(authMessage(err)); }
+  });
+
+  document.getElementById('signupForm').addEventListener('submit', async e=>{
+    e.preventDefault();
+    if(!window.EBOK_AUTH){ showAuthError("Inscription indisponible (Firebase non activé)."); return; }
+    const profile = {
+      orgname: document.getElementById('su-orgname').value.trim(),
+      insta: document.getElementById('su-insta').value.trim().replace(/^@/, ''),
+      tel: document.getElementById('su-tel').value.trim()
+    };
+    try{
+      await window.EBOK_AUTH.signUp(
+        document.getElementById('su-email').value.trim(),
+        document.getElementById('su-pass').value,
+        profile
+      );
+      closeAuth();
+    }catch(err){ showAuthError(authMessage(err)); }
+  });
+
+  document.getElementById('btnLogout').addEventListener('click', async ()=>{
+    if(window.EBOK_AUTH) await window.EBOK_AUTH.signOutUser();
+    showPage('home');
+  });
+
+  updateAuthUI();
+}
+
+/* ---- Dashboard "Mes événements" / Admin ---- */
+async function renderMine(){
+  const grid = document.getElementById('mineGrid');
+  const eyebrow = document.getElementById('mineEyebrow');
+  const title = document.getElementById('mineTitle');
+  const sub = document.getElementById('mineSub');
+
+  if(!currentUser){
+    grid.innerHTML = `<div class="empty-state"><h4>Connecte-toi</h4><p>Crée un compte diffuseur pour publier et gérer tes événements.</p></div>`;
+    return;
+  }
+  if(currentIsAdmin){
+    eyebrow.textContent = 'Administration';
+    title.textContent = 'Tous les événements';
+    sub.textContent = "Valide, publie ou supprime n'importe quel événement.";
+  }else{
+    eyebrow.textContent = 'Espace diffuseur';
+    title.textContent = 'Mes événements';
+    sub.textContent = 'Gère les événements que tu as publiés.';
+  }
+
+  if(!window.EBOK_DATA){
+    grid.innerHTML = `<div class="empty-state"><p>Firebase requis pour cette section.</p></div>`;
+    return;
+  }
+  grid.innerHTML = `<div class="empty-state"><p>Chargement…</p></div>`;
+  let list;
+  try{
+    list = currentIsAdmin
+      ? await window.EBOK_DATA.getAllEventsForAdmin()
+      : await window.EBOK_DATA.getEventsByUser(currentUser.uid);
+  }catch(err){
+    grid.innerHTML = `<div class="empty-state"><h4>Erreur</h4><p>Impossible de charger les événements.</p></div>`;
+    return;
+  }
+  if(!list.length){
+    grid.innerHTML = `<div class="empty-state"><h4>Aucun événement</h4><p>Publie ton premier événement via « Publier un événement ».</p></div>`;
+    return;
+  }
+  list.sort((a,b)=> (b.createdAt || 0) - (a.createdAt || 0));
+  grid.innerHTML = list.map(mineCardHtml).join('');
+  grid.querySelectorAll('[data-open]').forEach(b=> b.addEventListener('click', ()=> openEvent(b.dataset.open)));
+  grid.querySelectorAll('[data-del]').forEach(b=> b.addEventListener('click', ()=> handleDelete(b.dataset.del)));
+  grid.querySelectorAll('[data-approve]').forEach(b=> b.addEventListener('click', ()=> handleApprove(b.dataset.approve)));
+}
+
+function mineCardHtml(ev){
+  const pending = ev.status !== 'approved';
+  return `<div class="mine-card-wrap">
+    <span class="status-pill ${pending ? 'status-pending' : 'status-approved'}">${pending ? 'En attente' : 'En ligne'}</span>
+    ${eventCardHtml(ev)}
+    <div class="mine-card-actions">
+      <button class="btn btn-ghost" data-open="${ev.id}">Voir</button>
+      ${(currentIsAdmin && pending) ? `<button class="btn btn-approve" data-approve="${ev.id}">Valider</button>` : ''}
+      <button class="btn btn-danger" data-del="${ev.id}">Supprimer</button>
+    </div>
+  </div>`;
+}
+
+async function handleDelete(id){
+  if(!confirm('Supprimer cet événement ? Cette action est définitive.')) return;
+  try{
+    await window.EBOK_DATA.deleteEvent(id);
+    events = events.filter(e=> e.id !== id);
+    renderAll();
+    renderMine();
+  }catch(err){ alert("Suppression impossible (droits insuffisants ?)."); }
+}
+
+async function handleApprove(id){
+  try{
+    await window.EBOK_DATA.approveEvent(id);
+    const list = await window.EBOK_DATA.getAllEvents();
+    if(Array.isArray(list)){ events = list; renderAll(); }
+    renderMine();
+  }catch(err){ alert("Validation impossible."); }
+}
 
 /* =========================================================
    INIT
@@ -839,7 +1051,15 @@ function renderAll(){
 window.EBOK = {
   get events(){ return events; },
   setEvents(list){ if(Array.isArray(list)) events = list; renderAll(); },
-  addEvent(ev){ events = [ev, ...events]; renderAll(); }
+  addEvent(ev){ events = [ev, ...events]; renderAll(); },
+  // Appelé par firebase-init.js à chaque connexion / déconnexion.
+  onAuthChanged(user, profile, admin){
+    currentUser = user || null;
+    currentProfile = profile || null;
+    currentIsAdmin = !!admin;
+    updateAuthUI();
+    if(document.getElementById('page-mine').classList.contains('active')) renderMine();
+  }
 };
 
 // Écouteurs (une seule fois) + premier rendu sur les données locales.
@@ -848,6 +1068,7 @@ renderFeatured();
 initHomeFilters();
 initSearchPage();
 initCreatePage();
+initAuth();
 
 // Si une source de données externe est branchée (firebase-init.js), on
 // remplace les données locales par celles de la base dès qu'elles arrivent.

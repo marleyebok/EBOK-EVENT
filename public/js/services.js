@@ -1,24 +1,25 @@
 /* =========================================================
-   EBOK Event — COUCHE API (Firestore)
+   EBOK Event — COUCHE API (Firestore + Auth)
    ---------------------------------------------------------
-   Couche d'accès aux données. Tant que Firebase n'est pas
-   branché, l'app fonctionne avec le tableau `events` de data.js.
-
-   Pour activer Firebase :
-   1. Crée `firebase-config.js` à partir de firebase-config.example.js
-   2. Charge ce fichier en module dans index.html :
-        <script type="module" src="js/services.js"></script>
-   3. Remplace dans app.js l'usage direct de `events` par un appel
-      à getAllEvents() (voir README, phase 4).
+   Accès aux données et à l'authentification Firebase.
+   Chargée uniquement quand Firebase est activé (firebase-init.js).
    ========================================================= */
-import { db } from "./firebase-config.js";
+import { db, auth } from "./firebase-config.js";
 import {
-  collection, getDocs, getDoc, addDoc, updateDoc, doc,
+  collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc,
   query, where, increment, setDoc
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import {
+  createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const EVENTS = "events";
 const VIEWS = "views";
+const USERS = "users";
+const ADMINS = "admins";
+
+/* ---------- Événements ---------- */
 
 /**
  * Import initial : envoie une liste d'événements dans Firestore en
@@ -35,8 +36,15 @@ export async function importEvents(list) {
   return n;
 }
 
-/** Récupère tous les événements. */
+/** Événements publics : uniquement ceux qui sont validés (approved). */
 export async function getAllEvents() {
+  const q = query(collection(db, EVENTS), where("status", "==", "approved"));
+  const snap = await getDocs(q);
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+/** Tous les événements, quel que soit le statut (réservé à l'admin). */
+export async function getAllEventsForAdmin() {
   const snap = await getDocs(collection(db, EVENTS));
   return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }
@@ -47,19 +55,20 @@ export async function getEvent(id) {
   return snap.exists() ? { id: snap.id, ...snap.data() } : null;
 }
 
-/** Récupère les événements d'un diffuseur donné. */
+/** Récupère les événements d'un diffuseur donné (tous statuts). */
 export async function getEventsByUser(userId) {
   const q = query(collection(db, EVENTS), where("userId", "==", userId));
   const snap = await getDocs(q);
   return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
-/** Crée un événement (depuis le formulaire de publication). */
+/** Crée un événement. Le statut par défaut est "pending" ; l'appelant
+ *  (admin) peut fournir status:"approved". */
 export async function createEvent(eventData) {
   const ref = await addDoc(collection(db, EVENTS), {
+    status: "pending",
     ...eventData,
-    createdAt: Date.now(),
-    status: "pending"        // vérifié avant publication
+    createdAt: Date.now()
   });
   return ref.id;
 }
@@ -67,6 +76,16 @@ export async function createEvent(eventData) {
 /** Met à jour un événement existant. */
 export async function updateEvent(id, patch) {
   await updateDoc(doc(db, EVENTS, id), patch);
+}
+
+/** Valide (publie) un événement en attente. */
+export async function approveEvent(id) {
+  await updateDoc(doc(db, EVENTS, id), { status: "approved" });
+}
+
+/** Supprime un événement. */
+export async function deleteEvent(id) {
+  await deleteDoc(doc(db, EVENTS, id));
 }
 
 /**
@@ -80,4 +99,51 @@ export async function incrementViews(eventId, seed = 0) {
   const next = base + 1;
   await setDoc(ref, { count: next }, { merge: true });
   return next;
+}
+
+/* ---------- Authentification ---------- */
+
+/** Inscription d'un diffuseur : crée le compte + son profil. */
+export async function signUp(email, password, profile) {
+  const cred = await createUserWithEmailAndPassword(auth, email, password);
+  const uid = cred.user.uid;
+  await setDoc(doc(db, USERS, uid), {
+    email,
+    ...profile,
+    createdAt: Date.now()
+  });
+  return cred.user;
+}
+
+/** Connexion d'un diffuseur. */
+export async function signIn(email, password) {
+  const cred = await signInWithEmailAndPassword(auth, email, password);
+  return cred.user;
+}
+
+/** Déconnexion. */
+export async function signOutUser() {
+  await signOut(auth);
+}
+
+/** Observe l'état de connexion (appelé à chaque login/logout). */
+export function observeAuth(callback) {
+  return onAuthStateChanged(auth, callback);
+}
+
+/** Profil diffuseur (nom, insta…). */
+export async function getUserProfile(uid) {
+  const snap = await getDoc(doc(db, USERS, uid));
+  return snap.exists() ? snap.data() : null;
+}
+
+/** Vrai si l'utilisateur figure dans la collection `admins`. */
+export async function isAdmin(uid) {
+  if (!uid) return false;
+  try {
+    const snap = await getDoc(doc(db, ADMINS, uid));
+    return snap.exists();
+  } catch (e) {
+    return false;
+  }
 }
