@@ -118,7 +118,7 @@
               <div class="picker-days" id="pickerDays"></div>
               <div class="picker-footer">
                 <div class="mode-toggle">
-                  <button type="button" class="mode-btn active" data-mode="range">Plage</button>
+                  <button type="button" class="mode-btn active" data-mode="range">Période</button>
                   <button type="button" class="mode-btn" data-mode="single">Jour unique</button>
                 </div>
                 <div class="picker-actions">
@@ -336,6 +336,21 @@
             <div class="field">
               <label for="c-reservation">Réservation</label>
               <input type="text" id="c-reservation" placeholder="Ex. Entrée libre / Lien billetterie">
+            </div>
+            <div class="form-row">
+              <div class="field">
+                <label for="c-places">Nombre de places <span style="color:var(--chalk-dim);font-weight:400;">(optionnel)</span></label>
+                <input type="number" id="c-places" min="0" placeholder="Ex. 120">
+              </div>
+              <div class="field">
+                <label for="c-dispo">Disponibilité <span style="color:var(--chalk-dim);font-weight:400;">(optionnel)</span></label>
+                <select id="c-dispo">
+                  <option value="">— Non précisé</option>
+                  <option value="dispo">Places disponibles</option>
+                  <option value="limite">Encore quelques places</option>
+                  <option value="complet">Complet</option>
+                </select>
+              </div>
             </div>
           </div>
 

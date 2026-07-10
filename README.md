@@ -130,3 +130,12 @@ Site statique → déployable sur **Firebase Hosting**, **GitHub Pages**, **Netl
 | Titres | Anton · Corps : Work Sans · Labels : Space Mono |
 
 Palette complète et code couleur par type d'événement : voir `EBOK_Event_Briefing.md`.
+
+## 🧭 Idées / prochaines étapes (backlog)
+
+- 🗺️ **Répertoire des terrains 3x3 & playgrounds de France** — recenser les playgrounds (comme il en existe déjà ailleurs) et les afficher sur la carte avec l'option « autour de moi ». Fort potentiel communautaire.
+- 🙋 **« J'y vais »** — compteur de participants intéressés par événement (preuve sociale, prépare la billetterie).
+- 📅 **Ajouter à mon agenda** — export .ics (Google/Apple Agenda).
+- 🔔 **Alertes email** — « préviens-moi des events *type* près de *ville* » (nécessite un backend d'envoi : Cloud Functions + service mail type SendGrid).
+- 💬 **Avis / discussion** — questions à l'organisateur avant l'event, avis sur les éditions passées (nécessite de la modération admin).
+- 🎟️ **Billetterie / inscriptions** (plus tard) — liens type Ticketmaster avec commission.

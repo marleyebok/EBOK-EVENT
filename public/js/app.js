@@ -8,6 +8,13 @@ function isPast(ev){ return ev.dateEnd < TODAY; }
 const sessionCounters = {};
 let currentGallery = [];
 
+// Libellés/couleurs de disponibilité des places.
+const DISPO_META = {
+  dispo:   { label: 'Places dispo',   cls: 'dispo-dispo'   },
+  limite:  { label: 'Bientôt complet', cls: 'dispo-limite'  },
+  complet: { label: 'Complet',         cls: 'dispo-complet' }
+};
+
 function eventCardHtml(ev){
   return `
     <div class="event-card" data-id="${ev.id}">
@@ -15,6 +22,7 @@ function eventCardHtml(ev){
         ${ev.poster ? `<img src="${ev.poster}" alt="Affiche ${ev.title}">` : `<div style="width:100%;height:100%;background:linear-gradient(135deg, ${TYPE_COLORS[ev.type]}33, var(--asphalt-3));display:flex;align-items:center;justify-content:center;font-family:var(--font-display);color:${TYPE_COLORS[ev.type]};font-size:15px;">${ev.type.toUpperCase()}</div>`}
         <span class="card-type-badge" style="background:${TYPE_COLORS[ev.type]}">${ev.type}</span>
         ${isPast(ev) ? `<span class="card-past-badge">Terminé</span>` : ``}
+        ${ev.dispo && DISPO_META[ev.dispo] ? `<span class="dispo-badge ${DISPO_META[ev.dispo].cls}">${DISPO_META[ev.dispo].label}</span>` : ``}
         <button class="fav-btn ${favorites.has(ev.id) ? 'active' : ''}" data-fav="${ev.id}" aria-label="Enregistrer en favori" title="Mettre de côté">♥</button>
       </div>
       <div class="card-body">
@@ -86,21 +94,16 @@ function buildMap(){
     <g class="geo-layer">${geoMarker}</g>
     <g class="pin-layer">${pins}</g>`;
 
-  // Interactions régions : relief au survol/focus, sélection au clic.
-  // (métropole ET encarts outre-mer partagent la classe .region)
+  // Interactions régions : le relief au survol/focus est géré en CSS pur
+  // (:hover / :focus) — pas de manipulation du DOM, donc plus d'effet
+  // "bloqué en relief" quand la souris quitte la zone.
+  // Clic = ouvre la recherche filtrée sur cette région.
   svg.querySelectorAll('.region').forEach(reg=>{
-    const lift = ()=>{ reg.parentNode.appendChild(reg); reg.classList.add('hovered'); }; // au premier plan dans sa couche
-    const drop = ()=> reg.classList.remove('hovered');
-    reg.addEventListener('mouseenter', lift);
-    reg.addEventListener('mouseleave', drop);
-    reg.addEventListener('focus', lift);
-    reg.addEventListener('blur', drop);
-    reg.addEventListener('click', ()=> selectRegion(reg.dataset.region));
+    reg.addEventListener('click', ()=> openRegionSearch(reg.dataset.region));
     reg.addEventListener('keydown', e=>{
-      if(e.key==='Enter' || e.key===' '){ e.preventDefault(); selectRegion(reg.dataset.region); }
+      if(e.key==='Enter' || e.key===' '){ e.preventDefault(); openRegionSearch(reg.dataset.region); }
     });
   });
-  applySelectedRegionStyle();
 
   svg.querySelectorAll('.pin').forEach(pin=>{
     pin.addEventListener('mouseenter', ()=> showTooltip(pin));
@@ -134,15 +137,15 @@ function stableJitter(id){
   return { dx: (h % 15) - 7, dy: ((h >> 4) % 15) - 7 };
 }
 
-/* Sélection d'une région au clic : filtre les événements de cette région
-   (re-clic pour désélectionner). */
-function selectRegion(name){
-  selectedRegion = (selectedRegion === name) ? '' : name;
-  homeCity = selectedRegion;
-  const input = document.getElementById('citySearch');
-  if(input) input.value = selectedRegion;
-  applySelectedRegionStyle();
-  applyMapFilters();
+/* Clic sur une région : ouvre la recherche filtrée sur cette région,
+   avec les résultats triés par date de début (géré par renderResults). */
+function openRegionSearch(name){
+  const form = document.getElementById('searchForm');
+  if(form) form.reset();
+  const lieu = document.getElementById('f-lieu');
+  if(lieu) lieu.value = name;
+  showPage('search');
+  renderResults();
 }
 function applySelectedRegionStyle(){
   document.querySelectorAll('.region').forEach(r=>{
@@ -310,8 +313,12 @@ function initHomeFilters(){
     daysGrid.querySelectorAll('[data-date]').forEach(btn=>{
       btn.addEventListener('click', (e)=>{
         e.preventDefault();
+        // On stoppe la propagation : renderPicker() remplace les boutons de
+        // jour, donc l'écouteur "clic dehors" verrait sinon une cible détachée
+        // et fermerait le calendrier dès le 1er clic (bug période).
+        e.stopPropagation();
         const date = btn.dataset.date;
-        
+
         if(selectionMode === 'range'){
           if(!periodStart){
             periodStart = date;
@@ -777,6 +784,8 @@ function initCreatePage(){
         reservation: val('c-reservation')
       },
       gallery: [],
+      placesTotal: val('c-places') ? parseInt(val('c-places'), 10) : null,
+      dispo: val('c-dispo') || '',
       featured: visibility !== 'standard',
       visibility,
       status,
@@ -873,11 +882,16 @@ async function openEvent(id){
   const shareText = encodeURIComponent(`${ev.title} — ${fmtDateRange(ev.dateStart,ev.dateEnd)} à ${ev.city}. Plus d'infos :`);
 
   const infos = ev.infos || {};
+  const placesValue = [
+    ev.placesTotal ? `${ev.placesTotal} places` : null,
+    ev.dispo && DISPO_META[ev.dispo] ? DISPO_META[ev.dispo].label : null
+  ].filter(Boolean).join(' · ');
   const practicalRows = [
     infos.adresse ? {ic:"📍", k:"Adresse", v:infos.adresse} : null,
     infos.horaires ? {ic:"🕐", k:"Horaires", v:infos.horaires} : null,
     infos.buvette ? {ic:"🥤", k:"Buvette", v:infos.buvette} : null,
     infos.reservation ? {ic:"🎟", k:"Réservation", v:infos.reservation} : null,
+    placesValue ? {ic:"🎫", k:"Places", v:placesValue} : null,
   ].filter(Boolean);
   const practicalHtml = practicalRows.length
     ? `<div class="practical-grid">${practicalRows.map(r=>`
@@ -944,6 +958,15 @@ async function openEvent(id){
           <div class="share-copied" id="shareCopied">Lien copié ✓</div>
         </div>
       </div>
+
+      <div class="curieux-counter">
+        <span class="cc-eye">👁</span>
+        <div>
+          <div class="cc-label">Nombre de curieux</div>
+          <div class="cc-sub">personnes ont consulté cet événement</div>
+        </div>
+        <span class="cc-num" id="vcNumBottom">···</span>
+      </div>
     </div>`;
 
   document.getElementById('btnInfo').addEventListener('click', (e)=>{
@@ -1004,6 +1027,7 @@ async function loadAndAnimateViews(id){
     count = sessionCounters[id];
   }
   animateCount(document.getElementById('vcNum'), count);
+  animateCount(document.getElementById('vcNumBottom'), count);
 }
 function animateCount(el, target){
   if(!el) return;
@@ -1345,19 +1369,40 @@ async function renderMine(){
   grid.querySelectorAll('[data-open]').forEach(b=> b.addEventListener('click', ()=> openEvent(b.dataset.open)));
   grid.querySelectorAll('[data-del]').forEach(b=> b.addEventListener('click', ()=> handleDelete(b.dataset.del)));
   grid.querySelectorAll('[data-approve]').forEach(b=> b.addEventListener('click', ()=> handleApprove(b.dataset.approve)));
+  grid.querySelectorAll('[data-dispo]').forEach(sel=> sel.addEventListener('change', ()=> handleDispoChange(sel.dataset.dispo, sel.value)));
 }
 
 function mineCardHtml(ev){
   const pending = ev.status !== 'approved';
+  const cur = ev.dispo || '';
+  const opt = (v,l)=> `<option value="${v}" ${cur===v?'selected':''}>${l}</option>`;
   return `<div class="mine-card-wrap">
     <span class="status-pill ${pending ? 'status-pending' : 'status-approved'}">${pending ? 'En attente' : 'En ligne'}</span>
     ${eventCardHtml(ev)}
+    <div class="mine-dispo">
+      <label for="dispo-${ev.id}">Places&nbsp;:</label>
+      <select id="dispo-${ev.id}" data-dispo="${ev.id}">
+        ${opt('', '— Non précisé')}${opt('dispo','Places disponibles')}${opt('limite','Encore quelques places')}${opt('complet','Complet')}
+      </select>
+    </div>
     <div class="mine-card-actions">
       <button class="btn btn-ghost" data-open="${ev.id}">Voir</button>
       ${(currentIsAdmin && pending) ? `<button class="btn btn-approve" data-approve="${ev.id}">Valider</button>` : ''}
       <button class="btn btn-danger" data-del="${ev.id}">Supprimer</button>
     </div>
   </div>`;
+}
+
+/* Mise à jour rapide de la disponibilité depuis le dashboard. */
+async function handleDispoChange(id, dispo){
+  const ev = events.find(e=> e.id === id);
+  if(ev) ev.dispo = dispo;
+  if(window.EBOK_DATA && window.EBOK_DATA.updateEvent){
+    try{ await window.EBOK_DATA.updateEvent(id, { dispo }); }
+    catch(err){ alert("Mise à jour impossible."); }
+  }
+  renderAll();
+  if(document.getElementById('page-mine').classList.contains('active')) renderMine();
 }
 
 async function handleDelete(id){
