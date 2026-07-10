@@ -542,7 +542,7 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
   .fg-radius{flex:0 0 195px;}
   .fg-period{flex:1 1 210px;max-width:320px;}
   .fg-period .period-selector{width:100%;}
-  .fg-types{flex-basis:100%;}
+  .fg-types{flex:0 0 auto;}
   #franceMap{max-width:680px;}
 }
 
@@ -708,3 +708,49 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 [data-theme="light"] .carousel-item,
 [data-theme="light"] .featured{background:linear-gradient(115deg,#fdeede,var(--asphalt-2) 60%);}
 [data-theme="light"] .type-chip.active .dot{box-shadow:0 0 0 3px rgba(0,0,0,0.05);}
+
+/* =========================================================
+   MENU DÉROULANT "TYPES"
+   ========================================================= */
+.type-dropdown{position:relative;}
+.type-dd-btn{
+  display:inline-flex;align-items:center;gap:10px;justify-content:space-between;
+  background:var(--asphalt-3);border:1px solid var(--line-strong);color:var(--chalk);
+  font-weight:700;font-size:14px;padding:10px 14px;border-radius:8px;cursor:pointer;min-width:170px;
+  transition:border-color .15s;
+}
+.type-dd-btn:hover,.type-dd-btn.open{border-color:var(--orange);}
+.dd-caret{color:var(--chalk-dim);font-size:11px;}
+.type-dd-panel{
+  position:absolute;top:calc(100% + 6px);left:0;z-index:40;width:320px;max-width:82vw;
+  background:var(--asphalt-2);border:1px solid var(--line-strong);border-radius:12px;
+  padding:14px;box-shadow:0 16px 40px rgba(0,0,0,0.4);
+}
+.type-dd-actions{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line-strong);}
+.type-dd-actions button{
+  flex:1;background:var(--asphalt-3);border:1px solid var(--line);color:var(--chalk-dim);
+  font-size:12px;font-weight:700;padding:8px;border-radius:8px;cursor:pointer;transition:all .15s;
+}
+.type-dd-actions button:hover{color:var(--chalk);border-color:var(--line-strong);}
+
+/* =========================================================
+   FAVORIS (♥) + TYPE DE COMPTE
+   ========================================================= */
+.card-media{position:relative;}
+.fav-btn{
+  position:absolute;top:10px;right:10px;z-index:3;
+  width:34px;height:34px;border-radius:50%;border:none;cursor:pointer;
+  background:rgba(0,0,0,0.5);color:#fff;font-size:16px;line-height:1;
+  display:flex;align-items:center;justify-content:center;transition:all .15s;
+}
+.fav-btn:hover{background:rgba(0,0,0,0.72);transform:scale(1.1);}
+.fav-btn.active{color:var(--orange);}
+.fav-btn-lg{position:static;width:auto;height:auto;background:var(--asphalt-3);}
+.fav-btn-lg.active{border-color:var(--orange);color:var(--orange);}
+
+.role-toggle{display:flex;gap:6px;background:var(--asphalt-3);padding:5px;border-radius:12px;margin-bottom:6px;}
+.role-btn{
+  flex:1;background:none;border:none;color:var(--chalk-dim);font-weight:700;font-size:13px;
+  padding:9px;border-radius:8px;cursor:pointer;transition:all .15s;
+}
+.role-btn.active{background:var(--orange);color:#191008;}

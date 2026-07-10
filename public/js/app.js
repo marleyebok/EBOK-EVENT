@@ -15,6 +15,7 @@ function eventCardHtml(ev){
         ${ev.poster ? `<img src="${ev.poster}" alt="Affiche ${ev.title}">` : `<div style="width:100%;height:100%;background:linear-gradient(135deg, ${TYPE_COLORS[ev.type]}33, var(--asphalt-3));display:flex;align-items:center;justify-content:center;font-family:var(--font-display);color:${TYPE_COLORS[ev.type]};font-size:15px;">${ev.type.toUpperCase()}</div>`}
         <span class="card-type-badge" style="background:${TYPE_COLORS[ev.type]}">${ev.type}</span>
         ${isPast(ev) ? `<span class="card-past-badge">Terminé</span>` : ``}
+        <button class="fav-btn ${favorites.has(ev.id) ? 'active' : ''}" data-fav="${ev.id}" aria-label="Enregistrer en favori" title="Mettre de côté">♥</button>
       </div>
       <div class="card-body">
         <h4>${ev.title}</h4>
@@ -410,10 +411,49 @@ function initHomeFilters(){
     chip.addEventListener('click', ()=>{
       const on = chip.classList.toggle('active');
       chip.setAttribute('aria-pressed', on ? 'true' : 'false');
+      updateTypeLabel();
       applyMapFilters();
     });
   });
+
+  // Menu déroulant "Types" (ouverture/fermeture + tout sélectionner/retirer)
+  const ddBtn = document.getElementById('typeDdBtn');
+  const ddPanel = document.getElementById('typeDdPanel');
+  ddBtn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    ddPanel.classList.toggle('hidden');
+    ddBtn.classList.toggle('open', !ddPanel.classList.contains('hidden'));
+  });
+  document.addEventListener('click', (e)=>{
+    if(!document.getElementById('typeDropdown').contains(e.target)){
+      ddPanel.classList.add('hidden'); ddBtn.classList.remove('open');
+    }
+  });
+  const setAllTypes = (on)=>{
+    typeWrap.querySelectorAll('.type-chip').forEach(c=>{
+      c.classList.toggle('active', on);
+      c.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    updateTypeLabel();
+    applyMapFilters();
+  };
+  document.getElementById('typeAll').addEventListener('click', ()=> setAllTypes(true));
+  document.getElementById('typeNone').addEventListener('click', ()=> setAllTypes(false));
+
+  updateTypeLabel();
   applyMapFilters();
+}
+
+/* Met à jour l'intitulé du bouton "Types" selon la sélection. */
+function updateTypeLabel(){
+  const chips = document.querySelectorAll('#typeFilterHome .type-chip');
+  const active = document.querySelectorAll('#typeFilterHome .type-chip.active');
+  const label = document.getElementById('typeDdLabel');
+  if(!label) return;
+  if(active.length === chips.length) label.textContent = 'Tous les types';
+  else if(active.length === 0) label.textContent = 'Aucun type';
+  else if(active.length === 1) label.textContent = active[0].dataset.type;
+  else label.textContent = `${active.length} types`;
 }
 
 let homeView = 'map';
@@ -891,6 +931,7 @@ async function openEvent(id){
       <div class="action-row">
         <button class="btn btn-primary btn-lg" id="btnInfo">Se renseigner</button>
         <button class="btn btn-ghost btn-lg" id="btnShare">Partager</button>
+        <button class="btn btn-ghost btn-lg fav-btn fav-btn-lg ${favorites.has(ev.id) ? 'active' : ''}" data-fav="${ev.id}">${favorites.has(ev.id) ? '♥ Enregistré' : '♡ Enregistrer'}</button>
 
         <div class="popover" id="popInfo">${contactItems.join('')}</div>
 
@@ -1050,14 +1091,15 @@ function renderFeatured(){
    NAVIGATION
    ========================================================= */
 function showPage(name){
-  // "Mes événements" est réservé aux comptes connectés (si l'auth est active).
-  if(name === 'mine' && !currentUser && window.EBOK_AUTH){ openAuth('login'); return; }
+  // Espaces réservés aux comptes connectés (si l'auth est active).
+  if((name === 'mine' || name === 'favorites') && !currentUser && window.EBOK_AUTH){ openAuth('login'); return; }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   document.querySelectorAll('.navlink').forEach(n=>n.classList.toggle('active', n.dataset.nav===name));
   // Publier exige un compte : on propose la connexion sans masquer le formulaire.
   if(name === 'create' && !currentUser && window.EBOK_AUTH){ openAuth('login'); }
   if(name === 'mine') renderMine();
+  if(name === 'favorites') renderFavorites();
   window.scrollTo({top:0, behavior:'instant'});
 }
 document.querySelectorAll('[data-nav]').forEach(el=>{
@@ -1070,6 +1112,81 @@ document.querySelectorAll('[data-nav]').forEach(el=>{
 let currentUser = null;
 let currentProfile = null;
 let currentIsAdmin = false;
+let favorites = new Set();
+
+/* ---------- Favoris (mettre un événement de côté) ---------- */
+async function loadFavorites(){
+  if(currentUser && window.EBOK_DATA && window.EBOK_DATA.getFavorites){
+    try{ favorites = new Set(await window.EBOK_DATA.getFavorites(currentUser.uid)); }
+    catch(e){ favorites = new Set(); }
+  }else if(!window.EBOK_AUTH){
+    // Mode démo (sans Firebase) : on garde les favoris en local.
+    try{ favorites = new Set(JSON.parse(localStorage.getItem('ebok-favs') || '[]')); }
+    catch(e){ favorites = new Set(); }
+  }else{
+    favorites = new Set();
+  }
+}
+
+async function toggleFav(id){
+  // Il faut un compte pour enregistrer (sauf en mode démo local).
+  if(!currentUser && window.EBOK_AUTH){ openAuth('login'); return; }
+  const add = !favorites.has(id);
+  if(add) favorites.add(id); else favorites.delete(id);
+  updateFavButtons(id);
+  if(currentUser && window.EBOK_DATA && window.EBOK_DATA.toggleFavorite){
+    try{ await window.EBOK_DATA.toggleFavorite(currentUser.uid, id, add); }
+    catch(e){ /* on garde l'état local même si l'écriture échoue */ }
+  }else{
+    localStorage.setItem('ebok-favs', JSON.stringify([...favorites]));
+  }
+  if(document.getElementById('page-favorites').classList.contains('active')) renderFavorites();
+}
+
+function updateFavButtons(id){
+  const on = favorites.has(id);
+  document.querySelectorAll(`.fav-btn[data-fav="${id}"]`).forEach(b=>{
+    b.classList.toggle('active', on);
+    if(b.classList.contains('fav-btn-lg')) b.textContent = on ? '♥ Enregistré' : '♡ Enregistrer';
+  });
+}
+
+// Délégation en phase de capture : le clic sur ♥ n'ouvre pas l'événement.
+document.addEventListener('click', (e)=>{
+  const btn = e.target.closest && e.target.closest('.fav-btn');
+  if(btn){ e.preventDefault(); e.stopPropagation(); toggleFav(btn.dataset.fav); }
+}, true);
+
+async function renderFavorites(){
+  const grid = document.getElementById('favoritesGrid');
+  if(!currentUser && window.EBOK_AUTH){
+    grid.innerHTML = `<div class="empty-state"><h4>Connecte-toi</h4><p>Crée un compte pour enregistrer tes événements favoris.</p></div>`;
+    return;
+  }
+  const ids = [...favorites];
+  if(!ids.length){
+    grid.innerHTML = `<div class="empty-state"><h4>Aucun favori</h4><p>Clique sur le ♥ d'un événement pour le mettre de côté.</p></div>`;
+    return;
+  }
+  // Événements connus localement + récupération des éventuels manquants.
+  const list = [];
+  for(const id of ids){
+    let ev = events.find(e=>e.id===id);
+    if(!ev && window.EBOK_DATA && window.EBOK_DATA.getEvent){
+      try{ ev = await window.EBOK_DATA.getEvent(id); }catch(e){ ev = null; }
+    }
+    if(ev) list.push(ev);
+  }
+  if(!list.length){
+    grid.innerHTML = `<div class="empty-state"><h4>Aucun favori</h4><p>Clique sur le ♥ d'un événement pour le mettre de côté.</p></div>`;
+    return;
+  }
+  list.sort((a,b)=> a.dateStart.localeCompare(b.dateStart));
+  grid.innerHTML = list.map(eventCardHtml).join('');
+  grid.querySelectorAll('.event-card').forEach(card=>{
+    card.addEventListener('click', ()=> openEvent(card.dataset.id));
+  });
+}
 
 function openAuth(tab){
   switchAuthTab(tab || 'login');
@@ -1108,9 +1225,12 @@ function authMessage(err){
 
 function updateAuthUI(){
   const loggedOut = !currentUser;
+  // Organisateur/admin voient "Mes événements" ; tout le monde voit "Mes favoris".
+  const isOrganizer = currentIsAdmin || (currentProfile && currentProfile.role === 'organizer');
   document.getElementById('btnLogin').classList.toggle('hidden', !loggedOut);
   document.getElementById('accountLogged').classList.toggle('hidden', loggedOut);
-  document.getElementById('navMine').classList.toggle('hidden', loggedOut);
+  document.getElementById('navFav').classList.toggle('hidden', loggedOut);
+  document.getElementById('navMine').classList.toggle('hidden', loggedOut || !isOrganizer);
   if(currentUser){
     const name = (currentProfile && currentProfile.orgname) || currentUser.email;
     document.getElementById('accountName').innerHTML =
@@ -1138,10 +1258,27 @@ function initAuth(){
     }catch(err){ showAuthError(authMessage(err)); }
   });
 
+  // Choix du type de compte (spectateur / organisateur)
+  let signupRole = 'spectator';
+  document.querySelectorAll('#roleToggle .role-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      signupRole = btn.dataset.role;
+      document.querySelectorAll('#roleToggle .role-btn').forEach(b=> b.classList.toggle('active', b===btn));
+      const org = signupRole === 'organizer';
+      document.getElementById('orgFields').classList.toggle('hidden', !org);
+      document.getElementById('su-orgname-label').textContent = org ? 'Nom du diffuseur / structure' : 'Nom / pseudo';
+      document.getElementById('su-orgname').placeholder = org ? 'Ex. Ligue C by Courtcuts' : 'Ex. Marley B.';
+      document.getElementById('authNote').textContent = org
+        ? "Un compte organisateur te permet de publier et gérer tes événements."
+        : "Un compte te permet d'enregistrer tes événements favoris.";
+    });
+  });
+
   document.getElementById('signupForm').addEventListener('submit', async e=>{
     e.preventDefault();
     if(!window.EBOK_AUTH){ showAuthError("Inscription indisponible (Firebase non activé)."); return; }
     const profile = {
+      role: signupRole,
       orgname: document.getElementById('su-orgname').value.trim(),
       insta: document.getElementById('su-insta').value.trim().replace(/^@/, ''),
       tel: document.getElementById('su-tel').value.trim()
@@ -1265,12 +1402,15 @@ window.EBOK = {
   setEvents(list){ if(Array.isArray(list)) events = list; renderAll(); },
   addEvent(ev){ events = [ev, ...events]; renderAll(); },
   // Appelé par firebase-init.js à chaque connexion / déconnexion.
-  onAuthChanged(user, profile, admin){
+  async onAuthChanged(user, profile, admin){
     currentUser = user || null;
     currentProfile = profile || null;
     currentIsAdmin = !!admin;
     updateAuthUI();
+    await loadFavorites();
+    renderAll();                 // rafraîchit les ♥ sur les cartes
     if(document.getElementById('page-mine').classList.contains('active')) renderMine();
+    if(document.getElementById('page-favorites').classList.contains('active')) renderFavorites();
   }
 };
 
@@ -1296,6 +1436,7 @@ function initTheme(){
 // Écouteurs (une seule fois) + premier rendu sur les données locales.
 initTheme();           // applique le thème mémorisé avant le rendu
 initGeoloc();          // restaure une éventuelle position avant le 1er dessin
+loadFavorites();       // favoris locaux (mode démo) avant le 1er dessin
 buildMap();
 renderFeatured();
 initHomeFilters();

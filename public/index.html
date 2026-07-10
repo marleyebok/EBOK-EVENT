@@ -18,6 +18,7 @@
     <button class="navlink active" data-nav="home">Accueil</button>
     <button class="navlink" data-nav="search">Recherche</button>
     <button class="navlink" data-nav="create">Publier un événement</button>
+    <button class="navlink hidden" data-nav="favorites" id="navFav">♥ Mes favoris</button>
     <button class="navlink hidden" data-nav="mine" id="navMine">Mes événements</button>
   </div>
   <div class="topbar-right">
@@ -131,7 +132,19 @@
 
         <div class="filter-group fg-types">
           <label>Type d'événement</label>
-          <div class="check-list" id="typeFilterHome"></div>
+          <div class="type-dropdown" id="typeDropdown">
+            <button type="button" class="type-dd-btn" id="typeDdBtn">
+              <span id="typeDdLabel">Tous les types</span>
+              <span class="dd-caret">▾</span>
+            </button>
+            <div class="type-dd-panel hidden" id="typeDdPanel">
+              <div class="check-list" id="typeFilterHome"></div>
+              <div class="type-dd-actions">
+                <button type="button" id="typeAll">Tout sélectionner</button>
+                <button type="button" id="typeNone">Tout retirer</button>
+              </div>
+            </div>
+          </div>
         </div>
       </aside>
 
@@ -442,6 +455,16 @@
     <div class="results-grid" id="mineGrid"></div>
   </section>
 
+  <!-- ===================== MES FAVORIS ===================== -->
+  <section id="page-favorites" class="page">
+    <div class="page-head">
+      <p class="eyebrow">Mon espace</p>
+      <h2>♥ Mes favoris</h2>
+      <p class="hero-sub">Les événements que tu as mis de côté. Retrouve-les ici à tout moment.</p>
+    </div>
+    <div class="results-grid" id="favoritesGrid"></div>
+  </section>
+
 </main>
 
 <div class="lightbox" id="lightbox">
@@ -473,9 +496,13 @@
 
     <!-- Inscription -->
     <form class="auth-form hidden" id="signupForm">
+      <div class="role-toggle" id="roleToggle">
+        <button type="button" class="role-btn active" data-role="spectator">🏀 Spectateur</button>
+        <button type="button" class="role-btn" data-role="organizer">📢 Organisateur</button>
+      </div>
       <div class="field">
-        <label for="su-orgname">Nom du diffuseur / structure</label>
-        <input type="text" id="su-orgname" placeholder="Ex. Ligue C by Courtcuts" required>
+        <label for="su-orgname" id="su-orgname-label">Nom / pseudo</label>
+        <input type="text" id="su-orgname" placeholder="Ex. Marley B." required>
       </div>
       <div class="field">
         <label for="su-email">Email</label>
@@ -485,7 +512,7 @@
         <label for="su-pass">Mot de passe (min. 6 caractères)</label>
         <input type="password" id="su-pass" autocomplete="new-password" minlength="6" required>
       </div>
-      <div class="form-row">
+      <div class="form-row hidden" id="orgFields">
         <div class="field">
           <label for="su-insta">Instagram</label>
           <input type="text" id="su-insta" placeholder="@moncompte">
@@ -499,7 +526,7 @@
     </form>
 
     <div class="auth-error hidden" id="authError"></div>
-    <p class="auth-note">Un compte diffuseur te permet de publier et gérer tes événements.</p>
+    <p class="auth-note" id="authNote">Un compte te permet d'enregistrer tes événements favoris.</p>
   </div>
 </div>
 

@@ -7,7 +7,7 @@
 import { db, auth } from "./firebase-config.js";
 import {
   collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc,
-  query, where, increment, setDoc
+  query, where, increment, setDoc, arrayUnion, arrayRemove
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
@@ -135,6 +135,23 @@ export function observeAuth(callback) {
 export async function getUserProfile(uid) {
   const snap = await getDoc(doc(db, USERS, uid));
   return snap.exists() ? snap.data() : null;
+}
+
+/* ---------- Favoris (événements mis de côté) ---------- */
+
+/** Liste des ids d'événements enregistrés par l'utilisateur. */
+export async function getFavorites(uid) {
+  const snap = await getDoc(doc(db, USERS, uid));
+  return snap.exists() && Array.isArray(snap.data().favorites) ? snap.data().favorites : [];
+}
+
+/** Ajoute (add=true) ou retire (add=false) un événement des favoris. */
+export async function toggleFavorite(uid, eventId, add) {
+  await setDoc(
+    doc(db, USERS, uid),
+    { favorites: add ? arrayUnion(eventId) : arrayRemove(eventId) },
+    { merge: true }
+  );
 }
 
 /** Vrai si l'utilisateur figure dans la collection `admins`. */
