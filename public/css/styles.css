@@ -237,6 +237,21 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .inset-label{font-family:var(--font-mono);font-size:9px;fill:var(--chalk-dim);}
 .inset-region{stroke-width:0.6;}
 
+/* ---- géolocalisation "autour de moi" ---- */
+.geo-btn{
+  width:100%;background:var(--asphalt-3);border:1px solid var(--line-strong);
+  color:var(--chalk);font-weight:700;font-size:13px;padding:10px 12px;border-radius:10px;
+  transition:all .15s;
+}
+.geo-btn:hover{border-color:var(--orange);color:var(--orange);}
+.geo-btn.active{background:var(--orange);color:#191008;border-color:var(--orange);}
+.geo-btn:disabled{opacity:.6;cursor:progress;}
+.geo-status{margin-top:8px;font-size:12px;color:var(--chalk-dim);line-height:1.4;}
+.geo-status-error{color:var(--orange-2);}
+.geo-radius{fill:rgba(255,87,34,0.10);stroke:var(--orange);stroke-width:1;stroke-dasharray:4 3;}
+.geo-user-halo{fill:rgba(33,150,243,0.30);}
+.geo-user{fill:#2196F3;stroke:#fff;stroke-width:1.5;}
+
 /* ---- pins événements ---- */
 .pin{cursor:pointer;transform-box:fill-box;transform-origin:center;transition:transform .15s;}
 .pin:hover{transform:scale(1.35);}
