@@ -20,13 +20,16 @@
     <button class="navlink" data-nav="create">Publier un événement</button>
     <button class="navlink hidden" data-nav="mine" id="navMine">Mes événements</button>
   </div>
-  <div class="account-area" id="accountArea">
-    <!-- Déconnecté -->
-    <button class="btn btn-outline nav-cta" id="btnLogin">Connexion diffuseur</button>
-    <!-- Connecté (rempli par JS) -->
-    <div class="account-logged hidden" id="accountLogged">
-      <span class="account-name" id="accountName"></span>
-      <button class="btn btn-ghost" id="btnLogout">Déconnexion</button>
+  <div class="topbar-right">
+    <button class="theme-toggle" id="themeToggle" aria-label="Basculer thème clair / sombre" title="Thème clair / sombre">🌙</button>
+    <div class="account-area" id="accountArea">
+      <!-- Déconnecté -->
+      <button class="btn btn-outline nav-cta" id="btnLogin">Connexion diffuseur</button>
+      <!-- Connecté (rempli par JS) -->
+      <div class="account-logged hidden" id="accountLogged">
+        <span class="account-name" id="accountName"></span>
+        <button class="btn btn-ghost" id="btnLogout">Déconnexion</button>
+      </div>
     </div>
   </div>
 </nav>
@@ -69,6 +72,7 @@
           <div class="status-toggle" id="statusFilterHome">
             <button type="button" class="status-btn active" data-status="upcoming">À venir</button>
             <button type="button" class="status-btn" data-status="archived">Archives</button>
+            <button type="button" class="status-btn" data-status="all">Tout</button>
           </div>
         </div>
 

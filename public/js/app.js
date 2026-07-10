@@ -42,8 +42,8 @@ function buildMap(){
   ).join('');
 
   const labels = Object.entries(CITY_LABELS).map(([name,[x,y]])=>
-    `<circle cx="${x}" cy="${y}" r="2.2" fill="rgba(243,238,226,0.45)"></circle>
-     <text x="${x+6}" y="${y+3}" font-family="Space Mono" font-size="9" fill="rgba(243,238,226,0.5)">${name}</text>`
+    `<circle class="city-dot" cx="${x}" cy="${y}" r="2.2"></circle>
+     <text class="city-name" x="${x+6}" y="${y+3}">${name}</text>`
   ).join('');
 
   const pins = events.map(ev=>{
@@ -401,15 +401,18 @@ function initHomeFilters(){
   updatePeriodDisplay();
 
   const typeWrap = document.getElementById('typeFilterHome');
+  typeWrap.classList.add('type-list');
   Object.entries(TYPE_COLORS).forEach(([type,color])=>{
-    const id = 'type-'+type.replace(/\s/g,'');
-    typeWrap.insertAdjacentHTML('beforeend', `
-      <label class="check-item" for="${id}">
-        <input type="checkbox" id="${id}" value="${type}" checked>
-        <span class="dot" style="background:${color}"></span>${type}
-      </label>`);
+    typeWrap.insertAdjacentHTML('beforeend',
+      `<button type="button" class="type-chip active" data-type="${type}" style="--chip:${color}" aria-pressed="true"><span class="dot"></span>${type}</button>`);
   });
-  typeWrap.querySelectorAll('input').forEach(cb=>cb.addEventListener('change', applyMapFilters));
+  typeWrap.querySelectorAll('.type-chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      const on = chip.classList.toggle('active');
+      chip.setAttribute('aria-pressed', on ? 'true' : 'false');
+      applyMapFilters();
+    });
+  });
   applyMapFilters();
 }
 
@@ -537,7 +540,7 @@ function initGeoloc(){
 }
 
 function computeHomeFilteredEvents(){
-  const checkedTypes = Array.from(document.querySelectorAll('#typeFilterHome input:checked')).map(i=>i.value);
+  const checkedTypes = Array.from(document.querySelectorAll('#typeFilterHome .type-chip.active')).map(c=>c.dataset.type);
   
   return events.filter(ev=>{
     if(!checkedTypes.includes(ev.type)) return false;
@@ -1271,7 +1274,27 @@ window.EBOK = {
   }
 };
 
+/* =========================================================
+   THÈME (clair / sombre)
+   ========================================================= */
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  const btn = document.getElementById('themeToggle');
+  if(btn) btn.textContent = theme === 'light' ? '☀️' : '🌙';
+}
+function initTheme(){
+  const saved = localStorage.getItem('ebok-theme') || 'dark';
+  applyTheme(saved);
+  const btn = document.getElementById('themeToggle');
+  if(btn) btn.addEventListener('click', ()=>{
+    const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    applyTheme(next);
+    localStorage.setItem('ebok-theme', next);
+  });
+}
+
 // Écouteurs (une seule fois) + premier rendu sur les données locales.
+initTheme();           // applique le thème mémorisé avant le rendu
 initGeoloc();          // restaure une éventuelle position avant le 1er dessin
 buildMap();
 renderFeatured();
