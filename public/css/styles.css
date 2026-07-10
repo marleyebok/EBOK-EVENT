@@ -221,14 +221,12 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
   transition:transform .18s cubic-bezier(.4,0,.2,1), fill .18s ease, filter .18s ease, stroke .18s ease;
 }
 .region:focus{outline:none;}
-.region.hovered{                                          /* la région "sort" en relief */
+.region:hover,.region:focus{                              /* la région "sort" en relief (CSS pur) */
   fill:#3a352e;
   transform:translateY(-6px) scale(1.025);
   filter:drop-shadow(0 12px 12px rgba(0,0,0,0.55));
   stroke:rgba(243,238,226,0.4);
 }
-.region.selected{fill:rgba(255,87,34,0.22);stroke:var(--orange);stroke-width:1.3;}
-.region.selected.hovered{fill:rgba(255,87,34,0.32);}
 
 /* ---- encarts outre-mer (DROM) ---- */
 .overseas-sep{stroke:var(--line);stroke-width:1;}
@@ -754,3 +752,31 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
   padding:9px;border-radius:8px;cursor:pointer;transition:all .15s;
 }
 .role-btn.active{background:var(--orange);color:#191008;}
+
+/* =========================================================
+   COMPTEUR "NOMBRE DE CURIEUX" (bas de page événement)
+   ========================================================= */
+.curieux-counter{
+  display:flex;align-items:center;gap:16px;margin-top:26px;padding:18px 22px;
+  background:var(--asphalt-3);border:1px solid var(--line);border-radius:14px;
+}
+.curieux-counter .cc-eye{font-size:26px;line-height:1;}
+.curieux-counter .cc-label{font-family:var(--font-display);text-transform:uppercase;font-size:18px;letter-spacing:.5px;}
+.curieux-counter .cc-sub{font-size:12px;color:var(--chalk-dim);margin-top:2px;}
+.curieux-counter .cc-num{margin-left:auto;font-family:var(--font-display);font-size:34px;color:var(--orange);line-height:1;}
+
+/* Disponibilité des places */
+.dispo-badge{
+  position:absolute;bottom:10px;left:10px;z-index:3;
+  font-family:var(--font-mono);font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.5px;padding:4px 9px;border-radius:999px;color:#fff;
+}
+.dispo-dispo{background:var(--green);}
+.dispo-limite{background:var(--yellow);color:#191008;}
+.dispo-complet{background:var(--red);}
+.mine-dispo{display:flex;align-items:center;gap:8px;margin-top:10px;}
+.mine-dispo label{font-size:11px;color:var(--chalk-dim);font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+.mine-dispo select{
+  flex:1;background:var(--asphalt-3);border:1px solid var(--line-strong);color:var(--chalk);
+  padding:7px 9px;border-radius:8px;font-size:12px;
+}
