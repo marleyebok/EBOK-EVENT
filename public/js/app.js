@@ -54,16 +54,29 @@ function buildMap(){
     </g>`;
   }).join('');
 
+  // Encarts outre-mer (DROM) : cadre + territoire cliquable + libellé.
+  const overseas = (typeof FRANCE_INSETS !== 'undefined') ? `
+    <g class="overseas-layer">
+      <line class="overseas-sep" x1="12" y1="${OVERSEAS_BAND_TOP-16}" x2="${MAP_W-12}" y2="${OVERSEAS_BAND_TOP-16}"/>
+      <text class="overseas-caption" x="12" y="${OVERSEAS_BAND_TOP-6}">OUTRE-MER</text>
+      ${FRANCE_INSETS.map(ins=> `<rect class="inset-frame" x="${ins.box.x}" y="${ins.box.y}" width="${ins.box.w}" height="${ins.box.h}" rx="8"/>`).join('')}
+      <g id="insetLayer">
+        ${FRANCE_INSETS.map(ins=> `<path class="region inset-region" data-region="${ins.name}" tabindex="0" role="button" aria-label="Territoire ${ins.name}" d="${ins.d}"><title>${ins.name}</title></path>`).join('')}
+      </g>
+      ${FRANCE_INSETS.map(ins=> `<text class="inset-label" x="${ins.cx}" y="${ins.labelY}" text-anchor="middle">${ins.name}</text>`).join('')}
+    </g>` : '';
+
   svg.innerHTML = `
     <g class="region-base-layer">${base}</g>
     <g class="region-layer" id="regionLayer">${tops}</g>
     <g class="city-layer">${labels}</g>
+    ${overseas}
     <g class="pin-layer">${pins}</g>`;
 
   // Interactions régions : relief au survol/focus, sélection au clic.
-  const layer = svg.querySelector('#regionLayer');
+  // (métropole ET encarts outre-mer partagent la classe .region)
   svg.querySelectorAll('.region').forEach(reg=>{
-    const lift = ()=>{ layer.appendChild(reg); reg.classList.add('hovered'); }; // passe au premier plan
+    const lift = ()=>{ reg.parentNode.appendChild(reg); reg.classList.add('hovered'); }; // au premier plan dans sa couche
     const drop = ()=> reg.classList.remove('hovered');
     reg.addEventListener('mouseenter', lift);
     reg.addEventListener('mouseleave', drop);

@@ -230,6 +230,13 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .region.selected{fill:rgba(255,87,34,0.22);stroke:var(--orange);stroke-width:1.3;}
 .region.selected.hovered{fill:rgba(255,87,34,0.32);}
 
+/* ---- encarts outre-mer (DROM) ---- */
+.overseas-sep{stroke:var(--line);stroke-width:1;}
+.overseas-caption{font-family:var(--font-mono);font-size:10px;letter-spacing:2px;fill:var(--chalk-dim);}
+.inset-frame{fill:rgba(243,238,226,0.025);stroke:var(--line);stroke-width:1;}
+.inset-label{font-family:var(--font-mono);font-size:9px;fill:var(--chalk-dim);}
+.inset-region{stroke-width:0.6;}
+
 /* ---- pins événements ---- */
 .pin{cursor:pointer;transform-box:fill-box;transform-origin:center;transition:transform .15s;}
 .pin:hover{transform:scale(1.35);}
