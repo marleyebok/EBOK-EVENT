@@ -791,7 +791,7 @@ function initCreatePage(){
       status,
       userId: currentUser ? currentUser.uid : null,
       org: {
-        name: val('c-orgname') || (currentProfile && currentProfile.orgname) || 'Organisateur',
+        name: val('c-orgname') || (currentProfile && (currentProfile.orgname || currentProfile.name)) || 'Organisateur',
         insta: val('c-insta').replace(/^@/, ''),
         site: val('c-site'),
         tel: val('c-tel'),
@@ -1115,15 +1115,14 @@ function renderFeatured(){
    NAVIGATION
    ========================================================= */
 function showPage(name){
-  // Espaces réservés aux comptes connectés (si l'auth est active).
-  if((name === 'mine' || name === 'favorites') && !currentUser && window.EBOK_AUTH){ openAuth('login'); return; }
+  // Espace réservé aux comptes connectés (si l'auth est active).
+  if(name === 'profile' && !currentUser && window.EBOK_AUTH){ openAuth('login'); return; }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   document.querySelectorAll('.navlink').forEach(n=>n.classList.toggle('active', n.dataset.nav===name));
   // Publier exige un compte : on propose la connexion sans masquer le formulaire.
   if(name === 'create' && !currentUser && window.EBOK_AUTH){ openAuth('login'); }
-  if(name === 'mine') renderMine();
-  if(name === 'favorites') renderFavorites();
+  if(name === 'profile') renderProfile();
   window.scrollTo({top:0, behavior:'instant'});
 }
 document.querySelectorAll('[data-nav]').forEach(el=>{
@@ -1164,7 +1163,7 @@ async function toggleFav(id){
   }else{
     localStorage.setItem('ebok-favs', JSON.stringify([...favorites]));
   }
-  if(document.getElementById('page-favorites').classList.contains('active')) renderFavorites();
+  if(document.getElementById('page-profile').classList.contains('active')) renderProfile();
 }
 
 function updateFavButtons(id){
@@ -1247,24 +1246,26 @@ function authMessage(err){
   return "Une erreur est survenue. Réessaie.";
 }
 
+function displayName(){
+  return (currentProfile && (currentProfile.name || currentProfile.orgname))
+    || (currentUser && (currentUser.displayName || currentUser.email))
+    || 'Mon compte';
+}
 function updateAuthUI(){
   const loggedOut = !currentUser;
-  // Organisateur/admin voient "Mes événements" ; tout le monde voit "Mes favoris".
-  const isOrganizer = currentIsAdmin || (currentProfile && currentProfile.role === 'organizer');
-  document.getElementById('btnLogin').classList.toggle('hidden', !loggedOut);
+  document.getElementById('accountOut').classList.toggle('hidden', !loggedOut);
   document.getElementById('accountLogged').classList.toggle('hidden', loggedOut);
-  document.getElementById('navFav').classList.toggle('hidden', loggedOut);
-  document.getElementById('navMine').classList.toggle('hidden', loggedOut || !isOrganizer);
+  document.getElementById('navProfile').classList.toggle('hidden', loggedOut);
   if(currentUser){
-    const name = (currentProfile && currentProfile.orgname) || currentUser.email;
     document.getElementById('accountName').innerHTML =
-      `<b>${name}</b>${currentIsAdmin ? '<span class="account-badge-admin">Admin</span>' : ''}`;
+      `<b>${displayName()}</b>${currentIsAdmin ? '<span class="account-badge-admin">Admin</span>' : ''}`;
   }
 }
 
 function initAuth(){
   const modal = document.getElementById('authModal');
   document.getElementById('btnLogin').addEventListener('click', ()=> openAuth('login'));
+  document.getElementById('btnSignup').addEventListener('click', ()=> openAuth('signup'));
   document.getElementById('authClose').addEventListener('click', closeAuth);
   modal.addEventListener('click', e=>{ if(e.target === modal) closeAuth(); });
   document.getElementById('tabLogin').addEventListener('click', ()=> switchAuthTab('login'));
@@ -1282,31 +1283,10 @@ function initAuth(){
     }catch(err){ showAuthError(authMessage(err)); }
   });
 
-  // Choix du type de compte (spectateur / organisateur)
-  let signupRole = 'spectator';
-  document.querySelectorAll('#roleToggle .role-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      signupRole = btn.dataset.role;
-      document.querySelectorAll('#roleToggle .role-btn').forEach(b=> b.classList.toggle('active', b===btn));
-      const org = signupRole === 'organizer';
-      document.getElementById('orgFields').classList.toggle('hidden', !org);
-      document.getElementById('su-orgname-label').textContent = org ? 'Nom du diffuseur / structure' : 'Nom / pseudo';
-      document.getElementById('su-orgname').placeholder = org ? 'Ex. Ligue C by Courtcuts' : 'Ex. Marley B.';
-      document.getElementById('authNote').textContent = org
-        ? "Un compte organisateur te permet de publier et gérer tes événements."
-        : "Un compte te permet d'enregistrer tes événements favoris.";
-    });
-  });
-
   document.getElementById('signupForm').addEventListener('submit', async e=>{
     e.preventDefault();
     if(!window.EBOK_AUTH){ showAuthError("Inscription indisponible (Firebase non activé)."); return; }
-    const profile = {
-      role: signupRole,
-      orgname: document.getElementById('su-orgname').value.trim(),
-      insta: document.getElementById('su-insta').value.trim().replace(/^@/, ''),
-      tel: document.getElementById('su-tel').value.trim()
-    };
+    const profile = { name: document.getElementById('su-name').value.trim() };
     try{
       await window.EBOK_AUTH.signUp(
         document.getElementById('su-email').value.trim(),
@@ -1317,53 +1297,70 @@ function initAuth(){
     }catch(err){ showAuthError(authMessage(err)); }
   });
 
-  document.getElementById('btnLogout').addEventListener('click', async ()=>{
+  // Connexion avec Google
+  document.getElementById('btnGoogle').addEventListener('click', async ()=>{
+    if(!window.EBOK_AUTH || !window.EBOK_AUTH.signInWithGoogle){
+      showAuthError("Connexion Google indisponible (à activer dans Firebase)."); return;
+    }
+    try{ await window.EBOK_AUTH.signInWithGoogle(); closeAuth(); }
+    catch(err){ showAuthError(authMessage(err)); }
+  });
+
+  const logout = async ()=>{
     if(window.EBOK_AUTH) await window.EBOK_AUTH.signOutUser();
     showPage('home');
-  });
+  };
+  document.getElementById('btnLogout').addEventListener('click', logout);
+  document.getElementById('btnLogout2').addEventListener('click', logout);
 
   updateAuthUI();
 }
 
-/* ---- Dashboard "Mes événements" / Admin ---- */
-async function renderMine(){
+/* ---- Page "Mon profil" (favoris + événements publiés + admin) ---- */
+async function renderProfile(){
+  if(!currentUser) return;
+  // En-tête
+  const name = displayName();
+  document.getElementById('profileName').innerHTML =
+    `${name}${currentIsAdmin ? '<span class="account-badge-admin">Admin</span>' : ''}`;
+  document.getElementById('profileEmail').textContent = currentUser.email || '';
+  const initials = (name || '?').trim().slice(0,2).toUpperCase();
+  document.getElementById('profileAvatar').textContent = initials;
+
+  renderFavorites();
+  renderMyEvents();
+  const adminSection = document.getElementById('adminSection');
+  adminSection.classList.toggle('hidden', !currentIsAdmin);
+  if(currentIsAdmin) renderAdminEvents();
+}
+
+/* Événements publiés par l'utilisateur. */
+async function renderMyEvents(){
   const grid = document.getElementById('mineGrid');
-  const eyebrow = document.getElementById('mineEyebrow');
-  const title = document.getElementById('mineTitle');
-  const sub = document.getElementById('mineSub');
+  await fillEventsGrid(grid,
+    ()=> window.EBOK_DATA.getEventsByUser(currentUser.uid),
+    "Aucun événement publié pour l'instant. Clique sur « Publier un événement » pour commencer !");
+}
 
-  if(!currentUser){
-    grid.innerHTML = `<div class="empty-state"><h4>Connecte-toi</h4><p>Crée un compte diffuseur pour publier et gérer tes événements.</p></div>`;
-    return;
-  }
-  if(currentIsAdmin){
-    eyebrow.textContent = 'Administration';
-    title.textContent = 'Tous les événements';
-    sub.textContent = "Valide, publie ou supprime n'importe quel événement.";
-  }else{
-    eyebrow.textContent = 'Espace diffuseur';
-    title.textContent = 'Mes événements';
-    sub.textContent = 'Gère les événements que tu as publiés.';
-  }
+/* Tous les événements (section admin). */
+async function renderAdminEvents(){
+  const grid = document.getElementById('adminGrid');
+  await fillEventsGrid(grid,
+    ()=> window.EBOK_DATA.getAllEventsForAdmin(),
+    "Aucun événement dans la base.");
+}
 
+async function fillEventsGrid(grid, fetcher, emptyMsg){
+  if(!grid) return;
   if(!window.EBOK_DATA){
-    grid.innerHTML = `<div class="empty-state"><p>Firebase requis pour cette section.</p></div>`;
+    grid.innerHTML = `<div class="empty-state"><p>Disponible une fois Firebase activé.</p></div>`;
     return;
   }
   grid.innerHTML = `<div class="empty-state"><p>Chargement…</p></div>`;
   let list;
-  try{
-    list = currentIsAdmin
-      ? await window.EBOK_DATA.getAllEventsForAdmin()
-      : await window.EBOK_DATA.getEventsByUser(currentUser.uid);
-  }catch(err){
-    grid.innerHTML = `<div class="empty-state"><h4>Erreur</h4><p>Impossible de charger les événements.</p></div>`;
-    return;
-  }
-  if(!list.length){
-    grid.innerHTML = `<div class="empty-state"><h4>Aucun événement</h4><p>Publie ton premier événement via « Publier un événement ».</p></div>`;
-    return;
-  }
+  try{ list = await fetcher(); }
+  catch(err){ grid.innerHTML = `<div class="empty-state"><h4>Erreur</h4><p>Impossible de charger les événements.</p></div>`; return; }
+  if(!list.length){ grid.innerHTML = `<div class="empty-state"><p>${emptyMsg}</p></div>`; return; }
   list.sort((a,b)=> (b.createdAt || 0) - (a.createdAt || 0));
   grid.innerHTML = list.map(mineCardHtml).join('');
   grid.querySelectorAll('[data-open]').forEach(b=> b.addEventListener('click', ()=> openEvent(b.dataset.open)));
@@ -1402,7 +1399,7 @@ async function handleDispoChange(id, dispo){
     catch(err){ alert("Mise à jour impossible."); }
   }
   renderAll();
-  if(document.getElementById('page-mine').classList.contains('active')) renderMine();
+  if(document.getElementById('page-profile').classList.contains('active')) renderProfile();
 }
 
 async function handleDelete(id){
@@ -1411,7 +1408,7 @@ async function handleDelete(id){
     await window.EBOK_DATA.deleteEvent(id);
     events = events.filter(e=> e.id !== id);
     renderAll();
-    renderMine();
+    renderProfile();
   }catch(err){ alert("Suppression impossible (droits insuffisants ?)."); }
 }
 
@@ -1420,7 +1417,7 @@ async function handleApprove(id){
     await window.EBOK_DATA.approveEvent(id);
     const list = await window.EBOK_DATA.getAllEvents();
     if(Array.isArray(list)){ events = list; renderAll(); }
-    renderMine();
+    renderProfile();
   }catch(err){ alert("Validation impossible."); }
 }
 
@@ -1454,8 +1451,7 @@ window.EBOK = {
     updateAuthUI();
     await loadFavorites();
     renderAll();                 // rafraîchit les ♥ sur les cartes
-    if(document.getElementById('page-mine').classList.contains('active')) renderMine();
-    if(document.getElementById('page-favorites').classList.contains('active')) renderFavorites();
+    if(document.getElementById('page-profile').classList.contains('active')) renderProfile();
   }
 };
 

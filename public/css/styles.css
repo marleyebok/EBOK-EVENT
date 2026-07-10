@@ -786,3 +786,40 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
    ========================================================= */
 .brand-logo{height:36px;width:auto;display:block;}
 @media(max-width:640px){ .brand-logo{height:30px;} }
+
+/* =========================================================
+   COMPTES UNIFIÉS : boutons, Google, page profil
+   ========================================================= */
+.account-out{display:flex;align-items:center;gap:8px;}
+.account-name{
+  background:none;border:none;cursor:pointer;font-family:var(--font-mono);font-size:13px;
+  color:var(--chalk-dim);display:flex;align-items:center;gap:4px;max-width:200px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:7px 10px;border-radius:8px;transition:all .15s;
+}
+.account-name:hover{color:var(--chalk);background:var(--asphalt-3);}
+.account-name b{color:var(--chalk);}
+
+/* Bouton Google (blanc dans les deux thèmes = charte Google) */
+.btn-google{
+  width:100%;display:flex;align-items:center;justify-content:center;gap:10px;
+  background:#fff;color:#3c4043;border:1px solid rgba(0,0,0,0.18);
+  font-family:var(--font-body);font-weight:700;font-size:14px;padding:11px;border-radius:10px;
+  cursor:pointer;transition:box-shadow .15s;
+}
+.btn-google:hover{box-shadow:0 2px 10px rgba(0,0,0,0.25);}
+.btn-google .g-icon{width:18px;height:18px;flex:none;}
+.auth-sep{display:flex;align-items:center;gap:12px;margin:16px 0;color:var(--chalk-dim);font-size:12px;text-transform:uppercase;letter-spacing:1px;}
+.auth-sep::before,.auth-sep::after{content:"";flex:1;height:1px;background:var(--line-strong);}
+
+/* Page profil */
+.profile-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:44px 0 10px;flex-wrap:wrap;}
+.profile-id{display:flex;align-items:center;gap:16px;}
+.profile-avatar{
+  width:56px;height:56px;border-radius:50%;background:var(--orange);color:#191008;
+  font-family:var(--font-display);font-size:22px;display:flex;align-items:center;justify-content:center;flex:none;
+}
+.profile-head h2{font-size:30px;display:flex;align-items:center;}
+.profile-email{color:var(--chalk-dim);font-size:14px;margin-top:3px;}
+.profile-section{margin-top:34px;}
+.profile-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+.profile-section-head h3{font-size:20px;}

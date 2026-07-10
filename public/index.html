@@ -25,17 +25,19 @@
     <button class="navlink active" data-nav="home">Accueil</button>
     <button class="navlink" data-nav="search">Recherche</button>
     <button class="navlink" data-nav="create">Publier un événement</button>
-    <button class="navlink hidden" data-nav="favorites" id="navFav">♥ Mes favoris</button>
-    <button class="navlink hidden" data-nav="mine" id="navMine">Mes événements</button>
+    <button class="navlink hidden" data-nav="profile" id="navProfile">Mon profil</button>
   </div>
   <div class="topbar-right">
     <button class="theme-toggle" id="themeToggle" aria-label="Basculer thème clair / sombre" title="Thème clair / sombre">🌙</button>
     <div class="account-area" id="accountArea">
       <!-- Déconnecté -->
-      <button class="btn btn-outline nav-cta" id="btnLogin">Connexion diffuseur</button>
-      <!-- Connecté (rempli par JS) -->
+      <div class="account-out" id="accountOut">
+        <button class="btn btn-ghost" id="btnLogin">Se connecter</button>
+        <button class="btn btn-primary nav-cta" id="btnSignup">S'inscrire</button>
+      </div>
+      <!-- Connecté -->
       <div class="account-logged hidden" id="accountLogged">
-        <span class="account-name" id="accountName"></span>
+        <button class="account-name" id="accountName" data-nav="profile"></button>
         <button class="btn btn-ghost" id="btnLogout">Déconnexion</button>
       </div>
     </div>
@@ -464,27 +466,40 @@
     <div class="event-detail" id="eventDetail"></div>
   </section>
 
-  <!-- ===================== MES ÉVÉNEMENTS / ADMIN ===================== -->
-  <section id="page-mine" class="page">
-    <div class="page-head">
-      <p class="eyebrow" id="mineEyebrow">Espace diffuseur</p>
-      <h2 id="mineTitle">Mes événements</h2>
-      <p class="hero-sub" id="mineSub">Gère les événements que tu as publiés.</p>
+  <!-- ===================== MON PROFIL ===================== -->
+  <section id="page-profile" class="page">
+    <div class="profile-head">
+      <div class="profile-id">
+        <div class="profile-avatar" id="profileAvatar"></div>
+        <div>
+          <h2 id="profileName">Mon profil</h2>
+          <p class="profile-email" id="profileEmail"></p>
+        </div>
+      </div>
+      <button class="btn btn-ghost" id="btnLogout2">Déconnexion</button>
     </div>
-    <div class="mine-actions">
-      <button class="btn btn-primary" data-nav="create">+ Publier un événement</button>
-    </div>
-    <div class="results-grid" id="mineGrid"></div>
-  </section>
 
-  <!-- ===================== MES FAVORIS ===================== -->
-  <section id="page-favorites" class="page">
-    <div class="page-head">
-      <p class="eyebrow">Mon espace</p>
-      <h2>♥ Mes favoris</h2>
-      <p class="hero-sub">Les événements que tu as mis de côté. Retrouve-les ici à tout moment.</p>
+    <div class="profile-section">
+      <div class="profile-section-head">
+        <h3>♥ Événements enregistrés</h3>
+      </div>
+      <div class="results-grid" id="favoritesGrid"></div>
     </div>
-    <div class="results-grid" id="favoritesGrid"></div>
+
+    <div class="profile-section">
+      <div class="profile-section-head">
+        <h3 id="mineTitle">Mes événements publiés</h3>
+        <button class="btn btn-primary" data-nav="create">+ Publier un événement</button>
+      </div>
+      <div class="results-grid" id="mineGrid"></div>
+    </div>
+
+    <div class="profile-section hidden" id="adminSection">
+      <div class="profile-section-head">
+        <h3>👑 Administration — tous les événements</h3>
+      </div>
+      <div class="results-grid" id="adminGrid"></div>
+    </div>
   </section>
 
 </main>
@@ -503,6 +518,12 @@
       <button class="auth-tab" data-tab="signup" id="tabSignup">Inscription</button>
     </div>
 
+    <button type="button" class="btn-google" id="btnGoogle">
+      <svg class="g-icon" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.9 2.4 30.4 0 24 0 14.6 0 6.4 5.4 2.5 13.3l7.9 6.1C12.3 13.2 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.9 7.2l7.6 5.9c4.4-4.1 7.1-10.1 7.1-17.6z"/><path fill="#FBBC05" d="M10.4 28.6c-.5-1.5-.8-3-.8-4.6s.3-3.1.8-4.6l-7.9-6.1C.9 16.5 0 20.1 0 24s.9 7.5 2.5 10.7l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.8 2.3-8.3 2.3-6.3 0-11.7-3.7-13.6-9.9l-7.9 6.1C6.4 42.6 14.6 48 24 48z"/></svg>
+      Continuer avec Google
+    </button>
+    <div class="auth-sep"><span>ou</span></div>
+
     <!-- Connexion -->
     <form class="auth-form" id="loginForm">
       <div class="field">
@@ -518,13 +539,9 @@
 
     <!-- Inscription -->
     <form class="auth-form hidden" id="signupForm">
-      <div class="role-toggle" id="roleToggle">
-        <button type="button" class="role-btn active" data-role="spectator">🏀 Spectateur</button>
-        <button type="button" class="role-btn" data-role="organizer">📢 Organisateur</button>
-      </div>
       <div class="field">
-        <label for="su-orgname" id="su-orgname-label">Nom / pseudo</label>
-        <input type="text" id="su-orgname" placeholder="Ex. Marley B." required>
+        <label for="su-name">Nom / pseudo</label>
+        <input type="text" id="su-name" placeholder="Ex. Marley B." required>
       </div>
       <div class="field">
         <label for="su-email">Email</label>
@@ -534,21 +551,11 @@
         <label for="su-pass">Mot de passe (min. 6 caractères)</label>
         <input type="password" id="su-pass" autocomplete="new-password" minlength="6" required>
       </div>
-      <div class="form-row hidden" id="orgFields">
-        <div class="field">
-          <label for="su-insta">Instagram</label>
-          <input type="text" id="su-insta" placeholder="@moncompte">
-        </div>
-        <div class="field">
-          <label for="su-tel">Téléphone</label>
-          <input type="tel" id="su-tel" placeholder="06 00 00 00 00">
-        </div>
-      </div>
       <button type="submit" class="btn btn-primary btn-lg" style="width:100%;">Créer mon compte</button>
     </form>
 
     <div class="auth-error hidden" id="authError"></div>
-    <p class="auth-note" id="authNote">Un compte te permet d'enregistrer tes événements favoris.</p>
+    <p class="auth-note" id="authNote">Un compte te permet d'enregistrer tes favoris et de publier des événements.</p>
   </div>
 </div>
 
