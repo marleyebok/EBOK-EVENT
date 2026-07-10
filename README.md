@@ -102,13 +102,22 @@ L'authentification par email/mot de passe est intégrée (modale de connexion/in
 
 1. **Activer la connexion par email** : console Firebase → **Authentication** → « Get started » → onglet **Sign-in method** → activer **Email/Password**.
 
-2. **Te déclarer admin** : console → **Firestore Database** → onglet **Données** →
-   - crée une collection `admins`,
-   - ajoute un document dont l'**ID est ton UID** (visible dans Authentication → Users après ta première connexion),
-   - contenu du document : peu importe (ex. champ `email` = le tien).
-   Recharge le site : le badge **Admin** apparaît dans la barre du haut.
+2. **Être admin** : les emails propriétaires sont admins **d'office**. Ils sont
+   déclarés à **deux** endroits, qui doivent rester synchronisés :
+   - `public/js/services.js` → constante `ADMIN_EMAILS` (badge et écran admin) ;
+   - `firestore.rules` → fonction `isAdminEmail` (droits réels de validation /
+     suppression).
 
-> La sécurité (qui peut créer / modifier / supprimer) est verrouillée par `firestore.rules` : un diffuseur ne touche qu'à ses propres événements, seul l'admin peut tout gérer, et le statut admin ne se donne que via la console.
+   Connecte-toi avec cet email (par mot de passe **ou** Google, peu importe l'UID) :
+   le badge **Admin** apparaît dans la barre du haut. Pour ajouter un admin,
+   ajoute son email aux **deux** listes puis republie les règles Firestore.
+
+   > Alternative sans toucher au code : créer une collection `admins` et y ajouter
+   > un document dont l'**ID est l'UID** du compte (Authentication → Users). L'email
+   > reste le plus simple car il ne dépend pas de l'UID (qui change entre un compte
+   > email/mot de passe et un compte Google).
+
+> La sécurité (qui peut créer / modifier / supprimer) est verrouillée par `firestore.rules` : un diffuseur ne touche qu'à ses propres événements, seul l'admin peut tout gérer.
 
 ### Étape suivante du plan
 

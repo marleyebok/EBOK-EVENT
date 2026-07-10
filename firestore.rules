@@ -8,11 +8,20 @@ service cloud.firestore {
     function isSignedIn() {
       return request.auth != null;
     }
-    // Admin = présence d'un document à son nom dans la collection `admins`
-    // (ajouté manuellement via la console — non modifiable par l'app).
+    // Emails administrateurs (comptes propriétaires du site).
+    // ⚠️ Doit rester synchronisé avec public/js/services.js (ADMIN_EMAILS).
+    function isAdminEmail() {
+      return isSignedIn()
+        && request.auth.token.email != null
+        && request.auth.token.email.lower() in ['marley.ebok@gmail.com'];
+    }
+    // Admin = email propriétaire (ci-dessus) OU présence d'un document à son
+    // nom dans la collection `admins` (ajouté via la console). L'email suffit,
+    // donc le compte propriétaire est admin sans configuration Firestore.
     function isAdmin() {
       return isSignedIn()
-        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+        && ( isAdminEmail()
+          || exists(/databases/$(database)/documents/admins/$(request.auth.uid)) );
     }
 
     // Événements :

@@ -19,6 +19,18 @@ const VIEWS = "views";
 const USERS = "users";
 const ADMINS = "admins";
 
+/* Emails administrateurs (comptes propriétaires du site).
+   Un compte dont l'email figure ici est admin d'office, sans avoir à
+   créer manuellement un document dans la collection `admins`.
+   ⚠️ Doit rester synchronisé avec la liste des règles Firestore
+   (firestore.rules > isAdminEmail). Emails en minuscules. */
+const ADMIN_EMAILS = ["marley.ebok@gmail.com"];
+
+/** Vrai si cet email est un email administrateur (insensible à la casse). */
+export function isAdminEmail(email) {
+  return !!email && ADMIN_EMAILS.includes(email.trim().toLowerCase());
+}
+
 /* ---------- Événements ---------- */
 
 /**
@@ -170,8 +182,13 @@ export async function toggleFavorite(uid, eventId, add) {
   );
 }
 
-/** Vrai si l'utilisateur figure dans la collection `admins`. */
+/** Vrai si l'utilisateur est administrateur.
+ *  1) par email (compte propriétaire) — fonctionne sans configuration Firestore ;
+ *  2) sinon, s'il figure dans la collection `admins`. */
 export async function isAdmin(uid) {
+  // 1) Admin par email : marche même si le document `admins` n'existe pas.
+  if (isAdminEmail(auth.currentUser && auth.currentUser.email)) return true;
+  // 2) Admin déclaré dans la collection `admins`.
   if (!uid) return false;
   try {
     const snap = await getDoc(doc(db, ADMINS, uid));
