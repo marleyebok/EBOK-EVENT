@@ -11,13 +11,15 @@
 import {
   getAllEvents, getAllEventsForAdmin, getEvent, getEventsByUser,
   createEvent, updateEvent, approveEvent, deleteEvent, incrementViews, importEvents,
-  signUp, signIn, signOutUser, observeAuth, getUserProfile, isAdmin
+  signUp, signIn, signOutUser, observeAuth, getUserProfile, isAdmin,
+  getFavorites, toggleFavorite
 } from './services.js';
 
 // Couche données exposée à app.js.
 window.EBOK_DATA = {
   getAllEvents, getAllEventsForAdmin, getEvent, getEventsByUser,
-  createEvent, updateEvent, approveEvent, deleteEvent, incrementViews
+  createEvent, updateEvent, approveEvent, deleteEvent, incrementViews,
+  getFavorites, toggleFavorite
 };
 
 // Couche authentification exposée à app.js.
