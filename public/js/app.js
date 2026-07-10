@@ -66,11 +66,23 @@ function buildMap(){
       ${FRANCE_INSETS.map(ins=> `<text class="inset-label" x="${ins.cx}" y="${ins.labelY}" text-anchor="middle">${ins.name}</text>`).join('')}
     </g>` : '';
 
+  // Marqueur de position de l'utilisateur + cercle de rayon (géolocalisation).
+  let geoMarker = '';
+  if(userLoc){
+    const [ux, uy] = projGeo(userLoc.lat, userLoc.lng);
+    const rpx = homeRadius < 200 ? (homeRadius * MAP_PROJ.scale / KM_PER_LAT) : 0;
+    geoMarker = `
+      ${rpx > 0 ? `<circle class="geo-radius" cx="${ux}" cy="${uy}" r="${rpx.toFixed(1)}"/>` : ''}
+      <circle class="geo-user-halo" cx="${ux}" cy="${uy}" r="9"/>
+      <circle class="geo-user" cx="${ux}" cy="${uy}" r="4.5"/>`;
+  }
+
   svg.innerHTML = `
     <g class="region-base-layer">${base}</g>
     <g class="region-layer" id="regionLayer">${tops}</g>
     <g class="city-layer">${labels}</g>
     ${overseas}
+    <g class="geo-layer">${geoMarker}</g>
     <g class="pin-layer">${pins}</g>`;
 
   // Interactions régions : relief au survol/focus, sélection au clic.
@@ -111,6 +123,9 @@ function positionEvent(ev){
   }else if(typeof ev.x !== 'number' || typeof ev.y !== 'number'){
     ev.x = MAP_W/2; ev.y = MAP_H/2;
   }
+  // Coordonnées géographiques réelles (pour la distance "autour de moi").
+  const ll = CITY_LATLON[ev.city];
+  if(ll){ ev.lat = ll[0]; ev.lng = ll[1]; }
 }
 function stableJitter(id){
   let h = 0; const s = String(id);
@@ -217,14 +232,10 @@ function initHomeFilters(){
 
   // Rayon slider
   const radiusSlider = document.getElementById('radiusFilter');
-  const radiusValue = document.getElementById('radiusValue');
   radiusSlider.addEventListener('input', (e)=>{
     homeRadius = parseInt(e.target.value, 10);
-    if(homeRadius >= 200){
-      radiusValue.textContent = 'Partout';
-    }else{
-      radiusValue.textContent = `${homeRadius} km`;
-    }
+    updateRadiusLabel();
+    updateGeoCircle();
     applyMapFilters();
   });
 
@@ -411,14 +422,118 @@ let homeRadius = 200;
 let periodStart = '';
 let periodEnd = '';
 
-// Centre approximatif de la France dans le repère de la carte (pour le rayon)
+// Centre approximatif de la France dans le repère de la carte (secours)
 const FRANCE_CENTER = {x: 305, y: 300};
 
+// Position de l'utilisateur (géolocalisation ou dernière position mémorisée).
+let userLoc = null;
+
+/* Point de référence pour le rayon : la position de l'utilisateur en
+   priorité, sinon la ville sélectionnée dans les filtres. */
+function currentRef(){
+  if(userLoc) return userLoc;
+  if(homeCity && CITY_LATLON[homeCity]) return { lat: CITY_LATLON[homeCity][0], lng: CITY_LATLON[homeCity][1] };
+  return null;
+}
+
+// Distance réelle entre deux points géographiques (formule de Haversine), en km.
+function haversine(aLat, aLng, bLat, bLng){
+  const R = 6371, toRad = x => x * Math.PI / 180;
+  const dLat = toRad(bLat - aLat), dLng = toRad(bLng - aLng);
+  const s = Math.sin(dLat/2)**2 + Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLng/2)**2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+/* Distance (km) entre le point de référence et un événement. Renvoie 0
+   s'il n'y a pas de référence (le rayon ne filtre alors rien). */
 function getEventDistance(ev){
-  if(!ev.x || !ev.y) return 0;
-  const dx = ev.x - FRANCE_CENTER.x;
-  const dy = ev.y - FRANCE_CENTER.y;
-  return Math.sqrt(dx*dx + dy*dy) * 1.5; // facteur pour approximer en km (simplifié)
+  const ref = currentRef();
+  if(!ref || typeof ev.lat !== 'number') return 0;
+  return haversine(ref.lat, ref.lng, ev.lat, ev.lng);
+}
+
+// Projette une position lat/lon dans le repère de la carte métropole.
+function projGeo(lat, lng){
+  const P = MAP_PROJ;
+  return [ P.pad + (lng * P.cosLat - P.minX) * P.scale, P.pad + (-lat - P.minY) * P.scale ];
+}
+const KM_PER_LAT = 110.574; // km par degré de latitude (pour le cercle de rayon)
+
+/* ---- Géolocalisation "autour de moi" ---- */
+function updateRadiusLabel(){
+  const el = document.getElementById('radiusValue');
+  if(el) el.textContent = homeRadius >= 200 ? 'Partout' : `${homeRadius} km`;
+}
+function updateGeoCircle(){
+  if(!userLoc) return;
+  const c = document.querySelector('.geo-radius');
+  if(homeRadius >= 200){ if(c) c.setAttribute('r', 0); return; }
+  const r = (homeRadius * MAP_PROJ.scale / KM_PER_LAT).toFixed(1);
+  if(c) c.setAttribute('r', r);
+  else buildMap();   // le cercle n'existait pas encore : on redessine
+}
+function setGeoUI(active){
+  const btn = document.getElementById('geoBtn');
+  if(!btn) return;
+  btn.classList.toggle('active', active);
+  btn.textContent = active ? '📍 Autour de moi — activé' : '📍 Me localiser';
+}
+function showGeoStatus(msg, isError){
+  const status = document.getElementById('geoStatus');
+  if(!status) return;
+  status.textContent = msg;
+  status.classList.toggle('geo-status-error', !!isError);
+  status.classList.remove('hidden');
+}
+function initGeoloc(){
+  const btn = document.getElementById('geoBtn');
+  const status = document.getElementById('geoStatus');
+  if(!btn) return;
+
+  // Restaure la dernière position mémorisée.
+  const saved = localStorage.getItem('ebok-userloc');
+  if(saved){ try{ userLoc = JSON.parse(saved); }catch(e){ userLoc = null; } }
+  if(userLoc) setGeoUI(true);
+
+  btn.addEventListener('click', ()=>{
+    if(userLoc){                       // désactiver
+      userLoc = null;
+      localStorage.removeItem('ebok-userloc');
+      setGeoUI(false);
+      status.classList.add('hidden');
+      buildMap(); applyMapFilters();
+      return;
+    }
+    if(!('geolocation' in navigator)){
+      showGeoStatus("Géolocalisation non disponible sur ce navigateur.", true);
+      return;
+    }
+    showGeoStatus("Localisation en cours…", false);
+    btn.disabled = true;
+    navigator.geolocation.getCurrentPosition(
+      pos=>{
+        btn.disabled = false;
+        userLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        localStorage.setItem('ebok-userloc', JSON.stringify(userLoc));
+        if(homeRadius >= 200){        // rayon "Partout" → on passe à 100 km pour que le filtre serve
+          homeRadius = 100;
+          const slider = document.getElementById('radiusFilter');
+          if(slider) slider.value = 100;
+          updateRadiusLabel();
+        }
+        setGeoUI(true);
+        showGeoStatus(`Position trouvée — événements à moins de ${homeRadius} km.`, false);
+        buildMap(); applyMapFilters();
+      },
+      err=>{
+        btn.disabled = false;
+        showGeoStatus(err.code === 1
+          ? "Accès à la position refusé. Autorise la localisation dans ton navigateur."
+          : "Localisation impossible. Réessaie.", true);
+      },
+      { enableHighAccuracy:false, timeout:10000, maximumAge:600000 }
+    );
+  });
 }
 
 function computeHomeFilteredEvents(){
@@ -1157,6 +1272,7 @@ window.EBOK = {
 };
 
 // Écouteurs (une seule fois) + premier rendu sur les données locales.
+initGeoloc();          // restaure une éventuelle position avant le 1er dessin
 buildMap();
 renderFeatured();
 initHomeFilters();

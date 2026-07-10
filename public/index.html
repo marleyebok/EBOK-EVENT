@@ -81,6 +81,12 @@
         </div>
 
         <div class="filter-group">
+          <label>Autour de moi</label>
+          <button type="button" class="geo-btn" id="geoBtn">📍 Me localiser</button>
+          <div class="geo-status hidden" id="geoStatus"></div>
+        </div>
+
+        <div class="filter-group">
           <label for="radiusFilter">Rayon (km)</label>
           <div class="radius-control">
             <input type="range" id="radiusFilter" min="0" max="200" value="200" step="10">
