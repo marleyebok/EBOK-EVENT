@@ -780,3 +780,9 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
   flex:1;background:var(--asphalt-3);border:1px solid var(--line-strong);color:var(--chalk);
   padding:7px 9px;border-radius:8px;font-size:12px;
 }
+
+/* =========================================================
+   LOGO (haut à gauche)
+   ========================================================= */
+.brand-logo{height:36px;width:auto;display:block;}
+@media(max-width:640px){ .brand-logo{height:30px;} }
