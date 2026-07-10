@@ -27,27 +27,117 @@ function eventCardHtml(ev){
 }
 
 
+let selectedRegion = '';
+
 function buildMap(){
   const svg = document.getElementById('franceMap');
-  let html = `<path class="france-shape" d="${FRANCE_PATH}"/>`;
-  for(const [name,[x,y]] of Object.entries(CITY_LABELS)){
-    html += `<circle cx="${x}" cy="${y}" r="2.4" fill="rgba(243,238,226,0.35)"></circle>
-      <text x="${x+6}" y="${y+3}" font-family="Space Mono" font-size="9" fill="rgba(243,238,226,0.35)">${name}</text>`;
-  }
-  for(const ev of events){
+  svg.setAttribute('viewBox', MAP_VIEWBOX);
+  positionAllEvents();
+
+  // Socle sombre (décalé vers le bas) = épaisseur / relief de la carte.
+  const base = FRANCE_REGIONS.map(r=> `<path class="region-base" d="${r.d}"/>`).join('');
+  // Faces supérieures : une région cliquable / survolable par zone.
+  const tops = FRANCE_REGIONS.map(r=>
+    `<path class="region" data-region="${r.name}" tabindex="0" role="button" aria-label="Région ${r.name}" d="${r.d}"><title>${r.name}</title></path>`
+  ).join('');
+
+  const labels = Object.entries(CITY_LABELS).map(([name,[x,y]])=>
+    `<circle cx="${x}" cy="${y}" r="2.2" fill="rgba(243,238,226,0.45)"></circle>
+     <text x="${x+6}" y="${y+3}" font-family="Space Mono" font-size="9" fill="rgba(243,238,226,0.5)">${name}</text>`
+  ).join('');
+
+  const pins = events.map(ev=>{
     const c = TYPE_COLORS[ev.type];
-    html += `<g class="pin" data-id="${ev.id}" data-type="${ev.type}">
-      <circle class="core" cx="${ev.x}" cy="${ev.y}" r="9" fill="${c}"></circle>
-      <circle cx="${ev.x}" cy="${ev.y}" r="3" fill="#fff"></circle>
+    return `<g class="pin" data-id="${ev.id}" data-type="${ev.type}">
+      <circle class="core" cx="${ev.x}" cy="${ev.y}" r="8" fill="${c}"></circle>
+      <circle cx="${ev.x}" cy="${ev.y}" r="2.6" fill="#fff"></circle>
     </g>`;
-  }
-  svg.innerHTML = html;
+  }).join('');
+
+  // Encarts outre-mer (DROM) : cadre + territoire cliquable + libellé.
+  const overseas = (typeof FRANCE_INSETS !== 'undefined') ? `
+    <g class="overseas-layer">
+      <line class="overseas-sep" x1="12" y1="${OVERSEAS_BAND_TOP-16}" x2="${MAP_W-12}" y2="${OVERSEAS_BAND_TOP-16}"/>
+      <text class="overseas-caption" x="12" y="${OVERSEAS_BAND_TOP-6}">OUTRE-MER</text>
+      ${FRANCE_INSETS.map(ins=> `<rect class="inset-frame" x="${ins.box.x}" y="${ins.box.y}" width="${ins.box.w}" height="${ins.box.h}" rx="8"/>`).join('')}
+      <g id="insetLayer">
+        ${FRANCE_INSETS.map(ins=> `<path class="region inset-region" data-region="${ins.name}" tabindex="0" role="button" aria-label="Territoire ${ins.name}" d="${ins.d}"><title>${ins.name}</title></path>`).join('')}
+      </g>
+      ${FRANCE_INSETS.map(ins=> `<text class="inset-label" x="${ins.cx}" y="${ins.labelY}" text-anchor="middle">${ins.name}</text>`).join('')}
+    </g>` : '';
+
+  svg.innerHTML = `
+    <g class="region-base-layer">${base}</g>
+    <g class="region-layer" id="regionLayer">${tops}</g>
+    <g class="city-layer">${labels}</g>
+    ${overseas}
+    <g class="pin-layer">${pins}</g>`;
+
+  // Interactions régions : relief au survol/focus, sélection au clic.
+  // (métropole ET encarts outre-mer partagent la classe .region)
+  svg.querySelectorAll('.region').forEach(reg=>{
+    const lift = ()=>{ reg.parentNode.appendChild(reg); reg.classList.add('hovered'); }; // au premier plan dans sa couche
+    const drop = ()=> reg.classList.remove('hovered');
+    reg.addEventListener('mouseenter', lift);
+    reg.addEventListener('mouseleave', drop);
+    reg.addEventListener('focus', lift);
+    reg.addEventListener('blur', drop);
+    reg.addEventListener('click', ()=> selectRegion(reg.dataset.region));
+    reg.addEventListener('keydown', e=>{
+      if(e.key==='Enter' || e.key===' '){ e.preventDefault(); selectRegion(reg.dataset.region); }
+    });
+  });
+  applySelectedRegionStyle();
 
   svg.querySelectorAll('.pin').forEach(pin=>{
-    pin.addEventListener('mouseenter',(e)=>showTooltip(pin));
-    pin.addEventListener('mouseleave',hideTooltip);
-    pin.addEventListener('click',()=>{ openEvent(pin.dataset.id); });
+    pin.addEventListener('mouseenter', ()=> showTooltip(pin));
+    pin.addEventListener('mouseleave', hideTooltip);
+    pin.addEventListener('click', (e)=>{ e.stopPropagation(); openEvent(pin.dataset.id); });
   });
+}
+
+/* Positionne chaque événement sur la carte à partir de sa ville (mêmes
+   coordonnées projetées que les régions), avec un léger décalage stable
+   pour éviter que plusieurs événements d'une même ville se superposent. */
+function positionAllEvents(){
+  for(const ev of events) positionEvent(ev);
+}
+function positionEvent(ev){
+  const c = CITY_COORDS[ev.city];
+  if(c){
+    const j = stableJitter(ev.id);
+    ev.x = c[0] + j.dx;
+    ev.y = c[1] + j.dy;
+  }else if(typeof ev.x !== 'number' || typeof ev.y !== 'number'){
+    ev.x = MAP_W/2; ev.y = MAP_H/2;
+  }
+}
+function stableJitter(id){
+  let h = 0; const s = String(id);
+  for(let i=0;i<s.length;i++) h = (h*31 + s.charCodeAt(i)) >>> 0;
+  return { dx: (h % 15) - 7, dy: ((h >> 4) % 15) - 7 };
+}
+
+/* Sélection d'une région au clic : filtre les événements de cette région
+   (re-clic pour désélectionner). */
+function selectRegion(name){
+  selectedRegion = (selectedRegion === name) ? '' : name;
+  homeCity = selectedRegion;
+  const input = document.getElementById('citySearch');
+  if(input) input.value = selectedRegion;
+  applySelectedRegionStyle();
+  applyMapFilters();
+}
+function applySelectedRegionStyle(){
+  document.querySelectorAll('.region').forEach(r=>{
+    r.classList.toggle('selected', r.dataset.region === selectedRegion);
+  });
+}
+/* Aligne le surlignage de région sur le filtre ville/région courant
+   (ex. recherche d'une ville → plus aucune région surlignée). */
+function syncRegionSelection(){
+  selectedRegion = FRANCE_REGIONS.some(r=> r.name === homeCity) ? homeCity : '';
+  applySelectedRegionStyle();
 }
 
 function showTooltip(pin){
@@ -57,7 +147,7 @@ function showTooltip(pin){
   const svg = document.getElementById('franceMap');
   const svgRect = svg.getBoundingClientRect();
   const wrapRect = wrap.getBoundingClientRect();
-  const scale = svgRect.width/560;
+  const scale = svgRect.width/MAP_W;
   const left = (svgRect.left - wrapRect.left) + ev.x*scale;
   const top = (svgRect.top - wrapRect.top) + ev.y*scale;
   tt.style.left = left+"px";
@@ -107,6 +197,7 @@ function initHomeFilters(){
         homeCity = el.dataset.city;
         citySearch.value = homeCity;
         citySuggestions.classList.add('hidden');
+        syncRegionSelection();
         applyMapFilters();
       });
     });
@@ -119,6 +210,7 @@ function initHomeFilters(){
       citySearch.value = '';
       homeCity = '';
       citySuggestions.classList.add('hidden');
+      syncRegionSelection();
       applyMapFilters();
     }
   });
@@ -319,8 +411,8 @@ let homeRadius = 200;
 let periodStart = '';
 let periodEnd = '';
 
-// Centroïde arbitraire de la France (pour le rayon)
-const FRANCE_CENTER = {x: 280, y: 280};
+// Centre approximatif de la France dans le repère de la carte (pour le rayon)
+const FRANCE_CENTER = {x: 305, y: 300};
 
 function getEventDistance(ev){
   if(!ev.x || !ev.y) return 0;
@@ -586,11 +678,13 @@ function showCreateBanner(msg){
    géolocalisation (lat/lon + géocodage) à la phase géolocalisation. */
 function guessCoords(city, region){
   const hay = ((city||'') + ' ' + (region||'')).toLowerCase();
-  for(const [name, [x, y]] of Object.entries(CITY_LABELS)){
-    if(hay.includes(name.toLowerCase())) return {x, y};
+  // 1) ville connue précisément
+  for(const [name, xy] of Object.entries(CITY_COORDS)){
+    if(hay.includes(name.toLowerCase())) return {x: xy[0], y: xy[1]};
   }
-  // Défaut : centre de la France, léger décalage pour éviter la superposition.
-  return {x: Math.round(280 + (Math.random()*50 - 25)), y: Math.round(300 + (Math.random()*50 - 25))};
+  // 2) sinon un point dans la région cliquée, sinon centre de la France.
+  return {x: Math.round(FRANCE_CENTER.x + (Math.random()*50 - 25)),
+          y: Math.round(FRANCE_CENTER.y + (Math.random()*50 - 25))};
 }
 
 /* =========================================================

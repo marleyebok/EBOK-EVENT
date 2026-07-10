@@ -208,9 +208,37 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
   border:1px solid var(--line);border-radius:var(--radius);min-height:560px;
   display:flex;align-items:center;justify-content:center;overflow:hidden;
 }
-#franceMap{width:100%;max-width:560px;height:auto;display:block;}
-.france-shape{fill:var(--asphalt-3);stroke:var(--line-strong);stroke-width:1.5;}
-.pin{cursor:pointer;transition:transform .15s;}
+#franceMap{width:100%;max-width:600px;height:auto;display:block;overflow:visible;}
+
+/* ---- carte des régions : relief 3D léger ---- */
+.region-base-layer{transform:translateY(7px);}          /* épaisseur / côté sombre */
+.region-base{fill:#0d0d0f;}
+.region{
+  fill:var(--asphalt-3);
+  stroke:rgba(243,238,226,0.20);stroke-width:0.8;
+  cursor:pointer;
+  transform-box:fill-box;transform-origin:center;
+  transition:transform .18s cubic-bezier(.4,0,.2,1), fill .18s ease, filter .18s ease, stroke .18s ease;
+}
+.region:focus{outline:none;}
+.region.hovered{                                          /* la région "sort" en relief */
+  fill:#3a352e;
+  transform:translateY(-6px) scale(1.025);
+  filter:drop-shadow(0 12px 12px rgba(0,0,0,0.55));
+  stroke:rgba(243,238,226,0.4);
+}
+.region.selected{fill:rgba(255,87,34,0.22);stroke:var(--orange);stroke-width:1.3;}
+.region.selected.hovered{fill:rgba(255,87,34,0.32);}
+
+/* ---- encarts outre-mer (DROM) ---- */
+.overseas-sep{stroke:var(--line);stroke-width:1;}
+.overseas-caption{font-family:var(--font-mono);font-size:10px;letter-spacing:2px;fill:var(--chalk-dim);}
+.inset-frame{fill:rgba(243,238,226,0.025);stroke:var(--line);stroke-width:1;}
+.inset-label{font-family:var(--font-mono);font-size:9px;fill:var(--chalk-dim);}
+.inset-region{stroke-width:0.6;}
+
+/* ---- pins événements ---- */
+.pin{cursor:pointer;transform-box:fill-box;transform-origin:center;transition:transform .15s;}
 .pin:hover{transform:scale(1.35);}
 .pin circle.core{stroke:var(--asphalt);stroke-width:2;}
 .pin.dimmed{opacity:0.12;pointer-events:none;}

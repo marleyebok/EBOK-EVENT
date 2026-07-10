@@ -472,10 +472,5 @@ let events = [
   }
 ];
 
-const FRANCE_PATH = "M323,20 L429,93 L546,146 L534,223 L477,300 L506,323 L495,382 L526,450 L444,477 L384,465 L344,512 L267,512 L155,474 L178,386 L170,308 L137,246 L101,229 L32,175 L65,158 L146,161 L162,149 L161,102 L198,123 L231,111 L291,69 Z";
-
-const CITY_LABELS = {
-  "Paris":[322,148], "Lille":[350,44], "Strasbourg":[540,165], "Rennes":[159,192],
-  "Nantes":[164,245], "Lyon":[422,331], "Bordeaux":[203,386], "Toulouse":[285,459],
-  "Montpellier":[383,459], "Marseille":[444,477], "Nice":[520,453]
-};
+// La silhouette et les villes de la carte sont désormais définies dans
+// france-map.js (régions officielles projetées), chargé avant data.js.
