@@ -67,7 +67,7 @@
       <aside class="filter-panel">
         <div class="panel-head"><span class="tag-dot"></span>FILTRES</div>
 
-        <div class="filter-group">
+        <div class="filter-group fg-status">
           <label>Statut</label>
           <div class="status-toggle" id="statusFilterHome">
             <button type="button" class="status-btn active" data-status="upcoming">À venir</button>
@@ -76,7 +76,7 @@
           </div>
         </div>
 
-        <div class="filter-group">
+        <div class="filter-group fg-city">
           <label for="citySearch">Ville / Région</label>
           <div class="search-input-wrap">
             <input type="text" id="citySearch" placeholder="Cherche une ville ou région...">
@@ -84,13 +84,13 @@
           </div>
         </div>
 
-        <div class="filter-group">
+        <div class="filter-group fg-geo">
           <label>Autour de moi</label>
           <button type="button" class="geo-btn" id="geoBtn">📍 Me localiser</button>
           <div class="geo-status hidden" id="geoStatus"></div>
         </div>
 
-        <div class="filter-group">
+        <div class="filter-group fg-radius">
           <label for="radiusFilter">Rayon (km)</label>
           <div class="radius-control">
             <input type="range" id="radiusFilter" min="0" max="200" value="200" step="10">
@@ -98,7 +98,7 @@
           </div>
         </div>
 
-        <div class="filter-group">
+        <div class="filter-group fg-period">
           <label for="periodSelector">Période</label>
           <div class="period-selector" id="periodSelector">
             <div class="period-display" id="periodDisplay">
@@ -129,7 +129,7 @@
           </div>
         </div>
 
-        <div class="filter-group">
+        <div class="filter-group fg-types">
           <label>Type d'événement</label>
           <div class="check-list" id="typeFilterHome"></div>
         </div>
