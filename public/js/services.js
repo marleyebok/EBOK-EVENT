@@ -11,7 +11,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  signOut, onAuthStateChanged
+  signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const EVENTS = "events";
@@ -118,6 +118,22 @@ export async function signUp(email, password, profile) {
 /** Connexion d'un diffuseur. */
 export async function signIn(email, password) {
   const cred = await signInWithEmailAndPassword(auth, email, password);
+  return cred.user;
+}
+
+/** Connexion / inscription via Google. Crée le profil au premier passage. */
+export async function signInWithGoogle() {
+  const provider = new GoogleAuthProvider();
+  const cred = await signInWithPopup(auth, provider);
+  const ref = doc(db, USERS, cred.user.uid);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) {
+    await setDoc(ref, {
+      email: cred.user.email,
+      name: cred.user.displayName || '',
+      createdAt: Date.now()
+    });
+  }
   return cred.user;
 }
 

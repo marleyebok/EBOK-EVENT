@@ -11,7 +11,7 @@
 import {
   getAllEvents, getAllEventsForAdmin, getEvent, getEventsByUser,
   createEvent, updateEvent, approveEvent, deleteEvent, incrementViews, importEvents,
-  signUp, signIn, signOutUser, observeAuth, getUserProfile, isAdmin,
+  signUp, signIn, signInWithGoogle, signOutUser, observeAuth, getUserProfile, isAdmin,
   getFavorites, toggleFavorite
 } from './services.js';
 
@@ -23,7 +23,7 @@ window.EBOK_DATA = {
 };
 
 // Couche authentification exposée à app.js.
-window.EBOK_AUTH = { signUp, signIn, signOutUser };
+window.EBOK_AUTH = { signUp, signIn, signInWithGoogle, signOutUser };
 
 // Relaie l'état de connexion à l'app (topbar, formulaire, dashboard).
 observeAuth(async (user) => {
