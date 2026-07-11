@@ -1577,6 +1577,8 @@ function updateAuthUI(){
     document.getElementById('accountName').innerHTML =
       `<b>${displayName()}</b>${currentIsAdmin ? '<span class="account-badge-admin">Admin</span>' : ''}`;
   }
+  const iaImport = document.getElementById('iaImport');
+  if(iaImport) iaImport.classList.toggle('hidden', !currentIsAdmin);
 }
 
 function initAuth(){
@@ -1853,8 +1855,8 @@ function initAiImport(){
 async function runImport(payload, pending){
   const status = document.getElementById('ia-status');
   const btn = document.getElementById('ia-btn');
-  // L'assistant nécessite un compte (jeton Firebase). Sinon, on propose la connexion.
-  if(!currentUser && window.EBOK_AUTH){ openAuth('login'); status.textContent = 'Connecte-toi pour utiliser l’assistant IA.'; return; }
+  // L'assistant est réservé à l'administrateur (jeton Firebase + email admin).
+  if(!currentIsAdmin){ status.textContent = 'Assistant IA réservé à l’administrateur.'; return; }
   status.textContent = pending;
   btn.disabled = true;
   try{
