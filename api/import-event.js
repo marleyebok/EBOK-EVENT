@@ -138,6 +138,63 @@ async function fetchPoster(url) {
   } catch (e) { return null; }
 }
 
+/* Découpe une dataURL image en { media_type, data base64 }. */
+function parseDataUrl(s) {
+  const m = /^data:(image\/(?:png|jpe?g|gif|webp));base64,([A-Za-z0-9+/=]+)$/i.exec(s || "");
+  if (!m) return null;
+  let media = m[1].toLowerCase();
+  if (media === "image/jpg") media = "image/jpeg";
+  return { media, data: m[2] };
+}
+
+/* Appelle Claude et renvoie l'événement structuré. */
+async function runClaude(apiKey, content) {
+  const anthropic = new Anthropic({ apiKey });
+  const msg = await anthropic.messages.create({
+    model: "claude-opus-4-8",
+    max_tokens: 2000,
+    output_config: { format: { type: "json_schema", schema: EVENT_SCHEMA } },
+    messages: [{ role: "user", content }]
+  });
+  const textBlock = (msg.content || []).find(b => b.type === "text");
+  if (!textBlock) throw new Error("Réponse IA vide.");
+  const event = JSON.parse(textBlock.text);
+  if (event.type && !TYPES.includes(event.type)) event.type = "Divers";
+  return event;
+}
+
+const RULES =
+`Règles :
+- "type" : choisis la catégorie la plus proche dans la liste imposée (par défaut "Divers").
+- "dateStart" / "dateEnd" : format AAAA-MM-JJ. S'il n'y a qu'une date, mets-la dans les deux. Si une info de date manque, mets "". N'INVENTE JAMAIS de date.
+- "region" : la région administrative française (ex. "Île-de-France", "Occitanie") déduite de la ville si possible, sinon "".
+- "description" : 2 à 4 phrases synthétiques en français décrivant l'événement.
+- "insta" : identifiant Instagram sans le @, sinon "".
+- Laisse "" tout champ introuvable.`;
+
+function urlPrompt(today, url, page) {
+  return `Tu extrais les informations d'un événement de basketball à partir du contenu d'une page web (site, réseau social, billetterie). Réponds UNIQUEMENT via le format structuré demandé.
+
+${RULES}
+- "site" : l'URL officielle de l'événement si présente, sinon l'URL source.
+
+Date du jour : ${today}
+URL source : ${url}
+Titre : ${page.title}
+Description : ${page.description}
+
+Contenu de la page :
+${page.text}`;
+}
+
+function imagePrompt(today) {
+  return `Tu extrais les informations d'un événement de basketball à partir de cette affiche ou capture d'écran. Lis attentivement TOUT le texte visible (titre, dates, lieu, ville, organisateur, contacts, Instagram). Réponds UNIQUEMENT via le format structuré demandé.
+
+${RULES}
+
+Date du jour : ${today}`;
+}
+
 module.exports = async (req, res) => {
   if (req.method !== "POST") { res.status(405).json({ ok: false, error: "Méthode non autorisée." }); return; }
 
@@ -150,6 +207,7 @@ module.exports = async (req, res) => {
   let body = req.body;
   if (typeof body === "string") { try { body = JSON.parse(body); } catch (e) { body = {}; } }
   const url = (body && body.url || "").trim();
+  const image = body && body.image;
   const idToken = body && body.idToken;
 
   if (!(await verifyAdmin(idToken))) {
@@ -157,59 +215,41 @@ module.exports = async (req, res) => {
     return;
   }
 
-  let parsed;
-  try { parsed = new URL(url); } catch (e) { res.status(400).json({ ok: false, error: "Lien invalide." }); return; }
-  if (!/^https?:$/.test(parsed.protocol) || isBlockedHost(parsed.hostname)) {
-    res.status(400).json({ ok: false, error: "Lien non autorisé." }); return;
-  }
-
-  const html = await fetchText(url, 12000, false);
-  if (!html) {
-    res.status(422).json({ ok: false, error: "Impossible de lire cette page (protégée ou indisponible). Les pages Facebook/Instagram sont souvent inaccessibles." });
-    return;
-  }
-
-  const page = extractPage(html, url);
-  if (page.text.length < 60 && !page.title) {
-    res.status(422).json({ ok: false, error: "Pas assez de contenu exploitable sur cette page." });
-    return;
-  }
-
   const today = new Date().toISOString().slice(0, 10);
-  const prompt =
-`Tu extrais les informations d'un événement de basketball à partir du contenu d'une page web (site, réseau social, billetterie). Réponds UNIQUEMENT via le format structuré demandé.
-
-Règles :
-- "type" : choisis la catégorie la plus proche dans la liste imposée (par défaut "Divers").
-- "dateStart" / "dateEnd" : format AAAA-MM-JJ. S'il n'y a qu'une date, mets-la dans les deux. Si une info de date manque, mets "". N'INVENTE JAMAIS de date.
-- "region" : la région administrative française (ex. "Île-de-France", "Occitanie") déduite de la ville si possible, sinon "".
-- "description" : 2 à 4 phrases synthétiques en français décrivant l'événement.
-- "insta" : identifiant Instagram sans le @, sinon "".
-- "site" : l'URL officielle de l'événement si présente, sinon l'URL source.
-- Laisse "" tout champ introuvable.
-
-Date du jour : ${today}
-URL source : ${url}
-Titre : ${page.title}
-Description : ${page.description}
-
-Contenu de la page :
-${page.text}`;
 
   try {
-    const anthropic = new Anthropic({ apiKey });
-    const msg = await anthropic.messages.create({
-      model: "claude-opus-4-8",
-      max_tokens: 2000,
-      output_config: { format: { type: "json_schema", schema: EVENT_SCHEMA } },
-      messages: [{ role: "user", content: prompt }]
-    });
-    const textBlock = (msg.content || []).find(b => b.type === "text");
-    if (!textBlock) throw new Error("Réponse vide.");
-    const event = JSON.parse(textBlock.text);
-    if (!event.site) event.site = url;
-    if (event.type && !TYPES.includes(event.type)) event.type = "Divers";
+    // ---- Cas 1 : import depuis une image / affiche / capture d'écran ----
+    if (image) {
+      const img = parseDataUrl(image);
+      if (!img) { res.status(400).json({ ok: false, error: "Image invalide (formats acceptés : JPG, PNG, GIF, WEBP)." }); return; }
+      if (img.data.length > 7 * 1024 * 1024) { res.status(413).json({ ok: false, error: "Image trop lourde (max ~5 Mo)." }); return; }
+      const content = [
+        { type: "image", source: { type: "base64", media_type: img.media, data: img.data } },
+        { type: "text", text: imagePrompt(today) }
+      ];
+      const event = await runClaude(apiKey, content);
+      res.status(200).json({ ok: true, event, poster: image });
+      return;
+    }
 
+    // ---- Cas 2 : import depuis un lien ----
+    let parsed;
+    try { parsed = new URL(url); } catch (e) { res.status(400).json({ ok: false, error: "Lien invalide." }); return; }
+    if (!/^https?:$/.test(parsed.protocol) || isBlockedHost(parsed.hostname)) {
+      res.status(400).json({ ok: false, error: "Lien non autorisé." }); return;
+    }
+    const html = await fetchText(url, 12000, false);
+    if (!html) {
+      res.status(422).json({ ok: false, error: "Impossible de lire cette page (protégée ou indisponible). Les pages Facebook/Instagram sont souvent inaccessibles — utilise plutôt une capture d'écran." });
+      return;
+    }
+    const page = extractPage(html, url);
+    if (page.text.length < 60 && !page.title) {
+      res.status(422).json({ ok: false, error: "Pas assez de contenu exploitable sur cette page." });
+      return;
+    }
+    const event = await runClaude(apiKey, urlPrompt(today, url, page));
+    if (!event.site) event.site = url;
     const poster = await fetchPoster(page.image);
     res.status(200).json({ ok: true, event, poster, sourceUrl: url });
   } catch (err) {

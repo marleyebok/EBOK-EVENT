@@ -675,6 +675,12 @@ function renderResults(){
     return true;
   }).sort((a,b)=> a.dateStart.localeCompare(b.dateStart));
 
+  // Carte régionale si le filtre lieu vise une seule région.
+  const lieuRaw = document.getElementById('f-lieu').value.trim();
+  const region = (typeof FRANCE_REGIONS !== 'undefined')
+    ? FRANCE_REGIONS.find(r=> r.name.toLowerCase() === lieuRaw.toLowerCase()) : null;
+  if(region) renderRegionMap(region.name, results); else hideRegionMap();
+
   document.getElementById('resultsCount').textContent = `${results.length} résultat${results.length>1?'s':''}`;
   const grid = document.getElementById('resultsGrid');
   if(results.length===0){
@@ -686,6 +692,62 @@ ${eventCardHtml(ev)}`).join('');
 
   grid.querySelectorAll('.event-card').forEach(card=>{
     card.addEventListener('click', ()=> openEvent(card.dataset.id));
+  });
+}
+
+/* ---- Carte régionale (page recherche) ---- */
+function hideRegionMap(){
+  const wrap = document.getElementById('resultsMap');
+  if(wrap){ wrap.classList.add('hidden'); wrap.innerHTML = ''; }
+}
+
+/* Boîte englobante d'un tracé SVG (coordonnées x y en paires). */
+function pathBBox(d){
+  const nums = (d.match(/-?\d+(?:\.\d+)?/g) || []).map(Number);
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for(let i = 0; i + 1 < nums.length; i += 2){
+    const x = nums[i], y = nums[i + 1];
+    if(x < minX) minX = x; if(x > maxX) maxX = x;
+    if(y < minY) minY = y; if(y > maxY) maxY = y;
+  }
+  return { minX, minY, maxX, maxY };
+}
+
+/* Dessine la carte d'une région avec un point par événement affiché. */
+function renderRegionMap(regionName, results){
+  const wrap = document.getElementById('resultsMap');
+  if(!wrap || typeof FRANCE_REGIONS === 'undefined') return;
+  const region = FRANCE_REGIONS.find(r=> r.name === regionName);
+  if(!region){ hideRegionMap(); return; }
+  const bb = pathBBox(region.d);
+  const pad = 20;
+  const vbX = bb.minX - pad, vbY = bb.minY - pad;
+  const vbW = (bb.maxX - bb.minX) + pad * 2, vbH = (bb.maxY - bb.minY) + pad * 2;
+
+  // On ne pointe que les événements géographiquement dans le cadre de la région.
+  const inView = results.filter(ev=> ev.x != null && ev.y != null
+    && ev.x >= bb.minX && ev.x <= bb.maxX && ev.y >= bb.minY && ev.y <= bb.maxY);
+
+  const pins = inView.map(ev=>{
+    const c = TYPE_COLORS[ev.type] || '#FF5722';
+    return `<g class="rmap-pin" data-id="${esc(ev.id)}" tabindex="0" role="button" aria-label="${esc(ev.title)}">
+      <circle class="rmap-halo" cx="${ev.x}" cy="${ev.y}" r="9" fill="${c}"></circle>
+      <circle class="rmap-core" cx="${ev.x}" cy="${ev.y}" r="4.6" fill="${c}"></circle>
+      <circle cx="${ev.x}" cy="${ev.y}" r="1.7" fill="#fff"></circle>
+      <title>${esc(ev.title)} · ${esc(ev.city || '')}</title>
+    </g>`;
+  }).join('');
+
+  wrap.classList.remove('hidden');
+  wrap.innerHTML = `
+    <div class="rmap-title">🗺️ ${esc(regionName)} — ${inView.length} événement${inView.length > 1 ? 's' : ''} sur la carte</div>
+    <svg class="rmap-svg" viewBox="${vbX} ${vbY} ${vbW} ${vbH}" role="img" aria-label="Carte de ${esc(regionName)}">
+      <path class="rmap-region" d="${region.d}"></path>
+      ${pins}
+    </svg>`;
+  wrap.querySelectorAll('.rmap-pin').forEach(g=>{
+    g.addEventListener('click', ()=> openEvent(g.dataset.id));
+    g.addEventListener('keydown', e=>{ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openEvent(g.dataset.id); } });
   });
 }
 
@@ -1710,22 +1772,33 @@ async function refreshPublicEvents(){
   }
 }
 
-/* ---- Assistant IA : import d'un événement depuis un lien ---- */
+/* ---- Assistant IA : import d'un événement (lien ou image) ---- */
 function initAiImport(){
   const btn = document.getElementById('ia-btn');
   const input = document.getElementById('ia-url');
+  const file = document.getElementById('ia-file');
+  const drop = document.getElementById('ia-drop');
   if(!btn || !input) return;
   btn.addEventListener('click', importFromUrl);
   input.addEventListener('keydown', e=>{ if(e.key === 'Enter'){ e.preventDefault(); importFromUrl(); } });
+  if(file){
+    file.addEventListener('change', ()=>{ if(file.files[0]) importFromImage(file.files[0]); file.value = ''; });
+  }
+  if(drop && file){
+    drop.addEventListener('dragover', e=>{ e.preventDefault(); drop.classList.add('drag'); });
+    drop.addEventListener('dragleave', ()=> drop.classList.remove('drag'));
+    drop.addEventListener('drop', e=>{
+      e.preventDefault(); drop.classList.remove('drag');
+      if(e.dataTransfer.files[0]) importFromImage(e.dataTransfer.files[0]);
+    });
+  }
 }
 
-async function importFromUrl(){
-  const input = document.getElementById('ia-url');
+/* Envoie une requête d'import à la fonction serverless. */
+async function runImport(payload, pending){
   const status = document.getElementById('ia-status');
   const btn = document.getElementById('ia-btn');
-  const url = (input.value || '').trim();
-  if(!url){ status.textContent = 'Colle d’abord un lien.'; return; }
-  status.textContent = '⏳ Analyse de la page en cours (10–20 s)…';
+  status.textContent = pending;
   btn.disabled = true;
   try{
     let idToken = '';
@@ -1733,7 +1806,7 @@ async function importFromUrl(){
     const res = await fetch('/api/import-event', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, idToken })
+      body: JSON.stringify(Object.assign({ idToken }, payload))
     });
     let data = {};
     try{ data = await res.json(); }catch(e){ /* réponse non JSON */ }
@@ -1745,6 +1818,21 @@ async function importFromUrl(){
   }finally{
     btn.disabled = false;
   }
+}
+
+function importFromUrl(){
+  const url = (document.getElementById('ia-url').value || '').trim();
+  if(!url){ document.getElementById('ia-status').textContent = 'Colle d’abord un lien.'; return; }
+  runImport({ url }, '⏳ Analyse de la page en cours (10–20 s)…');
+}
+
+function importFromImage(file){
+  const status = document.getElementById('ia-status');
+  if(!/^image\//.test(file.type)){ status.textContent = '⚠️ Choisis un fichier image.'; return; }
+  if(file.size > 5 * 1024 * 1024){ status.textContent = '⚠️ Image trop lourde (max 5 Mo).'; return; }
+  const reader = new FileReader();
+  reader.onload = e=> runImport({ image: e.target.result }, '⏳ Lecture de l’affiche par l’IA (10–20 s)…');
+  reader.readAsDataURL(file);
 }
 
 /* Pré-remplit le formulaire de publication avec les données extraites. */
