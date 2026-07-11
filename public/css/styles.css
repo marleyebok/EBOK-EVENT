@@ -625,6 +625,33 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .btn-approve{background:var(--green);color:#fff;border:1px solid var(--green);}
 .btn-approve:hover{filter:brightness(1.1);}
 
+/* Carte régionale (page recherche) */
+.results-map{background:var(--asphalt-2);border:1px solid var(--line);border-radius:16px;padding:16px 16px 12px;margin-bottom:22px;}
+.rmap-title{font-family:var(--font-mono);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--chalk);margin-bottom:10px;}
+.rmap-svg{width:100%;height:auto;display:block;max-height:440px;}
+.rmap-region{fill:var(--asphalt-3);stroke:var(--line-strong);stroke-width:1;}
+.rmap-pin{cursor:pointer;}
+.rmap-halo{opacity:.28;}
+.rmap-core{stroke:#fff;stroke-width:1.2;transition:transform .12s ease;}
+.rmap-pin:hover .rmap-core,.rmap-pin:focus .rmap-core{transform:scale(1.25);transform-box:fill-box;transform-origin:center;}
+.rmap-pin:focus{outline:none;}
+
+/* Assistant IA — import depuis un lien */
+.ia-import{background:linear-gradient(150deg, rgba(157,111,255,0.10), var(--asphalt-2));border:1px solid var(--line);border-radius:16px;padding:18px 18px 16px;margin-bottom:26px;}
+.ia-import-head h3{font-size:17px;margin-bottom:4px;}
+.ia-import-head p{font-size:13px;color:var(--chalk-dim);margin-bottom:14px;max-width:640px;}
+.ia-import-row{display:flex;gap:10px;flex-wrap:wrap;}
+.ia-import-row input{flex:1;min-width:220px;padding:11px 14px;border:1px solid var(--line-strong);border-radius:10px;background:var(--asphalt-3);color:var(--chalk);font-size:14px;}
+.ia-import-row .btn{white-space:nowrap;}
+.ia-import-row .btn:disabled{opacity:.55;cursor:progress;}
+.ia-or{display:flex;align-items:center;gap:12px;margin:14px 0;color:var(--chalk-dim);font-size:12px;text-transform:uppercase;letter-spacing:1px;}
+.ia-or::before,.ia-or::after{content:"";flex:1;height:1px;background:var(--line);}
+.ia-drop{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px dashed var(--line-strong);border-radius:12px;background:var(--asphalt-3);cursor:pointer;font-size:13px;color:var(--chalk-dim);transition:border-color .15s ease, background .15s ease;}
+.ia-drop:hover,.ia-drop.drag{border-color:var(--orange);background:rgba(255,87,34,0.08);}
+.ia-drop b{color:var(--chalk);}
+.ia-drop-ic{font-size:22px;flex-shrink:0;}
+.ia-status{font-size:13px;color:var(--chalk-dim);margin-top:12px;min-height:18px;}
+
 /* Dashboard admin — tableau de gestion */
 .admin-table-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:14px;-webkit-overflow-scrolling:touch;}
 .admin-table{width:100%;border-collapse:collapse;font-size:14px;min-width:760px;}

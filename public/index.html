@@ -232,6 +232,8 @@
       </div>
     </form>
 
+    <div class="results-map hidden" id="resultsMap"></div>
+
     <div class="results-head">
       <span id="resultsCount">— résultats</span>
       <span>Trié par date</span>
@@ -503,6 +505,24 @@
     </div>
 
     <div class="profile-section hidden" id="adminSection">
+      <div class="ia-import">
+        <div class="ia-import-head">
+          <h3>🤖 Assistant IA — importer depuis un lien</h3>
+          <p>Colle le lien d'un événement (site web, billetterie…). L'IA récupère l'affiche et les infos, puis pré-remplit le formulaire de publication. Tu relis et tu publies.</p>
+        </div>
+        <div class="ia-import-row">
+          <input type="url" id="ia-url" placeholder="https://exemple.com/mon-evenement">
+          <button class="btn btn-primary" id="ia-btn">Analyser le lien</button>
+        </div>
+        <div class="ia-or"><span>ou</span></div>
+        <label class="ia-drop" id="ia-drop" for="ia-file">
+          <span class="ia-drop-ic">🖼️</span>
+          <span>Envoie une <b>affiche</b> ou une <b>capture d'écran</b> — l'IA lit les infos dessus</span>
+        </label>
+        <input type="file" id="ia-file" accept="image/*" hidden>
+        <div class="ia-status" id="ia-status"></div>
+      </div>
+
       <div class="profile-section-head">
         <h3>👑 Administration — tous les événements</h3>
       </div>
