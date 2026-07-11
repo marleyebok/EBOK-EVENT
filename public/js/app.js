@@ -1853,6 +1853,8 @@ function initAiImport(){
 async function runImport(payload, pending){
   const status = document.getElementById('ia-status');
   const btn = document.getElementById('ia-btn');
+  // L'assistant nécessite un compte (jeton Firebase). Sinon, on propose la connexion.
+  if(!currentUser && window.EBOK_AUTH){ openAuth('login'); status.textContent = 'Connecte-toi pour utiliser l’assistant IA.'; return; }
   status.textContent = pending;
   btn.disabled = true;
   try{

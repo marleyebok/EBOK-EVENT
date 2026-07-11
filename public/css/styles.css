@@ -628,9 +628,9 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 /* Carte régionale (page recherche) */
 .results-map{background:var(--asphalt-2);border:1px solid var(--line);border-radius:16px;padding:16px 18px 16px;margin-bottom:22px;}
 .rmap-title{font-family:var(--font-mono);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--chalk);margin-bottom:12px;}
-.region-panel{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(230px,1fr);gap:20px;align-items:start;}
+.region-panel{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:20px;align-items:start;}
 .rmap-col{min-width:0;}
-.rmap-svg{width:100%;height:auto;display:block;max-height:360px;}
+.rmap-svg{width:100%;height:auto;display:block;max-height:300px;}
 .rmap-region{fill:var(--asphalt-3);stroke:var(--line-strong);stroke-width:1;}
 .rmap-pin{cursor:pointer;}
 .rmap-halo{opacity:.28;}

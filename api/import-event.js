@@ -19,8 +19,6 @@ const TYPES = [
 const FIELDS = ["title", "type", "city", "region", "address", "dateStart", "dateEnd",
   "sexe", "age", "niveau", "description", "orgName", "insta", "site"];
 
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "marley.ebok@gmail.com")
-  .split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || "AIzaSyAeOxodAkp4TFU1V5PiOqV2qUh9WVQEKhA";
 
 /* Refuse les adresses internes / locales (protection SSRF de base). */
@@ -35,8 +33,8 @@ function isBlockedHost(host) {
     || /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(h);
 }
 
-/* Vérifie que l'appelant est un administrateur connecté (jeton Firebase). */
-async function verifyAdmin(idToken) {
+/* Vérifie que l'appelant est un membre connecté (jeton Firebase valide). */
+async function verifyUser(idToken) {
   if (!idToken) return false;
   try {
     const res = await fetch(
@@ -45,8 +43,7 @@ async function verifyAdmin(idToken) {
     );
     if (!res.ok) return false;
     const data = await res.json();
-    const email = data.users && data.users[0] && data.users[0].email;
-    return !!email && ADMIN_EMAILS.includes(email.toLowerCase());
+    return !!(data.users && data.users[0] && data.users[0].localId);
   } catch (e) { return false; }
 }
 
@@ -210,8 +207,8 @@ module.exports = async (req, res) => {
   const image = body && body.image;
   const idToken = body && body.idToken;
 
-  if (!(await verifyAdmin(idToken))) {
-    res.status(403).json({ ok: false, error: "Réservé aux administrateurs connectés." });
+  if (!(await verifyUser(idToken))) {
+    res.status(403).json({ ok: false, error: "Connecte-toi pour utiliser l'assistant IA." });
     return;
   }
 
