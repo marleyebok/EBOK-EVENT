@@ -5,9 +5,11 @@
    récupère le contenu, puis demande à Google Gemini de structurer les
    infos de l'événement. Le formulaire de publication est pré-rempli.
 
+   Réservé à l'administrateur (marley.ebok@gmail.com).
+
    Variables d'environnement (Vercel > Settings > Environment Variables) :
    - GEMINI_API_KEY   (obligatoire)  clé Google AI Studio (gratuite)
-   - ADMIN_EMAILS     (optionnel)    emails admin, séparés par des virgules
+   - ADMIN_EMAILS     (optionnel)    emails admin additionnels, séparés par des virgules
    - FIREBASE_API_KEY (optionnel)    clé Web Firebase (pour valider le compte)
    ========================================================= */
 const GEMINI_MODEL = "gemini-2.0-flash";
@@ -21,6 +23,10 @@ const FIELDS = ["title", "type", "city", "region", "address", "dateStart", "date
 
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || "AIzaSyAeOxodAkp4TFU1V5PiOqV2qUh9WVQEKhA";
 
+const OWNER_EMAIL = "marley.ebok@gmail.com";
+const ADMIN_EMAILS = [OWNER_EMAIL, ...String(process.env.ADMIN_EMAILS || "")
+  .split(",").map(s => s.trim().toLowerCase()).filter(Boolean)];
+
 /* Refuse les adresses internes / locales (protection SSRF de base). */
 function isBlockedHost(host) {
   const h = (host || "").toLowerCase();
@@ -33,8 +39,8 @@ function isBlockedHost(host) {
     || /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(h);
 }
 
-/* Vérifie que l'appelant est un membre connecté (jeton Firebase valide). */
-async function verifyUser(idToken) {
+/* Vérifie que l'appelant est un admin (jeton Firebase valide + email admin). */
+async function verifyAdmin(idToken) {
   if (!idToken) return false;
   try {
     const res = await fetch(
@@ -43,7 +49,9 @@ async function verifyUser(idToken) {
     );
     if (!res.ok) return false;
     const data = await res.json();
-    return !!(data.users && data.users[0] && data.users[0].localId);
+    const user = data.users && data.users[0];
+    const email = user && user.email && user.email.toLowerCase();
+    return !!(user && user.localId && email && ADMIN_EMAILS.includes(email));
   } catch (e) { return false; }
 }
 
@@ -207,8 +215,8 @@ module.exports = async (req, res) => {
   const image = body && body.image;
   const idToken = body && body.idToken;
 
-  if (!(await verifyUser(idToken))) {
-    res.status(403).json({ ok: false, error: "Connecte-toi pour utiliser l'assistant IA." });
+  if (!(await verifyAdmin(idToken))) {
+    res.status(403).json({ ok: false, error: "Accès réservé à l'administrateur." });
     return;
   }
 
