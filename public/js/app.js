@@ -757,7 +757,8 @@ function initCreatePage(){
     const city      = val('c-ville');
     const region    = val('c-region');
     const type      = val('c-type') || 'Divers';
-    const {x, y}    = guessCoords(city, region);
+    const coords    = await resolveCoords(val('c-adresse'), city, region);
+    const {x, y}    = coords;
     const posterSrc = (preview && !preview.classList.contains('hidden')) ? preview.src : null;
     const visibility = document.querySelector('input[name="visibility"]:checked')?.value || 'standard';
 
@@ -771,6 +772,8 @@ function initCreatePage(){
       city, region,
       lieu: val('c-adresse') || city,
       x, y,
+      lat: coords.lat != null ? coords.lat : null,
+      lng: coords.lng != null ? coords.lng : null,
       dateStart, dateEnd,
       sexe: val('c-sexe') || 'Mixte',
       age: val('c-age') || 'Séniors (18-35 ans)',
@@ -852,6 +855,32 @@ function guessCoords(city, region){
   // 2) sinon un point dans la région cliquée, sinon centre de la France.
   return {x: Math.round(FRANCE_CENTER.x + (Math.random()*50 - 25)),
           y: Math.round(FRANCE_CENTER.y + (Math.random()*50 - 25))};
+}
+
+/* Géocode une adresse/ville via l'API Adresse (Base Adresse Nationale,
+   gratuite, sans clé, France). Renvoie {x, y, lat, lng} projetés sur la
+   carte, ou null si rien trouvé / hors ligne. */
+async function geocodeCoords(address, city, region){
+  const q = [address, city, region].filter(Boolean).join(', ').trim();
+  if(!q) return null;
+  try{
+    const url = `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(q)}&limit=1`;
+    const res = await fetch(url);
+    if(!res.ok) return null;
+    const data = await res.json();
+    const f = data.features && data.features[0];
+    if(!f || !f.geometry || !Array.isArray(f.geometry.coordinates)) return null;
+    const [lng, lat] = f.geometry.coordinates;
+    const [x, y] = projGeo(lat, lng);
+    return { x: Math.round(x), y: Math.round(y), lat, lng };
+  }catch(e){ return null; }
+}
+
+/* Résout les coordonnées : géocodage précis d'abord, repli sur guessCoords. */
+async function resolveCoords(address, city, region){
+  const geo = await geocodeCoords(address, city, region);
+  if(geo) return geo;
+  return guessCoords(city, region);
 }
 
 /* =========================================================
@@ -1272,6 +1301,16 @@ function authMessage(err){
 const ROLE_OPTIONS = ["Joueur", "Coach", "Organisateur", "Club", "Ligue", "Autre"];
 const INTEREST_OPTIONS = ["Tournois", "Camps", "Circuit 3x3", "Détections", "All-Star Game", "Clinic Coachs", "Show", "Voyage", "Matchs de Gala", "Handibasket"];
 const MAX_INTERESTS = 3;
+const profilePhoto = {};          // dataURL de la photo, par préfixe ("su-", "pe-")
+
+// Applique l'aperçu de la photo de profil pour un préfixe donné.
+function setProfilePhotoPreview(p){
+  const prev = document.getElementById(p + 'photoPrev');
+  if(!prev) return;
+  const src = profilePhoto[p];
+  if(src){ prev.style.backgroundImage = `url(${src})`; prev.classList.add('has-photo'); prev.innerHTML = ''; }
+  else{ prev.style.backgroundImage = ''; prev.classList.remove('has-photo'); prev.innerHTML = '<span>+</span>'; }
+}
 
 /* Champs de profil réutilisés à l'inscription (prefix "su-") et dans la
    modale d'édition (prefix "pe-"). */
@@ -1280,6 +1319,20 @@ function profileFieldsHtml(p){
   const interests = INTEREST_OPTIONS.map(i=>
     `<label class="chip-check"><input type="checkbox" name="${p}interest" value="${esc(i)}"><span>${esc(i)}</span></label>`).join('');
   return `
+    <div class="field">
+      <label>Photo de profil</label>
+      <div class="photo-upload">
+        <div class="photo-avatar-prev" id="${p}photoPrev" aria-hidden="true"><span>+</span></div>
+        <div>
+          <input type="file" id="${p}photoFile" accept="image/*">
+          <p class="field-hint">JPG ou PNG, format carré de préférence.</p>
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label for="${p}pseudo">Pseudo</label>
+      <input type="text" id="${p}pseudo" placeholder="Ex. MarleyB34">
+    </div>
     <div class="field">
       <label for="${p}role">Tu es…</label>
       <select id="${p}role" data-role-select="${p}">${roleOpts}</select>
@@ -1340,6 +1393,20 @@ function wireProfileFields(p){
     if(!b.dataset.wired){ b.addEventListener('change', enforce); b.dataset.wired = '1'; }
   });
   enforce();
+
+  // Photo de profil : lecture du fichier en dataURL + aperçu.
+  const photoInput = document.getElementById(p + 'photoFile');
+  if(photoInput && !photoInput.dataset.wired){
+    photoInput.addEventListener('change', ()=>{
+      const file = photoInput.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = e=>{ profilePhoto[p] = e.target.result; setProfilePhotoPreview(p); };
+      reader.readAsDataURL(file);
+    });
+    photoInput.dataset.wired = '1';
+  }
+  setProfilePhotoPreview(p);
 }
 
 /* Lit les champs de profil en un objet prêt à stocker. */
@@ -1350,6 +1417,8 @@ function readProfileFields(p){
   const ageNum = parseInt(g('age'), 10);
   const interests = [...document.querySelectorAll(`[data-interests="${p}"] input:checked`)].map(x=> x.value).slice(0, MAX_INTERESTS);
   return {
+    pseudo: g('pseudo'),
+    photo: profilePhoto[p] || '',
     role,
     roleOther: role === 'Autre' ? g('roleOther') : '',
     age: isNaN(ageNum) ? null : ageNum,
@@ -1364,6 +1433,8 @@ function readProfileFields(p){
 function fillProfileFields(p, prof){
   prof = prof || {};
   const s = (id, v)=>{ const el = document.getElementById(p + id); if(el) el.value = (v == null ? '' : v); };
+  s('pseudo', prof.pseudo || '');
+  profilePhoto[p] = prof.photo || '';
   s('role', prof.role || '');
   s('roleOther', prof.roleOther || '');
   s('age', prof.age != null ? prof.age : '');
@@ -1460,7 +1531,16 @@ async function renderProfile(){
     `${name}${currentIsAdmin ? '<span class="account-badge-admin">Admin</span>' : ''}`;
   document.getElementById('profileEmail').textContent = currentUser.email || '';
   const initials = (name || '?').trim().slice(0,2).toUpperCase();
-  document.getElementById('profileAvatar').textContent = initials;
+  const avatarEl = document.getElementById('profileAvatar');
+  if(currentProfile && currentProfile.photo){
+    avatarEl.style.backgroundImage = `url(${currentProfile.photo})`;
+    avatarEl.classList.add('has-photo');
+    avatarEl.textContent = '';
+  }else{
+    avatarEl.style.backgroundImage = '';
+    avatarEl.classList.remove('has-photo');
+    avatarEl.textContent = initials;
+  }
 
   renderProfileAbout();
   renderFavorites();
@@ -1477,6 +1557,7 @@ function renderProfileAbout(){
   const p = currentProfile || {};
   const roleLabel = p.role === 'Autre' ? (p.roleOther || 'Autre') : p.role;
   const rows = [
+    p.pseudo ? ['Pseudo', p.pseudo] : null,
     roleLabel ? ['Profil', roleLabel] : null,
     (p.age != null && p.age !== '') ? ['Âge', p.age + ' ans'] : null,
     p.sexe ? ['Sexe', p.sexe] : null,
@@ -1807,10 +1888,13 @@ function initEditModal(){
     const placesRaw = gv('e-places');
     patch.placesTotal = placesRaw ? parseInt(placesRaw, 10) : null;
     patch.infos = Object.assign({}, ev && ev.infos, { adresse: gv('e-address') });
-    // Recalcule la position sur la carte si la ville/région a changé.
-    if(ev && (ev.city !== patch.city || ev.region !== patch.region)){
-      const c = guessCoords(patch.city, patch.region);
+    // Recalcule la position sur la carte si l'adresse/ville/région a changé.
+    const addrChanged = !ev || ev.city !== patch.city || ev.region !== patch.region
+      || ((ev.infos && ev.infos.adresse) || '') !== gv('e-address');
+    if(addrChanged){
+      const c = await resolveCoords(gv('e-address'), patch.city, patch.region);
       patch.x = c.x; patch.y = c.y;
+      if(c.lat != null){ patch.lat = c.lat; patch.lng = c.lng; }
     }
     if(editPosterData){ patch.poster = editPosterData; }
 
