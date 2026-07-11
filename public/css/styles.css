@@ -432,8 +432,18 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .back-link{background:none;border:none;color:var(--chalk-dim);font-size:14px;font-weight:600;margin:26px 0 4px;padding:0;}
 .back-link:hover{color:var(--orange);}
 .event-detail{display:grid;grid-template-columns:400px 1fr;gap:36px;padding:26px 0 40px;}
-.event-poster{border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);position:sticky;top:92px;}
+.event-side{position:sticky;top:92px;align-self:start;}
+.event-poster{border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);}
 .event-poster img{width:100%;display:block;}
+
+/* Mini-carte de localisation (sous l'affiche) */
+.event-mini-map{margin-top:16px;background:var(--asphalt-2);border:1px solid var(--line);border-radius:14px;padding:14px 14px 10px;}
+.mini-map-title{font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--chalk);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+.mini-france{width:100%;height:auto;display:block;max-height:300px;}
+.mini-regions path{fill:var(--asphalt-3);stroke:var(--line-strong);stroke-width:0.8;}
+.mini-pin-halo{opacity:.22;}
+.mini-pin{stroke:#fff;stroke-width:1.5;}
+.mini-map-foot{font-size:12px;color:var(--chalk-dim);text-align:center;margin-top:6px;}
 .event-main .badges{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;justify-content:space-between;}
 .badges-left{display:flex;gap:8px;flex-wrap:wrap;}
 .viewer-counter{
@@ -553,7 +563,8 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
   .form-grid,.form-grid-3{grid-template-columns:1fr;}
   .results-grid{grid-template-columns:1fr 1fr;}
   .event-detail{grid-template-columns:1fr;}
-  .event-poster{position:static;max-width:340px;}
+  .event-side{position:static;max-width:340px;}
+  .event-poster{position:static;}
   .info-grid{grid-template-columns:repeat(2,1fr);}
   .hero h1{font-size:38px;}
 }
@@ -649,6 +660,24 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .edit-featured b{color:var(--chalk);font-weight:700;}
 .edit-error{background:rgba(232,72,58,0.14);border:1px solid rgba(232,72,58,0.5);color:#ff8f84;border-radius:10px;padding:10px 12px;font-size:13px;margin-top:14px;}
 .edit-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
+
+/* Questions de profil (inscription + édition) */
+.auth-subhead{font-family:var(--font-mono);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--chalk-dim);margin:18px 0 10px;}
+.auth-subhead span{text-transform:none;letter-spacing:0;font-weight:400;}
+.field-hint{color:var(--chalk-dim);font-weight:400;font-size:12px;}
+.chip-checks{display:flex;flex-wrap:wrap;gap:8px;}
+.chip-check{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border:1px solid var(--line-strong);border-radius:999px;cursor:pointer;font-size:13px;user-select:none;transition:border-color .15s ease, background .15s ease;}
+.chip-check input{position:absolute;opacity:0;width:0;height:0;}
+.chip-check:hover{border-color:var(--chalk-dim);}
+.chip-check:has(input:checked){background:rgba(255,87,34,0.14);border-color:var(--orange);color:var(--chalk);}
+.chip-check.disabled{opacity:.4;cursor:not-allowed;}
+
+/* Section "À propos de moi" */
+.about-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
+.about-item{background:var(--asphalt-2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;}
+.about-k{display:block;font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--chalk-dim);margin-bottom:4px;}
+.about-v{display:block;color:var(--chalk);font-weight:600;}
+.about-empty{color:var(--chalk-dim);font-size:14px;}
 
 /* Modale d'authentification */
 .auth-modal{

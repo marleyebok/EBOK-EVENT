@@ -11,7 +11,7 @@
 import {
   getAllEvents, getAllEventsForAdmin, getEvent, getEventsByUser,
   createEvent, updateEvent, approveEvent, deleteEvent, incrementViews, importEvents,
-  signUp, signIn, signInWithGoogle, signOutUser, observeAuth, getUserProfile, isAdmin,
+  signUp, signIn, signInWithGoogle, signOutUser, observeAuth, getUserProfile, updateUserProfile, isAdmin,
   getFavorites, toggleFavorite
 } from './services.js';
 
@@ -19,7 +19,7 @@ import {
 window.EBOK_DATA = {
   getAllEvents, getAllEventsForAdmin, getEvent, getEventsByUser,
   createEvent, updateEvent, approveEvent, deleteEvent, incrementViews,
-  getFavorites, toggleFavorite
+  getFavorites, toggleFavorite, updateUserProfile
 };
 
 // Couche authentification exposée à app.js.

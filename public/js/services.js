@@ -165,6 +165,11 @@ export async function getUserProfile(uid) {
   return snap.exists() ? snap.data() : null;
 }
 
+/** Met à jour (fusionne) le profil d'un membre. */
+export async function updateUserProfile(uid, data) {
+  await setDoc(doc(db, USERS, uid), data, { merge: true });
+}
+
 /* ---------- Favoris (événements mis de côté) ---------- */
 
 /** Liste des ids d'événements enregistrés par l'utilisateur. */
