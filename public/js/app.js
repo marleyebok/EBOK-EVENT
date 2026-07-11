@@ -728,6 +728,8 @@ function renderRegionMap(regionName, results){
   const inView = results.filter(ev=> ev.x != null && ev.y != null
     && ev.x >= bb.minX && ev.x <= bb.maxX && ev.y >= bb.minY && ev.y <= bb.maxY);
 
+  inView.sort((a, b)=> (a.dateStart || '').localeCompare(b.dateStart || ''));
+
   const pins = inView.map(ev=>{
     const c = TYPE_COLORS[ev.type] || '#FF5722';
     return `<g class="rmap-pin" data-id="${esc(ev.id)}" tabindex="0" role="button" aria-label="${esc(ev.title)}">
@@ -740,15 +742,68 @@ function renderRegionMap(regionName, results){
 
   wrap.classList.remove('hidden');
   wrap.innerHTML = `
-    <div class="rmap-title">🗺️ ${esc(regionName)} — ${inView.length} événement${inView.length > 1 ? 's' : ''} sur la carte</div>
-    <svg class="rmap-svg" viewBox="${vbX} ${vbY} ${vbW} ${vbH}" role="img" aria-label="Carte de ${esc(regionName)}">
-      <path class="rmap-region" d="${region.d}"></path>
-      ${pins}
-    </svg>`;
+    <div class="rmap-title">🗺️ ${esc(regionName)} — ${inView.length} événement${inView.length > 1 ? 's' : ''}</div>
+    <div class="region-panel">
+      <div class="rmap-col">
+        <svg class="rmap-svg" viewBox="${vbX} ${vbY} ${vbW} ${vbH}" role="img" aria-label="Carte de ${esc(regionName)}">
+          <path class="rmap-region" d="${region.d}"></path>
+          ${pins}
+        </svg>
+      </div>
+      <div class="rpreview-col" id="rpreviewCol">${regionDefaultPanel(inView)}</div>
+    </div>`;
+
+  const panel = document.getElementById('rpreviewCol');
+  const byId = id=> inView.find(e=> e.id === id);
   wrap.querySelectorAll('.rmap-pin').forEach(g=>{
+    const ev = byId(g.dataset.id);
     g.addEventListener('click', ()=> openEvent(g.dataset.id));
     g.addEventListener('keydown', e=>{ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openEvent(g.dataset.id); } });
+    g.addEventListener('mouseenter', ()=>{ if(ev){ panel.innerHTML = regionPreviewCard(ev); panel.classList.add('previewing'); } });
+    g.addEventListener('focus', ()=>{ if(ev){ panel.innerHTML = regionPreviewCard(ev); panel.classList.add('previewing'); } });
+    g.addEventListener('mouseleave', ()=>{ panel.innerHTML = regionDefaultPanel(inView); panel.classList.remove('previewing'); wireRegionPanel(panel); });
   });
+  wireRegionPanel(panel);
+}
+
+/* Panneau par défaut : les 3 prochains événements de la région. */
+function regionDefaultPanel(list){
+  if(!list.length) return `<div class="rpv-empty">Aucun événement sur la carte pour cette recherche.</div>`;
+  const cards = list.slice(0, 3).map(regionMiniCard).join('');
+  const more = list.length > 3 ? `<div class="rpv-more">+${list.length - 3} autre${list.length - 3 > 1 ? 's' : ''} plus bas</div>` : '';
+  return `<div class="rpv-head">À l’affiche</div>${cards}${more}
+    <div class="rpv-hint">Survole un point pour voir l’affiche</div>`;
+}
+
+/* Grande fiche affichée au survol d'un point. */
+function regionPreviewCard(ev){
+  const c = TYPE_COLORS[ev.type] || '#FF5722';
+  const poster = ev.poster
+    ? `<img src="${ev.poster}" alt="Affiche ${esc(ev.title)}">`
+    : `<div class="rpv-ph" style="background:linear-gradient(160deg, ${c}55, var(--asphalt-3));color:${c}">${esc(ev.type || '')}</div>`;
+  return `<div class="rpv-poster">${poster}</div>
+    <div class="rpv-info">
+      <span class="rpv-badge" style="background:${c}">${esc(ev.type || '')}</span>
+      <b>${esc(ev.title)}</b>
+      <span class="rpv-meta">${fmtDateRange(ev.dateStart, ev.dateEnd)}</span>
+      <span class="rpv-meta">${esc(ev.city || '')}</span>
+    </div>`;
+}
+
+/* Petite carte de la liste par défaut. */
+function regionMiniCard(ev){
+  const c = TYPE_COLORS[ev.type] || '#FF5722';
+  const thumb = ev.poster
+    ? `<img src="${ev.poster}" alt="">`
+    : `<div class="rmini-ph" style="background:${c}22;color:${c}">${esc((ev.type || '?').slice(0, 2))}</div>`;
+  return `<button class="rmini" data-id="${esc(ev.id)}">
+    <span class="rmini-thumb">${thumb}</span>
+    <span class="rmini-txt"><b>${esc(ev.title)}</b><span>${fmtDateRange(ev.dateStart, ev.dateEnd)} · ${esc(ev.city || '')}</span></span>
+  </button>`;
+}
+
+function wireRegionPanel(panel){
+  panel.querySelectorAll('.rmini').forEach(b=> b.addEventListener('click', ()=> openEvent(b.dataset.id)));
 }
 
 /* =========================================================
@@ -1798,6 +1853,8 @@ function initAiImport(){
 async function runImport(payload, pending){
   const status = document.getElementById('ia-status');
   const btn = document.getElementById('ia-btn');
+  // L'assistant nécessite un compte (jeton Firebase). Sinon, on propose la connexion.
+  if(!currentUser && window.EBOK_AUTH){ openAuth('login'); status.textContent = 'Connecte-toi pour utiliser l’assistant IA.'; return; }
   status.textContent = pending;
   btn.disabled = true;
   try{
