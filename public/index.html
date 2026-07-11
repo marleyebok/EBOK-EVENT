@@ -498,7 +498,7 @@
       <div class="profile-section-head">
         <h3>👑 Administration — tous les événements</h3>
       </div>
-      <div class="results-grid" id="adminGrid"></div>
+      <div id="adminGrid"></div>
     </div>
   </section>
 
@@ -556,6 +556,139 @@
 
     <div class="auth-error hidden" id="authError"></div>
     <p class="auth-note" id="authNote">Un compte te permet d'enregistrer tes favoris et de publier des événements.</p>
+  </div>
+</div>
+
+<!-- ===================== MODALE ÉDITION (ADMIN) ===================== -->
+<div class="edit-modal" id="editModal" aria-hidden="true">
+  <div class="edit-box">
+    <button class="edit-close" id="editClose" aria-label="Fermer">&times;</button>
+    <h3>Modifier l'événement</h3>
+    <p class="edit-sub">Édition réservée aux administrateurs.</p>
+
+    <form id="editForm">
+      <div class="field">
+        <label for="e-title">Nom de l'événement</label>
+        <input type="text" id="e-title" required>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label for="e-type">Type</label>
+          <select id="e-type">
+            <option value="Tournoi">Tournoi</option>
+            <option value="Camp">Camp</option>
+            <option value="Voyage">Voyage</option>
+            <option value="All-Star Game">All-Star Game</option>
+            <option value="Show">Show</option>
+            <option value="Détections">Détections</option>
+            <option value="Clinic Coachs">Clinic Coachs</option>
+            <option value="Circuit 3x3">Circuit 3x3</option>
+            <option value="Handibasket">Handibasket</option>
+            <option value="Matchs de Gala">Matchs de Gala</option>
+            <option value="Divers">Divers</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="e-niveau">Niveau</label>
+          <select id="e-niveau">
+            <option>Loisir</option>
+            <option>Amateur</option>
+            <option>Confirmé</option>
+            <option>Semi-pro / Pro</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label for="e-city">Ville / lieu</label>
+          <input type="text" id="e-city">
+        </div>
+        <div class="field">
+          <label for="e-region">Région</label>
+          <input type="text" id="e-region">
+        </div>
+      </div>
+      <div class="field">
+        <label for="e-address">Adresse précise</label>
+        <input type="text" id="e-address">
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label for="e-date-start">Date de début</label>
+          <input type="date" id="e-date-start">
+        </div>
+        <div class="field">
+          <label for="e-date-end">Date de fin</label>
+          <input type="date" id="e-date-end">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label for="e-sexe">Public — sexe</label>
+          <select id="e-sexe">
+            <option>Masculin</option>
+            <option>Féminin</option>
+            <option>Mixte</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="e-age">Public — âge</label>
+          <select id="e-age">
+            <option>Enfants (6-11 ans)</option>
+            <option>Ados (12-17 ans)</option>
+            <option>Séniors (18-35 ans)</option>
+            <option>Vétérans (35 ans et +)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label for="e-places">Nombre de places <span style="color:var(--chalk-dim);font-weight:400;">(optionnel)</span></label>
+          <input type="number" id="e-places" min="0">
+        </div>
+        <div class="field">
+          <label for="e-dispo">Disponibilité</label>
+          <select id="e-dispo">
+            <option value="">— Non précisé</option>
+            <option value="dispo">Places disponibles</option>
+            <option value="limite">Encore quelques places</option>
+            <option value="complet">Complet</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="e-status">Statut</label>
+        <select id="e-status">
+          <option value="approved">En ligne (validé)</option>
+          <option value="pending">En attente de validation</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="e-desc">Description</label>
+        <textarea id="e-desc" placeholder="Format, déroulé..."></textarea>
+      </div>
+      <div class="field">
+        <label>Affiche</label>
+        <div class="edit-poster-row">
+          <img id="e-poster-preview" class="hidden" alt="Aperçu de l'affiche">
+          <div>
+            <input type="file" id="e-poster-file" accept="image/*">
+            <p style="font-size:12px;color:var(--chalk-dim);margin-top:6px;">Laisse vide pour conserver l'affiche actuelle.</p>
+          </div>
+        </div>
+      </div>
+
+      <label class="edit-featured" for="e-featured">
+        <input type="checkbox" id="e-featured">
+        <span><b>★ Mettre à la une</b> — l'événement apparaît dans le bandeau de la page d'accueil.</span>
+      </label>
+
+      <div class="edit-error hidden" id="editError"></div>
+      <div class="edit-actions">
+        <button type="button" class="btn btn-ghost" id="editCancel">Annuler</button>
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+      </div>
+    </form>
   </div>
 </div>
 
