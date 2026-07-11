@@ -857,6 +857,25 @@ function guessCoords(city, region){
 /* =========================================================
    EVENT DETAIL PAGE
    ========================================================= */
+
+/* Mini-carte de France (sous l'affiche) situant l'événement par un point.
+   Réutilise les tracés des régions ; cadre limité à la métropole. */
+function miniMapHtml(ev){
+  if(ev.x == null || ev.y == null || typeof FRANCE_REGIONS === 'undefined') return '';
+  const shapes = FRANCE_REGIONS.map(r=> `<path d="${r.d}"/>`).join('');
+  const c = TYPE_COLORS[ev.type] || '#FF5722';
+  return `<div class="event-mini-map">
+    <div class="mini-map-title">📍 ${esc(ev.city || ev.region || 'France')}</div>
+    <svg class="mini-france" viewBox="192 122 396 512" role="img" aria-label="Localisation de l'événement sur la carte de France">
+      <g class="mini-regions">${shapes}</g>
+      <circle class="mini-pin-halo" cx="${ev.x}" cy="${ev.y}" r="15" fill="${c}"></circle>
+      <circle class="mini-pin" cx="${ev.x}" cy="${ev.y}" r="7" fill="${c}"></circle>
+      <circle cx="${ev.x}" cy="${ev.y}" r="2.6" fill="#fff"></circle>
+    </svg>
+    <div class="mini-map-foot">${esc(ev.region || '')}</div>
+  </div>`;
+}
+
 async function openEvent(id){
   let ev = events.find(e=>e.id===id);
   // Événement absent de la liste publique (ex. en attente de validation) :
@@ -905,7 +924,10 @@ async function openEvent(id){
     : `<div class="gallery-empty">Aucune photo d'édition précédente pour le moment.</div>`;
 
   el.innerHTML = `
-    <div class="event-poster">${posterHtml}</div>
+    <div class="event-side">
+      <div class="event-poster">${posterHtml}</div>
+      ${miniMapHtml(ev)}
+    </div>
     <div class="event-main">
       <div class="badges">
         <div class="badges-left">
@@ -1246,6 +1268,113 @@ function authMessage(err){
   return "Une erreur est survenue. Réessaie.";
 }
 
+/* ---------- Profil membre (questions inscription + édition) ---------- */
+const ROLE_OPTIONS = ["Joueur", "Coach", "Organisateur", "Club", "Ligue", "Autre"];
+const INTEREST_OPTIONS = ["Tournois", "Camps", "Circuit 3x3", "Détections", "All-Star Game", "Clinic Coachs", "Show", "Voyage", "Matchs de Gala", "Handibasket"];
+const MAX_INTERESTS = 3;
+
+/* Champs de profil réutilisés à l'inscription (prefix "su-") et dans la
+   modale d'édition (prefix "pe-"). */
+function profileFieldsHtml(p){
+  const roleOpts = `<option value="">—</option>` + ROLE_OPTIONS.map(r=> `<option value="${r}">${r}</option>`).join('');
+  const interests = INTEREST_OPTIONS.map(i=>
+    `<label class="chip-check"><input type="checkbox" name="${p}interest" value="${esc(i)}"><span>${esc(i)}</span></label>`).join('');
+  return `
+    <div class="field">
+      <label for="${p}role">Tu es…</label>
+      <select id="${p}role" data-role-select="${p}">${roleOpts}</select>
+    </div>
+    <div class="field hidden" data-role-other="${p}">
+      <label for="${p}roleOther">Précise</label>
+      <input type="text" id="${p}roleOther" placeholder="Ex. Parent, photographe, média…">
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label for="${p}age">Âge</label>
+        <input type="number" id="${p}age" min="5" max="99" placeholder="Ex. 24">
+      </div>
+      <div class="field">
+        <label for="${p}sexe">Sexe</label>
+        <select id="${p}sexe">
+          <option value="">—</option>
+          <option>Masculin</option>
+          <option>Féminin</option>
+          <option>Autre</option>
+        </select>
+      </div>
+    </div>
+    <div class="field hidden" data-role-practice="${p}">
+      <label for="${p}practice">Niveau de pratique / club / catégorie</label>
+      <input type="text" id="${p}practice" placeholder="Ex. Régional U17, ou nom de ton club">
+    </div>
+    <div class="field">
+      <label for="${p}favClub">Club préféré</label>
+      <input type="text" id="${p}favClub" placeholder="Ex. ASVEL, Paris Basketball…">
+    </div>
+    <div class="field">
+      <label>Événements qui t'intéressent le plus <span class="field-hint">(${MAX_INTERESTS} choix max)</span></label>
+      <div class="chip-checks" data-interests="${p}">${interests}</div>
+    </div>`;
+}
+
+/* Comportements dynamiques : champs conditionnels + limite d'intérêts. */
+function wireProfileFields(p){
+  const role = document.getElementById(p + 'role');
+  const other = document.querySelector(`[data-role-other="${p}"]`);
+  const practice = document.querySelector(`[data-role-practice="${p}"]`);
+  if(role && other && practice){
+    const sync = ()=>{
+      const v = role.value;
+      other.classList.toggle('hidden', v !== 'Autre');
+      practice.classList.toggle('hidden', !(v === 'Joueur' || v === 'Coach'));
+    };
+    if(!role.dataset.wired){ role.addEventListener('change', sync); role.dataset.wired = '1'; }
+    sync();
+  }
+  const boxes = [...document.querySelectorAll(`[data-interests="${p}"] input[type=checkbox]`)];
+  const enforce = ()=>{
+    const full = boxes.filter(x=> x.checked).length >= MAX_INTERESTS;
+    boxes.forEach(x=>{ x.disabled = full && !x.checked; x.closest('.chip-check')?.classList.toggle('disabled', x.disabled); });
+  };
+  boxes.forEach(b=>{
+    if(!b.dataset.wired){ b.addEventListener('change', enforce); b.dataset.wired = '1'; }
+  });
+  enforce();
+}
+
+/* Lit les champs de profil en un objet prêt à stocker. */
+function readProfileFields(p){
+  const g = id => (document.getElementById(p + id)?.value || '').trim();
+  const role = g('role');
+  const isPlayerOrCoach = role === 'Joueur' || role === 'Coach';
+  const ageNum = parseInt(g('age'), 10);
+  const interests = [...document.querySelectorAll(`[data-interests="${p}"] input:checked`)].map(x=> x.value).slice(0, MAX_INTERESTS);
+  return {
+    role,
+    roleOther: role === 'Autre' ? g('roleOther') : '',
+    age: isNaN(ageNum) ? null : ageNum,
+    sexe: g('sexe'),
+    practice: isPlayerOrCoach ? g('practice') : '',
+    favClub: g('favClub'),
+    interests
+  };
+}
+
+/* Pré-remplit les champs de profil à partir d'un profil existant. */
+function fillProfileFields(p, prof){
+  prof = prof || {};
+  const s = (id, v)=>{ const el = document.getElementById(p + id); if(el) el.value = (v == null ? '' : v); };
+  s('role', prof.role || '');
+  s('roleOther', prof.roleOther || '');
+  s('age', prof.age != null ? prof.age : '');
+  s('sexe', prof.sexe || '');
+  s('practice', prof.practice || '');
+  s('favClub', prof.favClub || '');
+  const set = new Set(prof.interests || []);
+  document.querySelectorAll(`[data-interests="${p}"] input[type=checkbox]`).forEach(x=>{ x.checked = set.has(x.value); });
+  wireProfileFields(p);
+}
+
 function displayName(){
   return (currentProfile && (currentProfile.name || currentProfile.orgname))
     || (currentUser && (currentUser.displayName || currentUser.email))
@@ -1264,6 +1393,9 @@ function updateAuthUI(){
 
 function initAuth(){
   const modal = document.getElementById('authModal');
+  // Injecte les questions de profil dans le formulaire d'inscription.
+  const suProfile = document.getElementById('su-profile');
+  if(suProfile){ suProfile.innerHTML = profileFieldsHtml('su-'); wireProfileFields('su-'); }
   document.getElementById('btnLogin').addEventListener('click', ()=> openAuth('login'));
   document.getElementById('btnSignup').addEventListener('click', ()=> openAuth('signup'));
   document.getElementById('authClose').addEventListener('click', closeAuth);
@@ -1286,7 +1418,10 @@ function initAuth(){
   document.getElementById('signupForm').addEventListener('submit', async e=>{
     e.preventDefault();
     if(!window.EBOK_AUTH){ showAuthError("Inscription indisponible (Firebase non activé)."); return; }
-    const profile = { name: document.getElementById('su-name').value.trim() };
+    const profile = Object.assign(
+      { name: document.getElementById('su-name').value.trim() },
+      readProfileFields('su-')
+    );
     try{
       await window.EBOK_AUTH.signUp(
         document.getElementById('su-email').value.trim(),
@@ -1327,11 +1462,83 @@ async function renderProfile(){
   const initials = (name || '?').trim().slice(0,2).toUpperCase();
   document.getElementById('profileAvatar').textContent = initials;
 
+  renderProfileAbout();
   renderFavorites();
   renderMyEvents();
   const adminSection = document.getElementById('adminSection');
   adminSection.classList.toggle('hidden', !currentIsAdmin);
   if(currentIsAdmin) renderAdminEvents();
+}
+
+/* Récapitulatif du profil membre ("À propos de moi"). */
+function renderProfileAbout(){
+  const box = document.getElementById('profileAbout');
+  if(!box) return;
+  const p = currentProfile || {};
+  const roleLabel = p.role === 'Autre' ? (p.roleOther || 'Autre') : p.role;
+  const rows = [
+    roleLabel ? ['Profil', roleLabel] : null,
+    (p.age != null && p.age !== '') ? ['Âge', p.age + ' ans'] : null,
+    p.sexe ? ['Sexe', p.sexe] : null,
+    p.practice ? ['Niveau / club', p.practice] : null,
+    p.favClub ? ['Club préféré', p.favClub] : null,
+    (Array.isArray(p.interests) && p.interests.length) ? ['Événements préférés', p.interests.join(', ')] : null,
+  ].filter(Boolean);
+  if(!rows.length){
+    box.innerHTML = `<p class="about-empty">Complète ton profil pour qu'EBOK te propose les événements qui te ressemblent.</p>`;
+    return;
+  }
+  box.innerHTML = rows.map(([k, v])=>
+    `<div class="about-item"><span class="about-k">${esc(k)}</span><span class="about-v">${esc(v)}</span></div>`).join('');
+}
+
+/* ---- Modale d'édition du profil membre ---- */
+function closeProfileEdit(){
+  const modal = document.getElementById('profileEditModal');
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+}
+function openProfileEdit(){
+  if(!currentUser) return;
+  const p = currentProfile || {};
+  const nameEl = document.getElementById('pe-name');
+  if(nameEl) nameEl.value = p.name || (currentUser.displayName || '');
+  fillProfileFields('pe-', p);
+  document.getElementById('profileEditError').classList.add('hidden');
+  const modal = document.getElementById('profileEditModal');
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+}
+function initProfileEdit(){
+  const modal = document.getElementById('profileEditModal');
+  if(!modal) return;
+  document.getElementById('pe-profile').innerHTML = profileFieldsHtml('pe-');
+  wireProfileFields('pe-');
+  document.getElementById('profileEditClose').addEventListener('click', closeProfileEdit);
+  document.getElementById('profileEditCancel').addEventListener('click', closeProfileEdit);
+  modal.addEventListener('click', e=>{ if(e.target === modal) closeProfileEdit(); });
+  const btn = document.getElementById('btnEditProfile');
+  if(btn) btn.addEventListener('click', openProfileEdit);
+
+  document.getElementById('profileEditForm').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const data = Object.assign(
+      { name: (document.getElementById('pe-name').value || '').trim() },
+      readProfileFields('pe-')
+    );
+    if(currentUser && window.EBOK_DATA && window.EBOK_DATA.updateUserProfile){
+      try{ await window.EBOK_DATA.updateUserProfile(currentUser.uid, data); }
+      catch(err){
+        const box = document.getElementById('profileEditError');
+        box.textContent = "Enregistrement impossible. Réessaie."; box.classList.remove('hidden');
+        return;
+      }
+    }
+    currentProfile = Object.assign({}, currentProfile, data);
+    closeProfileEdit();
+    updateAuthUI();
+    renderProfile();
+  });
 }
 
 /* Événements publiés par l'utilisateur. */
@@ -1684,6 +1891,7 @@ initSearchPage();
 initCreatePage();
 initAuth();
 initEditModal();
+initProfileEdit();
 
 // Si une source de données externe est branchée (firebase-init.js), on
 // remplace les données locales par celles de la base dès qu'elles arrivent.

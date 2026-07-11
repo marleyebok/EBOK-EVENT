@@ -481,6 +481,14 @@
 
     <div class="profile-section">
       <div class="profile-section-head">
+        <h3>🧢 À propos de moi</h3>
+        <button class="btn btn-ghost" id="btnEditProfile">Modifier mon profil</button>
+      </div>
+      <div class="about-grid" id="profileAbout"></div>
+    </div>
+
+    <div class="profile-section">
+      <div class="profile-section-head">
         <h3>♥ Événements enregistrés</h3>
       </div>
       <div class="results-grid" id="favoritesGrid"></div>
@@ -551,6 +559,8 @@
         <label for="su-pass">Mot de passe (min. 6 caractères)</label>
         <input type="password" id="su-pass" autocomplete="new-password" minlength="6" required>
       </div>
+      <div class="auth-subhead">Ton profil basket <span>(optionnel)</span></div>
+      <div id="su-profile"></div>
       <button type="submit" class="btn btn-primary btn-lg" style="width:100%;">Créer mon compte</button>
     </form>
 
@@ -686,6 +696,29 @@
       <div class="edit-error hidden" id="editError"></div>
       <div class="edit-actions">
         <button type="button" class="btn btn-ghost" id="editCancel">Annuler</button>
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===================== MODALE PROFIL MEMBRE ===================== -->
+<div class="edit-modal" id="profileEditModal" aria-hidden="true">
+  <div class="edit-box">
+    <button class="edit-close" id="profileEditClose" aria-label="Fermer">&times;</button>
+    <h3>Mon profil basket</h3>
+    <p class="edit-sub">Ces infos nous aident à te proposer les événements les plus pertinents.</p>
+
+    <form id="profileEditForm">
+      <div class="field">
+        <label for="pe-name">Nom / pseudo</label>
+        <input type="text" id="pe-name" placeholder="Ex. Marley B.">
+      </div>
+      <div id="pe-profile"></div>
+
+      <div class="edit-error hidden" id="profileEditError"></div>
+      <div class="edit-actions">
+        <button type="button" class="btn btn-ghost" id="profileEditCancel">Annuler</button>
         <button type="submit" class="btn btn-primary">Enregistrer</button>
       </div>
     </form>
