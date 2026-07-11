@@ -123,19 +123,20 @@ L'authentification par email/mot de passe est intégrée (modale de connexion/in
 
 ## 🤖 Assistant IA — import d'un événement depuis un lien
 
-Dans l'espace **Administration**, l'admin peut coller le lien d'un événement (site web,
-billetterie…). Une fonction serverless récupère la page **côté serveur**, en extrait
-l'affiche et le texte, puis demande à **Claude** de structurer les infos ; le formulaire
-de publication est ensuite pré-rempli (l'admin relit et publie).
+Dans l'espace **Administration**, l'admin peut coller le **lien** d'un événement (site web,
+billetterie…) **ou déposer une image** (affiche, capture d'écran). Une fonction serverless
+récupère le contenu **côté serveur**, puis demande à **Google Gemini** de structurer les
+infos ; le formulaire de publication est ensuite pré-rempli (l'admin relit et publie).
 
-- Code : `api/import-event.js` (fonction Vercel) + carte « Assistant IA » dans le profil admin.
-- **Pages web ouvertes** → bien. **Facebook / Instagram** → souvent bloqués (mur de connexion) : peu fiable.
+- Code : `api/import-event.js` (fonction Vercel, sans dépendance npm) + carte « Assistant IA » dans le profil admin.
+- **Pages web ouvertes** → bien. **Facebook / Instagram** → souvent bloqués (mur de connexion) : préfère une **capture d'écran**.
+- Moteur : **Gemini Flash** via Google AI Studio — **gratuit** dans les limites quotidiennes de l'offre gratuite.
 
 ### Activer (1 variable d'environnement)
 
-1. Crée une clé API sur **console.anthropic.com** (facturation à l'usage, quelques centimes par import).
+1. Crée une clé **gratuite** sur **aistudio.google.com** → *Get API key* (aucune carte bancaire requise).
 2. Vercel → **Settings → Environment Variables** → ajoute :
-   - `ANTHROPIC_API_KEY` = ta clé (obligatoire)
+   - `GEMINI_API_KEY` = ta clé (obligatoire)
    - `ADMIN_EMAILS` = emails admin séparés par des virgules (optionnel, défaut : `marley.ebok@gmail.com`)
 3. Redéploie. Tant que la clé n'est pas définie, l'assistant renvoie un message d'erreur clair et le reste du site fonctionne normalement.
 

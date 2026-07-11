@@ -1,48 +1,27 @@
 /* =========================================================
    EBOK Event — ASSISTANT IA D'IMPORT (fonction serverless Vercel)
    ---------------------------------------------------------
-   Reçoit un lien (site, page Facebook/Instagram, billetterie…),
-   récupère la page côté serveur, en extrait le texte + l'affiche,
-   puis demande à Claude de structurer les infos de l'événement.
+   Reçoit un lien (site, billetterie…) OU une image (affiche, capture),
+   récupère le contenu, puis demande à Google Gemini de structurer les
+   infos de l'événement. Le formulaire de publication est pré-rempli.
 
    Variables d'environnement (Vercel > Settings > Environment Variables) :
-   - ANTHROPIC_API_KEY  (obligatoire)  clé API Anthropic
-   - ADMIN_EMAILS       (optionnel)    emails admin, séparés par des virgules
-   - FIREBASE_API_KEY   (optionnel)    clé Web Firebase (pour valider le compte)
+   - GEMINI_API_KEY   (obligatoire)  clé Google AI Studio (gratuite)
+   - ADMIN_EMAILS     (optionnel)    emails admin, séparés par des virgules
+   - FIREBASE_API_KEY (optionnel)    clé Web Firebase (pour valider le compte)
    ========================================================= */
-const Anthropic = require("@anthropic-ai/sdk");
+const GEMINI_MODEL = "gemini-2.0-flash";
 
 const TYPES = [
   "Tournoi", "Camp", "Voyage", "All-Star Game", "Show", "Détections",
   "Clinic Coachs", "Circuit 3x3", "Handibasket", "Matchs de Gala", "Divers"
 ];
+const FIELDS = ["title", "type", "city", "region", "address", "dateStart", "dateEnd",
+  "sexe", "age", "niveau", "description", "orgName", "insta", "site"];
 
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "marley.ebok@gmail.com")
   .split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || "AIzaSyAeOxodAkp4TFU1V5PiOqV2qUh9WVQEKhA";
-
-const EVENT_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  required: ["title", "type", "city", "region", "address", "dateStart", "dateEnd",
-    "sexe", "age", "niveau", "description", "orgName", "insta", "site"],
-  properties: {
-    title: { type: "string" },
-    type: { type: "string", enum: TYPES },
-    city: { type: "string" },
-    region: { type: "string" },
-    address: { type: "string" },
-    dateStart: { type: "string" },
-    dateEnd: { type: "string" },
-    sexe: { type: "string", enum: ["Masculin", "Féminin", "Mixte"] },
-    age: { type: "string" },
-    niveau: { type: "string" },
-    description: { type: "string" },
-    orgName: { type: "string" },
-    insta: { type: "string" },
-    site: { type: "string" }
-  }
-};
 
 /* Refuse les adresses internes / locales (protection SSRF de base). */
 function isBlockedHost(host) {
@@ -71,8 +50,8 @@ async function verifyAdmin(idToken) {
   } catch (e) { return false; }
 }
 
-/* Récupère le HTML d'une page avec un délai maximal. */
-async function fetchText(url, ms, asBuffer) {
+/* Récupère le contenu d'une URL avec un délai maximal. */
+async function fetchUrl(url, ms, asBuffer) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), ms);
   try {
@@ -130,7 +109,7 @@ async function fetchPoster(url) {
   try {
     const u = new URL(url);
     if (isBlockedHost(u.hostname)) return null;
-    const r = await fetchText(url, 9000, true);
+    const r = await fetchUrl(url, 9000, true);
     if (!r || !r.buf) return null;
     if (!/^image\//i.test(r.type)) return null;
     if (r.buf.length > 3 * 1024 * 1024) return null;
@@ -138,45 +117,41 @@ async function fetchPoster(url) {
   } catch (e) { return null; }
 }
 
-/* Découpe une dataURL image en { media_type, data base64 }. */
+/* Découpe une dataURL image en { mime, data base64 }. */
 function parseDataUrl(s) {
   const m = /^data:(image\/(?:png|jpe?g|gif|webp));base64,([A-Za-z0-9+/=]+)$/i.exec(s || "");
   if (!m) return null;
-  let media = m[1].toLowerCase();
-  if (media === "image/jpg") media = "image/jpeg";
-  return { media, data: m[2] };
+  let mime = m[1].toLowerCase();
+  if (mime === "image/jpg") mime = "image/jpeg";
+  return { mime, data: m[2] };
 }
 
-/* Appelle Claude et renvoie l'événement structuré. */
-async function runClaude(apiKey, content) {
-  const anthropic = new Anthropic({ apiKey });
-  const msg = await anthropic.messages.create({
-    model: "claude-opus-4-8",
-    max_tokens: 2000,
-    output_config: { format: { type: "json_schema", schema: EVENT_SCHEMA } },
-    messages: [{ role: "user", content }]
-  });
-  const textBlock = (msg.content || []).find(b => b.type === "text");
-  if (!textBlock) throw new Error("Réponse IA vide.");
-  const event = JSON.parse(textBlock.text);
-  if (event.type && !TYPES.includes(event.type)) event.type = "Divers";
-  return event;
+/* Complète et nettoie l'objet renvoyé par l'IA. */
+function normalizeEvent(e) {
+  e = e || {};
+  const out = {};
+  for (const k of FIELDS) out[k] = (e[k] == null) ? "" : String(e[k]).trim();
+  if (out.type && !TYPES.includes(out.type)) out.type = "Divers";
+  if (!["Masculin", "Féminin", "Mixte"].includes(out.sexe)) out.sexe = "";
+  out.insta = out.insta.replace(/^@/, "");
+  return out;
 }
 
 const RULES =
-`Règles :
-- "type" : choisis la catégorie la plus proche dans la liste imposée (par défaut "Divers").
-- "dateStart" / "dateEnd" : format AAAA-MM-JJ. S'il n'y a qu'une date, mets-la dans les deux. Si une info de date manque, mets "". N'INVENTE JAMAIS de date.
+`Réponds avec un OBJET JSON aux clés EXACTES : title, type, city, region, address, dateStart, dateEnd, sexe, age, niveau, description, orgName, insta, site.
+Règles :
+- "type" : une seule valeur parmi [${TYPES.join(", ")}] (par défaut "Divers").
+- "dateStart" / "dateEnd" : format AAAA-MM-JJ. S'il n'y a qu'une date, mets-la dans les deux. Si une date manque, mets "". N'INVENTE JAMAIS de date.
+- "sexe" : "Masculin", "Féminin", "Mixte" ou "".
 - "region" : la région administrative française (ex. "Île-de-France", "Occitanie") déduite de la ville si possible, sinon "".
-- "description" : 2 à 4 phrases synthétiques en français décrivant l'événement.
+- "description" : 2 à 4 phrases synthétiques en français.
 - "insta" : identifiant Instagram sans le @, sinon "".
 - Laisse "" tout champ introuvable.`;
 
 function urlPrompt(today, url, page) {
-  return `Tu extrais les informations d'un événement de basketball à partir du contenu d'une page web (site, réseau social, billetterie). Réponds UNIQUEMENT via le format structuré demandé.
-
+  return `Tu extrais les informations d'un événement de basketball à partir du contenu d'une page web (site, réseau social, billetterie).
 ${RULES}
-- "site" : l'URL officielle de l'événement si présente, sinon l'URL source.
+- "site" : l'URL officielle si présente, sinon l'URL source.
 
 Date du jour : ${today}
 URL source : ${url}
@@ -188,19 +163,44 @@ ${page.text}`;
 }
 
 function imagePrompt(today) {
-  return `Tu extrais les informations d'un événement de basketball à partir de cette affiche ou capture d'écran. Lis attentivement TOUT le texte visible (titre, dates, lieu, ville, organisateur, contacts, Instagram). Réponds UNIQUEMENT via le format structuré demandé.
-
+  return `Tu extrais les informations d'un événement de basketball à partir de cette affiche ou capture d'écran. Lis attentivement TOUT le texte visible (titre, dates, lieu, ville, organisateur, contacts, Instagram).
 ${RULES}
 
 Date du jour : ${today}`;
 }
 
+/* Appelle Google Gemini et renvoie l'événement structuré. */
+async function runGemini(apiKey, parts) {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts }],
+        generationConfig: { responseMimeType: "application/json", temperature: 0.2, maxOutputTokens: 2048 }
+      })
+    }
+  );
+  if (res.status === 400 || res.status === 403) { const e = new Error("key"); e.code = "KEY"; throw e; }
+  if (res.status === 429) { const e = new Error("rate"); e.code = "RATE"; throw e; }
+  if (!res.ok) throw new Error("gemini_" + res.status);
+  const data = await res.json();
+  if (data.promptFeedback && data.promptFeedback.blockReason) throw new Error("blocked");
+  const cand = data.candidates && data.candidates[0];
+  let text = cand && cand.content && cand.content.parts
+    && cand.content.parts.map(p => p.text || "").join("");
+  if (!text) throw new Error("empty");
+  text = text.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+  return normalizeEvent(JSON.parse(text));
+}
+
 module.exports = async (req, res) => {
   if (req.method !== "POST") { res.status(405).json({ ok: false, error: "Méthode non autorisée." }); return; }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    res.status(500).json({ ok: false, error: "Assistant IA non configuré : ajoute la clé ANTHROPIC_API_KEY dans Vercel." });
+    res.status(500).json({ ok: false, error: "Assistant IA non configuré : ajoute la clé GEMINI_API_KEY dans Vercel." });
     return;
   }
 
@@ -223,11 +223,12 @@ module.exports = async (req, res) => {
       const img = parseDataUrl(image);
       if (!img) { res.status(400).json({ ok: false, error: "Image invalide (formats acceptés : JPG, PNG, GIF, WEBP)." }); return; }
       if (img.data.length > 7 * 1024 * 1024) { res.status(413).json({ ok: false, error: "Image trop lourde (max ~5 Mo)." }); return; }
-      const content = [
-        { type: "image", source: { type: "base64", media_type: img.media, data: img.data } },
-        { type: "text", text: imagePrompt(today) }
+      const parts = [
+        { inline_data: { mime_type: img.mime, data: img.data } },
+        { text: imagePrompt(today) }
       ];
-      const event = await runClaude(apiKey, content);
+      const event = await runGemini(apiKey, parts);
+      if (!event.site) event.site = "";
       res.status(200).json({ ok: true, event, poster: image });
       return;
     }
@@ -238,7 +239,7 @@ module.exports = async (req, res) => {
     if (!/^https?:$/.test(parsed.protocol) || isBlockedHost(parsed.hostname)) {
       res.status(400).json({ ok: false, error: "Lien non autorisé." }); return;
     }
-    const html = await fetchText(url, 12000, false);
+    const html = await fetchUrl(url, 12000, false);
     if (!html) {
       res.status(422).json({ ok: false, error: "Impossible de lire cette page (protégée ou indisponible). Les pages Facebook/Instagram sont souvent inaccessibles — utilise plutôt une capture d'écran." });
       return;
@@ -248,14 +249,14 @@ module.exports = async (req, res) => {
       res.status(422).json({ ok: false, error: "Pas assez de contenu exploitable sur cette page." });
       return;
     }
-    const event = await runClaude(apiKey, urlPrompt(today, url, page));
+    const event = await runGemini(apiKey, [{ text: urlPrompt(today, url, page) }]);
     if (!event.site) event.site = url;
     const poster = await fetchPoster(page.image);
     res.status(200).json({ ok: true, event, poster, sourceUrl: url });
   } catch (err) {
-    const status = err && err.status;
-    if (status === 401) { res.status(500).json({ ok: false, error: "Clé ANTHROPIC_API_KEY invalide." }); return; }
-    if (status === 429) { res.status(503).json({ ok: false, error: "Trop de requêtes IA, réessaie dans un instant." }); return; }
+    if (err && err.code === "KEY") { res.status(500).json({ ok: false, error: "Clé GEMINI_API_KEY invalide." }); return; }
+    if (err && err.code === "RATE") { res.status(503).json({ ok: false, error: "Limite gratuite atteinte, réessaie dans une minute." }); return; }
+    if (err && err.message === "blocked") { res.status(422).json({ ok: false, error: "Contenu refusé par l'IA. Essaie une autre source." }); return; }
     res.status(500).json({ ok: false, error: "L'analyse IA a échoué. Réessaie." });
   }
 };
@@ -263,3 +264,5 @@ module.exports = async (req, res) => {
 // Exposé pour les tests unitaires (non utilisé par Vercel).
 module.exports.extractPage = extractPage;
 module.exports.isBlockedHost = isBlockedHost;
+module.exports.parseDataUrl = parseDataUrl;
+module.exports.normalizeEvent = normalizeEvent;
