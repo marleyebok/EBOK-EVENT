@@ -672,6 +672,12 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .chip-check:has(input:checked){background:rgba(255,87,34,0.14);border-color:var(--orange);color:var(--chalk);}
 .chip-check.disabled{opacity:.4;cursor:not-allowed;}
 
+/* Upload photo de profil */
+.photo-upload{display:flex;align-items:center;gap:14px;}
+.photo-avatar-prev{width:64px;height:64px;border-radius:50%;border:1px dashed var(--line-strong);background:var(--asphalt-3);background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--chalk-dim);font-size:24px;font-weight:700;}
+.photo-avatar-prev.has-photo{border-style:solid;border-color:var(--line);}
+.profile-avatar.has-photo{background-size:cover;background-position:center;}
+
 /* Section "À propos de moi" */
 .about-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
 .about-item{background:var(--asphalt-2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;}
