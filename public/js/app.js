@@ -1342,12 +1342,97 @@ async function renderMyEvents(){
     "Aucun événement publié pour l'instant. Clique sur « Publier un événement » pour commencer !");
 }
 
-/* Tous les événements (section admin). */
+/* ---- Administration : tableau de gestion des événements ---- */
+let adminList = [];               // dernière liste chargée (pour l'édition)
+
+// Échappe le texte inséré dans le HTML du tableau (titres, villes…).
+function esc(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+/* Tous les événements (section admin) — rendu sous forme de tableau. */
 async function renderAdminEvents(){
-  const grid = document.getElementById('adminGrid');
-  await fillEventsGrid(grid,
-    ()=> window.EBOK_DATA.getAllEventsForAdmin(),
-    "Aucun événement dans la base.");
+  const wrap = document.getElementById('adminGrid');
+  if(!wrap) return;
+  if(!window.EBOK_DATA){
+    wrap.innerHTML = `<div class="empty-state"><p>Disponible une fois Firebase activé.</p></div>`;
+    return;
+  }
+  wrap.innerHTML = `<div class="empty-state"><p>Chargement…</p></div>`;
+  let list;
+  try{ list = await window.EBOK_DATA.getAllEventsForAdmin(); }
+  catch(err){ wrap.innerHTML = `<div class="empty-state"><h4>Erreur</h4><p>Impossible de charger les événements.</p></div>`; return; }
+  if(!list.length){ wrap.innerHTML = `<div class="empty-state"><p>Aucun événement dans la base.</p></div>`; return; }
+  list.sort((a,b)=> (b.createdAt || 0) - (a.createdAt || 0));
+  adminList = list;
+  wrap.innerHTML = adminTableHtml(list);
+  wrap.querySelectorAll('[data-open]').forEach(b=> b.addEventListener('click', ()=> openEvent(b.dataset.open)));
+  wrap.querySelectorAll('[data-edit]').forEach(b=> b.addEventListener('click', ()=> openEditModal(b.dataset.edit)));
+  wrap.querySelectorAll('[data-del]').forEach(b=> b.addEventListener('click', ()=> handleDelete(b.dataset.del)));
+  wrap.querySelectorAll('[data-approve]').forEach(b=> b.addEventListener('click', ()=> handleApprove(b.dataset.approve)));
+  wrap.querySelectorAll('[data-feature]').forEach(b=> b.addEventListener('click', ()=> handleToggleFeatured(b.dataset.feature)));
+}
+
+function adminTableHtml(list){
+  return `<div class="admin-table-scroll">
+    <table class="admin-table">
+      <thead><tr>
+        <th>Statut</th>
+        <th class="col-center">À la une</th>
+        <th>Événement</th>
+        <th>Type</th>
+        <th>Ville</th>
+        <th>Dates</th>
+        <th class="col-actions">Actions</th>
+      </tr></thead>
+      <tbody>${list.map(adminRowHtml).join('')}</tbody>
+    </table>
+  </div>`;
+}
+
+function adminRowHtml(ev){
+  const pending = ev.status !== 'approved';
+  const feat = !!ev.featured;
+  return `<tr>
+    <td><span class="status-dot ${pending ? 'status-pending' : 'status-approved'}">${pending ? 'En attente' : 'En ligne'}</span></td>
+    <td class="col-center">
+      <button class="star-toggle ${feat ? 'on' : ''}" data-feature="${esc(ev.id)}" aria-pressed="${feat}" title="${feat ? 'Retirer de la une' : 'Mettre à la une'}">★</button>
+    </td>
+    <td class="col-title"><b>${esc(ev.title)}</b></td>
+    <td>${esc(ev.type || '')}</td>
+    <td>${esc(ev.city || '')}</td>
+    <td class="col-dates">${fmtDateRange(ev.dateStart, ev.dateEnd)}</td>
+    <td class="col-actions">
+      <button class="btn btn-ghost btn-xs" data-open="${esc(ev.id)}">Voir</button>
+      <button class="btn btn-ghost btn-xs" data-edit="${esc(ev.id)}">Modifier</button>
+      ${pending ? `<button class="btn btn-approve btn-xs" data-approve="${esc(ev.id)}">Valider</button>` : ''}
+      <button class="btn btn-danger btn-xs" data-del="${esc(ev.id)}">Supprimer</button>
+    </td>
+  </tr>`;
+}
+
+/* Recharge la liste publique (événements validés) après une modification
+   admin, pour que la carte et le bandeau "à la une" restent à jour. */
+async function refreshPublicEvents(){
+  if(window.EBOK_DATA && window.EBOK_DATA.getAllEvents){
+    try{ const list = await window.EBOK_DATA.getAllEvents(); if(Array.isArray(list)) events = list; }
+    catch(e){ /* on garde la liste courante */ }
+  }
+}
+
+/* Bascule "mise en avant" (bandeau page d'accueil) depuis le tableau. */
+async function handleToggleFeatured(id){
+  const ev = adminList.find(e=> e.id === id) || events.find(e=> e.id === id);
+  const next = !(ev && ev.featured);
+  try{ await window.EBOK_DATA.updateEvent(id, { featured: next }); }
+  catch(err){ alert("Modification impossible (droits insuffisants ?)."); return; }
+  if(ev) ev.featured = next;
+  const local = events.find(e=> e.id === id); if(local) local.featured = next;
+  await refreshPublicEvents();
+  renderAll();
+  renderProfile();
 }
 
 async function fillEventsGrid(grid, fetcher, emptyMsg){
@@ -1421,6 +1506,120 @@ async function handleApprove(id){
   }catch(err){ alert("Validation impossible."); }
 }
 
+/* ---- Modale d'édition d'un événement (admin) ---- */
+let editingId = null;
+let editPosterData = null;        // nouvelle affiche (dataURL) si remplacée
+
+function setFieldVal(id, v){ const el = document.getElementById(id); if(el) el.value = (v == null ? '' : v); }
+function showEditError(msg){
+  const e = document.getElementById('editError');
+  if(!e) return; e.textContent = msg; e.classList.remove('hidden');
+}
+function closeEditModal(){
+  const modal = document.getElementById('editModal');
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+  editingId = null;
+  editPosterData = null;
+}
+
+function openEditModal(id){
+  const ev = adminList.find(e=> e.id === id) || events.find(e=> e.id === id);
+  if(!ev){ return; }
+  editingId = id;
+  editPosterData = null;
+  setFieldVal('e-title', ev.title);
+  setFieldVal('e-type', ev.type || 'Divers');
+  setFieldVal('e-niveau', ev.niveau || 'Loisir');
+  setFieldVal('e-city', ev.city);
+  setFieldVal('e-region', ev.region);
+  setFieldVal('e-address', (ev.infos && ev.infos.adresse) || ev.lieu || '');
+  setFieldVal('e-date-start', ev.dateStart);
+  setFieldVal('e-date-end', ev.dateEnd);
+  setFieldVal('e-sexe', ev.sexe || 'Mixte');
+  setFieldVal('e-age', ev.age || 'Séniors (18-35 ans)');
+  setFieldVal('e-places', ev.placesTotal != null ? ev.placesTotal : '');
+  setFieldVal('e-dispo', ev.dispo || '');
+  setFieldVal('e-status', ev.status === 'approved' ? 'approved' : 'pending');
+  setFieldVal('e-desc', ev.description);
+  const feat = document.getElementById('e-featured'); if(feat) feat.checked = !!ev.featured;
+  const prev = document.getElementById('e-poster-preview');
+  if(prev){
+    if(ev.poster){ prev.src = ev.poster; prev.classList.remove('hidden'); }
+    else{ prev.src = ''; prev.classList.add('hidden'); }
+  }
+  const fileInput = document.getElementById('e-poster-file'); if(fileInput) fileInput.value = '';
+  document.getElementById('editError').classList.add('hidden');
+  const modal = document.getElementById('editModal');
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+}
+
+function initEditModal(){
+  const modal = document.getElementById('editModal');
+  if(!modal) return;
+  document.getElementById('editClose').addEventListener('click', closeEditModal);
+  document.getElementById('editCancel').addEventListener('click', closeEditModal);
+  modal.addEventListener('click', e=>{ if(e.target === modal) closeEditModal(); });
+
+  const fileInput = document.getElementById('e-poster-file');
+  fileInput.addEventListener('change', ()=>{
+    const file = fileInput.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      editPosterData = e.target.result;
+      const prev = document.getElementById('e-poster-preview');
+      if(prev){ prev.src = editPosterData; prev.classList.remove('hidden'); }
+    };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById('editForm').addEventListener('submit', async e=>{
+    e.preventDefault();
+    if(!editingId) return;
+    const gv = id => (document.getElementById(id)?.value || '').trim();
+    const ev = adminList.find(x=> x.id === editingId) || events.find(x=> x.id === editingId);
+
+    const patch = {
+      title: gv('e-title') || 'Événement sans nom',
+      type: gv('e-type') || 'Divers',
+      niveau: gv('e-niveau'),
+      city: gv('e-city'),
+      region: gv('e-region'),
+      lieu: gv('e-address') || gv('e-city'),
+      dateStart: gv('e-date-start'),
+      dateEnd: gv('e-date-end') || gv('e-date-start'),
+      sexe: gv('e-sexe'),
+      age: gv('e-age'),
+      dispo: gv('e-dispo'),
+      description: gv('e-desc'),
+      status: gv('e-status') === 'approved' ? 'approved' : 'pending',
+      featured: document.getElementById('e-featured').checked
+    };
+    const placesRaw = gv('e-places');
+    patch.placesTotal = placesRaw ? parseInt(placesRaw, 10) : null;
+    patch.infos = Object.assign({}, ev && ev.infos, { adresse: gv('e-address') });
+    // Recalcule la position sur la carte si la ville/région a changé.
+    if(ev && (ev.city !== patch.city || ev.region !== patch.region)){
+      const c = guessCoords(patch.city, patch.region);
+      patch.x = c.x; patch.y = c.y;
+    }
+    if(editPosterData){ patch.poster = editPosterData; }
+
+    try{ await window.EBOK_DATA.updateEvent(editingId, patch); }
+    catch(err){ showEditError("Enregistrement impossible (droits insuffisants ?)."); return; }
+
+    if(ev) Object.assign(ev, patch);
+    const local = events.find(x=> x.id === editingId);
+    if(local) Object.assign(local, patch);
+    closeEditModal();
+    await refreshPublicEvents();
+    renderAll();
+    renderProfile();
+  });
+}
+
 /* =========================================================
    INIT
    ========================================================= */
@@ -1484,6 +1683,7 @@ initHomeFilters();
 initSearchPage();
 initCreatePage();
 initAuth();
+initEditModal();
 
 // Si une source de données externe est branchée (firebase-init.js), on
 // remplace les données locales par celles de la base dès qu'elles arrivent.
