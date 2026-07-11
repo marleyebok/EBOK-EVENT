@@ -1710,6 +1710,76 @@ async function refreshPublicEvents(){
   }
 }
 
+/* ---- Assistant IA : import d'un événement depuis un lien ---- */
+function initAiImport(){
+  const btn = document.getElementById('ia-btn');
+  const input = document.getElementById('ia-url');
+  if(!btn || !input) return;
+  btn.addEventListener('click', importFromUrl);
+  input.addEventListener('keydown', e=>{ if(e.key === 'Enter'){ e.preventDefault(); importFromUrl(); } });
+}
+
+async function importFromUrl(){
+  const input = document.getElementById('ia-url');
+  const status = document.getElementById('ia-status');
+  const btn = document.getElementById('ia-btn');
+  const url = (input.value || '').trim();
+  if(!url){ status.textContent = 'Colle d’abord un lien.'; return; }
+  status.textContent = '⏳ Analyse de la page en cours (10–20 s)…';
+  btn.disabled = true;
+  try{
+    let idToken = '';
+    if(currentUser && currentUser.getIdToken) idToken = await currentUser.getIdToken();
+    const res = await fetch('/api/import-event', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, idToken })
+    });
+    let data = {};
+    try{ data = await res.json(); }catch(e){ /* réponse non JSON */ }
+    if(!res.ok || !data.ok) throw new Error(data.error || 'Import impossible.');
+    prefillCreateFromImport(data.event || {}, data.poster);
+    status.textContent = '✅ Infos récupérées — vérifie et publie ci-dessous.';
+  }catch(err){
+    status.textContent = '⚠️ ' + (err.message || 'Import impossible.');
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+/* Pré-remplit le formulaire de publication avec les données extraites. */
+function prefillCreateFromImport(ev, poster){
+  const set = (id, v)=>{ const el = document.getElementById(id); if(el && v != null && v !== '') el.value = v; };
+  set('c-nom', ev.title);
+  set('c-type', ev.type);
+  set('c-ville', ev.city);
+  set('c-region', ev.region);
+  set('c-adresse', ev.address);
+  set('c-date-debut', ev.dateStart);
+  set('c-date-fin', ev.dateEnd);
+  set('c-sexe', ev.sexe);
+  set('c-niveau', ev.niveau);
+  set('c-desc', ev.description);
+  set('c-orgname', ev.orgName);
+  set('c-insta', ev.insta);
+  set('c-site', ev.site);
+  // Affiche récupérée : on l'injecte dans l'aperçu du dropzone.
+  const preview = document.getElementById('dzPreview');
+  const label = document.getElementById('dzLabel');
+  if(poster && preview){
+    preview.src = poster;
+    preview.classList.remove('hidden');
+    if(label) label.style.display = 'none';
+  }
+  showPage('create');
+  const banner = document.getElementById('createSuccess');
+  if(banner){
+    banner.textContent = '🤖 Formulaire pré-rempli par l’IA — vérifie les infos (surtout les dates) puis publie.';
+    banner.classList.remove('hidden');
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 /* Bascule "mise en avant" (bandeau page d'accueil) depuis le tableau. */
 async function handleToggleFeatured(id){
   const ev = adminList.find(e=> e.id === id) || events.find(e=> e.id === id);
@@ -1976,6 +2046,7 @@ initCreatePage();
 initAuth();
 initEditModal();
 initProfileEdit();
+initAiImport();
 
 // Si une source de données externe est branchée (firebase-init.js), on
 // remplace les données locales par celles de la base dès qu'elles arrivent.

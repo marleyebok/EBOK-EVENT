@@ -119,6 +119,28 @@ L'authentification par email/mot de passe est intégrée (modale de connexion/in
 
 > La sécurité (qui peut créer / modifier / supprimer) est verrouillée par `firestore.rules` : un diffuseur ne touche qu'à ses propres événements, seul l'admin peut tout gérer.
 
+---
+
+## 🤖 Assistant IA — import d'un événement depuis un lien
+
+Dans l'espace **Administration**, l'admin peut coller le lien d'un événement (site web,
+billetterie…). Une fonction serverless récupère la page **côté serveur**, en extrait
+l'affiche et le texte, puis demande à **Claude** de structurer les infos ; le formulaire
+de publication est ensuite pré-rempli (l'admin relit et publie).
+
+- Code : `api/import-event.js` (fonction Vercel) + carte « Assistant IA » dans le profil admin.
+- **Pages web ouvertes** → bien. **Facebook / Instagram** → souvent bloqués (mur de connexion) : peu fiable.
+
+### Activer (1 variable d'environnement)
+
+1. Crée une clé API sur **console.anthropic.com** (facturation à l'usage, quelques centimes par import).
+2. Vercel → **Settings → Environment Variables** → ajoute :
+   - `ANTHROPIC_API_KEY` = ta clé (obligatoire)
+   - `ADMIN_EMAILS` = emails admin séparés par des virgules (optionnel, défaut : `marley.ebok@gmail.com`)
+3. Redéploie. Tant que la clé n'est pas définie, l'assistant renvoie un message d'erreur clair et le reste du site fonctionne normalement.
+
+> L'endpoint est réservé aux administrateurs : il valide le **jeton Firebase** de l'appelant et vérifie son email avant tout appel à l'IA.
+
 ### Étape suivante du plan
 
 **Géolocalisation réelle** (distance Haversine + autocomplétion de ville) — détaillé dans `DEVELOPMENT_PLAN.md`.

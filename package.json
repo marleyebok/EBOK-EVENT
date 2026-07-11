@@ -17,6 +17,9 @@
   ],
   "author": "EBOK Event",
   "license": "UNLICENSED",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.111.0"
+  },
   "devDependencies": {
     "http-server": "^14.1.1"
   }
