@@ -1222,7 +1222,10 @@ async function openEvent(id){
   currentGallery = ev.gallery || [];
   const el = document.getElementById('eventDetail');
   const posterHtml = ev.poster
-    ? `<img src="${ev.poster}" alt="Affiche ${ev.title}">`
+    ? `<button type="button" class="poster-zoom" id="posterZoom" title="Agrandir l'affiche" aria-label="Agrandir l'affiche">
+         <img src="${ev.poster}" alt="Affiche ${ev.title}">
+         <span class="poster-zoom-ic">🔍</span>
+       </button>`
     : `<div style="aspect-ratio:3/4;background:linear-gradient(160deg, ${TYPE_COLORS[ev.type]}44, var(--asphalt-3));display:flex;align-items:center;justify-content:center;font-family:var(--font-display);color:${TYPE_COLORS[ev.type]};font-size:22px;text-align:center;padding:20px;">${ev.type.toUpperCase()}<br><span style="font-size:13px;color:var(--chalk-dim);font-family:var(--font-body);margin-top:8px;">Affiche à venir</span></div>`;
 
   const contactItems = [];
@@ -1349,6 +1352,11 @@ async function openEvent(id){
       openLightbox(item);
     });
   });
+  // Clic sur l'affiche → agrandissement plein écran (lightbox).
+  const posterZoom = document.getElementById('posterZoom');
+  if(posterZoom && ev.poster){
+    posterZoom.addEventListener('click', ()=> openLightbox({ img: ev.poster, caption: ev.title }));
+  }
   document.addEventListener('click', ()=>{
     document.getElementById('popInfo')?.classList.remove('open');
     document.getElementById('popShare')?.classList.remove('open');
@@ -1428,6 +1436,9 @@ function closeLightbox(){ document.getElementById('lightbox').classList.remove('
 document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
 document.getElementById('lightbox').addEventListener('click', (e)=>{
   if(e.target.id==='lightbox') closeLightbox();
+});
+document.addEventListener('keydown', (e)=>{
+  if(e.key==='Escape' && document.getElementById('lightbox').classList.contains('open')) closeLightbox();
 });
 
 function renderFeatured(){
