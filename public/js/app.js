@@ -815,6 +815,15 @@ function initCreatePage(){
   const preview = document.getElementById('dzPreview');
   const label = document.getElementById('dzLabel');
 
+  // Autocomplétion de ville (fixe la localisation + la région).
+  attachCityAutocomplete('c-ville', 'c-ville-ac', pick=>{
+    createPickedLocation = pick;
+    const regionEl = document.getElementById('c-region');
+    if(regionEl) regionEl.value = pick.region || '';
+    const hint = document.getElementById('c-ville-hint');
+    if(hint){ hint.textContent = '📍 ' + pick.city + (pick.region ? ' · ' + pick.region : '') + ' — localisé sur la carte.'; hint.style.color = 'var(--green)'; }
+  });
+
   input.addEventListener('change', async ()=>{
     const file = input.files[0];
     if(!file) return;
@@ -869,9 +878,19 @@ function initCreatePage(){
     const dateStart = val('c-date-debut');
     const dateEnd   = val('c-date-fin') || dateStart;
     const city      = val('c-ville');
-    const region    = val('c-region');
     const type      = val('c-type') || 'Divers';
-    const coords    = await resolveCoords(val('c-adresse'), city, region);
+
+    // Localisation : si l'utilisateur a validé une ville dans la liste de
+    // suggestions (et n'a pas retapé par-dessus), on utilise ses coordonnées
+    // et sa région EXACTES. Sinon on géocode l'adresse/ville saisie.
+    let region = val('c-region');
+    let coords;
+    if(createPickedLocation && city.toLowerCase().startsWith(createPickedLocation.city.toLowerCase())){
+      coords = createPickedLocation;
+      if(!region) region = createPickedLocation.region || '';
+    }else{
+      coords = await resolveCoords(val('c-adresse'), city, region);
+    }
     const {x, y}    = coords;
     const posterSrc = (preview && !preview.classList.contains('hidden')) ? preview.src : null;
     const visibility = document.querySelector('input[name="visibility"]:checked')?.value || 'standard';
@@ -964,6 +983,9 @@ function initCreatePage(){
 
     // Réinitialise le formulaire pour une éventuelle nouvelle publication.
     form.reset();
+    createPickedLocation = null;
+    const villeHint = document.getElementById('c-ville-hint');
+    if(villeHint){ villeHint.textContent = 'Choisis ta ville dans la liste pour la placer sur la carte.'; villeHint.style.color = ''; }
     galleryFiles.length = 0;
     renderGalleryThumbs();
     if(preview){ preview.src = ''; preview.classList.add('hidden'); }
@@ -1072,6 +1094,99 @@ async function resolveCoords(address, city, region){
   const geo = await geocodeCoords(address, city, region);
   if(geo) return geo;
   return guessCoords(city, region);
+}
+
+/* =========================================================
+   AUTOCOMPLÉTION DE VILLE (Base Adresse Nationale, gratuite)
+   ---------------------------------------------------------
+   L'utilisateur tape le début d'une ville → liste de suggestions →
+   il clique pour valider. On récupère alors les coordonnées EXACTES
+   (donc un placement fiable sur la carte) et la RÉGION officielle
+   (donc l'événement apparaît bien sur la carte régionale).
+   ========================================================= */
+
+// Dernière ville validée sur le formulaire de publication (coords + région).
+let createPickedLocation = null;
+
+/* Recherche des communes correspondant au texte saisi. */
+async function searchCities(qStr){
+  const q = qStr.trim();
+  if(q.length < 2) return [];
+  const url = `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(q)}&type=municipality&autocomplete=1&limit=6`;
+  const res = await fetch(url);
+  if(!res.ok) return [];
+  const data = await res.json();
+  return (data.features || []).map(f=>{
+    const p = f.properties || {};
+    const [lng, lat] = (f.geometry && f.geometry.coordinates) || [];
+    // context = "66, Pyrénées-Orientales, Occitanie" → on prend la région (dernier élément).
+    const parts = String(p.context || '').split(',').map(s=> s.trim());
+    const region = parts.length ? parts[parts.length - 1] : '';
+    const dept = parts.length > 1 ? parts[1] : '';
+    return { city: p.city || p.name || p.label, region, dept, postcode: p.postcode || '', lat, lng };
+  }).filter(c=> c.city && typeof c.lat === 'number');
+}
+
+/* Branche l'autocomplétion sur un champ texte. `onPick` reçoit
+   { city, region, lat, lng, x, y } quand une ville est validée. */
+function attachCityAutocomplete(inputId, listId, onPick){
+  const input = document.getElementById(inputId);
+  const list = document.getElementById(listId);
+  if(!input || !list) return;
+  let items = [];
+  let active = -1;
+  let timer = null;
+  let seq = 0;
+
+  const close = ()=>{ list.classList.add('hidden'); list.innerHTML = ''; active = -1; };
+
+  const render = ()=>{
+    if(!items.length){ list.innerHTML = `<div class="ac-empty">Aucune ville trouvée.</div>`; list.classList.remove('hidden'); return; }
+    list.innerHTML = items.map((c, i)=>
+      `<div class="ac-item ${i===active?'active':''}" data-i="${i}" role="option">
+        <span class="ac-city">${esc(c.city)}</span>
+        <span class="ac-ctx">${esc([c.postcode, c.dept, c.region].filter(Boolean).join(' · '))}</span>
+      </div>`).join('');
+    list.classList.remove('hidden');
+    list.querySelectorAll('.ac-item').forEach(el=>{
+      el.addEventListener('mousedown', e=>{ e.preventDefault(); choose(parseInt(el.dataset.i, 10)); });
+    });
+  };
+
+  const choose = (i)=>{
+    const c = items[i];
+    if(!c) return;
+    const [x, y] = projGeo(c.lat, c.lng);
+    input.value = c.city;
+    close();
+    onPick({ city: c.city, region: c.region, lat: c.lat, lng: c.lng, x: Math.round(x), y: Math.round(y) });
+  };
+
+  input.addEventListener('input', ()=>{
+    // Toute frappe invalide la ville précédemment validée sur ce champ.
+    if(inputId === 'c-ville') createPickedLocation = null;
+    clearTimeout(timer);
+    const q = input.value;
+    if(q.trim().length < 2){ close(); return; }
+    const mySeq = ++seq;
+    timer = setTimeout(async ()=>{
+      try{
+        const res = await searchCities(q);
+        if(mySeq !== seq) return;               // réponse périmée : on ignore
+        items = res; active = -1; render();
+      }catch(e){ close(); }
+    }, 220);
+  });
+
+  input.addEventListener('keydown', e=>{
+    if(list.classList.contains('hidden')) return;
+    if(e.key === 'ArrowDown'){ e.preventDefault(); active = Math.min(active + 1, items.length - 1); render(); }
+    else if(e.key === 'ArrowUp'){ e.preventDefault(); active = Math.max(active - 1, 0); render(); }
+    else if(e.key === 'Enter' && active >= 0){ e.preventDefault(); choose(active); }
+    else if(e.key === 'Escape'){ close(); }
+  });
+
+  input.addEventListener('blur', ()=> setTimeout(close, 150));
 }
 
 /* =========================================================
@@ -2003,11 +2118,23 @@ function prefillCreateFromImport(ev, poster){
 
 /* Bascule "mise en avant" (bandeau page d'accueil) depuis le tableau. */
 async function handleToggleFeatured(id){
-  const ev = adminList.find(e=> e.id === id) || events.find(e=> e.id === id);
-  const next = !(ev && ev.featured);
+  // État courant : depuis les listes connues, sinon depuis le bouton affiché.
+  const known = adminList.find(e=> e.id === id) || events.find(e=> e.id === id);
+  const btn = document.querySelector(`[data-feature="${id}"]`);
+  const curFeat = known ? !!known.featured : (btn ? btn.classList.contains('on') : false);
+  const next = !curFeat;
+  // Retour visuel immédiat (annulé si l'enregistrement échoue).
+  if(btn){ btn.classList.toggle('on', next); btn.setAttribute('aria-pressed', String(next)); }
   try{ await window.EBOK_DATA.updateEvent(id, { featured: next }); }
-  catch(err){ alert("Modification impossible (droits insuffisants ?)."); return; }
-  if(ev) ev.featured = next;
+  catch(err){
+    if(btn){ btn.classList.toggle('on', curFeat); btn.setAttribute('aria-pressed', String(curFeat)); }
+    const code = String((err && err.code) || '').toLowerCase();
+    alert(code.includes('permission')
+      ? "Mise en avant refusée par la base de données.\n\nPour mettre à la une les événements des autres diffuseurs, tu dois republier les règles Firestore (Firestore Database → Règles → Publier)."
+      : "Modification impossible. Réessaie dans un instant.");
+    return;
+  }
+  if(known) known.featured = next;
   const local = events.find(e=> e.id === id); if(local) local.featured = next;
   await refreshPublicEvents();
   renderAll();
@@ -2030,15 +2157,22 @@ async function fillEventsGrid(grid, fetcher, emptyMsg){
   grid.querySelectorAll('[data-open]').forEach(b=> b.addEventListener('click', ()=> openEvent(b.dataset.open)));
   grid.querySelectorAll('[data-del]').forEach(b=> b.addEventListener('click', ()=> handleDelete(b.dataset.del)));
   grid.querySelectorAll('[data-approve]').forEach(b=> b.addEventListener('click', ()=> handleApprove(b.dataset.approve)));
+  grid.querySelectorAll('[data-feature]').forEach(b=> b.addEventListener('click', ()=> handleToggleFeatured(b.dataset.feature)));
   grid.querySelectorAll('[data-dispo]').forEach(sel=> sel.addEventListener('change', ()=> handleDispoChange(sel.dataset.dispo, sel.value)));
 }
 
 function mineCardHtml(ev){
   const pending = ev.status !== 'approved';
+  const feat = !!ev.featured;
   const cur = ev.dispo || '';
   const opt = (v,l)=> `<option value="${v}" ${cur===v?'selected':''}>${l}</option>`;
+  // Étoile "à la une" réservée à l'admin (met/enlève l'événement en avant).
+  const starBtn = currentIsAdmin
+    ? `<button class="star-toggle card-star ${feat ? 'on' : ''}" data-feature="${esc(ev.id)}" aria-pressed="${feat}" title="${feat ? 'Retirer de la une' : 'Mettre à la une'}">★</button>`
+    : '';
   return `<div class="mine-card-wrap">
     <span class="status-pill ${pending ? 'status-pending' : 'status-approved'}">${pending ? 'En attente' : 'En ligne'}</span>
+    ${starBtn}
     ${eventCardHtml(ev)}
     <div class="mine-dispo">
       <label for="dispo-${ev.id}">Places&nbsp;:</label>

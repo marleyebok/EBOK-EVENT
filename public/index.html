@@ -307,12 +307,16 @@
           </div>
           <div class="form-row">
             <div class="field">
-              <label for="c-ville">Ville / lieu</label>
-              <input type="text" id="c-ville" placeholder="Ex. Montpellier — Gymnase Jean Bouin" required>
+              <label for="c-ville">Ville</label>
+              <div class="ac-wrap">
+                <input type="text" id="c-ville" placeholder="Commence à taper : Arles-sur-Tech…" autocomplete="off" required>
+                <div class="ac-list hidden" id="c-ville-ac" role="listbox"></div>
+              </div>
+              <p class="field-hint" id="c-ville-hint">Choisis ta ville dans la liste pour la placer sur la carte.</p>
             </div>
             <div class="field">
               <label for="c-region">Région</label>
-              <input type="text" id="c-region" placeholder="Ex. Occitanie">
+              <input type="text" id="c-region" placeholder="Se remplit automatiquement" readonly>
             </div>
           </div>
           <div class="field">
