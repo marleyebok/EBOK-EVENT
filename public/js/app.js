@@ -925,10 +925,21 @@ function initCreatePage(){
         persisted = true;
       }catch(err){
         console.warn('[EBOK] Enregistrement Firebase échoué.', err);
-        const tooBig = /longer than|exceeds the maximum|invalid-argument|entity/i.test(String(err && (err.message || err.code)));
-        showCreateBanner(tooBig
-          ? "⚠️ Enregistrement impossible : l'affiche ou les photos sont trop lourdes. Réessaie avec une image plus légère."
-          : "⚠️ Enregistrement impossible. Réessaie, ou vérifie que tu es bien connecté.");
+        const code = String((err && err.code) || '').toLowerCase();
+        const msg  = String((err && err.message) || '');
+        const tooBig = /longer than|exceeds the maximum|invalid-argument|maximum allowed size/i.test(code + ' ' + msg);
+        let banner;
+        if(tooBig){
+          banner = "⚠️ Enregistrement impossible : l'affiche ou les photos sont trop lourdes. Réessaie avec une image plus légère.";
+        }else if(code.includes('permission-denied') || code.includes('unauthenticated')){
+          // Règles Firestore : le compte n'a pas le droit d'écrire cet événement.
+          banner = "⚠️ Publication refusée par la base de données. Vérifie que tu es bien connecté à ton compte, puis réessaie. Si tu publies en tant qu'admin, il se peut que ton email ne soit pas encore reconnu comme administrateur.";
+        }else if(code.includes('unavailable') || code.includes('network') || /network|offline/i.test(msg)){
+          banner = "⚠️ Connexion à la base impossible. Vérifie ta connexion internet et réessaie.";
+        }else{
+          banner = "⚠️ Enregistrement impossible. Réessaie dans un instant." + (code ? " (code : " + code + ")" : "");
+        }
+        showCreateBanner(banner);
         return;
       }
     }
