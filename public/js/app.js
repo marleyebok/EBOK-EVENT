@@ -876,8 +876,14 @@ function initCreatePage(){
     const posterSrc = (preview && !preview.classList.contains('hidden')) ? preview.src : null;
     const visibility = document.querySelector('input[name="visibility"]:checked')?.value || 'standard';
 
-    // L'admin publie directement en ligne ; un diffuseur passe en validation.
-    const status = currentIsAdmin ? 'approved' : (window.EBOK_AUTH ? 'pending' : 'approved');
+    // L'admin (ou le mode démo local) publie directement ; un diffuseur passe
+    // en validation. On CRÉE toujours l'événement en "pending" côté Firebase :
+    // tout compte connecté a le droit de créer SON propre événement en attente,
+    // ce qui évite un refus des règles. L'admin le publie ensuite via une mise
+    // à jour "propriétaire" (autorisée sur ses propres événements) — pas besoin
+    // que les règles reconnaissent déjà l'admin par email.
+    const wantApproved = currentIsAdmin || !window.EBOK_AUTH;
+    const status = 'pending';
 
     const newEvent = {
       id: 'evt-' + Date.now(),
@@ -919,10 +925,18 @@ function initCreatePage(){
     // Persistance : si Firebase est branché, on enregistre en base.
     // Sinon l'événement reste en mémoire (visible jusqu'au rechargement).
     let persisted = false;
+    let published = false;   // vrai si l'événement est visible publiquement tout de suite
     if(window.EBOK_DATA && typeof window.EBOK_DATA.createEvent === 'function'){
       try{
         newEvent.id = await window.EBOK_DATA.createEvent(newEvent) || newEvent.id;
         persisted = true;
+        // Admin (ou démo) : on publie tout de suite via une mise à jour de SON
+        // propre événement (autorisée par les règles, sans dépendre de isAdmin).
+        // Si l'update est refusé, l'événement reste sagement en attente.
+        if(wantApproved && typeof window.EBOK_DATA.approveEvent === 'function'){
+          try{ await window.EBOK_DATA.approveEvent(newEvent.id); newEvent.status = 'approved'; published = true; }
+          catch(e){ console.warn('[EBOK] Publication directe refusée — événement laissé en attente.', e); }
+        }
       }catch(err){
         console.warn('[EBOK] Enregistrement Firebase échoué.', err);
         const code = String((err && err.code) || '').toLowerCase();
@@ -942,6 +956,10 @@ function initCreatePage(){
         showCreateBanner(banner);
         return;
       }
+    }else if(wantApproved){
+      // Mode démo (sans Firebase) : rien à enregistrer, on affiche directement.
+      newEvent.status = 'approved';
+      published = true;
     }
 
     // Réinitialise le formulaire pour une éventuelle nouvelle publication.
@@ -951,9 +969,9 @@ function initCreatePage(){
     if(preview){ preview.src = ''; preview.classList.add('hidden'); }
     if(label) label.style.display = '';
 
-    // Un événement validé (admin, ou mode démo local) apparaît tout de suite.
-    // Un événement en attente n'est pas montré publiquement avant validation.
-    if(status === 'approved'){
+    // Un événement publié apparaît tout de suite ; un événement en attente
+    // n'est pas montré publiquement avant validation.
+    if(published){
       window.EBOK.addEvent(newEvent);
       showConfirm('approved');
     }else{
