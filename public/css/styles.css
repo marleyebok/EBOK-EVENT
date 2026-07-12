@@ -471,6 +471,15 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .event-side{position:sticky;top:92px;align-self:start;}
 .event-poster{border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);}
 .event-poster img{width:100%;display:block;}
+/* Affiche cliquable → agrandissement plein écran */
+.poster-zoom{display:block;width:100%;padding:0;border:none;background:none;cursor:zoom-in;position:relative;}
+.poster-zoom img{width:100%;display:block;transition:transform .25s ease;}
+.poster-zoom:hover img{transform:scale(1.02);}
+.poster-zoom-ic{position:absolute;bottom:10px;right:10px;width:38px;height:38px;border-radius:999px;
+  background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;font-size:17px;
+  opacity:0;transition:opacity .2s ease;pointer-events:none;}
+.poster-zoom:hover .poster-zoom-ic,.poster-zoom:focus-visible .poster-zoom-ic{opacity:1;}
+@media(hover:none){.poster-zoom-ic{opacity:1;}}   /* toujours visible sur mobile */
 
 /* Mini-carte de localisation (sous l'affiche) */
 .event-mini-map{margin-top:16px;background:var(--asphalt-2);border:1px solid var(--line);border-radius:14px;padding:14px 14px 10px;}
