@@ -815,16 +815,14 @@ function initCreatePage(){
   const preview = document.getElementById('dzPreview');
   const label = document.getElementById('dzLabel');
 
-  input.addEventListener('change', ()=>{
+  input.addEventListener('change', async ()=>{
     const file = input.files[0];
     if(!file) return;
-    const reader = new FileReader();
-    reader.onload = (e)=>{
-      preview.src = e.target.result;
+    try{
+      preview.src = await compressImage(file, 1200, 0.8);   // réduit le poids pour Firestore
       preview.classList.remove('hidden');
       label.style.display = 'none';
-    };
-    reader.readAsDataURL(file);
+    }catch(err){ console.warn('[EBOK] Compression affiche échouée', err); }
   });
   ['dragover'].forEach(evt=> dz.addEventListener(evt, e=>{ e.preventDefault(); dz.style.borderColor='var(--orange)'; }));
   dz.addEventListener('drop', e=>{
@@ -846,12 +844,11 @@ function initCreatePage(){
       });
     });
   }
-  galleryInput.addEventListener('change', ()=>{
-    Array.from(galleryInput.files).forEach(file=>{
-      const reader = new FileReader();
-      reader.onload = (e)=>{ galleryFiles.push(e.target.result); renderGalleryThumbs(); };
-      reader.readAsDataURL(file);
-    });
+  galleryInput.addEventListener('change', async ()=>{
+    for(const file of Array.from(galleryInput.files)){
+      try{ galleryFiles.push(await compressImage(file, 900, 0.72)); renderGalleryThumbs(); }
+      catch(err){ console.warn('[EBOK] Compression photo échouée', err); }
+    }
   });
   const galleryDz = document.getElementById('galleryDropzone');
   galleryDz.addEventListener('dragover', e=> e.preventDefault());
@@ -928,7 +925,10 @@ function initCreatePage(){
         persisted = true;
       }catch(err){
         console.warn('[EBOK] Enregistrement Firebase échoué.', err);
-        showCreateBanner("⚠️ Enregistrement impossible. Vérifie ta connexion et réessaie.");
+        const tooBig = /longer than|exceeds the maximum|invalid-argument|entity/i.test(String(err && (err.message || err.code)));
+        showCreateBanner(tooBig
+          ? "⚠️ Enregistrement impossible : l'affiche ou les photos sont trop lourdes. Réessaie avec une image plus légère."
+          : "⚠️ Enregistrement impossible. Réessaie, ou vérifie que tu es bien connecté.");
         return;
       }
     }
@@ -963,6 +963,34 @@ function showCreateBanner(msg){
 /* Devine des coordonnées SVG à partir de la ville/région saisie, en
    s'appuyant sur les villes connues. À remplacer par une vraie
    géolocalisation (lat/lon + géocodage) à la phase géolocalisation. */
+/* Réduit et compresse une image (affiche / photo) avant stockage.
+   Firestore limite un document à 1 Mo : une image brute en base64 dépasse
+   vite cette limite, d'où l'échec d'enregistrement. On redimensionne à
+   `maxDim` px max et on ré-encode en JPEG. */
+function compressImage(file, maxDim = 1200, quality = 0.8){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = e=>{
+      const img = new Image();
+      img.onload = ()=>{
+        let { width, height } = img;
+        if(width > maxDim || height > maxDim){
+          if(width >= height){ height = Math.round(height * maxDim / width); width = maxDim; }
+          else { width = Math.round(width * maxDim / height); height = maxDim; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 function guessCoords(city, region){
   const hay = ((city||'') + ' ' + (region||'')).toLowerCase();
   // 1) ville connue précisément
