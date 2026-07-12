@@ -933,23 +933,21 @@ function initCreatePage(){
       }
     }
 
-    // Un événement validé (admin, ou mode démo local) apparaît tout de suite.
-    // Un événement en attente n'est pas montré publiquement avant validation.
-    if(status === 'approved'){
-      window.EBOK.addEvent(newEvent);
-      showCreateBanner(visibility === 'standard'
-        ? "✅ Événement publié — retrouve-le sur la carte et dans la recherche."
-        : "✅ Événement publié en avant.");
-    }else{
-      showCreateBanner("✅ Événement envoyé — il apparaîtra sur la carte après validation. Retrouve-le dans « Mes événements ».");
-    }
-
     // Réinitialise le formulaire pour une éventuelle nouvelle publication.
     form.reset();
     galleryFiles.length = 0;
     renderGalleryThumbs();
     if(preview){ preview.src = ''; preview.classList.add('hidden'); }
     if(label) label.style.display = '';
+
+    // Un événement validé (admin, ou mode démo local) apparaît tout de suite.
+    // Un événement en attente n'est pas montré publiquement avant validation.
+    if(status === 'approved'){
+      window.EBOK.addEvent(newEvent);
+      showConfirm('approved');
+    }else{
+      showConfirm('pending');
+    }
   });
 }
 
@@ -958,6 +956,25 @@ function showCreateBanner(msg){
   banner.textContent = msg;
   banner.classList.remove('hidden');
   banner.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+/* Affiche la page de confirmation après une publication réussie.
+   - 'pending'  : événement d'un diffuseur → étudié puis accepté sous 24h.
+   - 'approved' : publié en ligne tout de suite (admin ou mode démo). */
+function showConfirm(mode){
+  const title = document.getElementById('confirmTitle');
+  const text  = document.getElementById('confirmText');
+  const sub   = document.getElementById('confirmSub');
+  if(mode === 'approved'){
+    if(title) title.textContent = 'Ton événement est publié ! 🎉';
+    if(text)  text.innerHTML = 'Il est déjà visible sur la carte et dans la recherche.';
+    if(sub)   sub.textContent = 'Merci de faire vivre le basket français 🏀';
+  }else{
+    if(title) title.textContent = 'Ton événement a bien été créé !';
+    if(text)  text.innerHTML = 'Il va être étudié par notre équipe, puis accepté avant publication <b>sous 24h</b>. Tu le retrouveras ensuite sur la carte et dans la recherche, ainsi que dans « Mes événements ».';
+    if(sub)   sub.textContent = 'Merci de faire vivre le basket français 🏀';
+  }
+  showPage('confirm');
 }
 
 /* Devine des coordonnées SVG à partir de la ville/région saisie, en
