@@ -1089,10 +1089,29 @@ async function geocodeCoords(address, city, region){
   }catch(e){ return null; }
 }
 
-/* Résout les coordonnées : géocodage précis d'abord, repli sur guessCoords. */
+/* Cherche une ville dans la base LOCALE par nom exact (insensible aux
+   accents/tirets). Renvoie { x, y, lat, lng, region } ou null. */
+function cityCoordsLocal(cityName){
+  const list = window.CITIES_FR;
+  if(!Array.isArray(list) || !cityName) return null;
+  const REG = window.CITIES_FR_REGIONS || {};
+  const target = normalizeCity(cityName);
+  if(!target) return null;
+  const row = list.find(r => normalizeCity(r[0]) === target);
+  if(!row) return null;
+  const [name, postcode, lat, lng, rc] = row;
+  const [x, y] = projGeo(lat, lng);
+  return { x: Math.round(x), y: Math.round(y), lat, lng, region: REG[rc] || '' };
+}
+
+/* Résout les coordonnées : géocodage précis (adresse) d'abord, puis base
+   locale des villes, puis repli approximatif sur guessCoords. */
 async function resolveCoords(address, city, region){
   const geo = await geocodeCoords(address, city, region);
   if(geo) return geo;
+  await ensureCitiesLoaded();
+  const local = cityCoordsLocal(city);
+  if(local) return local;
   return guessCoords(city, region);
 }
 
@@ -1220,6 +1239,7 @@ function attachCityAutocomplete(inputId, listId, onPick){
   input.addEventListener('input', ()=>{
     // Toute frappe invalide la ville précédemment validée sur ce champ.
     if(inputId === 'c-ville') createPickedLocation = null;
+    if(inputId === 'e-city') editPickedLocation = null;
     clearTimeout(timer);
     const q = input.value;
     if(q.trim().length < 2){ close(); return; }
@@ -2334,6 +2354,7 @@ async function handleApprove(id){
 /* ---- Modale d'édition d'un événement (admin) ---- */
 let editingId = null;
 let editPosterData = null;        // nouvelle affiche (dataURL) si remplacée
+let editPickedLocation = null;    // ville revalidée dans la liste (coords + région)
 
 function setFieldVal(id, v){ const el = document.getElementById(id); if(el) el.value = (v == null ? '' : v); }
 function showEditError(msg){
@@ -2346,6 +2367,7 @@ function closeEditModal(){
   modal.setAttribute('aria-hidden', 'true');
   editingId = null;
   editPosterData = null;
+  editPickedLocation = null;
 }
 
 function openEditModal(id){
@@ -2353,6 +2375,8 @@ function openEditModal(id){
   if(!ev){ return; }
   editingId = id;
   editPosterData = null;
+  editPickedLocation = null;
+  ensureCitiesLoaded();
   setFieldVal('e-title', ev.title);
   setFieldVal('e-type', ev.type || 'Divers');
   setFieldVal('e-niveau', ev.niveau || 'Loisir');
@@ -2386,6 +2410,13 @@ function initEditModal(){
   document.getElementById('editClose').addEventListener('click', closeEditModal);
   document.getElementById('editCancel').addEventListener('click', closeEditModal);
   modal.addEventListener('click', e=>{ if(e.target === modal) closeEditModal(); });
+
+  // Autocomplétion de ville dans l'édition → corrige position + région.
+  attachCityAutocomplete('e-city', 'e-city-ac', pick=>{
+    editPickedLocation = pick;
+    const r = document.getElementById('e-region');
+    if(r) r.value = pick.region || '';
+  });
 
   const fileInput = document.getElementById('e-poster-file');
   fileInput.addEventListener('change', ()=>{
@@ -2425,10 +2456,20 @@ function initEditModal(){
     const placesRaw = gv('e-places');
     patch.placesTotal = placesRaw ? parseInt(placesRaw, 10) : null;
     patch.infos = Object.assign({}, ev && ev.infos, { adresse: gv('e-address') });
-    // Recalcule la position sur la carte si l'adresse/ville/région a changé.
-    const addrChanged = !ev || ev.city !== patch.city || ev.region !== patch.region
-      || ((ev.infos && ev.infos.adresse) || '') !== gv('e-address');
-    if(addrChanged){
+
+    // Recalcule TOUJOURS la position depuis la ville (corrige aussi les
+    // événements anciens mal placés). Priorité : ville revalidée dans la
+    // liste → base locale des villes → géocodage de l'adresse.
+    await ensureCitiesLoaded();
+    const picked = (editPickedLocation &&
+      normalizeCity(patch.city).startsWith(normalizeCity(editPickedLocation.city)))
+      ? editPickedLocation : null;
+    const loc = picked || cityCoordsLocal(patch.city);
+    if(loc){
+      patch.x = loc.x; patch.y = loc.y;
+      if(loc.lat != null){ patch.lat = loc.lat; patch.lng = loc.lng; }
+      if(loc.region) patch.region = loc.region;   // région officielle
+    }else{
       const c = await resolveCoords(gv('e-address'), patch.city, patch.region);
       patch.x = c.x; patch.y = c.y;
       if(c.lat != null){ patch.lat = c.lat; patch.lng = c.lng; }
