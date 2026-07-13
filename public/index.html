@@ -458,25 +458,37 @@
             <p class="price-desc">Ton événement apparaît sur la carte et dans la recherche, comme tous les autres.</p>
           </label>
 
-          <label class="price-card">
-            <input type="radio" name="visibility" value="boost">
+          <label class="price-card soon">
+            <input type="radio" name="visibility" value="boost-site" disabled>
+            <span class="price-soon">Bientôt disponible</span>
             <div class="price-top">
-              <span class="price-name">Mise en avant</span>
-              <span class="price-amount">29€</span>
+              <span class="price-name">Mise en avant sur le site</span>
+              <span class="price-amount">29€<small> / semaine</small></span>
             </div>
-            <p class="price-desc">Ton événement passe en bandeau "à la une" sur la page d'accueil pendant 7 jours.</p>
+            <p class="price-desc">Ton événement passe en bandeau « à la une » sur la page d'accueil.</p>
           </label>
 
-          <label class="price-card">
-            <input type="radio" name="visibility" value="boost-mail">
+          <label class="price-card soon">
+            <input type="radio" name="visibility" value="insta-story" disabled>
+            <span class="price-soon">Bientôt disponible</span>
             <div class="price-top">
-              <span class="price-name">Mise en avant + Mailing</span>
-              <span class="price-amount">59€</span>
+              <span class="price-name">Story Instagram</span>
+              <span class="price-amount">10€<small> / jour</small></span>
             </div>
-            <p class="price-desc">Bandeau "à la une" + envoi de ton événement à la communauté COURTMAP de ta région par email.</p>
+            <p class="price-desc">Ton événement partagé en story sur le compte Instagram EBOK Event.</p>
+          </label>
+
+          <label class="price-card soon">
+            <input type="radio" name="visibility" value="insta-post" disabled>
+            <span class="price-soon">Bientôt disponible</span>
+            <div class="price-top">
+              <span class="price-name">Publication Instagram</span>
+              <span class="price-amount">50€</span>
+            </div>
+            <p class="price-desc">Un post dédié à ton événement sur le compte Instagram EBOK Event.</p>
           </label>
         </div>
-        <p class="visibility-note">Le paiement n'est pas encore disponible en ligne — notre équipe te recontacte après ta demande pour activer l'option choisie.</p>
+        <p class="visibility-note">💳 Les options payantes arrivent <b>bientôt</b> — le paiement en ligne n'est pas encore activé. Publie gratuitement en attendant&nbsp;!</p>
       </div>
 
       <div class="submit-row">
@@ -549,6 +561,19 @@
     <div class="profile-section hidden" id="adminSection">
       <div class="profile-section-head">
         <h3>👑 Administration — tous les événements</h3>
+      </div>
+      <div class="admin-rules-alert hidden" id="adminRulesAlert">
+        <div class="ara-ic">🔒</div>
+        <div class="ara-body">
+          <b>Action refusée par la base de données.</b>
+          <p>Pour modifier, valider ou mettre à la une les événements des autres, tes règles Firestore doivent reconnaître ton compte admin. Ça se fait en 1 minute&nbsp;:</p>
+          <ol>
+            <li>Ouvre <a href="https://console.firebase.google.com/project/ebok-event-61657/firestore/rules" target="_blank" rel="noopener">tes règles Firestore</a>.</li>
+            <li>Remplace tout par les règles fournies (voir README / message de Claude), puis clique <b>Publier</b>.</li>
+            <li>Reviens ici, <b>déconnecte-toi et reconnecte-toi</b>.</li>
+          </ol>
+          <button class="btn btn-ghost btn-xs" id="adminRulesDismiss">J'ai compris</button>
+        </div>
       </div>
       <div id="adminGrid"></div>
     </div>
