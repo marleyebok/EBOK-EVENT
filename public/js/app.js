@@ -1486,6 +1486,16 @@ function animateCount(el, target){
 /* =========================================================
    UTIL
    ========================================================= */
+/* Ferme une modale au clic sur le fond — mais PAS quand ce clic est la fin
+   d'une sélection de texte commencée à l'intérieur (sinon la fenêtre se
+   ferme quand on surligne du texte dans un champ). On n'agit que si le
+   mousedown ET le clic ont eu lieu sur le fond lui-même. */
+function bindBackdropClose(modal, closeFn){
+  let downOnBackdrop = false;
+  modal.addEventListener('mousedown', e=>{ downOnBackdrop = (e.target === modal); });
+  modal.addEventListener('click', e=>{ if(e.target === modal && downOnBackdrop) closeFn(); downOnBackdrop = false; });
+}
+
 const MONTHS = ["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
 function fmtDate(d){
   const dt = new Date(d+"T00:00:00");
@@ -1869,7 +1879,7 @@ function initAuth(){
   document.getElementById('btnLogin').addEventListener('click', ()=> openAuth('login'));
   document.getElementById('btnSignup').addEventListener('click', ()=> openAuth('signup'));
   document.getElementById('authClose').addEventListener('click', closeAuth);
-  modal.addEventListener('click', e=>{ if(e.target === modal) closeAuth(); });
+  bindBackdropClose(modal, closeAuth);
   document.getElementById('tabLogin').addEventListener('click', ()=> switchAuthTab('login'));
   document.getElementById('tabSignup').addEventListener('click', ()=> switchAuthTab('signup'));
 
@@ -1996,7 +2006,7 @@ function initProfileEdit(){
   wireProfileFields('pe-');
   document.getElementById('profileEditClose').addEventListener('click', closeProfileEdit);
   document.getElementById('profileEditCancel').addEventListener('click', closeProfileEdit);
-  modal.addEventListener('click', e=>{ if(e.target === modal) closeProfileEdit(); });
+  bindBackdropClose(modal, closeProfileEdit);
   const btn = document.getElementById('btnEditProfile');
   if(btn) btn.addEventListener('click', openProfileEdit);
 
@@ -2409,7 +2419,7 @@ function initEditModal(){
   if(!modal) return;
   document.getElementById('editClose').addEventListener('click', closeEditModal);
   document.getElementById('editCancel').addEventListener('click', closeEditModal);
-  modal.addEventListener('click', e=>{ if(e.target === modal) closeEditModal(); });
+  bindBackdropClose(modal, closeEditModal);
 
   // Autocomplétion de ville dans l'édition → corrige position + région.
   attachCityAutocomplete('e-city', 'e-city-ac', pick=>{
