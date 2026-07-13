@@ -683,8 +683,11 @@
       </div>
       <div class="form-row">
         <div class="field">
-          <label for="e-city">Ville / lieu</label>
-          <input type="text" id="e-city">
+          <label for="e-city">Ville</label>
+          <div class="ac-wrap">
+            <input type="text" id="e-city" autocomplete="off">
+            <div class="ac-list hidden" id="e-city-ac" role="listbox"></div>
+          </div>
         </div>
         <div class="field">
           <label for="e-region">Région</label>
