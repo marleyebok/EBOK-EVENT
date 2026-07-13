@@ -565,14 +565,17 @@
       <div class="admin-rules-alert hidden" id="adminRulesAlert">
         <div class="ara-ic">🔒</div>
         <div class="ara-body">
-          <b>Action refusée par la base de données.</b>
-          <p>Pour modifier, valider ou mettre à la une les événements des autres, tes règles Firestore doivent reconnaître ton compte admin. Ça se fait en 1 minute&nbsp;:</p>
-          <ol>
-            <li>Ouvre <a href="https://console.firebase.google.com/project/ebok-event-61657/firestore/rules" target="_blank" rel="noopener">tes règles Firestore</a>.</li>
-            <li>Remplace tout par les règles fournies (voir README / message de Claude), puis clique <b>Publier</b>.</li>
-            <li>Reviens ici, <b>déconnecte-toi et reconnecte-toi</b>.</li>
-          </ol>
-          <button class="btn btn-ghost btn-xs" id="adminRulesDismiss">J'ai compris</button>
+          <b id="adminRulesTitle">Action refusée par la base de données.</b>
+          <div class="ara-diag" id="adminRulesDiag"></div>
+          <div id="adminRulesHelp">
+            <p>Pour modifier, valider ou mettre à la une les événements des autres, tes règles Firestore doivent reconnaître ton compte admin&nbsp;:</p>
+            <ol>
+              <li>Ouvre <a href="https://console.firebase.google.com/project/ebok-event-61657/firestore/rules" target="_blank" rel="noopener">tes règles Firestore</a>.</li>
+              <li>Remplace tout par les règles fournies, puis clique <b>Publier</b>.</li>
+              <li>Reviens ici, <b>déconnecte-toi et reconnecte-toi</b>.</li>
+            </ol>
+          </div>
+          <button class="btn btn-ghost btn-xs" id="adminRulesDismiss">Fermer</button>
         </div>
       </div>
       <div id="adminGrid"></div>

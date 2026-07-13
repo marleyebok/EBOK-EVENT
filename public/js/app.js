@@ -2136,10 +2136,42 @@ function isPermissionError(err){
   return code.includes('permission') || code.includes('insufficient') || code.includes('unauthenticated');
 }
 
-/* Affiche le bandeau d'aide "règles Firestore" dans l'espace admin. */
-function showAdminRulesAlert(){
+/* Affiche le bandeau d'aide / diagnostic dans l'espace admin.
+   `err` est l'erreur Firebase remontée par l'action refusée (facultatif). */
+function showAdminRulesAlert(err){
   const box = document.getElementById('adminRulesAlert');
-  if(box){ box.classList.remove('hidden'); box.scrollIntoView({behavior:'smooth', block:'center'}); }
+  if(!box) return;
+  const perm = isPermissionError(err);
+  const code = err ? String((err.code || '') || '') : '';
+  const message = err ? String((err.message || '') || '') : '';
+
+  // Identité serveur : email/uid réellement transmis à Firestore.
+  const email = (currentUser && currentUser.email) || '(inconnu)';
+  const uid = (currentUser && currentUser.uid) || '(inconnu)';
+  const emailKnownAdmin = /^marley\.ebok@gmail\.com$/i.test(email);
+
+  const title = document.getElementById('adminRulesTitle');
+  if(title) title.textContent = perm
+    ? 'Action refusée par la base de données (droits).'
+    : 'L\'action a échoué — voici le diagnostic.';
+
+  const diag = document.getElementById('adminRulesDiag');
+  if(diag){
+    diag.innerHTML =
+      `Connecté : <b class="${emailKnownAdmin ? 'ok' : 'bad'}">${esc(email)}</b><br>` +
+      `UID : ${esc(uid)}<br>` +
+      (code || message
+        ? `Erreur : <span class="bad">${esc(code || '—')}</span>${message ? ' · ' + esc(message.slice(0,140)) : ''}`
+        : '') +
+      (emailKnownAdmin ? '' : `<br><span class="bad">⚠️ Cet email n'est pas l'email admin (marley.ebok@gmail.com) : reconnecte-toi avec le bon compte.</span>`);
+  }
+
+  // Les étapes "règles" ne concernent que les refus de droits.
+  const help = document.getElementById('adminRulesHelp');
+  if(help) help.classList.toggle('hidden', !perm);
+
+  box.classList.remove('hidden');
+  box.scrollIntoView({behavior:'smooth', block:'center'});
 }
 
 /* Bascule "mise en avant" (bandeau page d'accueil) depuis le tableau. */
@@ -2154,8 +2186,7 @@ async function handleToggleFeatured(id){
   try{ await window.EBOK_DATA.updateEvent(id, { featured: next }); }
   catch(err){
     if(btn){ btn.classList.toggle('on', curFeat); btn.setAttribute('aria-pressed', String(curFeat)); }
-    if(isPermissionError(err)) showAdminRulesAlert();
-    else alert("Modification impossible. Réessaie dans un instant.");
+    showAdminRulesAlert(err);
     return;
   }
   if(known) known.featured = next;
@@ -2231,10 +2262,7 @@ async function handleDelete(id){
     events = events.filter(e=> e.id !== id);
     renderAll();
     renderProfile();
-  }catch(err){
-    if(isPermissionError(err)) showAdminRulesAlert();
-    else alert("Suppression impossible. Réessaie dans un instant.");
-  }
+  }catch(err){ showAdminRulesAlert(err); }
 }
 
 async function handleApprove(id){
@@ -2243,10 +2271,7 @@ async function handleApprove(id){
     const list = await window.EBOK_DATA.getAllEvents();
     if(Array.isArray(list)){ events = list; renderAll(); }
     renderProfile();
-  }catch(err){
-    if(isPermissionError(err)) showAdminRulesAlert();
-    else alert("Validation impossible. Réessaie dans un instant.");
-  }
+  }catch(err){ showAdminRulesAlert(err); }
 }
 
 /* ---- Modale d'édition d'un événement (admin) ---- */
@@ -2355,13 +2380,8 @@ function initEditModal(){
 
     try{ await window.EBOK_DATA.updateEvent(editingId, patch); }
     catch(err){
-      if(isPermissionError(err)){
-        showEditError("Modification refusée par la base de données. Ferme cette fenêtre : une aide s'affiche dans l'espace admin pour débloquer tes droits.");
-        closeEditModal();
-        showAdminRulesAlert();
-      }else{
-        showEditError("Enregistrement impossible. Réessaie dans un instant.");
-      }
+      closeEditModal();
+      showAdminRulesAlert(err);
       return;
     }
 

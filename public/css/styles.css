@@ -760,6 +760,11 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .admin-rules-alert ol{margin:0 0 12px;padding-left:20px;color:var(--chalk-dim);}
 .admin-rules-alert li{margin:3px 0;}
 .admin-rules-alert a{color:var(--orange);font-weight:700;}
+.ara-diag{font-family:var(--font-mono);font-size:12px;line-height:1.6;color:var(--chalk);
+  background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:8px;
+  padding:8px 10px;margin:8px 0 10px;word-break:break-word;}
+.ara-diag .ok{color:var(--green);}
+.ara-diag .bad{color:var(--orange);}
 .admin-table .col-actions .btn{margin-left:6px;}
 .status-dot{display:inline-block;font-family:var(--font-mono);font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;text-transform:uppercase;letter-spacing:.5px;}
 .btn-xs{font-size:12px;padding:6px 10px;}
