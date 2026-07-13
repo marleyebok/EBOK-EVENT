@@ -1440,6 +1440,9 @@ document.getElementById('lightbox').addEventListener('click', (e)=>{
 document.addEventListener('keydown', (e)=>{
   if(e.key==='Escape' && document.getElementById('lightbox').classList.contains('open')) closeLightbox();
 });
+document.getElementById('adminRulesDismiss')?.addEventListener('click', ()=>{
+  document.getElementById('adminRulesAlert')?.classList.add('hidden');
+});
 
 function renderFeatured(){
   const featured = events.filter(e=>e.featured);
@@ -2127,6 +2130,18 @@ function prefillCreateFromImport(ev, poster){
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+/* Vrai si l'erreur Firebase est un refus de droits (règles Firestore). */
+function isPermissionError(err){
+  const code = String((err && (err.code || err.message)) || '').toLowerCase();
+  return code.includes('permission') || code.includes('insufficient') || code.includes('unauthenticated');
+}
+
+/* Affiche le bandeau d'aide "règles Firestore" dans l'espace admin. */
+function showAdminRulesAlert(){
+  const box = document.getElementById('adminRulesAlert');
+  if(box){ box.classList.remove('hidden'); box.scrollIntoView({behavior:'smooth', block:'center'}); }
+}
+
 /* Bascule "mise en avant" (bandeau page d'accueil) depuis le tableau. */
 async function handleToggleFeatured(id){
   // État courant : depuis les listes connues, sinon depuis le bouton affiché.
@@ -2139,10 +2154,8 @@ async function handleToggleFeatured(id){
   try{ await window.EBOK_DATA.updateEvent(id, { featured: next }); }
   catch(err){
     if(btn){ btn.classList.toggle('on', curFeat); btn.setAttribute('aria-pressed', String(curFeat)); }
-    const code = String((err && err.code) || '').toLowerCase();
-    alert(code.includes('permission')
-      ? "Mise en avant refusée par la base de données.\n\nPour mettre à la une les événements des autres diffuseurs, tu dois republier les règles Firestore (Firestore Database → Règles → Publier)."
-      : "Modification impossible. Réessaie dans un instant.");
+    if(isPermissionError(err)) showAdminRulesAlert();
+    else alert("Modification impossible. Réessaie dans un instant.");
     return;
   }
   if(known) known.featured = next;
@@ -2218,7 +2231,10 @@ async function handleDelete(id){
     events = events.filter(e=> e.id !== id);
     renderAll();
     renderProfile();
-  }catch(err){ alert("Suppression impossible (droits insuffisants ?)."); }
+  }catch(err){
+    if(isPermissionError(err)) showAdminRulesAlert();
+    else alert("Suppression impossible. Réessaie dans un instant.");
+  }
 }
 
 async function handleApprove(id){
@@ -2227,7 +2243,10 @@ async function handleApprove(id){
     const list = await window.EBOK_DATA.getAllEvents();
     if(Array.isArray(list)){ events = list; renderAll(); }
     renderProfile();
-  }catch(err){ alert("Validation impossible."); }
+  }catch(err){
+    if(isPermissionError(err)) showAdminRulesAlert();
+    else alert("Validation impossible. Réessaie dans un instant.");
+  }
 }
 
 /* ---- Modale d'édition d'un événement (admin) ---- */
@@ -2335,7 +2354,16 @@ function initEditModal(){
     if(editPosterData){ patch.poster = editPosterData; }
 
     try{ await window.EBOK_DATA.updateEvent(editingId, patch); }
-    catch(err){ showEditError("Enregistrement impossible (droits insuffisants ?)."); return; }
+    catch(err){
+      if(isPermissionError(err)){
+        showEditError("Modification refusée par la base de données. Ferme cette fenêtre : une aide s'affiche dans l'espace admin pour débloquer tes droits.");
+        closeEditModal();
+        showAdminRulesAlert();
+      }else{
+        showEditError("Enregistrement impossible. Réessaie dans un instant.");
+      }
+      return;
+    }
 
     if(ev) Object.assign(ev, patch);
     const local = events.find(x=> x.id === editingId);

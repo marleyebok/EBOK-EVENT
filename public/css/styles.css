@@ -407,17 +407,27 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .visibility-block{margin-top:32px;}
 .visibility-title{font-size:20px;margin-bottom:16px;}
 .visibility-title span{font-family:var(--font-body);text-transform:none;font-size:13px;color:var(--chalk-dim);font-weight:500;letter-spacing:0;}
-.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.pricing-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
 .price-card{
   display:block;background:var(--asphalt-2);border:1.5px solid var(--line);border-radius:12px;
   padding:18px 20px;cursor:pointer;transition:border-color .15s, background .15s;position:relative;
 }
 .price-card input{position:absolute;opacity:0;}
 .price-card:has(input:checked){border-color:var(--orange);background:rgba(255,87,34,0.08);}
-.price-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+.price-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;gap:8px;}
 .price-name{font-weight:700;font-size:15px;}
-.price-amount{font-family:var(--font-mono);font-weight:700;color:var(--orange);font-size:15px;}
+.price-amount{font-family:var(--font-mono);font-weight:700;color:var(--orange);font-size:15px;white-space:nowrap;}
+.price-amount small{font-size:11px;color:var(--chalk-dim);font-weight:400;}
 .price-desc{font-size:13px;color:var(--chalk-dim);line-height:1.5;}
+/* Options payantes pas encore activées : grisées + badge "bientôt". */
+.price-card.soon{cursor:not-allowed;opacity:.75;}
+.price-card.soon:hover{border-color:var(--line);}
+.price-soon{
+  display:block;width:max-content;margin:0 0 8px auto;   /* poussé à droite, sur sa propre ligne */
+  font-family:var(--font-mono);font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;
+  font-weight:700;color:var(--yellow);background:rgba(240,193,75,.14);
+  border:1px solid rgba(240,193,75,.35);padding:3px 8px;border-radius:999px;
+}
 .visibility-note{font-size:12px;color:var(--chalk-dim);margin-top:14px;font-style:italic;}
 @media(max-width:900px){ .pricing-grid{grid-template-columns:1fr;} }
 
@@ -740,6 +750,16 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .admin-table .col-dates{color:var(--chalk-dim);font-size:13px;}
 .admin-table .col-center{text-align:center;}
 .admin-table .col-actions{text-align:right;}
+/* Bandeau d'aide quand une action admin est refusée par les règles Firestore. */
+.admin-rules-alert{display:flex;gap:14px;align-items:flex-start;margin:0 0 18px;padding:16px 18px;
+  background:rgba(240,193,75,.10);border:1px solid rgba(240,193,75,.4);border-radius:12px;}
+.admin-rules-alert .ara-ic{font-size:24px;line-height:1;}
+.admin-rules-alert .ara-body{font-size:13.5px;line-height:1.55;}
+.admin-rules-alert b{color:var(--chalk);}
+.admin-rules-alert p{margin:4px 0 8px;color:var(--chalk-dim);}
+.admin-rules-alert ol{margin:0 0 12px;padding-left:20px;color:var(--chalk-dim);}
+.admin-rules-alert li{margin:3px 0;}
+.admin-rules-alert a{color:var(--orange);font-weight:700;}
 .admin-table .col-actions .btn{margin-left:6px;}
 .status-dot{display:inline-block;font-family:var(--font-mono);font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;text-transform:uppercase;letter-spacing:.5px;}
 .btn-xs{font-size:12px;padding:6px 10px;}
