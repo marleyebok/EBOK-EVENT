@@ -1097,22 +1097,66 @@ async function resolveCoords(address, city, region){
 }
 
 /* =========================================================
-   AUTOCOMPLÉTION DE VILLE (Base Adresse Nationale, gratuite)
+   AUTOCOMPLÉTION DE VILLE
    ---------------------------------------------------------
    L'utilisateur tape le début d'une ville → liste de suggestions →
    il clique pour valider. On récupère alors les coordonnées EXACTES
    (donc un placement fiable sur la carte) et la RÉGION officielle
    (donc l'événement apparaît bien sur la carte régionale).
+
+   Deux sources, dans l'ordre :
+   1) une base LOCALE des villes de France (≈ 5 500 communes ≥ 2 000 hab.,
+      pré-enregistrée dans js/cities-fr.js) → réponse instantanée, hors-ligne ;
+   2) la Base Adresse Nationale (en ligne, gratuite) → prend le relais pour
+      les plus petits villages absents de la base locale.
    ========================================================= */
 
 // Dernière ville validée sur le formulaire de publication (coords + région).
 let createPickedLocation = null;
 
-/* Recherche des communes correspondant au texte saisi. */
-async function searchCities(qStr){
-  const q = qStr.trim();
-  if(q.length < 2) return [];
-  const url = `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(q)}&type=municipality&autocomplete=1&limit=6`;
+/* Charge (une seule fois, à la demande) la base locale des villes.
+   Chargement paresseux : n'alourdit pas la page d'accueil sur mobile. */
+let _citiesPromise = null;
+function ensureCitiesLoaded(){
+  if(window.CITIES_FR) return Promise.resolve();
+  if(_citiesPromise) return _citiesPromise;
+  _citiesPromise = new Promise(resolve=>{
+    const s = document.createElement('script');
+    s.src = 'js/cities-fr.js';
+    s.onload = ()=> resolve();
+    s.onerror = ()=> resolve();   // pas grave : on basculera sur la recherche en ligne
+    document.head.appendChild(s);
+  });
+  return _citiesPromise;
+}
+
+/* Normalise pour comparer : minuscules, sans accents, tirets/apostrophes → espaces. */
+function normalizeCity(s){
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[-'’]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/* Recherche dans la base LOCALE (villes principales). */
+function searchCitiesLocal(qStr){
+  const list = window.CITIES_FR;
+  if(!Array.isArray(list)) return [];
+  const REG = window.CITIES_FR_REGIONS || {};
+  const nq = normalizeCity(qStr);
+  if(!nq) return [];
+  const starts = [], contains = [];
+  for(const row of list){
+    const nn = normalizeCity(row[0]);
+    if(nn.startsWith(nq)) starts.push(row);
+    else if(contains.length < 12 && nn.includes(nq)) contains.push(row);
+  }
+  return starts.concat(contains).slice(0, 6).map(([name, postcode, lat, lng, rc])=>
+    ({ city: name, region: REG[rc] || '', dept: '', postcode, lat, lng }));
+}
+
+/* Recherche en ligne (Base Adresse Nationale) — repli pour les communes
+   absentes de la base locale. */
+async function searchCitiesBAN(qStr){
+  const url = `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(qStr)}&type=municipality&autocomplete=1&limit=6`;
   const res = await fetch(url);
   if(!res.ok) return [];
   const data = await res.json();
@@ -1125,6 +1169,17 @@ async function searchCities(qStr){
     const dept = parts.length > 1 ? parts[1] : '';
     return { city: p.city || p.name || p.label, region, dept, postcode: p.postcode || '', lat, lng };
   }).filter(c=> c.city && typeof c.lat === 'number');
+}
+
+/* Recherche des communes : base locale d'abord, puis en ligne si rien. */
+async function searchCities(qStr){
+  const q = qStr.trim();
+  if(q.length < 2) return [];
+  await ensureCitiesLoaded();
+  const local = searchCitiesLocal(q);
+  if(local.length) return local;
+  try{ return await searchCitiesBAN(q); }
+  catch(e){ return []; }
 }
 
 /* Branche l'autocomplétion sur un champ texte. `onPick` reçoit
@@ -1493,6 +1548,8 @@ function showPage(name){
   document.querySelectorAll('.navlink').forEach(n=>n.classList.toggle('active', n.dataset.nav===name));
   // Publier exige un compte : on propose la connexion sans masquer le formulaire.
   if(name === 'create' && !currentUser && window.EBOK_AUTH){ openAuth('login'); }
+  // Précharge la base des villes dès qu'on arrive sur la page de publication.
+  if(name === 'create') ensureCitiesLoaded();
   if(name === 'profile') renderProfile();
   window.scrollTo({top:0, behavior:'instant'});
 }
