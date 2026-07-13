@@ -1529,42 +1529,76 @@ document.getElementById('adminRulesDismiss')?.addEventListener('click', ()=>{
   document.getElementById('adminRulesAlert')?.classList.add('hidden');
 });
 
+let featuredTimer = null;   // défilement automatique du carrousel "à la une"
+
 function renderFeatured(){
   const featured = events.filter(e=>e.featured);
-  if(featured.length === 0) return;
-  
-  let currentSlide = 0;
   const track = document.getElementById('carouselTrack');
   const dotsContainer = document.getElementById('carouselDots');
-  
-  // Générer les slides
-  track.innerHTML = featured.map(ev=>`
-    <div class="carousel-item">
-      <span class="featured-tag">★ À la une</span>
-      <div class="featured-media">${ev.poster ? `<img src="${ev.poster}" alt="${ev.title}">` : `<div style="width:100%;height:100%;background:linear-gradient(160deg, ${TYPE_COLORS[ev.type]}55, var(--asphalt-3));"></div>`}</div>
+  const slot = document.getElementById('featuredSlot');
+  if(featuredTimer){ clearInterval(featuredTimer); featuredTimer = null; }
+  if(!track || !slot) return;
+  if(featured.length === 0){ slot.style.display = 'none'; return; }
+  slot.style.display = '';
+
+  let currentSlide = 0;
+
+  // Slides
+  track.innerHTML = featured.map(ev=>{
+    const c = TYPE_COLORS[ev.type] || '#FF5722';
+    const media = ev.poster
+      ? `<img src="${ev.poster}" alt="Affiche ${esc(ev.title)}">`
+      : `<div class="featured-media-ph" style="--c:${c}">${esc((ev.type||'').toUpperCase())}</div>`;
+    const meta = [fmtDateRange(ev.dateStart, ev.dateEnd), ev.niveau, ev.sexe].filter(Boolean).join(' · ');
+    return `<div class="carousel-item">
+      <div class="featured-media">
+        <span class="featured-tag">★ À la une</span>
+        ${media}
+      </div>
       <div class="featured-body">
-        <span class="featured-eyebrow">${ev.type} · ${ev.city}</span>
-        <h3>${ev.title}</h3>
-        <p class="featured-meta">${fmtDateRange(ev.dateStart, ev.dateEnd)} · ${ev.sexe} · ${ev.niveau}</p>
+        <span class="featured-cat"><span class="dot" style="background:${c}"></span>${esc(ev.type || 'Événement')}</span>
+        <h3>${esc(ev.title)}</h3>
+        <p class="featured-place">📍 ${esc(ev.city || '')}${ev.region ? ' · ' + esc(ev.region) : ''}</p>
+        <p class="featured-meta">📅 ${esc(meta)}</p>
         <div class="featured-actions">
-          <button class="btn btn-primary" onclick="openEvent('${ev.id}'); return false;">Voir l'événement</button>
+          <button class="btn btn-primary" data-open="${esc(ev.id)}">Voir l'événement</button>
         </div>
       </div>
-    </div>`).join('');
-  
-  // Générer les dots
-  dotsContainer.innerHTML = featured.map((_, i)=>`
-    <button class="carousel-dot ${i===0 ? 'active' : ''}" data-slide="${i}" aria-label="Aller à l'événement ${i+1}"></button>`).join('');
-  
+    </div>`;
+  }).join('');
+
+  // Points
+  dotsContainer.innerHTML = featured.map((_, i)=>
+    `<button class="carousel-dot ${i===0 ? 'active' : ''}" data-slide="${i}" aria-label="Aller à l'événement ${i+1}"></button>`).join('');
+
+  const prev = document.getElementById('carouselPrev');
+  const next = document.getElementById('carouselNext');
+  const single = featured.length <= 1;
+  // Un seul événement : pas de flèches, points ni défilement.
+  if(prev) prev.style.display = single ? 'none' : '';
+  if(next) next.style.display = single ? 'none' : '';
+  dotsContainer.style.display = single ? 'none' : '';
+
   function goToSlide(n){
     currentSlide = (n + featured.length) % featured.length;
     track.style.transform = `translateX(-${currentSlide * 100}%)`;
-    document.querySelectorAll('.carousel-dot').forEach((d,i)=> d.classList.toggle('active', i===currentSlide));
+    dotsContainer.querySelectorAll('.carousel-dot').forEach((d,i)=> d.classList.toggle('active', i===currentSlide));
   }
-  
-  document.getElementById('carouselPrev').addEventListener('click', ()=> goToSlide(currentSlide - 1));
-  document.getElementById('carouselNext').addEventListener('click', ()=> goToSlide(currentSlide + 1));
-  document.querySelectorAll('.carousel-dot').forEach(dot=> dot.addEventListener('click', ()=> goToSlide(parseInt(dot.dataset.slide))));
+  function stopAuto(){ if(featuredTimer){ clearInterval(featuredTimer); featuredTimer = null; } }
+  function startAuto(){ stopAuto(); if(!single) featuredTimer = setInterval(()=> goToSlide(currentSlide + 1), 5000); }
+
+  if(prev) prev.onclick = ()=>{ goToSlide(currentSlide - 1); startAuto(); };
+  if(next) next.onclick = ()=>{ goToSlide(currentSlide + 1); startAuto(); };
+  dotsContainer.querySelectorAll('.carousel-dot').forEach(dot=>
+    dot.onclick = ()=>{ goToSlide(parseInt(dot.dataset.slide, 10)); startAuto(); });
+  track.querySelectorAll('[data-open]').forEach(b=> b.addEventListener('click', ()=> openEvent(b.dataset.open)));
+
+  // Pause au survol pour laisser le temps de lire.
+  const wrapper = slot.querySelector('.carousel-wrapper');
+  if(wrapper){ wrapper.onmouseenter = stopAuto; wrapper.onmouseleave = startAuto; }
+
+  goToSlide(0);
+  startAuto();
 }
 
 /* =========================================================
