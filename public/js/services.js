@@ -48,38 +48,48 @@ export async function importEvents(list) {
   return n;
 }
 
+/* Reconstruit un événement depuis un document Firestore.
+   ⚠️ L'id du DOCUMENT Firestore doit toujours l'emporter sur un éventuel
+   champ `id` resté dans les données (sinon les mises à jour ciblent un
+   document inexistant → erreur not-found). */
+function fromDoc(d) {
+  return { ...d.data(), id: d.id };
+}
+
 /** Événements publics : uniquement ceux qui sont validés (approved). */
 export async function getAllEvents() {
   const q = query(collection(db, EVENTS), where("status", "==", "approved"));
   const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  return snap.docs.map(fromDoc);
 }
 
 /** Tous les événements, quel que soit le statut (réservé à l'admin). */
 export async function getAllEventsForAdmin() {
   const snap = await getDocs(collection(db, EVENTS));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  return snap.docs.map(fromDoc);
 }
 
 /** Récupère un événement par son id. */
 export async function getEvent(id) {
   const snap = await getDoc(doc(db, EVENTS, id));
-  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+  return snap.exists() ? fromDoc(snap) : null;
 }
 
 /** Récupère les événements d'un diffuseur donné (tous statuts). */
 export async function getEventsByUser(userId) {
   const q = query(collection(db, EVENTS), where("userId", "==", userId));
   const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  return snap.docs.map(fromDoc);
 }
 
 /** Crée un événement. Le statut par défaut est "pending" ; l'appelant
- *  (admin) peut fournir status:"approved". */
+ *  (admin) peut fournir status:"approved". On ne stocke PAS l'id client
+ *  (`evt-...`) dans le document : l'id réel est celui généré par Firestore. */
 export async function createEvent(eventData) {
+  const { id, ...data } = eventData;
   const ref = await addDoc(collection(db, EVENTS), {
     status: "pending",
-    ...eventData,
+    ...data,
     createdAt: Date.now()
   });
   return ref.id;
