@@ -2663,7 +2663,39 @@ function initTheme(){
   });
 }
 
+/* =========================================================
+   BANDEAU « GALAXIE EBOK »
+   ---------------------------------------------------------
+   Défilement continu des logos des applications EBOK, en bas de
+   l'accueil. Les images sont à déposer dans public/assets/galaxy/.
+   ========================================================= */
+const GALAXY_APPS = [
+  { file: 'ebokbasketball.png', name: 'EBOK Basketball' },
+  { file: 'ebokevent.png',      name: 'EBOK Event' },
+  { file: 'ebokacademie.png',   name: 'EBOK Académie' },
+  { file: 'ebokmercato.png',    name: 'EBOK Mercato' },
+  { file: 'ebokscouting.png',   name: 'EBOK Scouting' },
+  { file: 'ebokstats.png',      name: 'EBOK Stats' },
+  { file: 'ebokplaybook.png',   name: 'EBOK Playbook' },
+  { file: 'eboknotebook.png',   name: 'EBOK Notebook' },
+  { file: 'ebokvideo.png',      name: 'EBOK Vidéo' },
+  { file: 'ebokblog.png',       name: 'EBOK Blog' },
+];
+function renderGalaxyBand(){
+  const track = document.getElementById('galaxyTrack');
+  if(!track) return;
+  const itemHtml = GALAXY_APPS.map(a=>
+    `<div class="galaxy-item">
+      <img src="assets/galaxy/${a.file}" alt="${esc(a.name)}" loading="lazy">
+      <span>${esc(a.name)}</span>
+    </div>`).join('');
+  // Le contenu est dupliqué : l'animation glisse de 0 à -50% puis boucle
+  // sans coupure visible (défilement continu, effet "infini").
+  track.innerHTML = itemHtml + itemHtml;
+}
+
 // Écouteurs (une seule fois) + premier rendu sur les données locales.
+renderGalaxyBand();
 initTheme();           // applique le thème mémorisé avant le rendu
 initGeoloc();          // restaure une éventuelle position avant le 1er dessin
 loadFavorites();       // favoris locaux (mode démo) avant le 1er dessin
