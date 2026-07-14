@@ -51,8 +51,9 @@ function buildMap(){
   ).join('');
 
   const labels = Object.entries(CITY_LABELS).map(([name,[x,y]])=>
-    `<circle class="city-dot" cx="${x}" cy="${y}" r="2.2"></circle>
-     <text class="city-name" x="${x+6}" y="${y+3}">${name}</text>`
+    `<circle class="city-dot-halo" cx="${x}" cy="${y}" r="6"></circle>
+     <circle class="city-dot" cx="${x}" cy="${y}" r="3"></circle>
+     <text class="city-name" x="${x+8}" y="${y+3.5}">${name}</text>`
   ).join('');
 
   const pins = events.map(ev=>{

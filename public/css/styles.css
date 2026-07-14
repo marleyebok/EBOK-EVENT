@@ -885,9 +885,15 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .type-chip:not(.active) .dot{background:var(--chalk-dim);}
 .type-chip:hover{opacity:1;border-color:var(--chip);}
 
-/* Libellés de villes sur la carte (via classes → thématisables) */
-.city-dot{fill:rgba(243,238,226,0.45);}
-.city-name{font-family:var(--font-mono);font-size:9px;fill:rgba(243,238,226,0.5);}
+/* Libellés des 10 plus grandes villes sur la carte — nets et lisibles
+   (pastille pleine + léger halo, texte en gras avec ombre portée). */
+.city-dot{fill:var(--chalk);opacity:0.9;}
+.city-dot-halo{fill:var(--chalk);opacity:0.16;}
+.city-name{
+  font-family:var(--font-mono);font-size:10.5px;font-weight:700;letter-spacing:0.2px;
+  fill:var(--chalk);opacity:0.92;paint-order:stroke;stroke:var(--asphalt);stroke-width:3px;stroke-linejoin:round;
+}
+[data-theme="light"] .city-name{stroke:var(--asphalt-2);}
 
 /* =========================================================
    BASCULE DE THÈME + THÈME CLAIR
@@ -917,8 +923,6 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 [data-theme="light"] .region{fill:#e3dccb;stroke:rgba(33,31,27,0.18);}
 [data-theme="light"] .region-base{fill:#c7bfab;}
 [data-theme="light"] .region.hovered{fill:#d6cdba;}
-[data-theme="light"] .city-dot{fill:rgba(33,31,27,0.42);}
-[data-theme="light"] .city-name{fill:rgba(33,31,27,0.58);}
 [data-theme="light"] .inset-frame{fill:rgba(33,31,27,0.03);}
 [data-theme="light"] .featured{background:linear-gradient(115deg,#fdeede,var(--asphalt-2) 60%);}
 [data-theme="light"] .type-chip.active .dot{box-shadow:0 0 0 3px rgba(0,0,0,0.05);}
