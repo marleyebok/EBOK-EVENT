@@ -12,14 +12,14 @@ import {
   getAllEvents, getAllEventsForAdmin, getEvent, getEventsByUser,
   createEvent, updateEvent, approveEvent, deleteEvent, incrementViews, importEvents,
   signUp, signIn, signInWithGoogle, signOutUser, observeAuth, getUserProfile, updateUserProfile, isAdmin,
-  getFavorites, toggleFavorite
+  getFavorites, toggleFavorite, getAllUsers
 } from './services.js';
 
 // Couche données exposée à app.js.
 window.EBOK_DATA = {
   getAllEvents, getAllEventsForAdmin, getEvent, getEventsByUser,
   createEvent, updateEvent, approveEvent, deleteEvent, incrementViews,
-  getFavorites, toggleFavorite, updateUserProfile
+  getFavorites, toggleFavorite, updateUserProfile, getAllUsers
 };
 
 // Couche authentification exposée à app.js.

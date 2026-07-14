@@ -39,16 +39,16 @@ const CITY_LATLON = {"Montpellier":[43.6108,3.8767],"Paris":[48.8566,2.3522],"Ly
 
 const CITY_COORDS = {"Montpellier":[387,464.3],"Paris":[325,154],"Lyon":[426,337],"Nice":[524.6,458.5],"Toulouse":[288.1,464.7],"Nantes":[166.3,250.9],"Strasbourg":[544.5,170.8],"Bordeaux":[205.9,391.8],"Lille":[353.7,49.2],"Marseille":[447.7,482.9],"Cholet":[193.7,260.3],"Villeurbanne":[427.8,336.5],"Limoges":[280.7,332.9],"Bastia":[613.6,518.2],"Rennes":[161.2,197.8]};
 
+// Les 10 plus grandes villes de France (par population), repères de la carte.
 const CITY_LABELS = {
   "Paris": [325, 154],
-  "Lille": [353.7, 49.2],
-  "Strasbourg": [544.5, 170.8],
-  "Rennes": [161.2, 197.8],
-  "Nantes": [166.3, 250.9],
-  "Lyon": [426, 337],
-  "Bordeaux": [205.9, 391.8],
-  "Toulouse": [288.1, 464.7],
-  "Montpellier": [387, 464.3],
   "Marseille": [447.7, 482.9],
-  "Nice": [524.6, 458.5]
+  "Lyon": [426, 337],
+  "Toulouse": [288.1, 464.7],
+  "Nice": [524.6, 458.5],
+  "Nantes": [166.3, 250.9],
+  "Montpellier": [387, 464.3],
+  "Strasbourg": [544.5, 170.8],
+  "Bordeaux": [205.9, 391.8],
+  "Lille": [353.7, 49.2]
 };
