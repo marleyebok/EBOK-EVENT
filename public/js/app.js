@@ -235,14 +235,16 @@ function initHomeFilters(){
     }
   });
 
-  // Rayon slider
+  // Rayon slider (retiré de la recherche rapide — reste géré si présent ailleurs).
   const radiusSlider = document.getElementById('radiusFilter');
-  radiusSlider.addEventListener('input', (e)=>{
-    homeRadius = parseInt(e.target.value, 10);
-    updateRadiusLabel();
-    updateGeoCircle();
-    applyMapFilters();
-  });
+  if(radiusSlider){
+    radiusSlider.addEventListener('input', (e)=>{
+      homeRadius = parseInt(e.target.value, 10);
+      updateRadiusLabel();
+      updateGeoCircle();
+      applyMapFilters();
+    });
+  }
 
   // Calendrier de période (date début / date fin)
   let pickerMonth = new Date(2026, 5); // juin 2026
@@ -640,15 +642,25 @@ document.getElementById('viewBtnList').addEventListener('click', ()=> setHomeVie
 /* =========================================================
    SEARCH PAGE
    ========================================================= */
+let searchStatus = 'all';   // Statut de la recherche avancée : upcoming / archived / all
 function initSearchPage(){
   const typeSel = document.getElementById('f-type');
   Object.keys(TYPE_COLORS).forEach(t=>{
     const opt = document.createElement('option'); opt.value=t; opt.textContent=t;
     typeSel.appendChild(opt);
   });
+  document.querySelectorAll('#statusFilterSearch .status-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      searchStatus = btn.dataset.status;
+      document.querySelectorAll('#statusFilterSearch .status-btn').forEach(b=> b.classList.toggle('active', b===btn));
+      renderResults();
+    });
+  });
   document.getElementById('searchForm').addEventListener('submit',(e)=>{ e.preventDefault(); renderResults(); });
   document.getElementById('resetSearch').addEventListener('click', ()=>{
     document.getElementById('searchForm').reset();
+    searchStatus = 'all';
+    document.querySelectorAll('#statusFilterSearch .status-btn').forEach(b=> b.classList.toggle('active', b.dataset.status==='all'));
     renderResults();
   });
   renderResults();
@@ -669,6 +681,8 @@ function renderResults(){
     if(type !== 'all' && ev.type !== type) return false;
     if(dStart && ev.dateEnd < dStart) return false;
     if(dEnd && ev.dateStart > dEnd) return false;
+    if(searchStatus === 'upcoming' && isPast(ev)) return false;
+    if(searchStatus === 'archived' && !isPast(ev)) return false;
     if(sexe !== 'all' && ev.sexe !== sexe && ev.sexe !== 'Mixte') return false;
     if(age !== 'all' && ev.age !== age) return false;
     if(niveau !== 'all' && ev.niveau !== niveau) return false;
