@@ -27,7 +27,7 @@
   </div>
   <div class="nav-links">
     <button class="navlink active" data-nav="home">Accueil</button>
-    <button class="navlink" data-nav="search">Recherche</button>
+    <button class="navlink" data-nav="search">Recherche avancée</button>
     <button class="navlink" data-nav="create">Publier un événement</button>
     <button class="navlink hidden" data-nav="profile" id="navProfile">Mon profil</button>
   </div>
@@ -79,41 +79,35 @@
 
     <div class="map-layout" id="mapLayout">
       <aside class="filter-panel">
-        <div class="panel-head"><span class="tag-dot"></span>FILTRES</div>
+        <div class="panel-head"><span class="tag-dot"></span>RECHERCHE RAPIDE</div>
 
-        <div class="filter-group fg-status">
-          <label>Statut</label>
-          <div class="status-toggle" id="statusFilterHome">
-            <button type="button" class="status-btn active" data-status="upcoming">À venir</button>
-            <button type="button" class="status-btn" data-status="archived">Archives</button>
-            <button type="button" class="status-btn" data-status="all">Tout</button>
+        <div class="filter-group fg-types">
+          <label>Type d'événement</label>
+          <div class="type-dropdown" id="typeDropdown">
+            <button type="button" class="type-dd-btn" id="typeDdBtn">
+              <span id="typeDdLabel">Tous les types</span>
+              <span class="dd-caret">▾</span>
+            </button>
+            <div class="type-dd-panel hidden" id="typeDdPanel">
+              <div class="check-list" id="typeFilterHome"></div>
+              <div class="type-dd-actions">
+                <button type="button" id="typeAll">Tout sélectionner</button>
+                <button type="button" id="typeNone">Tout retirer</button>
+              </div>
+            </div>
           </div>
         </div>
 
         <div class="filter-group fg-city">
-          <label for="citySearch">Ville / Région</label>
+          <label for="citySearch">Lieu (ville / région)</label>
           <div class="search-input-wrap">
             <input type="text" id="citySearch" placeholder="Cherche une ville ou région...">
             <div class="city-suggestions hidden" id="citySuggestions"></div>
           </div>
         </div>
 
-        <div class="filter-group fg-geo">
-          <label>Autour de moi</label>
-          <button type="button" class="geo-btn" id="geoBtn">📍 Me localiser</button>
-          <div class="geo-status hidden" id="geoStatus"></div>
-        </div>
-
-        <div class="filter-group fg-radius">
-          <label for="radiusFilter">Rayon (km)</label>
-          <div class="radius-control">
-            <input type="range" id="radiusFilter" min="0" max="200" value="200" step="10">
-            <span id="radiusValue">Partout</span>
-          </div>
-        </div>
-
         <div class="filter-group fg-period">
-          <label for="periodSelector">Période</label>
+          <label for="periodSelector">Date</label>
           <div class="period-selector" id="periodSelector">
             <div class="period-display" id="periodDisplay">
               <span id="periodText">Indifférent</span>
@@ -138,23 +132,6 @@
                   <button type="button" class="btn btn-ghost" id="pickerClear" style="font-size:12px;padding:6px 12px;">Réinitialiser</button>
                   <button type="button" class="btn btn-primary" id="pickerApply" style="font-size:12px;padding:6px 12px;">Appliquer</button>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="filter-group fg-types">
-          <label>Type d'événement</label>
-          <div class="type-dropdown" id="typeDropdown">
-            <button type="button" class="type-dd-btn" id="typeDdBtn">
-              <span id="typeDdLabel">Tous les types</span>
-              <span class="dd-caret">▾</span>
-            </button>
-            <div class="type-dd-panel hidden" id="typeDdPanel">
-              <div class="check-list" id="typeFilterHome"></div>
-              <div class="type-dd-actions">
-                <button type="button" id="typeAll">Tout sélectionner</button>
-                <button type="button" id="typeNone">Tout retirer</button>
               </div>
             </div>
           </div>
@@ -184,9 +161,9 @@
   <!-- ===================== SEARCH ===================== -->
   <section id="page-search" class="page">
     <div class="page-head">
-      <p class="eyebrow">Recherche</p>
+      <p class="eyebrow">Recherche avancée</p>
       <h2>Trouve ton prochain événement</h2>
-      <p class="hero-sub">Filtre par lieu, type, date, public et niveau pour affiner les résultats.</p>
+      <p class="hero-sub">Tous les filtres possibles pour affiner ta recherche : lieu, type, date, statut, public et niveau.</p>
     </div>
 
     <form class="search-form" id="searchForm">
@@ -207,6 +184,14 @@
       <div class="field">
         <label for="f-date-end">Jusqu'au</label>
         <input type="date" id="f-date-end">
+      </div>
+      <div class="field">
+        <label>Statut</label>
+        <div class="status-toggle" id="statusFilterSearch">
+          <button type="button" class="status-btn" data-status="upcoming">À venir</button>
+          <button type="button" class="status-btn" data-status="archived">Archives</button>
+          <button type="button" class="status-btn active" data-status="all">Tout</button>
+        </div>
       </div>
       <div class="field">
         <label for="f-sexe">Public — sexe</label>
