@@ -1,7 +1,8 @@
 # Logos de la galaxie EBOK
 
 Dépose ici les logos des applications EBOK, exactement avec ces noms de
-fichier (PNG, idéalement carrés, fond transparent ou uni) :
+fichier (PNG, **fond transparent de préférence** — les logos sont
+affichés en entier, sans rognage ni cadre derrière) :
 
 - `ebokbasketball.png`
 - `ebokacademie.png`

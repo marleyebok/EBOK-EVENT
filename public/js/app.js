@@ -223,7 +223,14 @@ function initHomeFilters(){
     });
   }
   
-  citySearch.addEventListener('input', (e)=> showSuggestions(e.target.value));
+  citySearch.addEventListener('input', (e)=>{
+    // Filtre en temps réel dès la frappe (pas besoin de choisir une
+    // suggestion) : recherche rapide et interactive, comme sur la carte.
+    homeCity = e.target.value.trim();
+    syncRegionSelection();
+    applyMapFilters();
+    showSuggestions(e.target.value);
+  });
   citySearch.addEventListener('blur', ()=> setTimeout(()=> citySuggestions.classList.add('hidden'), 150));
   citySearch.addEventListener('keydown', (e)=>{
     if(e.key === 'Escape'){
@@ -337,15 +344,16 @@ function initHomeFilters(){
           }
         }else if(selectionMode === 'single'){
           if(periodStart === date){
-            periodStart = ''; // Déselectionner au 2e clic
+            periodStart = ''; periodEnd = ''; // Déselectionner au 2e clic
           }else{
             periodStart = date;
-            periodEnd = ''; // En mode single, on ne met pas periodEnd
+            periodEnd = date; // Jour unique = même date de début et de fin (filtre live immédiat)
           }
         }
         
         updatePeriodDisplay();
         renderPicker();
+        applyMapFilters();   // filtre en direct, sans attendre "Appliquer"
       });
     });
   }
@@ -387,9 +395,10 @@ function initHomeFilters(){
       periodEnd = '';
       updatePeriodDisplay();
       renderPicker();
+      applyMapFilters();
     });
   });
-  
+
   // Bouton Appliquer (ferme et valide)
   document.getElementById('pickerApply').addEventListener('click', (e)=>{
     e.preventDefault();
@@ -598,7 +607,13 @@ function computeHomeFilteredEvents(){
     if(homeStatus === 'archived' && !isPast(ev)) return false;
     if(periodStart && ev.dateEnd < periodStart) return false;
     if(periodEnd && ev.dateStart > periodEnd) return false;
-    if(homeCity && ev.city !== homeCity && ev.region !== homeCity) return false;
+    if(homeCity){
+      const q = homeCity.toLowerCase();
+      const inCity = (ev.city || '').toLowerCase().includes(q);
+      const inRegion = (ev.region || '').toLowerCase().includes(q);
+      const inLieu = (ev.lieu || '').toLowerCase().includes(q);
+      if(!inCity && !inRegion && !inLieu) return false;
+    }
     // "Partout" (curseur au max, >= 200) = aucune limite de distance.
     if(homeRadius < 200 && getEventDistance(ev) > homeRadius) return false;
     return true;
@@ -2701,7 +2716,6 @@ function renderGalaxyBand(){
   const itemHtml = GALAXY_APPS.map(a=>
     `<div class="galaxy-item">
       <img src="assets/galaxy/${a.file}" alt="${esc(a.name)}" loading="lazy">
-      <span>${esc(a.name)}</span>
     </div>`).join('');
   // Le contenu est dupliqué : l'animation glisse de 0 à -50% puis boucle
   // sans coupure visible (défilement continu, effet "infini").
