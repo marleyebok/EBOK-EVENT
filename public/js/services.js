@@ -175,6 +175,12 @@ export async function getUserProfile(uid) {
   return snap.exists() ? snap.data() : null;
 }
 
+/** Tous les membres inscrits (réservé à l'admin — liste des comptes). */
+export async function getAllUsers() {
+  const snap = await getDocs(collection(db, USERS));
+  return snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+}
+
 /** Met à jour (fusionne) le profil d'un membre. */
 export async function updateUserProfile(uid, data) {
   await setDoc(doc(db, USERS, uid), data, { merge: true });

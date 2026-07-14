@@ -1543,25 +1543,31 @@ function renderFeatured(){
 
   let currentSlide = 0;
 
-  // Slides
+  // Slides — bannière immersive : affiche floutée en fond + affiche nette à
+  // gauche + texte clair sur voile sombre (rendu premium, jamais "blanc").
   track.innerHTML = featured.map(ev=>{
     const c = TYPE_COLORS[ev.type] || '#FF5722';
-    const media = ev.poster
+    const bg = ev.poster
+      ? `background-image:url('${ev.poster}')`
+      : `background:radial-gradient(120% 120% at 20% 0%, ${c}, #101014 70%)`;
+    const poster = ev.poster
       ? `<img src="${ev.poster}" alt="Affiche ${esc(ev.title)}">`
-      : `<div class="featured-media-ph" style="--c:${c}">${esc((ev.type||'').toUpperCase())}</div>`;
+      : `<div class="fx-poster-ph" style="--c:${c}">${esc((ev.type||'').slice(0,12).toUpperCase())}</div>`;
     const meta = [fmtDateRange(ev.dateStart, ev.dateEnd), ev.niveau, ev.sexe].filter(Boolean).join(' · ');
     return `<div class="carousel-item">
-      <div class="featured-media">
-        <span class="featured-tag">★ À la une</span>
-        ${media}
-      </div>
-      <div class="featured-body">
-        <span class="featured-cat"><span class="dot" style="background:${c}"></span>${esc(ev.type || 'Événement')}</span>
-        <h3>${esc(ev.title)}</h3>
-        <p class="featured-place">📍 ${esc(ev.city || '')}${ev.region ? ' · ' + esc(ev.region) : ''}</p>
-        <p class="featured-meta">📅 ${esc(meta)}</p>
-        <div class="featured-actions">
-          <button class="btn btn-primary" data-open="${esc(ev.id)}">Voir l'événement</button>
+      <div class="fx-bg ${ev.poster ? 'blur' : ''}" style="${bg}"></div>
+      <div class="fx-scrim"></div>
+      <div class="fx-content">
+        <div class="fx-poster">${poster}</div>
+        <div class="fx-text">
+          <span class="featured-tag">★ À la une</span>
+          <span class="featured-cat"><span class="dot" style="background:${c}"></span>${esc(ev.type || 'Événement')}</span>
+          <h3>${esc(ev.title)}</h3>
+          <p class="featured-place">📍 ${esc(ev.city || '')}${ev.region ? ' · ' + esc(ev.region) : ''}</p>
+          <p class="featured-meta">📅 ${esc(meta)}</p>
+          <div class="featured-actions">
+            <button class="btn btn-primary" data-open="${esc(ev.id)}">Voir l'événement</button>
+          </div>
         </div>
       </div>
     </div>`;
@@ -1888,7 +1894,7 @@ function fillProfileFields(p, prof){
 }
 
 function displayName(){
-  return (currentProfile && (currentProfile.name || currentProfile.orgname))
+  return (currentProfile && (currentProfile.pseudo || currentProfile.name || currentProfile.orgname))
     || (currentUser && (currentUser.displayName || currentUser.email))
     || 'Mon compte';
 }
@@ -1990,7 +1996,7 @@ async function renderProfile(){
   renderMyEvents();
   const adminSection = document.getElementById('adminSection');
   adminSection.classList.toggle('hidden', !currentIsAdmin);
-  if(currentIsAdmin) renderAdminEvents();
+  if(currentIsAdmin){ renderAdminEvents(); renderAdminMembers(); }
 }
 
 /* Récapitulatif du profil membre ("À propos de moi"). */
@@ -2025,8 +2031,6 @@ function closeProfileEdit(){
 function openProfileEdit(){
   if(!currentUser) return;
   const p = currentProfile || {};
-  const nameEl = document.getElementById('pe-name');
-  if(nameEl) nameEl.value = p.name || (currentUser.displayName || '');
   fillProfileFields('pe-', p);
   document.getElementById('profileEditError').classList.add('hidden');
   const modal = document.getElementById('profileEditModal');
@@ -2046,10 +2050,9 @@ function initProfileEdit(){
 
   document.getElementById('profileEditForm').addEventListener('submit', async e=>{
     e.preventDefault();
-    const data = Object.assign(
-      { name: (document.getElementById('pe-name').value || '').trim() },
-      readProfileFields('pe-')
-    );
+    // Le pseudo sert désormais de nom d'affichage (plus de champ « Nom » séparé).
+    const data = readProfileFields('pe-');
+    if(data.pseudo) data.name = data.pseudo;
     if(currentUser && window.EBOK_DATA && window.EBOK_DATA.updateUserProfile){
       try{ await window.EBOK_DATA.updateUserProfile(currentUser.uid, data); }
       catch(err){
@@ -2095,6 +2098,7 @@ async function renderAdminEvents(){
   let list;
   try{ list = await window.EBOK_DATA.getAllEventsForAdmin(); }
   catch(err){ wrap.innerHTML = `<div class="empty-state"><h4>Erreur</h4><p>Impossible de charger les événements.</p></div>`; return; }
+  await loadAdminUsers();   // pour afficher le nom des créateurs
   if(!list.length){ wrap.innerHTML = `<div class="empty-state"><p>Aucun événement dans la base.</p></div>`; return; }
   list.sort((a,b)=> (b.createdAt || 0) - (a.createdAt || 0));
   adminList = list;
@@ -2106,6 +2110,28 @@ async function renderAdminEvents(){
   wrap.querySelectorAll('[data-feature]').forEach(b=> b.addEventListener('click', ()=> handleToggleFeatured(b.dataset.feature)));
 }
 
+/* ---- Membres inscrits (chargés une fois pour l'espace admin) ---- */
+let adminUsers = [];
+let adminUsersByUid = {};
+async function loadAdminUsers(){
+  if(!window.EBOK_DATA || !window.EBOK_DATA.getAllUsers) return adminUsers;
+  try{
+    adminUsers = await window.EBOK_DATA.getAllUsers();
+    adminUsersByUid = {};
+    adminUsers.forEach(u=> { adminUsersByUid[u.uid] = u; });
+  }catch(e){ /* on garde la dernière liste connue */ }
+  return adminUsers;
+}
+/* Nom lisible du créateur d'un événement. */
+function creatorLabel(ev){
+  if(!ev.userId){
+    return `<span class="muted">${esc((ev.org && ev.org.name) || 'Admin')}</span>`;
+  }
+  const u = adminUsersByUid[ev.userId];
+  const name = (u && (u.pseudo || u.name || u.email)) || (ev.org && ev.org.name) || 'Membre';
+  return esc(name);
+}
+
 function adminTableHtml(list){
   return `<div class="admin-table-scroll">
     <table class="admin-table">
@@ -2113,6 +2139,7 @@ function adminTableHtml(list){
         <th>Statut</th>
         <th class="col-center">À la une</th>
         <th>Événement</th>
+        <th>Créateur</th>
         <th>Type</th>
         <th>Ville</th>
         <th>Dates</th>
@@ -2132,6 +2159,7 @@ function adminRowHtml(ev){
       <button class="star-toggle ${feat ? 'on' : ''}" data-feature="${esc(ev.id)}" aria-pressed="${feat}" title="${feat ? 'Retirer de la une' : 'Mettre à la une'}">★</button>
     </td>
     <td class="col-title"><b>${esc(ev.title)}</b></td>
+    <td>${creatorLabel(ev)}</td>
     <td>${esc(ev.type || '')}</td>
     <td>${esc(ev.city || '')}</td>
     <td class="col-dates">${fmtDateRange(ev.dateStart, ev.dateEnd)}</td>
@@ -2141,6 +2169,50 @@ function adminRowHtml(ev){
       ${pending ? `<button class="btn btn-approve btn-xs" data-approve="${esc(ev.id)}">Valider</button>` : ''}
       <button class="btn btn-danger btn-xs" data-del="${esc(ev.id)}">Supprimer</button>
     </td>
+  </tr>`;
+}
+
+/* ---- Membres inscrits : tableau synthétique (espace admin) ---- */
+async function renderAdminMembers(){
+  const wrap = document.getElementById('adminMembers');
+  if(!wrap) return;
+  if(!window.EBOK_DATA || !window.EBOK_DATA.getAllUsers){
+    wrap.innerHTML = `<div class="empty-state"><p>Disponible une fois Firebase activé.</p></div>`;
+    return;
+  }
+  wrap.innerHTML = `<div class="empty-state"><p>Chargement…</p></div>`;
+  let users;
+  try{ users = await loadAdminUsers(); }
+  catch(err){ wrap.innerHTML = `<div class="empty-state"><p>Impossible de charger les membres.</p></div>`; return; }
+  if(!users.length){ wrap.innerHTML = `<div class="empty-state"><p>Aucun membre inscrit pour l'instant.</p></div>`; return; }
+  const list = users.slice().sort((a,b)=> (b.createdAt || 0) - (a.createdAt || 0));
+  wrap.innerHTML = `<p class="admin-count">${list.length} membre${list.length>1?'s':''}</p>` + membersTableHtml(list);
+}
+
+function membersTableHtml(list){
+  return `<div class="admin-table-scroll">
+    <table class="admin-table">
+      <thead><tr>
+        <th>Pseudo</th><th>Email</th><th>Profil</th><th>Âge</th>
+        <th>Niveau / club</th><th>Club préféré</th><th>Inscrit le</th>
+      </tr></thead>
+      <tbody>${list.map(memberRowHtml).join('')}</tbody>
+    </table>
+  </div>`;
+}
+
+function memberRowHtml(u){
+  const role = u.role === 'Autre' ? (u.roleOther || 'Autre') : (u.role || '');
+  const date = u.createdAt ? new Date(u.createdAt).toLocaleDateString('fr-FR') : '—';
+  const age = (u.age != null && u.age !== '') ? esc(u.age) + ' ans' : '—';
+  return `<tr>
+    <td class="col-title"><b>${esc(u.pseudo || u.name || '—')}</b></td>
+    <td>${esc(u.email || '—')}</td>
+    <td>${esc(role || '—')}</td>
+    <td>${age}</td>
+    <td>${esc(u.practice || '—')}</td>
+    <td>${esc(u.favClub || '—')}</td>
+    <td class="col-dates">${date}</td>
   </tr>`;
 }
 
