@@ -1064,3 +1064,19 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
   .galaxy-track{animation:none;}
   .galaxy-marquee{overflow-x:auto;}
 }
+
+/* =========================================================
+   PIED DE PAGE : CONTACT
+   ========================================================= */
+.site-footer{
+  margin-top:30px;padding:26px 4px 6px;border-top:1px solid var(--line);
+  display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;
+}
+.footer-contact{font-family:var(--font-mono);font-size:13px;color:var(--chalk-dim);}
+.footer-soon{color:var(--chalk-dim);opacity:.7;font-size:12px;}
+.footer-logo-link{display:inline-flex;opacity:.85;transition:opacity .2s, transform .2s;}
+.footer-logo-link:hover{opacity:1;transform:scale(1.03);}
+.footer-logo-link img{height:44px;width:auto;max-width:220px;object-fit:contain;display:block;}
+@media(max-width:700px){
+  .footer-logo-link img{height:36px;}
+}
