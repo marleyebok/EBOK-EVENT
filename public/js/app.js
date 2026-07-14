@@ -424,7 +424,7 @@ function initHomeFilters(){
   typeWrap.classList.add('type-list');
   Object.entries(TYPE_COLORS).forEach(([type,color])=>{
     typeWrap.insertAdjacentHTML('beforeend',
-      `<button type="button" class="type-chip active" data-type="${type}" style="--chip:${color}" aria-pressed="true"><span class="dot"></span>${type}</button>`);
+      `<button type="button" class="type-chip" data-type="${type}" style="--chip:${color}" aria-pressed="false"><span class="dot"></span>${type}</button>`);
   });
   typeWrap.querySelectorAll('.type-chip').forEach(chip=>{
     chip.addEventListener('click', ()=>{
@@ -457,20 +457,21 @@ function initHomeFilters(){
     applyMapFilters();
   };
   document.getElementById('typeAll').addEventListener('click', ()=> setAllTypes(true));
+  // "Réinitialiser" : aucune pastille cochée = aucune restriction (tous les types affichés).
   document.getElementById('typeNone').addEventListener('click', ()=> setAllTypes(false));
 
   updateTypeLabel();
   applyMapFilters();
 }
 
-/* Met à jour l'intitulé du bouton "Types" selon la sélection. */
+/* Met à jour l'intitulé du bouton "Types" selon la sélection.
+   Aucune pastille cochée = aucune restriction (comme "toutes cochées"). */
 function updateTypeLabel(){
   const chips = document.querySelectorAll('#typeFilterHome .type-chip');
   const active = document.querySelectorAll('#typeFilterHome .type-chip.active');
   const label = document.getElementById('typeDdLabel');
   if(!label) return;
-  if(active.length === chips.length) label.textContent = 'Tous les types';
-  else if(active.length === 0) label.textContent = 'Aucun type';
+  if(active.length === 0 || active.length === chips.length) label.textContent = 'Tous les types';
   else if(active.length === 1) label.textContent = active[0].dataset.type;
   else label.textContent = `${active.length} types`;
 }
@@ -602,7 +603,8 @@ function computeHomeFilteredEvents(){
   const checkedTypes = Array.from(document.querySelectorAll('#typeFilterHome .type-chip.active')).map(c=>c.dataset.type);
   
   return events.filter(ev=>{
-    if(!checkedTypes.includes(ev.type)) return false;
+    // Aucune pastille cochée = aucune restriction de type (tout est affiché).
+    if(checkedTypes.length && !checkedTypes.includes(ev.type)) return false;
     if(homeStatus === 'upcoming' && isPast(ev)) return false;
     if(homeStatus === 'archived' && !isPast(ev)) return false;
     if(periodStart && ev.dateEnd < periodStart) return false;
