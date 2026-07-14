@@ -1043,3 +1043,44 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .profile-section{margin-top:34px;}
 .profile-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
 .profile-section-head h3{font-size:20px;}
+
+/* =========================================================
+   BANDEAU "GALAXIE EBOK" (accueil, défilement continu des logos)
+   ========================================================= */
+.galaxy-band{margin:56px -4px 0;padding:34px 4px 10px;border-top:1px solid var(--line);}
+.galaxy-lead{
+  display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;text-align:center;
+  font-family:var(--font-mono);font-size:12.5px;letter-spacing:0.3px;color:var(--chalk-dim);
+  margin:0 0 22px;
+}
+.galaxy-lead b{color:var(--chalk);}
+.galaxy-lead-logo{width:22px;height:22px;border-radius:6px;object-fit:cover;flex:none;background:var(--asphalt-3);}
+.galaxy-marquee{
+  overflow:hidden;-webkit-mask-image:linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image:linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.galaxy-track{
+  display:flex;align-items:center;gap:56px;width:max-content;
+  animation:galaxy-scroll 34s linear infinite;
+}
+.galaxy-band:hover .galaxy-track{animation-play-state:paused;}
+.galaxy-item{display:flex;align-items:center;gap:10px;flex:none;opacity:0.85;transition:opacity .2s;}
+.galaxy-item:hover{opacity:1;}
+.galaxy-item img{
+  width:40px;height:40px;border-radius:10px;object-fit:cover;flex:none;
+  background:var(--asphalt-3);border:1px solid var(--line);
+}
+.galaxy-item span{font-family:var(--font-mono);font-size:12px;color:var(--chalk-dim);white-space:nowrap;}
+@keyframes galaxy-scroll{
+  from{transform:translateX(0);}
+  to{transform:translateX(-50%);}
+}
+@media(max-width:700px){
+  .galaxy-band{margin-top:40px;padding-top:26px;}
+  .galaxy-item img{width:34px;height:34px;}
+  .galaxy-track{gap:36px;animation-duration:26s;}
+}
+@media(prefers-reduced-motion: reduce){
+  .galaxy-track{animation:none;}
+  .galaxy-marquee{overflow-x:auto;}
+}
