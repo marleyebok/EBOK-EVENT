@@ -24,7 +24,9 @@
     { id: 'notebook', name: 'NOTEBOOK', color: '#7A86A0', url: null },
     { id: 'academie', name: 'ACADÉMIE', color: '#8A4CE0', url: null },
     { id: 'scouting', name: 'SCOUTING', color: '#EA5A3C', url: null },
-    { id: 'blog',     name: 'BLOG',     color: '#C8317E', url: null }
+    { id: 'blog',     name: 'BLOG',     color: '#C8317E', url: null },
+    { id: 'forum',    name: 'FORUM',    color: '#18A0C4', url: null },
+    { id: 'medias',   name: 'MÉDIAS',   color: '#C9A227', url: null }
   ];
 
   /* Détecte l'app courante d'après le nom d'hôte (marche aussi en local). */
