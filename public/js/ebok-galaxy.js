@@ -26,7 +26,8 @@
     { id: 'scouting', name: 'SCOUTING', color: '#EA5A3C', url: null },
     { id: 'blog',     name: 'BLOG',     color: '#C8317E', url: null },
     { id: 'forum',    name: 'FORUM',    color: '#18A0C4', url: null },
-    { id: 'medias',   name: 'MÉDIAS',   color: '#C9A227', url: 'https://ebok-medias.vercel.app/' }
+    { id: 'medias',   name: 'MÉDIAS',   color: '#C9A227', url: 'https://ebok-medias.vercel.app/' },
+    { id: 'workout',  name: 'WORKOUT',  color: '#A3BD18', url: 'https://ebok-workout.vercel.app/' }
   ];
 
   /* Détecte l'app courante d'après le nom d'hôte (marche aussi en local). */
