@@ -14,20 +14,20 @@
 
   /* Source de vérité locale (miroir de src/data/tools.ts du site mère).
      `url: null` = pas encore en ligne (affiché grisé, non cliquable). */
-  var HOME = { id: 'basketball', name: 'BASKETBALL', color: '#E8590C', url: 'https://ebok-basketball.vercel.app/' };
+  var HOME = { id: 'basketball', name: 'BASKETBALL', color: '#E8590C', url: 'https://ebok.fr/' };
   var APPS = [
-    { id: 'video',    name: 'VIDEO',    color: '#1FA98C', url: 'https://ebok-video.vercel.app/' },
-    { id: 'event',    name: 'EVENT',    color: '#E23A3A', url: 'https://ebok-event.vercel.app/' },
-    { id: 'mercato',  name: 'MERCATO',  color: '#4CA62E', url: 'https://ebok-mercato.vercel.app/' },
-    { id: 'playbook', name: 'PLAYBOOK', color: '#E08A2B', url: null },
-    { id: 'stats',    name: 'STATS',    color: '#2E6FD6', url: null },
-    { id: 'notebook', name: 'NOTEBOOK', color: '#7A86A0', url: null },
-    { id: 'academie', name: 'ACADÉMIE', color: '#8A4CE0', url: null },
-    { id: 'scouting', name: 'SCOUTING', color: '#EA5A3C', url: null },
-    { id: 'blog',     name: 'BLOG',     color: '#C8317E', url: null },
-    { id: 'forum',    name: 'FORUM',    color: '#18A0C4', url: null },
-    { id: 'medias',   name: 'MÉDIAS',   color: '#C9A227', url: 'https://ebok-medias.vercel.app/' },
-    { id: 'workout',  name: 'WORKOUT',  color: '#A3BD18', url: 'https://ebok-workout.vercel.app/' }
+    { id: 'video',    name: 'VIDEO',    color: '#1FA98C', url: 'https://video.ebok.fr/' },
+    { id: 'event',    name: 'EVENT',    color: '#E23A3A', url: 'https://event.ebok.fr/' },
+    { id: 'mercato',  name: 'MERCATO',  color: '#4CA62E', url: 'https://mercato.ebok.fr/' },
+    { id: 'playbook', name: 'PLAYBOOK', color: '#E08A2B', url: 'https://playbook.ebok.fr/' },
+    { id: 'stats',    name: 'STATS',    color: '#2E6FD6', url: 'https://stats.ebok.fr/' },
+    { id: 'notebook', name: 'NOTEBOOK', color: '#7A86A0', url: 'https://notebook.ebok.fr/' },
+    { id: 'academie', name: 'ACADÉMIE', color: '#8A4CE0', url: 'https://academie.ebok.fr/' },
+    { id: 'scouting', name: 'SCOUTING', color: '#EA5A3C', url: 'https://scouting.ebok.fr/' },
+    { id: 'blog',     name: 'BLOG',     color: '#C8317E', url: 'https://blog.ebok.fr/' },
+    { id: 'forum',    name: 'FORUM',    color: '#18A0C4', url: 'https://forum.ebok.fr/' },
+    { id: 'medias',   name: 'MÉDIAS',   color: '#C9A227', url: 'https://medias.ebok.fr/' },
+    { id: 'workout',  name: 'WORKOUT',  color: '#A3BD18', url: 'https://workout.ebok.fr/' }
   ];
 
   /* Détecte l'app courante d'après le nom d'hôte (marche aussi en local). */
