@@ -1742,6 +1742,13 @@ async function renderFavorites(){
 }
 
 function openAuth(tab){
+  // Identité déléguée à Clerk : on ouvre le widget Clerk (email + Google) plutôt
+  // que la fenêtre de connexion maison. Celle-ci ne sert plus qu'en mode démo
+  // (Clerk non branché).
+  if(window.EBOK_AUTH && typeof window.EBOK_AUTH.openSignIn === 'function'){
+    window.EBOK_AUTH.openSignIn(tab === 'signup' ? 'signup' : 'login');
+    return;
+  }
   switchAuthTab(tab || 'login');
   document.getElementById('authError').classList.add('hidden');
   const modal = document.getElementById('authModal');
@@ -2355,10 +2362,11 @@ function prefillCreateFromImport(ev, poster){
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-/* Vrai si l'erreur Firebase est un refus de droits (règles Firestore). */
+/* Vrai si l'erreur est un refus de droits (API Neon/Clerk : admin, auth, prive). */
 function isPermissionError(err){
   const code = String((err && (err.code || err.message)) || '').toLowerCase();
-  return code.includes('permission') || code.includes('insufficient') || code.includes('unauthenticated');
+  return code.includes('permission') || code.includes('insufficient') || code.includes('unauthenticated')
+    || code === 'admin' || code === 'auth' || code === 'prive';
 }
 
 /* Affiche le bandeau d'aide / diagnostic dans l'espace admin.
@@ -2663,7 +2671,7 @@ window.EBOK = {
   get events(){ return events; },
   setEvents(list){ if(Array.isArray(list)) events = list; renderAll(); },
   addEvent(ev){ events = [ev, ...events]; renderAll(); },
-  // Appelé par firebase-init.js à chaque connexion / déconnexion.
+  // Appelé par clerk-init.js à chaque connexion / déconnexion.
   async onAuthChanged(user, profile, admin){
     currentUser = user || null;
     currentProfile = profile || null;
@@ -2739,7 +2747,7 @@ initEditModal();
 initProfileEdit();
 initAiImport();
 
-// Si une source de données externe est branchée (firebase-init.js), on
+// Si une source de données externe est branchée (clerk-init.js), on
 // remplace les données locales par celles de la base dès qu'elles arrivent.
 if(window.EBOK_DATA && typeof window.EBOK_DATA.getAllEvents === 'function'){
   window.EBOK_DATA.getAllEvents()

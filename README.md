@@ -15,13 +15,21 @@ EBOK-EVENT/
 │   ├── css/
 │   │   └── styles.css        # Toute la mise en forme
 │   ├── js/
-│   │   ├── data.js           # Données : événements, couleurs, carte
+│   │   ├── data.js           # Données de démo : événements, couleurs, carte
 │   │   ├── app.js            # Logique : nav, filtres, carte, recherche…
-│   │   ├── services.js       # Couche API Firestore (prête, non branchée)
-│   │   └── firebase-config.example.js  # Modèle de config Firebase
-│   └── assets/               # Images (à venir)
-├── backend/                 # Réservé (Cloud Functions, scripts d'import…)
+│   │   ├── services.js       # Couche API (Neon via /api + Clerk) — mêmes signatures
+│   │   ├── clerk.js          # Chargeur Clerk (identité unique de la galaxie EBOK)
+│   │   └── clerk-init.js     # Branchement : expose EBOK_DATA / EBOK_AUTH à app.js
+│   └── assets/               # Images
+├── api/                      # Fonctions serverless Vercel (Neon + Clerk)
+│   ├── _lib.js               # Client Neon, vérif token Clerk, schéma « event »
+│   ├── events.js             # CRUD événements
+│   ├── views.js              # Compteurs de « curieux »
+│   ├── account.js            # Session, profil diffuseur, favoris, liste membres
+│   ├── migrate.js            # Migration ponctuelle Firestore → Neon (admin)
+│   └── import-event.js       # Assistant IA (Gemini) — réservé admin
 ├── package.json
+├── vercel.json
 ├── .gitignore
 └── README.md
 ```
@@ -42,7 +50,7 @@ npm start                     # ouvre http://localhost:8080
 cd public && python3 -m http.server 8080
 ```
 
-> Ouvrir `public/index.html` directement (`file://`) fonctionne aussi, mais un serveur local évite les surprises de cache et prépare le branchement Firebase.
+> Ouvrir `public/index.html` directement (`file://`) fonctionne aussi, mais un serveur local évite les surprises de cache. Les fonctions `/api` (Neon/Clerk) ne tournent que sur Vercel (ou `vercel dev`).
 
 ---
 
@@ -51,73 +59,73 @@ cd public && python3 -m http.server 8080
 - **Accueil** : carrousel « à la une » (5 événements), carte de France SVG interactive (pins par type, tooltips, clic → détail), bascule Carte / Liste.
 - **Filtres** : statut (À venir / Archives), ville, rayon, période (calendrier plage ou jour unique), type d'événement.
 - **Recherche** : formulaire multi-critères + grille de résultats.
-- **Publier** : formulaire diffuseur complet (infos, affiche, galerie, contact, options de visibilité). **L'événement publié apparaît immédiatement** sur la carte, dans la liste et la recherche (en mémoire tant que Firebase n'est pas branché ; enregistré en base ensuite).
+- **Publier** : formulaire diffuseur complet (infos, affiche, galerie, contact, options de visibilité). **L'événement publié apparaît immédiatement** sur la carte, dans la liste et la recherche (en mémoire tant que Neon n'est pas branché ; enregistré en base ensuite).
 - **Détail événement** : affiche, infos pratiques, galerie photos (lightbox), compteur de « curieux », boutons se renseigner / partager.
 
 **Données actuelles** : 20 événements en dur dans `public/js/data.js`, 5 en avant.
 
 ---
 
-## 🔌 Brancher Firebase (base de données réelle)
+## 🔌 Base de données : Neon + Clerk
 
-L'app est **déjà prête pour Firebase** : elle fonctionne sur les données locales tant que Firebase n'est pas activé, et bascule automatiquement dessus dès que tu ajoutes tes clés. Aucune réécriture nécessaire.
+L'app utilise la **base Neon partagée de la galaxie EBOK** (schéma `event`) via des
+fonctions serverless `/api/*`, et **Clerk** pour l'identité (compte unique de la
+galaxie, `clerk.ebok.fr`). Tant que la base n'est pas configurée, le site
+fonctionne sur les **données de démo** de `data.js` (aucune casse).
 
-### Étapes (≈ 10 min)
+### Variables d'environnement (Vercel → Settings → Environment Variables)
 
-1. **Créer le projet** sur [console.firebase.google.com](https://console.firebase.google.com) :
-   - « Ajouter un projet » → nom `ebok-event`.
-   - Menu **Firestore Database** → « Créer une base » → mode production, région `europe-west`.
-   - Onglet **Règles** : coller le contenu de [`firestore.rules`](firestore.rules) → Publier.
+| Variable | Rôle | Secret ? |
+|---|---|---|
+| `DATABASE_URL` | Chaîne de connexion Neon (base partagée) | 🔒 oui |
+| `CLERK_SECRET_KEY` | Clé serveur Clerk (`sk_live_…`) — vérifie les tokens | 🔒 oui |
+| `GEMINI_API_KEY` | Clé Google AI Studio (assistant IA) | 🔒 oui |
+| `ADMIN_EMAILS` | *(optionnel)* emails admin additionnels, séparés par virgules | non |
 
-2. **Récupérer tes clés** : Paramètres du projet (⚙️) → « Tes applications » → icône Web `</>` → copier l'objet `firebaseConfig`.
+> La clé Clerk **publishable** (`pk_live_…`) est **publique** et vit en dur dans
+> `public/js/clerk.js` — c'est normal. Ne mets **jamais** `sk_…` ni `DATABASE_URL`
+> dans le code ou dans le chat.
 
-3. **Configurer le code** :
-   ```bash
-   cp public/js/firebase-config.example.js public/js/firebase-config.js
-   ```
-   Colle tes 6 valeurs dans `public/js/firebase-config.js` (ce fichier est ignoré par git — tes clés ne partent pas sur GitHub).
+### Schéma
 
-4. **Activer** : dans `public/index.html`, décommenter la ligne :
-   ```html
-   <script type="module" src="js/firebase-init.js"></script>
-   ```
+Le schéma `event` (tables `events`, `views`, `profiles`) est **créé
+automatiquement** au premier appel API (`api/_lib.js` → `ensureSchema`). Aucun SQL
+manuel à lancer.
 
-5. **Importer les 20 événements** (une seule fois) : ouvrir le site, puis dans la **console du navigateur** (F12) taper :
-   ```js
-   EBOK_IMPORT()
-   ```
-   Recharger : l'app lit désormais depuis Firebase. Le formulaire de publication écrit en base, et le compteur de « curieux » est partagé entre tous les visiteurs.
+### Migrer les événements existants (depuis Firestore)
 
-> `public/js/services.js` contient la couche API (`getAllEvents`, `createEvent`, `incrementViews`…). `firebase-init.js` fait le branchement. Rien d'autre à modifier.
+Une fois les variables d'env en place et connecté en admin, un `POST /api/migrate`
+rapatrie automatiquement les fiches `events` + compteurs `views` depuis l'ancien
+Firestore (lecture publique) vers Neon. Idempotent (relançable sans risque).
+
+```bash
+# token = jeton de session Clerk (voir README, section migration)
+curl -X POST https://<preview>.vercel.app/api/migrate \
+  -H "Authorization: Bearer <TOKEN_CLERK_ADMIN>"
+```
 
 ## 👤 Comptes diffuseurs & administration
 
-L'authentification par email/mot de passe est intégrée (modale de connexion/inscription dans la barre du haut).
+L'authentification (email + Google) est gérée par le **widget Clerk** (bouton
+« Se connecter » de la barre du haut).
 
-- **Diffuseur** : crée un compte, publie des événements (mis **en attente de validation**), les gère dans **« Mes événements »** (voir, supprimer).
+- **Diffuseur** : se connecte via Clerk, publie des événements (mis **en attente de
+  validation**), les gère dans **« Mes événements »**.
 - **Public** : ne voit que les événements **validés** (`status: approved`).
-- **Admin** : voit **tous** les événements (y compris en attente), peut les **valider** ou les **supprimer**, et publie directement en ligne.
+- **Admin** : voit **tous** les événements, peut les **valider** / **supprimer**, et
+  publie directement en ligne.
 
-### Activer côté Firebase (2 actions)
+### Être admin
 
-1. **Activer la connexion par email** : console Firebase → **Authentication** → « Get started » → onglet **Sign-in method** → activer **Email/Password**.
+Les droits admin sont reconnus **côté serveur** à partir de l'e-mail Clerk. L'email
+propriétaire `marley.ebok@gmail.com` est admin **d'office** (constante
+`ADMIN_EMAILS` dans `api/_lib.js`). Pour ajouter un admin, ajoute son email à la
+variable d'env `ADMIN_EMAILS` sur Vercel (aucune modif de code).
 
-2. **Être admin** : les emails propriétaires sont admins **d'office**. Ils sont
-   déclarés à **deux** endroits, qui doivent rester synchronisés :
-   - `public/js/services.js` → constante `ADMIN_EMAILS` (badge et écran admin) ;
-   - `firestore.rules` → fonction `isAdminEmail` (droits réels de validation /
-     suppression).
-
-   Connecte-toi avec cet email (par mot de passe **ou** Google, peu importe l'UID) :
-   le badge **Admin** apparaît dans la barre du haut. Pour ajouter un admin,
-   ajoute son email aux **deux** listes puis republie les règles Firestore.
-
-   > Alternative sans toucher au code : créer une collection `admins` et y ajouter
-   > un document dont l'**ID est l'UID** du compte (Authentication → Users). L'email
-   > reste le plus simple car il ne dépend pas de l'UID (qui change entre un compte
-   > email/mot de passe et un compte Google).
-
-> La sécurité (qui peut créer / modifier / supprimer) est verrouillée par `firestore.rules` : un diffuseur ne touche qu'à ses propres événements, seul l'admin peut tout gérer.
+> La sécurité (qui peut créer / modifier / supprimer) est vérifiée dans les
+> fonctions `/api` : un diffuseur ne touche qu'à ses propres événements, seul
+> l'admin peut tout gérer. « Zéro miroir » : e-mail et nom sont lus en direct
+> depuis Clerk, jamais copiés en base.
 
 ---
 
@@ -139,7 +147,8 @@ relit, ajuste et publie — un événement de diffuseur reste en attente de vali
 2. Vercel → **Settings → Environment Variables** → ajoute `GEMINI_API_KEY` = ta clé.
 3. Redéploie. Tant que la clé n'est pas définie, l'assistant renvoie un message d'erreur clair et le reste du site fonctionne normalement.
 
-> L'endpoint valide le **jeton Firebase** de l'appelant : il est réservé aux **membres connectés** (pas ouvert au public anonyme).
+> L'endpoint valide le **jeton de session Clerk** de l'appelant et vérifie que son
+> e-mail est admin : l'assistant IA est **réservé à l'administrateur**.
 
 ### Étape suivante du plan
 
@@ -147,7 +156,7 @@ relit, ajuste et publie — un événement de diffuseur reste en attente de vali
 
 ### Déploiement
 
-Site statique → déployable sur **Firebase Hosting**, **GitHub Pages**, **Netlify** ou **Vercel** (dossier racine = `public/`).
+Déployé sur **Vercel** (site statique `public/` + fonctions `/api`). Cible : `event.ebok.fr`.
 
 ---
 

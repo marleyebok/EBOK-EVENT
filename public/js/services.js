@@ -1,220 +1,158 @@
 /* =========================================================
-   EBOK Event — COUCHE API (Firestore + Auth)
+   EBOK Event — COUCHE API (Neon via /api + Clerk)
    ---------------------------------------------------------
-   Accès aux données et à l'authentification Firebase.
-   Chargée uniquement quand Firebase est activé (firebase-init.js).
+   Remplace l'ancienne couche Firebase. Les SIGNATURES exportées n'ont pas
+   changé : app.js n'a (presque) pas à bouger. Les données passent par les
+   fonctions serverless /api/* (base Neon partagée, schéma « event ») ;
+   l'identité passe par Clerk (compte unique de la galaxie EBOK — voir clerk.js).
+
+   « Zéro miroir » : e-mail et nom réel sont lus en direct depuis Clerk, jamais
+   copiés en base.
    ========================================================= */
-import { db, auth } from "./firebase-config.js";
-import {
-  collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc,
-  query, where, increment, setDoc, arrayUnion, arrayRemove
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import {
-  createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { loadClerk, authHeader } from "./clerk.js";
 
-const EVENTS = "events";
-const VIEWS = "views";
-const USERS = "users";
-const ADMINS = "admins";
-
-/* Emails administrateurs (comptes propriétaires du site).
-   Un compte dont l'email figure ici est admin d'office, sans avoir à
-   créer manuellement un document dans la collection `admins`.
-   ⚠️ Doit rester synchronisé avec la liste des règles Firestore
-   (firestore.rules > isAdminEmail). Emails en minuscules. */
+/* Emails administrateurs — doit rester cohérent avec api/_lib.js (ADMIN_EMAILS).
+   L'autorité finale est le serveur (isAdmin via l'e-mail Clerk). */
 const ADMIN_EMAILS = ["marley.ebok@gmail.com"];
-
-/** Vrai si cet email est un email administrateur (insensible à la casse). */
 export function isAdminEmail(email) {
   return !!email && ADMIN_EMAILS.includes(email.trim().toLowerCase());
 }
 
-/* ---------- Événements ---------- */
-
-/**
- * Import initial : envoie une liste d'événements dans Firestore en
- * conservant leur id d'origine (pour que les compteurs de vues suivent).
- * Utilisé une seule fois pour migrer les données locales de data.js.
- */
-export async function importEvents(list) {
-  let n = 0;
-  for (const ev of list) {
-    const { id, ...data } = ev;
-    await setDoc(doc(db, EVENTS, id), { ...data, status: "approved" }, { merge: true });
-    n++;
+/* Petit client HTTP : chaque appel porte le token de session Clerk. */
+async function api(path, { method = "GET", body } = {}) {
+  const opts = { method, headers: { ...(await authHeader()) } };
+  if (body !== undefined) {
+    opts.headers["Content-Type"] = "application/json";
+    opts.body = JSON.stringify(body);
   }
-  return n;
+  const res = await fetch(path, opts);
+  let data = {};
+  try { data = await res.json(); } catch { /* réponse non JSON */ }
+  if (!res.ok) {
+    const err = new Error(data.error || "http_" + res.status);
+    err.code = data.error || "";
+    throw err;
+  }
+  return data;
 }
 
-/* Reconstruit un événement depuis un document Firestore.
-   ⚠️ L'id du DOCUMENT Firestore doit toujours l'emporter sur un éventuel
-   champ `id` resté dans les données (sinon les mises à jour ciblent un
-   document inexistant → erreur not-found). */
-function fromDoc(d) {
-  return { ...d.data(), id: d.id };
-}
+/* ---------- Événements ---------- */
 
 /** Événements publics : uniquement ceux qui sont validés (approved). */
 export async function getAllEvents() {
-  const q = query(collection(db, EVENTS), where("status", "==", "approved"));
-  const snap = await getDocs(q);
-  return snap.docs.map(fromDoc);
+  return (await api("/api/events")).events || [];
 }
 
 /** Tous les événements, quel que soit le statut (réservé à l'admin). */
 export async function getAllEventsForAdmin() {
-  const snap = await getDocs(collection(db, EVENTS));
-  return snap.docs.map(fromDoc);
+  return (await api("/api/events?all=1")).events || [];
 }
 
-/** Récupère un événement par son id. */
+/** Récupère un événement par son id (null si introuvable / privé). */
 export async function getEvent(id) {
-  const snap = await getDoc(doc(db, EVENTS, id));
-  return snap.exists() ? fromDoc(snap) : null;
+  try {
+    return (await api("/api/events?id=" + encodeURIComponent(id))).event || null;
+  } catch {
+    return null;
+  }
 }
 
-/** Récupère les événements d'un diffuseur donné (tous statuts). */
+/** Récupère les événements du diffuseur connecté (tous statuts).
+ *  `userId` est ignoré côté serveur : on renvoie toujours ceux de la session. */
 export async function getEventsByUser(userId) {
-  const q = query(collection(db, EVENTS), where("userId", "==", userId));
-  const snap = await getDocs(q);
-  return snap.docs.map(fromDoc);
+  return (await api("/api/events?mine=1")).events || [];
 }
 
-/** Crée un événement. Le statut par défaut est "pending" ; l'appelant
- *  (admin) peut fournir status:"approved". On ne stocke PAS l'id client
- *  (`evt-...`) dans le document : l'id réel est celui généré par Firestore. */
+/** Crée un événement (statut "pending"). Renvoie son nouvel id. */
 export async function createEvent(eventData) {
-  const { id, ...data } = eventData;
-  const ref = await addDoc(collection(db, EVENTS), {
-    status: "pending",
-    ...data,
-    createdAt: Date.now()
-  });
-  return ref.id;
+  return (await api("/api/events", { method: "POST", body: eventData })).id;
 }
 
 /** Met à jour un événement existant. */
 export async function updateEvent(id, patch) {
-  await updateDoc(doc(db, EVENTS, id), patch);
+  await api("/api/events?id=" + encodeURIComponent(id), { method: "PATCH", body: patch });
 }
 
 /** Valide (publie) un événement en attente. */
 export async function approveEvent(id) {
-  await updateDoc(doc(db, EVENTS, id), { status: "approved" });
+  await api("/api/events?id=" + encodeURIComponent(id), { method: "PATCH", body: { status: "approved" } });
 }
 
 /** Supprime un événement. */
 export async function deleteEvent(id) {
-  await deleteDoc(doc(db, EVENTS, id));
+  await api("/api/events?id=" + encodeURIComponent(id), { method: "DELETE" });
 }
 
-/**
- * Incrémente le compteur de "curieux" partagé d'un événement et renvoie
- * la nouvelle valeur. `seed` sert de valeur de départ au tout premier vu.
- */
+/** Incrémente le compteur de « curieux » et renvoie la nouvelle valeur. */
 export async function incrementViews(eventId, seed = 0) {
-  const ref = doc(db, VIEWS, eventId);
-  const before = await getDoc(ref);
-  const base = before.exists() ? (before.data().count || 0) : seed;
-  const next = base + 1;
-  await setDoc(ref, { count: next }, { merge: true });
-  return next;
+  const d = await api(
+    "/api/views?id=" + encodeURIComponent(eventId) + "&seed=" + (seed || 0),
+    { method: "POST" }
+  );
+  return d.count;
 }
 
-/* ---------- Authentification ---------- */
+/* ---------- Authentification (widget Clerk) ---------- */
 
-/** Inscription d'un diffuseur : crée le compte + son profil. */
-export async function signUp(email, password, profile) {
-  const cred = await createUserWithEmailAndPassword(auth, email, password);
-  const uid = cred.user.uid;
-  await setDoc(doc(db, USERS, uid), {
-    email,
-    ...profile,
-    createdAt: Date.now()
-  });
-  return cred.user;
-}
-
-/** Connexion d'un diffuseur. */
-export async function signIn(email, password) {
-  const cred = await signInWithEmailAndPassword(auth, email, password);
-  return cred.user;
-}
-
-/** Connexion / inscription via Google. Crée le profil au premier passage. */
-export async function signInWithGoogle() {
-  const provider = new GoogleAuthProvider();
-  const cred = await signInWithPopup(auth, provider);
-  const ref = doc(db, USERS, cred.user.uid);
-  const snap = await getDoc(ref);
-  if (!snap.exists()) {
-    await setDoc(ref, {
-      email: cred.user.email,
-      name: cred.user.displayName || '',
-      createdAt: Date.now()
-    });
-  }
-  return cred.user;
+/** Ouvre le widget Clerk (connexion ou inscription). */
+export async function openSignIn(mode) {
+  const clerk = await loadClerk();
+  if (mode === "signup") clerk.openSignUp();
+  else clerk.openSignIn();
 }
 
 /** Déconnexion. */
 export async function signOutUser() {
-  await signOut(auth);
+  const clerk = await loadClerk();
+  await clerk.signOut();
 }
 
-/** Observe l'état de connexion (appelé à chaque login/logout). */
-export function observeAuth(callback) {
-  return onAuthStateChanged(auth, callback);
+/* Compat : les anciens noms redirigent vers le widget Clerk (email + Google
+   sont gérés par Clerk lui-même ; plus de formulaire maison). */
+export async function signIn() { return openSignIn("login"); }
+export async function signUp() { return openSignIn("signup"); }
+export async function signInWithGoogle() { return openSignIn("login"); }
+
+/* ---------- Session / profil / favoris ---------- */
+
+/** Session courante : { user:{uid,email,displayName,isAdmin}|null, profile, favorites }. */
+export async function getSession() {
+  return api("/api/account");
 }
 
-/** Profil diffuseur (nom, insta…). */
+/** Profil diffuseur de la session (null si non connecté). */
 export async function getUserProfile(uid) {
-  const snap = await getDoc(doc(db, USERS, uid));
-  return snap.exists() ? snap.data() : null;
+  const d = await api("/api/account");
+  return d.profile || null;
 }
 
-/** Tous les membres inscrits (réservé à l'admin — liste des comptes). */
+/** Tous les membres inscrits (réservé à l'admin). */
 export async function getAllUsers() {
-  const snap = await getDocs(collection(db, USERS));
-  return snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+  return (await api("/api/account?users=1")).users || [];
 }
 
-/** Met à jour (fusionne) le profil d'un membre. */
+/** Met à jour (fusionne) le profil du membre connecté. */
 export async function updateUserProfile(uid, data) {
-  await setDoc(doc(db, USERS, uid), data, { merge: true });
+  await api("/api/account", { method: "POST", body: { action: "saveProfile", profile: data } });
 }
 
-/* ---------- Favoris (événements mis de côté) ---------- */
-
-/** Liste des ids d'événements enregistrés par l'utilisateur. */
+/** Liste des ids d'événements enregistrés par l'utilisateur connecté. */
 export async function getFavorites(uid) {
-  const snap = await getDoc(doc(db, USERS, uid));
-  return snap.exists() && Array.isArray(snap.data().favorites) ? snap.data().favorites : [];
+  const d = await api("/api/account");
+  return d.favorites || [];
 }
 
 /** Ajoute (add=true) ou retire (add=false) un événement des favoris. */
 export async function toggleFavorite(uid, eventId, add) {
-  await setDoc(
-    doc(db, USERS, uid),
-    { favorites: add ? arrayUnion(eventId) : arrayRemove(eventId) },
-    { merge: true }
-  );
+  await api("/api/account", { method: "POST", body: { action: "toggleFavorite", eventId, add } });
 }
 
-/** Vrai si l'utilisateur est administrateur.
- *  1) par email (compte propriétaire) — fonctionne sans configuration Firestore ;
- *  2) sinon, s'il figure dans la collection `admins`. */
+/** Vrai si l'utilisateur connecté est administrateur (autorité serveur). */
 export async function isAdmin(uid) {
-  // 1) Admin par email : marche même si le document `admins` n'existe pas.
-  if (isAdminEmail(auth.currentUser && auth.currentUser.email)) return true;
-  // 2) Admin déclaré dans la collection `admins`.
-  if (!uid) return false;
   try {
-    const snap = await getDoc(doc(db, ADMINS, uid));
-    return snap.exists();
-  } catch (e) {
+    const d = await api("/api/account");
+    return !!(d.user && d.user.isAdmin);
+  } catch {
     return false;
   }
 }

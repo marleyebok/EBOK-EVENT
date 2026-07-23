@@ -7,11 +7,18 @@
 
    Réservé à l'administrateur (marley.ebok@gmail.com).
 
+   Auth : jeton de session CLERK (envoyé par le front dans le corps `idToken`
+   ou l'en-tête Authorization). L'e-mail est lu en direct depuis Clerk et
+   comparé à l'allowlist admin (voir api/_lib.js).
+
    Variables d'environnement (Vercel > Settings > Environment Variables) :
    - GEMINI_API_KEY   (obligatoire)  clé Google AI Studio (gratuite)
+   - CLERK_SECRET_KEY (obligatoire)  pour valider le jeton de session Clerk
    - ADMIN_EMAILS     (optionnel)    emails admin additionnels, séparés par des virgules
-   - FIREBASE_API_KEY (optionnel)    clé Web Firebase (pour valider le compte)
    ========================================================= */
+import { verifyToken } from "@clerk/backend";
+import { clerkUser, isAdminEmail } from "./_lib.js";
+
 const GEMINI_MODEL = "gemini-2.0-flash";
 
 const TYPES = [
@@ -20,12 +27,6 @@ const TYPES = [
 ];
 const FIELDS = ["title", "type", "city", "region", "address", "dateStart", "dateEnd",
   "sexe", "age", "niveau", "description", "orgName", "insta", "site"];
-
-const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || "AIzaSyAeOxodAkp4TFU1V5PiOqV2qUh9WVQEKhA";
-
-const OWNER_EMAIL = "marley.ebok@gmail.com";
-const ADMIN_EMAILS = [OWNER_EMAIL, ...String(process.env.ADMIN_EMAILS || "")
-  .split(",").map(s => s.trim().toLowerCase()).filter(Boolean)];
 
 /* Refuse les adresses internes / locales (protection SSRF de base). */
 function isBlockedHost(host) {
@@ -39,19 +40,14 @@ function isBlockedHost(host) {
     || /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(h);
 }
 
-/* Vérifie que l'appelant est un admin (jeton Firebase valide + email admin). */
-async function verifyAdmin(idToken) {
-  if (!idToken) return false;
+/* Vérifie que l'appelant est admin (jeton de session Clerk valide + email admin). */
+async function verifyAdmin(token) {
+  if (!token) return false;
   try {
-    const res = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${FIREBASE_API_KEY}`,
-      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ idToken }) }
-    );
-    if (!res.ok) return false;
-    const data = await res.json();
-    const user = data.users && data.users[0];
-    const email = user && user.email && user.email.toLowerCase();
-    return !!(user && user.localId && email && ADMIN_EMAILS.includes(email));
+    const payload = await verifyToken(token, { secretKey: process.env.CLERK_SECRET_KEY });
+    if (!payload || typeof payload.sub !== "string") return false;
+    const { email } = await clerkUser(payload.sub);
+    return isAdminEmail(email);
   } catch (e) { return false; }
 }
 
@@ -200,7 +196,7 @@ async function runGemini(apiKey, parts) {
   return normalizeEvent(JSON.parse(text));
 }
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   if (req.method !== "POST") { res.status(405).json({ ok: false, error: "Méthode non autorisée." }); return; }
 
   const apiKey = process.env.GEMINI_API_KEY;
@@ -213,9 +209,10 @@ module.exports = async (req, res) => {
   if (typeof body === "string") { try { body = JSON.parse(body); } catch (e) { body = {}; } }
   const url = (body && body.url || "").trim();
   const image = body && body.image;
-  const idToken = body && body.idToken;
+  const authHeader = req.headers.authorization || req.headers.Authorization || "";
+  const token = (body && body.idToken) || (authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "");
 
-  if (!(await verifyAdmin(idToken))) {
+  if (!(await verifyAdmin(token))) {
     res.status(403).json({ ok: false, error: "Accès réservé à l'administrateur." });
     return;
   }
@@ -264,10 +261,7 @@ module.exports = async (req, res) => {
     if (err && err.message === "blocked") { res.status(422).json({ ok: false, error: "Contenu refusé par l'IA. Essaie une autre source." }); return; }
     res.status(500).json({ ok: false, error: "L'analyse IA a échoué. Réessaie." });
   }
-};
+}
 
 // Exposé pour les tests unitaires (non utilisé par Vercel).
-module.exports.extractPage = extractPage;
-module.exports.isBlockedHost = isBlockedHost;
-module.exports.parseDataUrl = parseDataUrl;
-module.exports.normalizeEvent = normalizeEvent;
+export { extractPage, isBlockedHost, parseDataUrl, normalizeEvent };

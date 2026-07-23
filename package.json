@@ -1,8 +1,9 @@
 {
   "name": "ebok-event",
-  "version": "0.1.0",
-  "description": "EBOK Event — l'agenda collaboratif du basket français",
+  "version": "0.2.0",
+  "description": "EBOK Event — l'agenda collaboratif du basket français (Neon + Clerk)",
   "private": true,
+  "type": "module",
   "scripts": {
     "start": "npx http-server public -p 8080 -c-1 -o",
     "dev": "npx http-server public -p 8080 -c-1 -o",
@@ -17,7 +18,14 @@
   ],
   "author": "EBOK Event",
   "license": "UNLICENSED",
+  "dependencies": {
+    "@clerk/backend": "^1.21.0",
+    "@neondatabase/serverless": "^1.1.0"
+  },
   "devDependencies": {
     "http-server": "^14.1.1"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

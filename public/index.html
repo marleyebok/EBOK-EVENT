@@ -572,11 +572,11 @@
           <b id="adminRulesTitle">Action refusée par la base de données.</b>
           <div class="ara-diag" id="adminRulesDiag"></div>
           <div id="adminRulesHelp">
-            <p>Pour modifier, valider ou mettre à la une les événements des autres, tes règles Firestore doivent reconnaître ton compte admin&nbsp;:</p>
+            <p>Les droits admin sont reconnus côté serveur à partir de ton adresse e-mail Clerk (<b>marley.ebok@gmail.com</b>). Si une action est refusée&nbsp;:</p>
             <ol>
-              <li>Ouvre <a href="https://console.firebase.google.com/project/ebok-event-61657/firestore/rules" target="_blank" rel="noopener">tes règles Firestore</a>.</li>
-              <li>Remplace tout par les règles fournies, puis clique <b>Publier</b>.</li>
-              <li>Reviens ici, <b>déconnecte-toi et reconnecte-toi</b>.</li>
+              <li><b>Déconnecte-toi</b>, puis reconnecte-toi via Google avec le compte <b>marley.ebok@gmail.com</b>.</li>
+              <li>Vérifie que l'e-mail affiché ci-dessus est bien l'e-mail admin.</li>
+              <li>Si le problème persiste, vérifie que les variables d'environnement (DATABASE_URL, CLERK_SECRET_KEY) sont bien configurées sur Vercel.</li>
             </ol>
           </div>
           <button class="btn btn-ghost btn-xs" id="adminRulesDismiss">Fermer</button>
@@ -810,7 +810,7 @@
 <script src="js/data.js"></script>
 <script src="js/app.js"></script>
 
-<!-- Firebase — activé (projet ebok-event-61657). Voir js/firebase-init.js. -->
-<script type="module" src="js/firebase-init.js"></script>
+<!-- Base Neon (/api) + identité Clerk (clerk.ebok.fr). Voir js/clerk-init.js. -->
+<script type="module" src="js/clerk-init.js"></script>
 </body>
 </html>

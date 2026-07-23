@@ -2,11 +2,13 @@
 node_modules/
 
 # Secrets / config d'environnement
+# ⚠️ Ne JAMAIS versionner : CLERK_SECRET_KEY, DATABASE_URL, GEMINI_API_KEY.
+# Ces valeurs vivent uniquement dans les variables d'environnement Vercel.
+# Seule la clé Clerk « publishable » (pk_live_…) est publique : elle est en dur
+# dans public/js/clerk.js, c'est normal.
 .env
 .env.local
-# NB : public/js/firebase-config.js EST versionné à dessein — les clés
-# Web Firebase ne sont pas secrètes et doivent être livrées avec le site.
-# La sécurité des données passe par les règles Firestore.
+.env*.local
 
 # Logs & divers
 npm-debug.log*
@@ -16,7 +18,4 @@ npm-debug.log*
 # Build / cache
 dist/
 .cache/
-
-# Firebase
-.firebase/
-firebase-debug.log
+.vercel/
