@@ -763,6 +763,8 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .admin-table .col-actions .btn{margin-left:6px;}
 .status-dot{display:inline-block;font-family:var(--font-mono);font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;text-transform:uppercase;letter-spacing:.5px;}
 .btn-xs{font-size:12px;padding:6px 10px;}
+.admin-migrate{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 18px;}
+.admin-migrate-status{font-family:var(--font-mono);font-size:12.5px;color:var(--chalk-dim);}
 .star-toggle{background:none;border:none;cursor:pointer;font-size:20px;line-height:1;color:var(--line-strong);transition:transform .1s ease, color .15s ease;padding:2px;}
 .star-toggle:hover{transform:scale(1.15);}
 .star-toggle.on{color:var(--yellow);}

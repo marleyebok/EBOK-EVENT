@@ -12,7 +12,7 @@ import {
   getAllEvents, getAllEventsForAdmin, getEvent, getEventsByUser,
   createEvent, updateEvent, approveEvent, deleteEvent, incrementViews,
   getFavorites, toggleFavorite, updateUserProfile, getAllUsers,
-  openSignIn, signOutUser, getSession,
+  openSignIn, signOutUser, getSession, migrateFromFirestore,
 } from "./services.js";
 import { loadClerk } from "./clerk.js";
 
@@ -21,6 +21,7 @@ window.EBOK_DATA = {
   getAllEvents, getAllEventsForAdmin, getEvent, getEventsByUser,
   createEvent, updateEvent, approveEvent, deleteEvent, incrementViews,
   getFavorites, toggleFavorite, updateUserProfile, getAllUsers,
+  migrateFromFirestore,
 };
 
 // Couche authentification exposée à app.js. `openSignIn` ouvre le widget Clerk ;

@@ -2149,6 +2149,32 @@ async function renderAdminEvents(){
   wrap.querySelectorAll('[data-feature]').forEach(b=> b.addEventListener('click', ()=> handleToggleFeatured(b.dataset.feature)));
 }
 
+/* Bouton admin : migration ponctuelle Firestore → Neon (un seul clic). */
+function initAdminTools(){
+  const btn = document.getElementById('btnMigrate');
+  const status = document.getElementById('migrateStatus');
+  if(!btn) return;
+  btn.addEventListener('click', async ()=>{
+    if(!currentIsAdmin){ status.textContent = 'Réservé à l’administrateur.'; return; }
+    if(!(window.EBOK_DATA && window.EBOK_DATA.migrateFromFirestore)){ status.textContent = 'Indisponible (base non branchée).'; return; }
+    if(!confirm('Importer les événements de l’ancien Firestore vers la nouvelle base Neon ?\n(Les fiches déjà présentes ne seront pas écrasées.)')) return;
+    btn.disabled = true;
+    status.textContent = 'Import en cours…';
+    try{
+      const r = await window.EBOK_DATA.migrateFromFirestore(false);
+      const ev = (r && r.events) || {};
+      const vw = (r && r.views) || {};
+      status.textContent = `✅ ${ev.imported || 0} événement(s) importé(s) sur ${ev.found || 0} trouvé(s) · ${vw.imported || 0} compteur(s) de vues.`;
+      await renderAdminEvents();
+      try{ const list = await window.EBOK_DATA.getAllEvents(); if(Array.isArray(list)){ events = list; renderAll(); } }catch(e){ /* accueil rafraîchi au besoin */ }
+    }catch(err){
+      status.textContent = '⚠️ ' + (err.message || 'Import impossible.');
+    }finally{
+      btn.disabled = false;
+    }
+  });
+}
+
 /* ---- Membres inscrits (chargés une fois pour l'espace admin) ---- */
 let adminUsers = [];
 let adminUsersByUid = {};
@@ -2746,6 +2772,7 @@ initAuth();
 initEditModal();
 initProfileEdit();
 initAiImport();
+initAdminTools();
 
 // Si une source de données externe est branchée (clerk-init.js), on
 // remplace les données locales par celles de la base dès qu'elles arrivent.
