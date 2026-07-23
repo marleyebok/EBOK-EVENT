@@ -763,19 +763,22 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .admin-table .col-actions .btn{margin-left:6px;}
 .status-dot{display:inline-block;font-family:var(--font-mono);font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;text-transform:uppercase;letter-spacing:.5px;}
 .btn-xs{font-size:12px;padding:6px 10px;}
-.admin-title-link{cursor:pointer;}
-.admin-title-link:hover{text-decoration:underline;}
-/* Mobile : on masque les colonnes secondaires pour que la colonne Actions
-   (Voir / Modifier / Valider / Supprimer) tienne à l'écran sans scroll. */
-@media(max-width:760px){
-  .admin-table{min-width:0;}
-  .admin-table th:nth-child(4),.admin-table td:nth-child(4),
-  .admin-table th:nth-child(5),.admin-table td:nth-child(5),
-  .admin-table th:nth-child(6),.admin-table td:nth-child(6),
-  .admin-table th:nth-child(7),.admin-table td:nth-child(7){display:none;}
-  .admin-table th,.admin-table td{padding:10px 8px;}
-  .admin-table .col-actions{white-space:normal;text-align:left;}
-  .admin-table .col-actions .btn{margin:2px 4px 2px 0;}
+/* Espace admin — liste de cartes compactes (remplace le tableau large). */
+.admin-list{display:flex;flex-direction:column;gap:10px;}
+.admin-item{display:flex;align-items:center;gap:12px;padding:12px 14px;
+  border:1px solid var(--line);border-radius:14px;background:var(--asphalt-2);}
+.admin-item.is-pending{border-color:rgba(255,193,7,.35);}
+.admin-item .star-toggle{flex:0 0 auto;font-size:20px;}
+.admin-item-body{flex:1 1 auto;min-width:0;}
+.admin-item-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap;cursor:pointer;}
+.admin-item-title b{color:var(--chalk);}
+.admin-item-meta{font-size:12.5px;color:var(--chalk-dim);margin-top:4px;font-family:var(--font-mono);}
+.admin-item-actions{flex:0 0 auto;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+.admin-title-link:hover b{text-decoration:underline;}
+@media(max-width:640px){
+  .admin-item{flex-wrap:wrap;gap:10px;}
+  .admin-item-actions{flex:1 1 100%;justify-content:stretch;}
+  .admin-item-actions .btn{flex:1 1 auto;text-align:center;}
 }
 .star-toggle{background:none;border:none;cursor:pointer;font-size:20px;line-height:1;color:var(--line-strong);transition:transform .1s ease, color .15s ease;padding:2px;}
 .star-toggle:hover{transform:scale(1.15);}

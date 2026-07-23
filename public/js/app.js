@@ -2172,43 +2172,30 @@ function creatorLabel(ev){
 }
 
 function adminTableHtml(list){
-  return `<div class="admin-table-scroll">
-    <table class="admin-table">
-      <thead><tr>
-        <th>Statut</th>
-        <th class="col-center">À la une</th>
-        <th>Événement</th>
-        <th>Créateur</th>
-        <th>Type</th>
-        <th>Ville</th>
-        <th>Dates</th>
-        <th class="col-actions">Actions</th>
-      </tr></thead>
-      <tbody>${list.map(adminRowHtml).join('')}</tbody>
-    </table>
-  </div>`;
+  return `<div class="admin-list">${list.map(adminRowHtml).join('')}</div>`;
 }
 
 function adminRowHtml(ev){
   const pending = ev.status !== 'approved';
   const feat = !!ev.featured;
-  return `<tr>
-    <td><span class="status-dot ${pending ? 'status-pending' : 'status-approved'}">${pending ? 'En attente' : 'En ligne'}</span></td>
-    <td class="col-center">
-      <button class="star-toggle ${feat ? 'on' : ''}" data-feature="${esc(ev.id)}" aria-pressed="${feat}" title="${feat ? 'Retirer de la une' : 'Mettre à la une'}">★</button>
-    </td>
-    <td class="col-title"><b class="admin-title-link" data-open="${esc(ev.id)}">${esc(ev.title)}</b></td>
-    <td>${creatorLabel(ev)}</td>
-    <td>${esc(ev.type || '')}</td>
-    <td>${esc(ev.city || '')}</td>
-    <td class="col-dates">${fmtDateRange(ev.dateStart, ev.dateEnd)}</td>
-    <td class="col-actions">
+  const meta = [ev.type, ev.city, fmtDateRange(ev.dateStart, ev.dateEnd)].filter(Boolean).join(' · ');
+  const metaFull = meta ? `${esc(meta)} · ${creatorLabel(ev)}` : creatorLabel(ev);
+  return `<div class="admin-item${pending ? ' is-pending' : ''}">
+    <button class="star-toggle ${feat ? 'on' : ''}" data-feature="${esc(ev.id)}" aria-pressed="${feat}" title="${feat ? 'Retirer de la une' : 'Mettre à la une'}">★</button>
+    <div class="admin-item-body">
+      <div class="admin-item-title admin-title-link" data-open="${esc(ev.id)}">
+        <span class="status-dot ${pending ? 'status-pending' : 'status-approved'}">${pending ? 'En attente' : 'En ligne'}</span>
+        <b>${esc(ev.title)}</b>
+      </div>
+      <div class="admin-item-meta">${metaFull}</div>
+    </div>
+    <div class="admin-item-actions">
       <button class="btn btn-ghost btn-xs" data-open="${esc(ev.id)}">Voir</button>
       <button class="btn btn-ghost btn-xs" data-edit="${esc(ev.id)}">Modifier</button>
       ${pending ? `<button class="btn btn-approve btn-xs" data-approve="${esc(ev.id)}">Valider</button>` : ''}
       <button class="btn btn-danger btn-xs" data-del="${esc(ev.id)}">Supprimer</button>
-    </td>
-  </tr>`;
+    </div>
+  </div>`;
 }
 
 /* ---- Membres inscrits : tableau synthétique (espace admin) ---- */
