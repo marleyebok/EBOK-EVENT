@@ -957,7 +957,7 @@ function initCreatePage(){
         buvette: val('c-buvette'),
         reservation: val('c-reservation')
       },
-      gallery: [],
+      gallery: await hostGallery(galleryFiles),
       placesTotal: val('c-places') ? parseInt(val('c-places'), 10) : null,
       dispo: val('c-dispo') || '',
       featured: visibility !== 'standard',
@@ -1101,15 +1101,28 @@ function compressImage(file, maxDim = 1200, quality = 0.8){
  * réseau, fichier refusé) : mieux vaut publier avec une affiche lourde que
  * perdre la publication de l'utilisateur.
  */
-async function hostPoster(src){
+async function hostImage(src, name = 'affiche.jpg'){
   if(!src || !/^data:/i.test(src)) return src || null;   // déjà une URL, ou rien
   if(!(window.EBOK_DATA && typeof window.EBOK_DATA.uploadImage === 'function')) return src;
   try{
-    return await window.EBOK_DATA.uploadImage(src, 'affiche.jpg');
+    return await window.EBOK_DATA.uploadImage(src, name);
   }catch(err){
-    console.warn("[EBOK] Hébergement de l'affiche impossible — conservée dans la fiche.", err);
+    console.warn("[EBOK] Hébergement de l'image impossible — conservée dans la fiche.", err);
     return src;
   }
+}
+
+/** Héberge l'affiche d'un événement. */
+function hostPoster(src){ return hostImage(src, 'affiche.jpg'); }
+
+/** Héberge les photos d'éditions précédentes, en ignorant celles qui échouent. */
+async function hostGallery(list){
+  if(!Array.isArray(list) || !list.length) return [];
+  const out = [];
+  for(let i = 0; i < list.length; i++){
+    out.push(await hostImage(list[i], `galerie-${i + 1}.jpg`));
+  }
+  return out.filter(Boolean);
 }
 
 function guessCoords(city, region){
