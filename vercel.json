@@ -6,6 +6,9 @@
   "outputDirectory": "public",
   "cleanUrls": true,
   "trailingSlash": false,
+  "functions": {
+    "api/evenement.js": { "includeFiles": "public/index.html" }
+  },
   "redirects": [{ "source": "/compte", "destination": "/compte/profil", "permanent": false }],
-  "rewrites": [{ "source": "/evenement/:id", "destination": "/index.html" }]
+  "rewrites": [{ "source": "/evenement/:id", "destination": "/api/evenement?id=:id" }]
 }
