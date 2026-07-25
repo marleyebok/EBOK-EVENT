@@ -13,6 +13,7 @@ import {
   createEvent, updateEvent, approveEvent, deleteEvent, incrementViews,
   getFavorites, toggleFavorite, updateUserProfile, getAllUsers,
   openSignIn, signOutUser, getSession, migrateFromFirestore,
+  uploadImage,
 } from "./services.js";
 import { loadClerk } from "./clerk.js";
 
@@ -22,6 +23,7 @@ window.EBOK_DATA = {
   createEvent, updateEvent, approveEvent, deleteEvent, incrementViews,
   getFavorites, toggleFavorite, updateUserProfile, getAllUsers,
   migrateFromFirestore,
+  uploadImage,
 };
 
 // Couche authentification exposée à app.js. `openSignIn` ouvre le widget Clerk ;

@@ -36,6 +36,32 @@ async function api(path, { method = "GET", body } = {}) {
   return data;
 }
 
+/* ---------- Images (Vercel Blob) ---------- */
+/**
+ * Héberge une image (affiche d'événement) et renvoie son URL publique.
+ * On envoie les octets bruts : /api/upload lit le corps sans bodyParser.
+ * @param {string} dataUrl image en data-URI (sortie de compressImage)
+ * @param {string} name nom de fichier indicatif
+ * @returns {Promise<string>} URL publique du fichier
+ */
+export async function uploadImage(dataUrl, name = "affiche.jpg") {
+  const blob = await (await fetch(dataUrl)).blob();
+  const res = await fetch("/api/upload", {
+    method: "POST",
+    headers: {
+      ...(await authHeader()),
+      "Content-Type": blob.type || "image/jpeg",
+      "x-filename": encodeURIComponent(name),
+      "x-folder": "affiches",
+    },
+    body: blob,
+  });
+  let data = {};
+  try { data = await res.json(); } catch { /* réponse non JSON */ }
+  if (!res.ok || !data.url) throw new Error(data.error || "upload_" + res.status);
+  return data.url;
+}
+
 /* ---------- Événements ---------- */
 
 /** Événements publics : uniquement ceux qui sont validés (approved). */

@@ -105,9 +105,10 @@ function metaBlock(ev, id, req) {
     200
   );
 
-  // Les affiches sont stockées en data-URI dans la base : inutilisables comme
-  // image d'aperçu. On ne prend le poster que s'il est déjà une vraie URL
-  // (le jour où les affiches seront hébergées comme fichiers).
+  // Les affiches sont hébergées comme fichiers (Vercel Blob, voir api/upload.js).
+  // On ne retient donc que les vraies URLs : les fiches créées AVANT cette
+  // bascule portent encore un data-URI, inutilisable comme image d'aperçu — on
+  // retombe alors sur l'icône du site.
   const poster = typeof ev.poster === "string" && /^https?:\/\//i.test(ev.poster) ? ev.poster : null;
   const image = poster || `${base}/assets/favicon-192.png`;
 

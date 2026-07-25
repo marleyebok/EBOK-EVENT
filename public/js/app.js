@@ -949,7 +949,7 @@ function initCreatePage(){
       sexe: val('c-sexe') || 'Mixte',
       age: val('c-age') || 'Séniors (18-35 ans)',
       niveau: val('c-niveau') || 'Loisir',
-      poster: posterSrc,
+      poster: await hostPoster(posterSrc),
       description: val('c-desc'),
       infos: {
         adresse: val('c-adresse'),
@@ -1089,6 +1089,27 @@ function compressImage(file, maxDim = 1200, quality = 0.8){
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+/**
+ * Héberge l'affiche comme FICHIER (Vercel Blob) et renvoie son URL, au lieu de
+ * stocker un data-URI dans la base. Deux raisons : la base restait alourdie par
+ * l'image entière, et un data-URI ne peut pas servir d'image d'aperçu au
+ * partage (og:image exige une vraie URL).
+ *
+ * Repli assumé sur le data-URI si l'hébergement échoue (stockage non branché,
+ * réseau, fichier refusé) : mieux vaut publier avec une affiche lourde que
+ * perdre la publication de l'utilisateur.
+ */
+async function hostPoster(src){
+  if(!src || !/^data:/i.test(src)) return src || null;   // déjà une URL, ou rien
+  if(!(window.EBOK_DATA && typeof window.EBOK_DATA.uploadImage === 'function')) return src;
+  try{
+    return await window.EBOK_DATA.uploadImage(src, 'affiche.jpg');
+  }catch(err){
+    console.warn("[EBOK] Hébergement de l'affiche impossible — conservée dans la fiche.", err);
+    return src;
+  }
 }
 
 function guessCoords(city, region){
@@ -2615,16 +2636,19 @@ function initEditModal(){
   });
 
   const fileInput = document.getElementById('e-poster-file');
-  fileInput.addEventListener('change', ()=>{
+  fileInput.addEventListener('change', async ()=>{
     const file = fileInput.files[0];
     if(!file) return;
-    const reader = new FileReader();
-    reader.onload = (e)=>{
-      editPosterData = e.target.result;
-      const prev = document.getElementById('e-poster-preview');
-      if(prev){ prev.src = editPosterData; prev.classList.remove('hidden'); }
-    };
-    reader.readAsDataURL(file);
+    // Même compression qu'à la création : l'affiche part maintenant sur le
+    // stockage, inutile d'y envoyer l'original plein format.
+    try{
+      editPosterData = await compressImage(file);
+    }catch(err){
+      console.warn("[EBOK] Lecture de l'affiche impossible.", err);
+      return;
+    }
+    const prev = document.getElementById('e-poster-preview');
+    if(prev){ prev.src = editPosterData; prev.classList.remove('hidden'); }
   });
 
   document.getElementById('editForm').addEventListener('submit', async e=>{
@@ -2670,7 +2694,7 @@ function initEditModal(){
       patch.x = c.x; patch.y = c.y;
       if(c.lat != null){ patch.lat = c.lat; patch.lng = c.lng; }
     }
-    if(editPosterData){ patch.poster = editPosterData; }
+    if(editPosterData){ patch.poster = await hostPoster(editPosterData); }
 
     try{ await window.EBOK_DATA.updateEvent(editingId, patch); }
     catch(err){
