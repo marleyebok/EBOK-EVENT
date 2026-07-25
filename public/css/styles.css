@@ -1042,60 +1042,6 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .profile-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
 .profile-section-head h3{font-size:20px;}
 
-/* =========================================================
-   BANDEAU "GALAXIE EBOK" (accueil, défilement continu des logos)
-   ========================================================= */
-.galaxy-band{margin:56px -4px 0;padding:34px 4px 10px;border-top:1px solid var(--line);}
-.galaxy-lead{
-  text-align:center;font-family:var(--font-mono);font-size:12.5px;letter-spacing:0.3px;
-  color:var(--chalk-dim);margin:0 0 16px;
-}
-.galaxy-lead b{color:var(--chalk);}
-/* Logo EBOK Basketball : sur sa propre ligne, centré, en grand. */
-.galaxy-lead-logo-link{display:flex;justify-content:center;margin:0 0 26px;opacity:.9;transition:opacity .2s, transform .2s;}
-.galaxy-lead-logo-link:hover{opacity:1;transform:scale(1.03);}
-.galaxy-lead-logo{height:60px;width:auto;max-width:280px;object-fit:contain;display:block;}
-@media(max-width:700px){
-  .galaxy-lead-logo{height:46px;}
-}
-.galaxy-marquee{
-  overflow:hidden;-webkit-mask-image:linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-  mask-image:linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-}
-.galaxy-track{
-  display:flex;align-items:center;gap:48px;width:max-content;
-  animation:galaxy-scroll 34s linear infinite;
-}
-.galaxy-band:hover .galaxy-track{animation-play-state:paused;}
-.galaxy-item{display:flex;align-items:center;flex:none;opacity:0.85;transition:opacity .2s;}
-.galaxy-item:hover{opacity:1;}
-/* Logos affichés en entier (aucun rognage) : hauteur fixe, largeur libre. */
-.galaxy-item img{
-  height:36px;width:auto;max-width:130px;object-fit:contain;display:block;flex:none;
-}
-@keyframes galaxy-scroll{
-  from{transform:translateX(0);}
-  to{transform:translateX(-50%);}
-}
-@media(max-width:700px){
-  .galaxy-band{margin-top:40px;padding-top:26px;}
-  .galaxy-item img{height:28px;max-width:100px;}
-  .galaxy-track{gap:32px;animation-duration:26s;}
-}
-@media(prefers-reduced-motion: reduce){
-  .galaxy-track{animation:none;}
-  .galaxy-marquee{overflow-x:auto;}
-}
-
-/* =========================================================
-   PIED DE PAGE : CONTACT
-   ========================================================= */
-.site-footer{
-  margin-top:30px;padding:26px 4px 6px;border-top:1px solid var(--line);
-  display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;
-}
-.footer-contact{font-family:var(--font-mono);font-size:13px;color:var(--chalk-dim);}
-.footer-soon{color:var(--chalk-dim);opacity:.7;font-size:12px;}
 
 /* =========================================================
    ESPACE COMPTE (/compte) — tableau de bord, sidebar repliable.
