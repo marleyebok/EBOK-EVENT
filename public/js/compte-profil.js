@@ -1,113 +1,52 @@
 /**
- * /compte/profil — profil du compte unique EBOK (table partagée
- * `shared.profiles`, la même que Playbook / Video / Event / site mère).
+ * /compte/profil — profil du compte unique EBOK, en LECTURE SEULE.
+ *
+ * Un seul formulaire de profilage dans la galaxie : le questionnaire
+ * d'inscription du site mère. Cette page ne fait que l'afficher et renvoie
+ * vers le questionnaire pour le modifier.
  */
 import { mountCompteShell } from './compte-shell.js';
 import { authHeader } from './clerk.js';
 
-/* Listes fermées, identiques dans toutes les apps de la galaxie. */
-const ROLES = ['Joueur', 'Coach', 'Club', 'Organisation', 'Spectateur', 'Autre'];
-const LEVELS = ['Loisir', 'Département', 'Région', 'National', 'Pro', 'International', 'Autre'];
-const GENDERS = ['Homme', 'Femme'];
-const TOOLS = [
-  'Basketball',
-  'Event',
-  'Mercato',
-  'Playbook',
-  'Workout',
-  'Vidéo',
-  'Stats',
-  'Notebook',
-  'Académie',
-  'Scouting',
-  'Blog',
-  'Forum',
-  'Médias',
-];
+const ONBOARDING_URL = 'https://ebok.fr/onboarding';
 
 const clerk = await mountCompteShell('profil');
 if (clerk) {
-  const form = document.getElementById('form');
-  const toast = document.getElementById('toast');
+  const loading = document.getElementById('loading');
+  const filled = document.getElementById('filled');
+  const empty = document.getElementById('empty');
+  const editNote = document.getElementById('editNote');
+  const rowsEl = document.getElementById('rows');
   const errorEl = document.getElementById('error');
-  const submitBtn = document.getElementById('submit');
 
-  // Options des listes (une seule source, partagée avec l'API).
-  const fill = (id, values) => {
-    document.getElementById(id).insertAdjacentHTML(
-      'beforeend',
-      values.map((v) => `<option value="${v}">${v}</option>`).join('')
-    );
-  };
-  fill('f-role', ROLES);
-  fill('f-level', LEVELS);
-  fill('f-gender', GENDERS);
-  document.getElementById('f-tools').innerHTML = TOOLS.map(
-    (t) => `<label class="dash-chip"><input type="checkbox" name="tools" value="${t}" />${t}</label>`
-  ).join('');
+  for (const el of document.querySelectorAll('[data-onboarding]')) el.href = ONBOARDING_URL;
 
-  const showError = (msg) => {
-    errorEl.textContent = msg;
-    errorEl.hidden = false;
-  };
-
-  // 1) Pré-remplissage depuis le profil déjà enregistré.
   try {
     const res = await fetch('/api/profile', { headers: await authHeader() });
-    if (res.ok) {
-      const { profile = {} } = await res.json();
-      for (const name of ['role', 'roleOther', 'level', 'club', 'gender', 'age', 'location']) {
-        if (typeof profile[name] === 'string') form.elements[name].value = profile[name];
+    if (!res.ok) throw new Error(String(res.status));
+    const { filled: isFilled, rows = [] } = await res.json();
+
+    loading.hidden = true;
+    if (!isFilled || rows.length === 0) {
+      empty.hidden = false;
+    } else {
+      // `textContent` plutôt que du HTML : ces valeurs viennent du membre.
+      for (const row of rows) {
+        const line = document.createElement('div');
+        line.className = 'dash-dl-row';
+        const dt = document.createElement('dt');
+        dt.textContent = row.label;
+        const dd = document.createElement('dd');
+        dd.textContent = row.value;
+        line.append(dt, dd);
+        rowsEl.append(line);
       }
-      const tools = Array.isArray(profile.tools) ? profile.tools : [];
-      form
-        .querySelectorAll('input[name="tools"]')
-        .forEach((box) => (box.checked = tools.includes(box.value)));
-    } else if (res.status !== 401) {
-      showError('Impossible de charger ton profil pour le moment.');
+      filled.hidden = false;
+      editNote.hidden = false;
     }
   } catch {
-    showError('Impossible de charger ton profil pour le moment.');
+    loading.hidden = true;
+    errorEl.textContent = 'Impossible de charger ton profil pour le moment.';
+    errorEl.hidden = false;
   }
-
-  // 2) Enregistrement.
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    toast.hidden = true;
-    errorEl.hidden = true;
-    submitBtn.disabled = true;
-    const original = submitBtn.textContent;
-    submitBtn.textContent = 'Enregistrement…';
-
-    const data = new FormData(form);
-    const payload = {
-      role: data.get('role'),
-      roleOther: data.get('roleOther'),
-      level: data.get('level'),
-      club: data.get('club'),
-      gender: data.get('gender'),
-      age: data.get('age'),
-      location: data.get('location'),
-      tools: data.getAll('tools'),
-    };
-
-    try {
-      const res = await fetch('/api/profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(await authHeader()) },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
-        toast.hidden = false;
-        toast.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      } else {
-        showError("L'enregistrement a échoué. Réessaie dans un instant.");
-      }
-    } catch {
-      showError("L'enregistrement a échoué. Vérifie ta connexion et réessaie.");
-    } finally {
-      submitBtn.disabled = false;
-      submitBtn.textContent = original;
-    }
-  });
 }

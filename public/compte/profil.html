@@ -20,56 +20,30 @@
         <p class="dash-crumb">Compte · Profil — ces infos sont valables sur toute la galaxie EBOK.</p>
       </div>
 
-      <div class="dash-toast" id="toast" hidden>✓ Profil enregistré.</div>
       <div class="dash-error" id="error" hidden></div>
 
-      <form class="dash-card dash-form" id="form">
-        <label>
-          Tu es
-          <select name="role" id="f-role"><option value="">—</option></select>
-        </label>
+      <div class="dash-card" id="loading">
+        <p class="dash-muted">Chargement de ton profil…</p>
+      </div>
 
-        <label>
-          Si « Autre », précise
-          <input name="roleOther" type="text" maxlength="60" placeholder="Ex. : Préparateur physique" />
-        </label>
+      <!-- Profil rempli : affichage en lecture seule. -->
+      <div class="dash-card" id="filled" hidden>
+        <dl class="dash-dl" id="rows"></dl>
+      </div>
 
-        <label>
-          Niveau de pratique
-          <select name="level" id="f-level"><option value="">—</option></select>
-        </label>
+      <!-- Questionnaire pas encore rempli. -->
+      <div class="dash-card" id="empty" hidden>
+        <p style="margin-top:0"><strong>Ton profil n'est pas encore rempli.</strong></p>
+        <p class="dash-muted">
+          Quelques questions rapides pour personnaliser ton compte sur toute la galaxie.
+        </p>
+        <a class="dash-btn" data-onboarding href="#" style="margin-top:6px">Remplir mon profil</a>
+      </div>
 
-        <div class="dash-form-row">
-          <label>
-            Club / équipe
-            <input name="club" type="text" maxlength="80" placeholder="Ex. : ASVEL, Paris Basketball…" />
-          </label>
-          <label>
-            Homme / Femme
-            <select name="gender" id="f-gender"><option value="">—</option></select>
-          </label>
-        </div>
-
-        <div class="dash-form-row">
-          <label>
-            Âge
-            <input name="age" type="number" min="0" max="120" placeholder="Ex. : 24" />
-          </label>
-          <label>
-            Localisation
-            <input name="location" type="text" maxlength="80" placeholder="Ville, région…" />
-          </label>
-        </div>
-
-        <fieldset class="dash-fieldset">
-          <legend>Quels outils EBOK comptes-tu utiliser ? (plusieurs choix)</legend>
-          <div class="dash-chips" id="f-tools"></div>
-        </fieldset>
-
-        <div>
-          <button class="dash-btn" type="submit" id="submit">Enregistrer mon profil</button>
-        </div>
-      </form>
+      <p class="dash-muted" id="editNote" hidden>
+        Pour modifier ces informations, refais le questionnaire —
+        <a data-onboarding href="#" style="color:var(--d-accent);font-weight:600">Modifier mon profil</a>.
+      </p>
 
       <p class="dash-muted" style="margin-top:16px">
         Nom, e-mail, mot de passe ou suppression du compte →
