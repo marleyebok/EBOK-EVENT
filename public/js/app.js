@@ -1318,14 +1318,15 @@ function miniMapHtml(ev){
   </div>`;
 }
 
-async function openEvent(id){
+async function openEvent(id, opts){
+  const fromUrl = Boolean(opts && opts.fromUrl);
   let ev = events.find(e=>e.id===id);
   // Événement absent de la liste publique (ex. en attente de validation) :
   // on le récupère directement depuis Firebase si possible.
   if(!ev && window.EBOK_DATA && typeof window.EBOK_DATA.getEvent === 'function'){
     try{ ev = await window.EBOK_DATA.getEvent(id); }catch(e){ /* ignore */ }
   }
-  if(!ev) return;
+  if(!ev) return false;
   currentGallery = ev.gallery || [];
   const el = document.getElementById('eventDetail');
   const posterHtml = ev.poster
@@ -1342,7 +1343,7 @@ async function openEvent(id){
   if(ev.org.email) contactItems.push(`<a class="popover-item" href="mailto:${ev.org.email}"><span class="ic">✉️</span>${ev.org.email}</a>`);
   if(contactItems.length===0) contactItems.push(`<div class="popover-item" style="color:#7c7768;">Aucun contact renseigné</div>`);
 
-  const shareUrl = `https://courtmap.fr/evenement/${ev.id}`;
+  const shareUrl = `${location.origin}/evenement/${ev.id}`;
   const shareText = encodeURIComponent(`${ev.title} — ${fmtDateRange(ev.dateStart,ev.dateEnd)} à ${ev.city}. Plus d'infos :`);
 
   const infos = ev.infos || {};
@@ -1470,7 +1471,9 @@ async function openEvent(id){
   }, {once:true});
 
   showPage('event');
+  if(!fromUrl) setUrl('/evenement/' + encodeURIComponent(ev.id));
   loadAndAnimateViews(ev.id);
+  return true;
 }
 
 /* ---- compteur de spectateurs (partagé si le stockage est dispo, sinon local) ---- */
@@ -1642,6 +1645,54 @@ function renderFeatured(){
 /* =========================================================
    NAVIGATION
    ========================================================= */
+/* =========================================================
+   URL PAR ÉVÉNEMENT (History API)
+   ---------------------------------------------------------
+   Chaque fiche a sa propre adresse `/evenement/<id>` : les liens partagés
+   fonctionnent, le retour arrière du navigateur aussi, et une fiche peut être
+   mise en favori. On reste pour autant sur une seule page — aucun rechargement
+   à la navigation, la carte et les filtres ne sont jamais reconstruits.
+
+   Côté hébergement, `/evenement/*` est réécrit vers index.html (voir
+   vercel.json), sinon un accès direct renverrait un 404.
+   ========================================================= */
+const EVENT_PATH = /^\/evenement\/([^/]+)\/?$/;
+
+/** ID d'événement présent dans l'URL courante, ou null. */
+function eventIdFromUrl(){
+  const m = EVENT_PATH.exec(location.pathname);
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
+/** Change l'URL sans recharger, en évitant les entrées d'historique en double. */
+function setUrl(path){
+  if(location.pathname === path) return;
+  history.pushState({}, '', path);
+}
+
+// Vrai le temps d'aligner l'affichage sur l'URL (retour arrière) : dans ce cas
+// c'est le navigateur qui a déjà changé l'URL, il ne faut pas y retoucher.
+let syncingFromUrl = false;
+
+// Fiche demandée par l'URL au chargement, tant qu'elle n'a pas pu être ouverte.
+// Les événements arrivent en deux temps (données locales, puis la base via
+// clerk-init.js) : on retente donc à l'arrivée des données.
+let pendingUrlEventId = eventIdFromUrl();
+
+async function tryOpenFromUrl(){
+  if(!pendingUrlEventId) return;
+  if(await openEvent(pendingUrlEventId, {fromUrl:true})) pendingUrlEventId = null;
+}
+
+// Retour / avance du navigateur.
+window.addEventListener('popstate', ()=>{
+  const id = eventIdFromUrl();
+  if(id){ openEvent(id, {fromUrl:true}); return; }
+  syncingFromUrl = true;
+  showPage('home');
+  syncingFromUrl = false;
+});
+
 function showPage(name){
   // Espace réservé aux comptes connectés (si l'auth est active).
   if(name === 'profile' && !currentUser && window.EBOK_AUTH){ openAuth('login'); return; }
@@ -1653,6 +1704,8 @@ function showPage(name){
   // Précharge la base des villes dès qu'on arrive sur la page de publication.
   if(name === 'create') ensureCitiesLoaded();
   if(name === 'profile') renderProfile();
+  // Quitter une fiche événement : on revient à l'URL racine.
+  if(!syncingFromUrl && name !== 'event' && eventIdFromUrl()) setUrl('/');
   window.scrollTo({top:0, behavior:'instant'});
 }
 document.querySelectorAll('[data-nav]').forEach(el=>{
@@ -2656,7 +2709,7 @@ function renderAll(){
    locales de data.js. */
 window.EBOK = {
   get events(){ return events; },
-  setEvents(list){ if(Array.isArray(list)) events = list; renderAll(); },
+  setEvents(list){ if(Array.isArray(list)) events = list; renderAll(); tryOpenFromUrl(); },
   addEvent(ev){ events = [ev, ...events]; renderAll(); },
   // Appelé par clerk-init.js à chaque connexion / déconnexion.
   async onAuthChanged(user, profile, admin){
@@ -2733,6 +2786,9 @@ initAuth();
 initEditModal();
 initProfileEdit();
 initAiImport();
+
+// Lien partagé vers une fiche : on l'ouvre dès le démarrage.
+tryOpenFromUrl();
 
 // Si une source de données externe est branchée (clerk-init.js), on
 // remplace les données locales par celles de la base dès qu'elles arrivent.

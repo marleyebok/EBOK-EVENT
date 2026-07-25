@@ -6,5 +6,6 @@
   "outputDirectory": "public",
   "cleanUrls": true,
   "trailingSlash": false,
-  "redirects": [{ "source": "/compte", "destination": "/compte/profil", "permanent": false }]
+  "redirects": [{ "source": "/compte", "destination": "/compte/profil", "permanent": false }],
+  "rewrites": [{ "source": "/evenement/:id", "destination": "/index.html" }]
 }
