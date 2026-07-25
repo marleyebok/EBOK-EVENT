@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Général — EBOK Event</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div class="dash" id="dash" hidden>
+    <aside class="dash-side" id="dashSide"></aside>
+
+    <main class="dash-main">
+      <div class="dash-head">
+        <h1>Général</h1>
+        <p class="dash-crumb">Compte · Général — abonnement, identité et sécurité.</p>
+      </div>
+
+      <div class="dash-card">
+        <div class="dash-plan">
+          <div>
+            <span class="dash-pill approved">Plan Gratuit</span>
+            <p class="dash-muted" style="margin-top:8px">
+              Accès complet pour l'instant. Les offres premium arriveront plus tard.
+            </p>
+          </div>
+          <button class="dash-btn" type="button" disabled title="Bientôt disponible">
+            Passer premium (bientôt)
+          </button>
+        </div>
+      </div>
+
+      <div class="dash-card dash-row-between">
+        <div>
+          <strong>Session</strong>
+          <p class="dash-muted" style="margin-top:4px">
+            Te déconnecter de ton compte EBOK sur cet appareil.
+          </p>
+        </div>
+        <button class="dash-btn danger" type="button" id="signout">Se déconnecter</button>
+      </div>
+
+      <div class="dash-head" style="margin-top:26px;margin-bottom:12px">
+        <h2 style="font-size:20px">Identité &amp; sécurité</h2>
+        <p class="dash-crumb">
+          Nom, e-mail, mot de passe, appareils, suppression du compte — géré par ton compte unique EBOK.
+        </p>
+      </div>
+      <div class="dash-clerk" id="userProfile"></div>
+    </main>
+  </div>
+
+  <script type="module" src="/js/compte-general.js"></script>
+</body>
+</html>

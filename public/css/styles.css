@@ -1096,3 +1096,139 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 }
 .footer-contact{font-family:var(--font-mono);font-size:13px;color:var(--chalk-dim);}
 .footer-soon{color:var(--chalk-dim);opacity:.7;font-size:12px;}
+
+/* =========================================================
+   ESPACE COMPTE (/compte) — tableau de bord, sidebar repliable.
+   Même structure que les autres apps de la galaxie (cf. Playbook) :
+   un compte unique, les mêmes réglages partout. Palette claire autonome :
+   ne dépend pas du thème (sombre/clair) du site public d'Event.
+   ========================================================= */
+
+/* L'attribut `hidden` doit masquer même un élément à `display` explicite
+   (`.dash` est en flex) : sinon `el.hidden = true` en JS ne masque rien.
+   Volontairement limité à la coquille du compte : une règle `[hidden]`
+   globale s'appliquerait aussi au reste du site déjà en place. */
+.dash[hidden],
+.dash-gate[hidden] { display: none !important; }
+
+/* Palette locale. Déclarée AUSSI sur `.dash-gate` : le portail de connexion
+   vit en dehors de `.dash`, et sans ces variables son bouton principal se
+   retrouverait blanc sur blanc. */
+.dash,
+.dash-gate {
+  --d-bg: #f5f6f8;
+  --d-panel: #ffffff;
+  --d-line: #e7e9ee;
+  --d-ink: #1d2530;
+  --d-muted: #6a7280;
+  --d-accent: #E1352E;
+  --d-accent-soft: rgba(225, 53, 46, 0.13);
+}
+.dash {
+  font-family: 'Work Sans', system-ui, sans-serif;
+  display: flex;
+  min-height: 100vh;
+  background: var(--d-bg);
+  color: var(--d-ink);
+}
+.dash a { color: inherit; text-decoration: none; }
+
+/* --- Sidebar --- */
+.dash-side {
+  width: 268px;
+  flex: 0 0 auto;
+  background: var(--d-panel);
+  border-right: 1px solid var(--d-line);
+  display: flex;
+  flex-direction: column;
+  padding: 14px 12px;
+  gap: 6px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  transition: width 0.18s ease;
+}
+.dash.collapsed .dash-side { width: 74px; }
+.dash.collapsed .dash-label { display: none; }
+.dash.collapsed .dash-sub { display: none; }
+.dash.collapsed .dash-item,
+.dash.collapsed .dash-logo { justify-content: center; }
+
+.dash-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 6px 10px; }
+.dash-logo { display: flex; align-items: center; gap: 9px; font-family: 'Anton', sans-serif; letter-spacing: 1px; font-size: 18px; color: var(--d-ink); }
+.dash-logo-ball { font-size: 20px; }
+.dash-logo-txt b { color: var(--d-accent); }
+.dash-collapse { flex: 0 0 auto; width: 26px; height: 26px; border-radius: 8px; border: 1px solid var(--d-line); background: var(--d-panel); color: var(--d-muted); cursor: pointer; font-size: 15px; line-height: 1; }
+.dash-collapse:hover { border-color: var(--d-accent); color: var(--d-ink); }
+
+.dash-nav { display: flex; flex-direction: column; gap: 3px; overflow-y: auto; flex: 1 1 auto; }
+.dash-section-label { font-size: 11px; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; color: var(--d-muted); padding: 14px 10px 6px; }
+.dash-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; color: var(--d-muted); font-weight: 600; font-size: 14.5px; }
+.dash-item:hover { background: #f0f1f4; color: var(--d-ink); text-decoration: none; }
+.dash-item.active { background: var(--d-accent-soft); color: var(--d-ink); }
+.dash-item.dash-current { color: var(--d-ink); font-weight: 700; cursor: default; }
+.dash-ic { width: 20px; text-align: center; flex: 0 0 auto; font-size: 15px; }
+.dash-ext { margin-left: auto; color: var(--d-muted); font-size: 12px; }
+.dash-sub { display: flex; flex-direction: column; gap: 2px; margin: 2px 0 6px 14px; padding-left: 8px; border-left: 2px solid var(--d-line); }
+.dash-subitem { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; color: var(--d-muted); font-weight: 600; font-size: 13.5px; }
+.dash-subitem:hover { background: #f0f1f4; color: var(--d-ink); text-decoration: none; }
+.dash-bottom { border-top: 1px solid var(--d-line); padding-top: 8px; margin-top: 6px; }
+.dash-user { font-size: 12px; color: var(--d-muted); padding: 8px 12px 2px; }
+
+/* --- Contenu --- */
+.dash-main { flex: 1 1 auto; padding: 28px 34px 48px; max-width: 1100px; }
+.dash-head { margin-bottom: 22px; }
+.dash-head h1 { font-family: 'Anton', sans-serif; font-size: 30px; letter-spacing: 0.4px; margin: 0; }
+.dash-crumb { color: var(--d-muted); font-size: 14px; margin-top: 4px; }
+.dash-muted { color: var(--d-muted); font-size: 14px; }
+
+.dash-card { background: var(--d-panel); border: 1px solid var(--d-line); border-radius: 16px; padding: 22px; margin-bottom: 18px; }
+.dash-row-between { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.dash-pill { font-size: 12px; font-weight: 700; padding: 3px 12px; border-radius: 999px; background: #eef0f3; color: var(--d-muted); }
+.dash-pill.approved { background: rgba(46, 125, 50, 0.14); color: #2e7d32; }
+.dash-plan { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+
+/* --- Boutons --- */
+.dash-btn { display: inline-block; cursor: pointer; font: inherit; font-weight: 700; border: 1px solid transparent; border-radius: 12px; padding: 10px 18px; background: var(--d-accent); color: #fff; }
+.dash-btn:hover { filter: brightness(1.06); text-decoration: none; }
+.dash-btn.ghost { background: var(--d-panel); border-color: var(--d-line); color: var(--d-ink); }
+.dash-btn.ghost:hover { border-color: var(--d-accent); }
+.dash-btn.danger { background: #fff; border-color: #f0c8c8; color: #d32f2f; }
+.dash-btn.danger:hover { background: #fdeeee; }
+.dash-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.dash-clerk { display: flex; }
+.dash-sq { width: 24px; height: 24px; border-radius: 7px; flex: 0 0 auto; display: grid; place-items: center; color: #fff; font-size: 11px; font-weight: 800; }
+.dash-toast { background: rgba(46, 125, 50, 0.12); color: #2e7d32; border: 1px solid rgba(46, 125, 50, 0.3); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; font-weight: 600; }
+.dash-error { background: rgba(211, 47, 47, 0.1); color: #c62828; border: 1px solid rgba(211, 47, 47, 0.28); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; font-weight: 600; }
+
+/* --- Formulaire de profil --- */
+.dash-form { display: flex; flex-direction: column; gap: 16px; }
+.dash-form label { display: flex; flex-direction: column; gap: 6px; font-weight: 600; font-size: 14px; color: var(--d-ink); }
+.dash-form input[type="text"], .dash-form input[type="number"], .dash-form select {
+  background: #fff; border: 1px solid var(--d-line); border-radius: 12px; padding: 11px 14px; color: var(--d-ink); font: inherit; width: 100%;
+}
+.dash-form input:focus, .dash-form select:focus { outline: none; border-color: var(--d-accent); }
+.dash-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.dash-fieldset { border: 1px solid var(--d-line); border-radius: 12px; padding: 12px 14px; }
+.dash-fieldset legend { padding: 0 6px; font-size: 12px; font-weight: 700; color: var(--d-muted); }
+.dash-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.dash-form .dash-chip { flex-direction: row; }
+.dash-chip { display: inline-flex; flex-direction: row; align-items: center; gap: 7px; border: 1px solid var(--d-line); border-radius: 999px; padding: 7px 12px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--d-ink); background: #fff; }
+.dash-chip input { width: auto; }
+@media (max-width: 640px) { .dash-form-row { grid-template-columns: 1fr; } }
+
+/* --- Portail de connexion (non connecté) --- */
+.dash-gate { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--d-bg); padding: 20px; }
+.dash-gate-card { background: #fff; border: 1px solid var(--d-line); border-radius: 18px; padding: 30px; max-width: 420px; text-align: center; }
+.dash-gate-card h1 { font-size: 24px; margin: 4px 0 8px; color: var(--d-ink); }
+.dash-gate-card p { color: var(--d-muted); font-size: 15px; }
+.dash-gate-actions { display: flex; gap: 10px; justify-content: center; margin: 18px 0 10px; flex-wrap: wrap; }
+.dash-gate-back { color: var(--d-muted); font-size: 14px; }
+
+@media (max-width: 760px) {
+  .dash-side { width: 74px; }
+  .dash-side .dash-label { display: none; }
+  .dash-side .dash-sub { display: none; }
+  .dash-main { padding: 20px 16px 40px; }
+}
