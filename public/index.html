@@ -281,38 +281,37 @@
             <label for="c-nom">Nom de l'événement</label>
             <input type="text" id="c-nom" placeholder="Ex. La Ligue C" required>
           </div>
-          <div class="form-row">
-            <div class="field">
-              <label for="c-type">Type d'événement</label>
-              <select id="c-type" required>
-                <option value="Tournoi">Tournoi</option>
-                <option value="Camp">Camp</option>
-                <option value="Voyage">Voyage</option>
-                <option value="All-Star Game">All-Star Game</option>
-                <option value="Show">Show</option>
-                <option value="Détections">Détections</option>
-                <option value="Clinic Coachs">Clinic Coachs</option>
-                <option value="Circuit 3x3">Circuit 3x3</option>
-                <option value="Handibasket">Handibasket</option>
-                <option value="Matchs de Gala">Matchs de Gala</option>
-                <option value="Divers">Divers</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="c-niveau">Niveau</label>
-              <select id="c-niveau">
-                <option>Loisir</option>
-                <option>Amateur</option>
-                <option>Confirmé</option>
-                <option>Semi-pro / Pro</option>
-              </select>
-            </div>
+          <div class="field">
+            <label for="c-type">Type d'événement</label>
+            <select id="c-type" required>
+              <option value="Tournoi">Tournoi</option>
+              <option value="Camp">Camp</option>
+              <option value="Voyage">Voyage</option>
+              <option value="All-Star Game">All-Star Game</option>
+              <option value="Show">Show</option>
+              <option value="Détections">Détections</option>
+              <option value="Clinic Coachs">Clinic Coachs</option>
+              <option value="Circuit 3x3">Circuit 3x3</option>
+              <option value="Handibasket">Handibasket</option>
+              <option value="Matchs de Gala">Matchs de Gala</option>
+              <option value="Divers">Divers</option>
+            </select>
           </div>
-          <div class="form-row">
+
+          <div class="field" id="std-niveau">
+            <label for="c-niveau">Niveau</label>
+            <select id="c-niveau">
+              <option>Loisir</option>
+              <option>Amateur</option>
+              <option>Confirmé</option>
+              <option>Semi-pro / Pro</option>
+            </select>
+          </div>
+          <div class="form-row" id="std-location-row">
             <div class="field">
               <label for="c-ville">Ville</label>
               <div class="ac-wrap">
-                <input type="text" id="c-ville" placeholder="Commence à taper : Arles-sur-Tech…" autocomplete="off" required>
+                <input type="text" id="c-ville" placeholder="Commence à taper : Arles-sur-Tech…" autocomplete="off">
                 <div class="ac-list hidden" id="c-ville-ac" role="listbox"></div>
               </div>
               <p class="field-hint" id="c-ville-hint">Choisis ta ville dans la liste pour la placer sur la carte.</p>
@@ -322,21 +321,44 @@
               <input type="text" id="c-region" placeholder="Se remplit automatiquement" readonly>
             </div>
           </div>
-          <div class="field">
+          <div class="field" id="std-adresse">
             <label for="c-adresse">Adresse précise</label>
             <input type="text" id="c-adresse" placeholder="Ex. 12 rue du Stade, 34000 Montpellier">
           </div>
+
+          <div class="form-row hidden" id="voyage-location-row">
+            <div class="field">
+              <label for="c-lieu-depart">Lieu de départ</label>
+              <div class="ac-wrap">
+                <input type="text" id="c-lieu-depart" placeholder="Ex. Paris" autocomplete="off">
+                <div class="ac-list hidden" id="c-lieu-depart-ac" role="listbox"></div>
+              </div>
+            </div>
+            <div class="field">
+              <label for="c-lieu-destination">Lieu de destination</label>
+              <div class="ac-wrap">
+                <input type="text" id="c-lieu-destination" placeholder="Ex. Nice" autocomplete="off">
+                <div class="ac-list hidden" id="c-lieu-destination-ac" role="listbox"></div>
+              </div>
+              <p class="field-hint" id="c-lieu-destination-hint">Choisis la destination dans la liste pour la placer sur la carte.</p>
+            </div>
+          </div>
+          <div class="field hidden" id="voyage-theme">
+            <label for="c-theme">Thème du voyage</label>
+            <input type="text" id="c-theme" placeholder="Ex. Basket & découverte en Corse">
+          </div>
+
           <div class="form-row">
             <div class="field">
-              <label for="c-date-debut">Date de début</label>
+              <label for="c-date-debut" id="c-date-debut-label">Date de début</label>
               <input type="date" id="c-date-debut" required>
             </div>
             <div class="field">
-              <label for="c-date-fin">Date de fin</label>
+              <label for="c-date-fin" id="c-date-fin-label">Date de fin</label>
               <input type="date" id="c-date-fin">
             </div>
           </div>
-          <div class="form-row">
+          <div class="form-row" id="std-public-row">
             <div class="field">
               <label for="c-sexe">Public — sexe</label>
               <select id="c-sexe">
@@ -362,7 +384,7 @@
         </div>
 
         <div>
-          <div class="form-card" style="margin-bottom:20px;">
+          <div class="form-card" style="margin-bottom:20px;" id="std-infos-card">
             <h3>Infos pratiques</h3>
             <div class="field">
               <label for="c-horaires">Horaires</label>
@@ -424,25 +446,27 @@
           <div class="form-card">
             <h3>Contact — organisateur</h3>
             <div class="field">
-              <label for="c-orgname">Nom du diffuseur</label>
+              <label for="c-orgname" id="c-orgname-label">Nom du diffuseur</label>
               <input type="text" id="c-orgname" placeholder="Ex. Ligue C by Courtcuts">
             </div>
-            <div class="field">
-              <label for="c-insta">Instagram</label>
-              <input type="text" id="c-insta" placeholder="@moncompte">
-            </div>
-            <div class="field">
-              <label for="c-site">Site web</label>
-              <input type="text" id="c-site" placeholder="https://...">
-            </div>
-            <div class="form-row">
+            <div id="std-contact-extra">
               <div class="field">
-                <label for="c-tel">Téléphone</label>
-                <input type="tel" id="c-tel" placeholder="06 00 00 00 00">
+                <label for="c-insta">Instagram</label>
+                <input type="text" id="c-insta" placeholder="@moncompte">
               </div>
               <div class="field">
-                <label for="c-email">Email</label>
-                <input type="email" id="c-email" placeholder="contact@...">
+                <label for="c-site">Site web</label>
+                <input type="text" id="c-site" placeholder="https://...">
+              </div>
+              <div class="form-row">
+                <div class="field">
+                  <label for="c-tel">Téléphone</label>
+                  <input type="tel" id="c-tel" placeholder="06 00 00 00 00">
+                </div>
+                <div class="field">
+                  <label for="c-email">Email</label>
+                  <input type="email" id="c-email" placeholder="contact@...">
+                </div>
               </div>
             </div>
           </div>

@@ -129,6 +129,7 @@ let events = [
     niveau:"Loisir",
     poster:null,
     description:"Une semaine sur la Côte d'Azur mêlant basket outdoor, plage et soirées : tournois 3x3 en journée, sessions libres et activités entre joueurs venus de toute la France.",
+    voyage:{depart:"Paris", destination:"Nice", theme:"Basket outdoor & plage sur la Côte d'Azur"},
     infos:{
       adresse:"Départ groupé — hébergement communiqué à l'inscription",
       horaires:"Séjour du 3 au 8 août, sessions basket en matinée",
@@ -461,6 +462,7 @@ let events = [
     niveau:"Loisir",
     poster:null,
     description:"Une semaine en Corse mêlant basketball, plage et découverte. Matchs amicaux contre des équipes locales, entraînements en plein air, sorties culturelles.",
+    voyage:{depart:"Paris", destination:"Bastia", theme:"Basketball, plage et découverte en Corse"},
     infos:{
       adresse:"Départ groupé de Paris",
       horaires:"Séjour 6 nuits / 7 jours",

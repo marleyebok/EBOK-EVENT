@@ -841,6 +841,36 @@ function wireRegionPanel(panel){
 /* =========================================================
    CREATE EVENT PAGE
    ========================================================= */
+
+/* Le formulaire de création adapte ses champs selon la catégorie :
+   la catégorie "Voyage" remplace ville/adresse/niveau/public par
+   lieu de départ, lieu de destination et thème du voyage. */
+function updateCreateFormForType(){
+  const type = document.getElementById('c-type')?.value;
+  const isVoyage = type === 'Voyage';
+
+  const toggle = (id, show)=>{
+    const el = document.getElementById(id);
+    if(el) el.classList.toggle('hidden', !show);
+  };
+  toggle('std-niveau', !isVoyage);
+  toggle('std-location-row', !isVoyage);
+  toggle('std-adresse', !isVoyage);
+  toggle('std-public-row', !isVoyage);
+  toggle('std-infos-card', !isVoyage);
+  toggle('std-contact-extra', !isVoyage);
+  toggle('voyage-location-row', isVoyage);
+  toggle('voyage-theme', isVoyage);
+
+  const dateDebutLabel = document.getElementById('c-date-debut-label');
+  const dateFinLabel = document.getElementById('c-date-fin-label');
+  if(dateDebutLabel) dateDebutLabel.textContent = isVoyage ? 'Date de départ' : 'Date de début';
+  if(dateFinLabel) dateFinLabel.textContent = isVoyage ? 'Date de retour' : 'Date de fin';
+
+  const orgLabel = document.getElementById('c-orgname-label');
+  if(orgLabel) orgLabel.textContent = isVoyage ? 'Agence / Organisateur' : 'Nom du diffuseur';
+}
+
 function initCreatePage(){
   const dz = document.getElementById('dropzone');
   const input = document.getElementById('c-affiche');
@@ -855,6 +885,20 @@ function initCreatePage(){
     const hint = document.getElementById('c-ville-hint');
     if(hint){ hint.textContent = '📍 ' + pick.city + (pick.region ? ' · ' + pick.region : '') + ' — localisé sur la carte.'; hint.style.color = 'var(--green)'; }
   });
+
+  // Catégorie Voyage : la destination sert de localisation sur la carte ;
+  // le départ est purement informatif.
+  attachCityAutocomplete('c-lieu-destination', 'c-lieu-destination-ac', pick=>{
+    createPickedLocation = pick;
+    const regionEl = document.getElementById('c-region');
+    if(regionEl) regionEl.value = pick.region || '';
+    const hint = document.getElementById('c-lieu-destination-hint');
+    if(hint){ hint.textContent = '📍 ' + pick.city + (pick.region ? ' · ' + pick.region : '') + ' — localisé sur la carte.'; hint.style.color = 'var(--green)'; }
+  });
+  attachCityAutocomplete('c-lieu-depart', 'c-lieu-depart-ac', ()=>{});
+
+  updateCreateFormForType();
+  document.getElementById('c-type').addEventListener('change', updateCreateFormForType);
 
   input.addEventListener('change', async ()=>{
     const file = input.files[0];
@@ -909,8 +953,21 @@ function initCreatePage(){
 
     const dateStart = val('c-date-debut');
     const dateEnd   = val('c-date-fin') || dateStart;
-    const city      = val('c-ville');
     const type      = val('c-type') || 'Divers';
+    const isVoyage  = type === 'Voyage';
+    const voyageDepart = val('c-lieu-depart');
+    const voyageDestination = val('c-lieu-destination');
+    const voyageTheme = val('c-theme');
+    const city = isVoyage ? voyageDestination : val('c-ville');
+
+    if(isVoyage && !voyageDestination){
+      showCreateBanner('⚠️ Renseigne le lieu de destination du voyage.');
+      return;
+    }
+    if(!isVoyage && !city){
+      showCreateBanner('⚠️ Renseigne la ville de l’événement.');
+      return;
+    }
 
     // Localisation : si l'utilisateur a validé une ville dans la liste de
     // suggestions (et n'a pas retapé par-dessus), on utilise ses coordonnées
@@ -957,6 +1014,7 @@ function initCreatePage(){
         buvette: val('c-buvette'),
         reservation: val('c-reservation')
       },
+      voyage: isVoyage ? { depart: voyageDepart, destination: voyageDestination, theme: voyageTheme } : null,
       gallery: await hostGallery(galleryFiles),
       placesTotal: val('c-places') ? parseInt(val('c-places'), 10) : null,
       dispo: val('c-dispo') || '',
@@ -1018,6 +1076,9 @@ function initCreatePage(){
     createPickedLocation = null;
     const villeHint = document.getElementById('c-ville-hint');
     if(villeHint){ villeHint.textContent = 'Choisis ta ville dans la liste pour la placer sur la carte.'; villeHint.style.color = ''; }
+    const destHint = document.getElementById('c-lieu-destination-hint');
+    if(destHint){ destHint.textContent = 'Choisis la destination dans la liste pour la placer sur la carte.'; destHint.style.color = ''; }
+    updateCreateFormForType();
     galleryFiles.length = 0;
     renderGalleryThumbs();
     if(preview){ preview.src = ''; preview.classList.add('hidden'); }
@@ -1304,7 +1365,7 @@ function attachCityAutocomplete(inputId, listId, onPick){
 
   input.addEventListener('input', ()=>{
     // Toute frappe invalide la ville précédemment validée sur ce champ.
-    if(inputId === 'c-ville') createPickedLocation = null;
+    if(inputId === 'c-ville' || inputId === 'c-lieu-destination') createPickedLocation = null;
     if(inputId === 'e-city') editPickedLocation = null;
     clearTimeout(timer);
     const q = input.value;
@@ -1385,7 +1446,11 @@ async function openEvent(id, opts){
     ev.placesTotal ? `${ev.placesTotal} places` : null,
     ev.dispo && DISPO_META[ev.dispo] ? DISPO_META[ev.dispo].label : null
   ].filter(Boolean).join(' · ');
+  const voyage = ev.voyage || {};
   const practicalRows = [
+    voyage.depart ? {ic:"🛫", k:"Lieu de départ", v:voyage.depart} : null,
+    voyage.destination ? {ic:"📍", k:"Lieu de destination", v:voyage.destination} : null,
+    voyage.theme ? {ic:"🧭", k:"Thème du voyage", v:voyage.theme} : null,
     infos.adresse ? {ic:"📍", k:"Adresse", v:infos.adresse} : null,
     infos.horaires ? {ic:"🕐", k:"Horaires", v:infos.horaires} : null,
     infos.buvette ? {ic:"🥤", k:"Buvette", v:infos.buvette} : null,
@@ -2419,6 +2484,10 @@ function prefillCreateFromImport(ev, poster){
   set('c-orgname', ev.orgName);
   set('c-insta', ev.insta);
   set('c-site', ev.site);
+  // L'IA ne connaît pas encore les champs dédiés au voyage : on reporte
+  // la ville détectée sur la destination pour garder la localisation.
+  if(ev.type === 'Voyage') set('c-lieu-destination', ev.city);
+  updateCreateFormForType();
   // Affiche récupérée : on l'injecte dans l'aperçu du dropzone.
   const preview = document.getElementById('dzPreview');
   const label = document.getElementById('dzLabel');
