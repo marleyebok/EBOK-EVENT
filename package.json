@@ -12,7 +12,6 @@
   "keywords": [
     "basket",
     "basketball",
-    "agenda",
     "evenements",
     "france"
   ],
@@ -27,6 +26,6 @@
     "http-server": "^14.1.1"
   },
   "engines": {
-    "node": ">=18"
+    "node": "20.x"
   }
 }
