@@ -18,8 +18,7 @@
    ========================================================= */
 import { verifyToken } from "@clerk/backend";
 import { clerkUser, isAdminEmail } from "./_lib.js";
-
-const GEMINI_MODEL = "gemini-2.0-flash";
+import { AIService } from "./services/AIService.js";
 
 const TYPES = [
   "Tournoi", "Camp", "Voyage", "All-Star Game", "Show", "Détections",
@@ -170,30 +169,11 @@ ${RULES}
 Date du jour : ${today}`;
 }
 
-/* Appelle Google Gemini et renvoie l'événement structuré. */
-async function runGemini(apiKey, parts) {
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts }],
-        generationConfig: { responseMimeType: "application/json", temperature: 0.2, maxOutputTokens: 2048 }
-      })
-    }
-  );
-  if (res.status === 400 || res.status === 403) { const e = new Error("key"); e.code = "KEY"; throw e; }
-  if (res.status === 429) { const e = new Error("rate"); e.code = "RATE"; throw e; }
-  if (!res.ok) throw new Error("gemini_" + res.status);
-  const data = await res.json();
-  if (data.promptFeedback && data.promptFeedback.blockReason) throw new Error("blocked");
-  const cand = data.candidates && data.candidates[0];
-  let text = cand && cand.content && cand.content.parts
-    && cand.content.parts.map(p => p.text || "").join("");
-  if (!text) throw new Error("empty");
-  text = text.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
-  return normalizeEvent(JSON.parse(text));
+/* L'IA est appelée via le service fournisseur-agnostique. */
+async function runGemini(parts, prompt) {
+  const ai = new AIService();
+  const event = await ai.extractEvent({ parts, prompt });
+  return normalizeEvent(event);
 }
 
 export default async function handler(req, res) {
@@ -226,10 +206,9 @@ export default async function handler(req, res) {
       if (!img) { res.status(400).json({ ok: false, error: "Image invalide (formats acceptés : JPG, PNG, GIF, WEBP)." }); return; }
       if (img.data.length > 7 * 1024 * 1024) { res.status(413).json({ ok: false, error: "Image trop lourde (max ~5 Mo)." }); return; }
       const parts = [
-        { inline_data: { mime_type: img.mime, data: img.data } },
-        { text: imagePrompt(today) }
+        { inline_data: { mime_type: img.mime, data: img.data } }
       ];
-      const event = await runGemini(apiKey, parts);
+      const event = await runGemini(parts, imagePrompt(today));
       if (!event.site) event.site = "";
       res.status(200).json({ ok: true, event, poster: image });
       return;
@@ -251,15 +230,23 @@ export default async function handler(req, res) {
       res.status(422).json({ ok: false, error: "Pas assez de contenu exploitable sur cette page." });
       return;
     }
-    const event = await runGemini(apiKey, [{ text: urlPrompt(today, url, page) }]);
+    const event = await runGemini([], urlPrompt(today, url, page));
     if (!event.site) event.site = url;
     const poster = await fetchPoster(page.image);
     res.status(200).json({ ok: true, event, poster, sourceUrl: url });
   } catch (err) {
-    if (err && err.code === "KEY") { res.status(500).json({ ok: false, error: "Clé GEMINI_API_KEY invalide." }); return; }
-    if (err && err.code === "RATE") { res.status(503).json({ ok: false, error: "Limite gratuite atteinte, réessaie dans une minute." }); return; }
-    if (err && err.message === "blocked") { res.status(422).json({ ok: false, error: "Contenu refusé par l'IA. Essaie une autre source." }); return; }
-    res.status(500).json({ ok: false, error: "L'analyse IA a échoué. Réessaie." });
+    const responses = {
+      GEMINI_CONFIGURATION: [500, "La configuration Gemini est invalide."],
+      GEMINI_QUOTA: [429, "La limite Gemini est atteinte. Réessaie dans quelques instants."],
+      GEMINI_REFUSAL: [422, "Le modèle a refusé le contenu. Essaie une autre source."],
+      GEMINI_EMPTY_RESPONSE: [422, "Le modèle n'a renvoyé aucune donnée exploitable."],
+      GEMINI_INCOMPLETE_RESPONSE: [422, "La réponse du modèle a été tronquée. Réessaie avec une source plus courte."],
+      GEMINI_INVALID_JSON: [422, "Le modèle a renvoyé des données dans un format invalide."],
+      GEMINI_INVALID_RESPONSE: [502, "Gemini a renvoyé une réponse illisible."],
+      GEMINI_UNAVAILABLE: [502, "Le service Gemini est temporairement indisponible."]
+    };
+    const [status, error] = responses[err?.code] || [500, "L'analyse IA a échoué. Réessaie."];
+    res.status(status).json({ ok: false, code: err?.code || "IMPORT_ANALYSIS_FAILED", error });
   }
 }
 
