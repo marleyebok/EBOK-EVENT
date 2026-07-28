@@ -18,7 +18,7 @@
    ========================================================= */
 import { verifyToken } from "@clerk/backend";
 import { clerkUser, isAdminEmail } from "./_lib.js";
-import { AIService } from "./services/AIService.js";
+import { AIService } from "../lib/services/AIService.js";
 
 const TYPES = [
   "Tournoi", "Camp", "Voyage", "All-Star Game", "Show", "Détections",
