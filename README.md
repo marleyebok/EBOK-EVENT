@@ -27,7 +27,7 @@ EBOK-EVENT/
 │   ├── views.js              # Compteurs de « curieux »
 │   ├── account.js            # Session, profil diffuseur, favoris, liste membres
 │   ├── migrate.js            # Migration ponctuelle Firestore → Neon (admin)
-│   └── import-event.js       # Assistant IA (Gemini) — réservé admin
+│   └── import-event.js       # Assistant IA (OpenRouter/Gemini) — réservé admin
 ├── package.json
 ├── vercel.json
 ├── .gitignore
@@ -79,7 +79,10 @@ fonctionne sur les **données de démo** de `data.js` (aucune casse).
 |---|---|---|
 | `DATABASE_URL` | Chaîne de connexion Neon (base partagée) | 🔒 oui |
 | `CLERK_SECRET_KEY` | Clé serveur Clerk (`sk_live_…`) — vérifie les tokens | 🔒 oui |
-| `GEMINI_API_KEY` | Clé Google AI Studio (assistant IA) | 🔒 oui |
+| `OPENROUTER_API_KEY` | Clé OpenRouter (assistant IA, fournisseur par défaut) | 🔒 oui |
+| `OPENROUTER_MODEL` | *(optionnel)* modèle OpenRouter à utiliser (défaut : modèle gratuit avec vision) | non |
+| `AI_PROVIDER` | *(optionnel)* `openrouter` (défaut) ou `gemini` | non |
+| `GEMINI_API_KEY` | Clé Google AI Studio — requise seulement si `AI_PROVIDER=gemini` | 🔒 oui |
 | `ADMIN_EMAILS` | *(optionnel)* emails admin additionnels, séparés par virgules | non |
 
 > La clé Clerk **publishable** (`pk_live_…`) est **publique** et vit en dur dans
@@ -133,19 +136,26 @@ variable d'env `ADMIN_EMAILS` sur Vercel (aucune modif de code).
 
 Sur la page **« Publie ton événement »**, tout membre connecté peut coller le **lien** d'un
 événement (site web, billetterie…) **ou déposer une image** (affiche, capture d'écran). Une
-fonction serverless récupère le contenu **côté serveur**, puis demande à **Google Gemini**
-de structurer les infos ; le formulaire de publication est ensuite pré-rempli (le membre
+fonction serverless récupère le contenu **côté serveur**, puis demande à un **modèle IA** de
+structurer les infos ; le formulaire de publication est ensuite pré-rempli (le membre
 relit, ajuste et publie — un événement de diffuseur reste en attente de validation).
 
-- Code : `api/import-event.js` (fonction Vercel, sans dépendance npm) + carte « Assistant IA » en haut de la page de publication.
+- Code : `api/import-event.js` (fonction Vercel) + `lib/services/AIService.js` (fournisseur-agnostique) + carte « Assistant IA » en haut de la page de publication.
 - **Pages web ouvertes** → bien. **Facebook / Instagram** → souvent bloqués (mur de connexion) : préfère une **capture d'écran**.
-- Moteur : **Gemini Flash** via Google AI Studio — **gratuit** dans les limites quotidiennes de l'offre gratuite.
+- Moteur par défaut : **OpenRouter** (modèle gratuit avec vision, voir `lib/services/providers/OpenRouterProvider.js`).
+  Gemini reste disponible en alternative (`AI_PROVIDER=gemini`), mais **l'offre gratuite Gemini est bloquée pour les
+  comptes UE / Royaume-Uni / Suisse** (429 dès la première requête) — OpenRouter n'a pas cette restriction car il
+  interroge les modèles depuis ses propres serveurs.
 
 ### Activer (1 variable d'environnement)
 
-1. Crée une clé **gratuite** sur **aistudio.google.com** → *Get API key* (aucune carte bancaire requise).
-2. Vercel → **Settings → Environment Variables** → ajoute `GEMINI_API_KEY` = ta clé.
+1. Crée une clé **gratuite** sur **openrouter.ai** → *Keys* → *Create Key* (aucune carte bancaire requise).
+2. Vercel → **Settings → Environment Variables** → ajoute `OPENROUTER_API_KEY` = ta clé.
 3. Redéploie. Tant que la clé n'est pas définie, l'assistant renvoie un message d'erreur clair et le reste du site fonctionne normalement.
+
+> Le modèle gratuit par défaut peut être retiré du catalogue OpenRouter avec le temps. Si l'assistant renvoie une
+> erreur de configuration, vérifie la liste des modèles gratuits sur `openrouter.ai/models?max_price=0` et
+> ajuste la variable `OPENROUTER_MODEL` en conséquence (aucune modif de code nécessaire).
 
 > L'endpoint valide le **jeton de session Clerk** de l'appelant et vérifie que son
 > e-mail est admin : l'assistant IA est **réservé à l'administrateur**.

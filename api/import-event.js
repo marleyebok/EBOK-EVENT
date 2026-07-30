@@ -2,7 +2,7 @@
    EBOK Event — ASSISTANT IA D'IMPORT (fonction serverless Vercel)
    ---------------------------------------------------------
    Reçoit un lien (site, billetterie…) OU une image (affiche, capture),
-   récupère le contenu, puis demande à Google Gemini de structurer les
+   récupère le contenu, puis demande à un modèle IA de structurer les
    infos de l'événement. Le formulaire de publication est pré-rempli.
 
    Réservé à l'administrateur (marley.ebok@gmail.com).
@@ -11,8 +11,14 @@
    ou l'en-tête Authorization). L'e-mail est lu en direct depuis Clerk et
    comparé à l'allowlist admin (voir api/_lib.js).
 
+   Fournisseur IA (voir lib/services/AIService.js) :
+   - AI_PROVIDER      (optionnel)    "openrouter" (défaut) ou "gemini"
+
    Variables d'environnement (Vercel > Settings > Environment Variables) :
-   - GEMINI_API_KEY   (obligatoire)  clé Google AI Studio (gratuite)
+   - OPENROUTER_API_KEY (obligatoire si AI_PROVIDER=openrouter) clé gratuite openrouter.ai
+   - OPENROUTER_MODEL   (optionnel)  modèle OpenRouter à utiliser (défaut : voir OpenRouterProvider.js)
+   - GEMINI_API_KEY     (obligatoire si AI_PROVIDER=gemini)     clé Google AI Studio
+     ⚠️ l'offre gratuite Gemini est bloquée pour les comptes UE / UK / Suisse.
    - CLERK_SECRET_KEY (obligatoire)  pour valider le jeton de session Clerk
    - ADMIN_EMAILS     (optionnel)    emails admin additionnels, séparés par des virgules
    ========================================================= */
@@ -170,7 +176,7 @@ Date du jour : ${today}`;
 }
 
 /* L'IA est appelée via le service fournisseur-agnostique. */
-async function runGemini(parts, prompt) {
+async function runAI(parts, prompt) {
   const ai = new AIService();
   const event = await ai.extractEvent({ parts, prompt });
   return normalizeEvent(event);
@@ -179,9 +185,11 @@ async function runGemini(parts, prompt) {
 export default async function handler(req, res) {
   if (req.method !== "POST") { res.status(405).json({ ok: false, error: "Méthode non autorisée." }); return; }
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    res.status(500).json({ ok: false, error: "Assistant IA non configuré : ajoute la clé GEMINI_API_KEY dans Vercel." });
+  const useGemini = process.env.AI_PROVIDER === "gemini";
+  const configured = useGemini ? process.env.GEMINI_API_KEY : process.env.OPENROUTER_API_KEY;
+  if (!configured) {
+    const missing = useGemini ? "GEMINI_API_KEY" : "OPENROUTER_API_KEY";
+    res.status(500).json({ ok: false, error: `Assistant IA non configuré : ajoute la clé ${missing} dans Vercel.` });
     return;
   }
 
@@ -208,7 +216,7 @@ export default async function handler(req, res) {
       const parts = [
         { inline_data: { mime_type: img.mime, data: img.data } }
       ];
-      const event = await runGemini(parts, imagePrompt(today));
+      const event = await runAI(parts, imagePrompt(today));
       if (!event.site) event.site = "";
       res.status(200).json({ ok: true, event, poster: image });
       return;
@@ -230,7 +238,7 @@ export default async function handler(req, res) {
       res.status(422).json({ ok: false, error: "Pas assez de contenu exploitable sur cette page." });
       return;
     }
-    const event = await runGemini([], urlPrompt(today, url, page));
+    const event = await runAI([], urlPrompt(today, url, page));
     if (!event.site) event.site = url;
     const poster = await fetchPoster(page.image);
     res.status(200).json({ ok: true, event, poster, sourceUrl: url });
@@ -243,7 +251,15 @@ export default async function handler(req, res) {
       GEMINI_INCOMPLETE_RESPONSE: [422, "La réponse du modèle a été tronquée. Réessaie avec une source plus courte."],
       GEMINI_INVALID_JSON: [422, "Le modèle a renvoyé des données dans un format invalide."],
       GEMINI_INVALID_RESPONSE: [502, "Gemini a renvoyé une réponse illisible."],
-      GEMINI_UNAVAILABLE: [502, "Le service Gemini est temporairement indisponible."]
+      GEMINI_UNAVAILABLE: [502, "Le service Gemini est temporairement indisponible."],
+      OPENROUTER_CONFIGURATION: [500, "La configuration OpenRouter est invalide (clé ou modèle)."],
+      OPENROUTER_QUOTA: [429, "La limite OpenRouter est atteinte. Réessaie dans quelques instants."],
+      OPENROUTER_REFUSAL: [422, "Le modèle a refusé le contenu. Essaie une autre source."],
+      OPENROUTER_EMPTY_RESPONSE: [422, "Le modèle n'a renvoyé aucune donnée exploitable."],
+      OPENROUTER_INCOMPLETE_RESPONSE: [422, "La réponse du modèle a été tronquée. Réessaie avec une source plus courte."],
+      OPENROUTER_INVALID_JSON: [422, "Le modèle a renvoyé des données dans un format invalide."],
+      OPENROUTER_INVALID_RESPONSE: [502, "OpenRouter a renvoyé une réponse illisible."],
+      OPENROUTER_UNAVAILABLE: [502, "Le service OpenRouter est temporairement indisponible."]
     };
     const [status, error] = responses[err?.code] || [500, "L'analyse IA a échoué. Réessaie."];
     res.status(status).json({ ok: false, code: err?.code || "IMPORT_ANALYSIS_FAILED", error });
