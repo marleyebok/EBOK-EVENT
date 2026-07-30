@@ -2376,9 +2376,20 @@ async function runImport(payload, pending){
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(Object.assign({ idToken }, payload))
     });
-    let data = {};
+    let data = null;
     try{ data = await res.json(); }catch(e){ /* réponse non JSON */ }
-    if(!res.ok || !data.ok) throw new Error(data.error || 'Import impossible.');
+    // Pas de JSON = la réponse ne vient pas de /api/import-event mais de la
+    // plateforme (fonction plantée, délai dépassé, corps de requête trop gros).
+    // On remonte le statut HTTP, sinon l'erreur est indiagnosticable.
+    if(!data){
+      const hints = {
+        413: 'affiche trop lourde pour le serveur.',
+        429: 'trop de requêtes, réessaie dans un instant.',
+        504: 'le serveur a mis trop de temps à répondre.'
+      };
+      throw new Error(`Import impossible (erreur serveur ${res.status}${hints[res.status] ? ' — ' + hints[res.status] : ''}).`);
+    }
+    if(!res.ok || !data.ok) throw new Error(data.error || `Import impossible (statut ${res.status}).`);
     prefillCreateFromImport(data.event || {}, data.poster);
     status.textContent = '✅ Infos récupérées — vérifie et publie ci-dessous.';
   }catch(err){
@@ -2394,13 +2405,23 @@ function importFromUrl(){
   runImport({ url }, '⏳ Analyse de la page en cours (10–20 s)…');
 }
 
-function importFromImage(file){
+async function importFromImage(file){
   const status = document.getElementById('ia-status');
   if(!/^image\//.test(file.type)){ status.textContent = '⚠️ Choisis un fichier image.'; return; }
-  if(file.size > 5 * 1024 * 1024){ status.textContent = '⚠️ Image trop lourde (max 5 Mo).'; return; }
-  const reader = new FileReader();
-  reader.onload = e=> runImport({ image: e.target.result }, '⏳ Lecture de l’affiche par l’IA (10–20 s)…');
-  reader.readAsDataURL(file);
+  if(file.size > 15 * 1024 * 1024){ status.textContent = '⚠️ Image trop lourde (max 15 Mo).'; return; }
+  status.textContent = '⏳ Préparation de l’affiche…';
+  let image;
+  try{
+    // 1600 px : Vercel refuse un corps de requête au-delà de ~4,5 Mo (une image
+    // de 4 Mo en pèse ~5,3 en base64), mais il faut garder le petit texte de
+    // l'affiche lisible pour l'IA — d'où une réduction moins agressive
+    // que pour les aperçus de la galerie.
+    image = await compressImage(file, 1600, 0.85);
+  }catch(err){
+    status.textContent = '⚠️ ' + (err?.message || 'Image illisible.');
+    return;
+  }
+  runImport({ image }, '⏳ Lecture de l’affiche par l’IA (10–20 s)…');
 }
 
 /* Pré-remplit le formulaire de publication avec les données extraites. */
