@@ -212,7 +212,10 @@ export default async function handler(req, res) {
     if (image) {
       const img = parseDataUrl(image);
       if (!img) { res.status(400).json({ ok: false, error: "Image invalide (formats acceptés : JPG, PNG, GIF, WEBP)." }); return; }
-      if (img.data.length > 7 * 1024 * 1024) { res.status(413).json({ ok: false, error: "Image trop lourde (max ~5 Mo)." }); return; }
+      // Vercel refuse un corps de requête au-delà de ~4,5 Mo : au-dessus de
+      // cette taille la plateforme répond avant nous (le front recompresse
+      // l'affiche en amont, cette garde couvre les appels directs).
+      if (img.data.length > 4 * 1024 * 1024) { res.status(413).json({ ok: false, error: "Image trop lourde (max ~3 Mo)." }); return; }
       const parts = [
         { inline_data: { mime_type: img.mime, data: img.data } }
       ];

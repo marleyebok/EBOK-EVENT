@@ -7,7 +7,8 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "functions": {
-    "api/evenement.js": { "includeFiles": "public/index.html" }
+    "api/evenement.js": { "includeFiles": "public/index.html" },
+    "api/import-event.js": { "maxDuration": 60 }
   },
   "redirects": [{ "source": "/compte", "destination": "/compte/profil", "permanent": false }],
   "rewrites": [{ "source": "/evenement/:id", "destination": "/api/evenement?id=:id" }]
