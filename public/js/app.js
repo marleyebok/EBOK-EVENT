@@ -429,8 +429,10 @@ function initHomeFilters(){
     });
   }
 
-  // Calendrier de période (date début / date fin)
-  let pickerMonth = new Date(2026, 5); // juin 2026
+  // Calendrier de période (date début / date fin). Il s'ouvrait sur juin 2026,
+  // codé en dur : on part du mois courant.
+  const today = new Date();
+  let pickerMonth = new Date(today.getFullYear(), today.getMonth());
   let selectionMode = 'range'; // 'range' ou 'single'
   
   function formatDateDisplay(d){ return d ? new Date(d+'T00:00').toLocaleDateString('fr-FR', {day:'numeric', month:'short'}) : null; }
@@ -1773,10 +1775,18 @@ function bindBackdropClose(modal, closeFn){
 }
 
 const MONTHS = ["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
-function fmtDate(d){
-  const dt = new Date(d+"T00:00:00");
-  return `${dt.getDate()} ${MONTHS[dt.getMonth()]}`;
+/* N'accepte qu'une date ISO « AAAA-MM-JJ ». Toute autre valeur renvoie null,
+   sinon l'affichage produit « NaN undefined ». */
+function parseDay(d){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(String(d == null ? '' : d))) return null;
+  const dt = new Date(d + "T00:00:00");
+  return isNaN(dt.getTime()) ? null : dt;
 }
+function fmtDate(d){
+  const dt = parseDay(d);
+  return dt ? `${dt.getDate()} ${MONTHS[dt.getMonth()]}` : '';
+}
+function fmtDay(dt){ return `${dt.getDate()} ${MONTHS[dt.getMonth()]} ${dt.getFullYear()}`; }
 /* Étape d'un voyage : « 12 juin — Paris, Lyon ». Chaque moitié est optionnelle. */
 function fmtVoyageLeg(date, lieu){
   const parts = [];
@@ -1784,11 +1794,17 @@ function fmtVoyageLeg(date, lieu){
   if(lieu) parts.push(lieu);
   return parts.join(' — ');
 }
+/* Plage lisible. L'année était codée en dur à 2026 : tout événement d'une
+   autre année s'affichait avec la mauvaise. Elle est reprise des dates, et
+   n'est répétée que si elle change d'un bout à l'autre de la plage. */
 function fmtDateRange(s,e){
-  if(s===e) return fmtDate(s)+" 2026";
-  const sd = new Date(s+"T00:00:00"), ed = new Date(e+"T00:00:00");
-  if(sd.getMonth()===ed.getMonth()) return `${sd.getDate()} — ${ed.getDate()} ${MONTHS[ed.getMonth()]} 2026`;
-  return `${fmtDate(s)} — ${fmtDate(e)} 2026`;
+  const sd = parseDay(s), ed = parseDay(e);
+  if(!sd && !ed) return '';
+  if(!sd || !ed) return fmtDay(sd || ed);
+  if(sd.getTime() === ed.getTime()) return fmtDay(sd);
+  if(sd.getFullYear() !== ed.getFullYear()) return `${fmtDay(sd)} — ${fmtDay(ed)}`;
+  if(sd.getMonth() === ed.getMonth()) return `${sd.getDate()} — ${fmtDay(ed)}`;
+  return `${sd.getDate()} ${MONTHS[sd.getMonth()]} — ${fmtDay(ed)}`;
 }
 
 function openLightbox(item){
