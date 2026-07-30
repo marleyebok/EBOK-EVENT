@@ -80,7 +80,7 @@ fonctionne sur les **données de démo** de `data.js` (aucune casse).
 | `DATABASE_URL` | Chaîne de connexion Neon (base partagée) | 🔒 oui |
 | `CLERK_SECRET_KEY` | Clé serveur Clerk (`sk_live_…`) — vérifie les tokens | 🔒 oui |
 | `OPENROUTER_API_KEY` | Clé OpenRouter (assistant IA, fournisseur par défaut) | 🔒 oui |
-| `OPENROUTER_MODEL` | *(optionnel)* modèle OpenRouter à utiliser (défaut : modèle gratuit avec vision) | non |
+| `OPENROUTER_MODEL` | *(optionnel)* modèle(s) OpenRouter, séparés par des virgules — essayés dans l'ordre (défaut : deux modèles gratuits avec vision) | non |
 | `AI_PROVIDER` | *(optionnel)* `openrouter` (défaut) ou `gemini` | non |
 | `GEMINI_API_KEY` | Clé Google AI Studio — requise seulement si `AI_PROVIDER=gemini` | 🔒 oui |
 | `ADMIN_EMAILS` | *(optionnel)* emails admin additionnels, séparés par virgules | non |
@@ -156,6 +156,18 @@ relit, ajuste et publie — un événement de diffuseur reste en attente de vali
 > Le modèle gratuit par défaut peut être retiré du catalogue OpenRouter avec le temps. Si l'assistant renvoie une
 > erreur de configuration, vérifie la liste des modèles gratuits sur `openrouter.ai/models?max_price=0` et
 > ajuste la variable `OPENROUTER_MODEL` en conséquence (aucune modif de code nécessaire).
+
+### Quotas et modèles de repli
+
+Les modèles `:free` sont **partagés entre tous les utilisateurs d'OpenRouter** : un `429` signifie
+souvent que le fournisseur en amont est momentanément saturé, et **pas** que le quota du compte est
+épuisé. L'assistant essaie donc les modèles de `OPENROUTER_MODEL` **dans l'ordre** jusqu'à ce que
+l'un réponde ; le message d'erreur affiché reprend le motif exact renvoyé par OpenRouter, qui
+permet de distinguer les deux cas.
+
+Limites de l'offre gratuite OpenRouter : **20 requêtes/minute** et **50 requêtes/jour** (ce plafond
+journalier passe à 1 000 dès 10 $ de crédits achetés une seule fois). Attention, **les requêtes en
+échec comptent aussi** dans le quota journalier.
 
 > L'endpoint valide le **jeton de session Clerk** de l'appelant et vérifie que son
 > e-mail est admin : l'assistant IA est **réservé à l'administrateur**.

@@ -256,6 +256,7 @@ export default async function handler(req, res) {
       GEMINI_INVALID_RESPONSE: [502, "Gemini a renvoyé une réponse illisible."],
       GEMINI_UNAVAILABLE: [502, "Le service Gemini est temporairement indisponible."],
       OPENROUTER_CONFIGURATION: [500, "La configuration OpenRouter est invalide (clé ou modèle)."],
+      OPENROUTER_MODEL_REJECTED: [500, "Le modèle OpenRouter configuré a été refusé. Vérifie OPENROUTER_MODEL."],
       OPENROUTER_QUOTA: [429, "La limite OpenRouter est atteinte. Réessaie dans quelques instants."],
       OPENROUTER_REFUSAL: [422, "Le modèle a refusé le contenu. Essaie une autre source."],
       OPENROUTER_EMPTY_RESPONSE: [422, "Le modèle n'a renvoyé aucune donnée exploitable."],
@@ -264,8 +265,15 @@ export default async function handler(req, res) {
       OPENROUTER_INVALID_RESPONSE: [502, "OpenRouter a renvoyé une réponse illisible."],
       OPENROUTER_UNAVAILABLE: [502, "Le service OpenRouter est temporairement indisponible."]
     };
-    const [status, error] = responses[err?.code] || [500, "L'analyse IA a échoué. Réessaie."];
-    res.status(status).json({ ok: false, code: err?.code || "IMPORT_ANALYSIS_FAILED", error });
+    const [status, fallback] = responses[err?.code] || [500, "L'analyse IA a échoué. Réessaie."];
+    // Les erreurs OpenRouter portent le motif exact renvoyé par la plateforme
+    // (modèle saturé en amont, quota du compte épuisé, modèle retiré du
+    // catalogue). Le remplacer par un message générique rend la panne
+    // indiagnosticable — c'est le message brut qui sert au dépannage.
+    const detailed = typeof err?.code === "string" && err.code.startsWith("OPENROUTER_") && err.message
+      ? err.message
+      : fallback;
+    res.status(status).json({ ok: false, code: err?.code || "IMPORT_ANALYSIS_FAILED", error: detailed });
   }
 }
 
