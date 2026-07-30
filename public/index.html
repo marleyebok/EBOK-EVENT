@@ -212,10 +212,17 @@
         <label for="f-age">Public — âge</label>
         <select id="f-age">
           <option value="all">Indifférent</option>
-          <option value="Enfants">Enfants (6-11 ans)</option>
-          <option value="Ados">Ados (12-17 ans)</option>
-          <option value="Séniors">Séniors (18-35 ans)</option>
-          <option value="Vétérans">Vétérans (35 ans et +)</option>
+          <option value="Tout public">Tout public</option>
+          <option value="U7">U7</option>
+          <option value="U9">U9</option>
+          <option value="U11">U11</option>
+          <option value="U13">U13</option>
+          <option value="U15">U15</option>
+          <option value="U17">U17</option>
+          <option value="U18">U18</option>
+          <option value="U21">U21</option>
+          <option value="Adulte">Adulte</option>
+          <option value="Non renseigné">Non renseigné</option>
         </select>
       </div>
       <div class="field">
@@ -346,18 +353,50 @@
               </select>
             </div>
             <div class="field">
-              <label for="c-age">Public — âge</label>
-              <select id="c-age">
-                <option>Enfants (6-11 ans)</option>
-                <option>Ados (12-17 ans)</option>
-                <option selected>Séniors (18-35 ans)</option>
-                <option>Vétérans (35 ans et +)</option>
-              </select>
+              <label for="c-tarif">Tarifs <span style="color:var(--chalk-dim);font-weight:400;">(optionnel)</span></label>
+              <input type="text" id="c-tarif" placeholder="Ex. 15 € par joueur, gratuit -12 ans">
             </div>
+          </div>
+          <div class="field">
+            <label>Public — âge <span style="color:var(--chalk-dim);font-weight:400;">(plusieurs choix possibles)</span></label>
+            <div class="chip-choices" id="c-age"></div>
           </div>
           <div class="field">
             <label for="c-desc">Description</label>
             <textarea id="c-desc" placeholder="Format, déroulé..."></textarea>
+          </div>
+
+          <!-- Réservé au type « Voyage » : affiché/masqué par initCreatePage(). -->
+          <div id="c-voyage" class="voyage-block hidden">
+            <h4 class="voyage-title">✈️ Détails du voyage</h4>
+            <div class="form-row">
+              <div class="field">
+                <label for="c-voy-date-depart">Date de départ</label>
+                <input type="date" id="c-voy-date-depart">
+              </div>
+              <div class="field">
+                <label for="c-voy-date-retour">Date de retour</label>
+                <input type="date" id="c-voy-date-retour">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="field">
+                <label for="c-voy-lieux-depart">Lieux de départ possibles</label>
+                <input type="text" id="c-voy-lieux-depart" placeholder="Ex. Paris, Lyon, Marseille">
+              </div>
+              <div class="field">
+                <label for="c-voy-lieu-retour">Lieu de retour</label>
+                <input type="text" id="c-voy-lieu-retour" placeholder="Ex. Paris CDG">
+              </div>
+            </div>
+            <div class="field">
+              <label for="c-voy-destination">Destination</label>
+              <input type="text" id="c-voy-destination" placeholder="Ex. Barcelone, Espagne">
+            </div>
+            <div class="field">
+              <label for="c-voy-logement">Logement</label>
+              <input type="text" id="c-voy-logement" placeholder="Ex. Hôtel 3★ en pension complète">
+            </div>
           </div>
         </div>
 
@@ -725,13 +764,45 @@
           </select>
         </div>
         <div class="field">
-          <label for="e-age">Public — âge</label>
-          <select id="e-age">
-            <option>Enfants (6-11 ans)</option>
-            <option>Ados (12-17 ans)</option>
-            <option>Séniors (18-35 ans)</option>
-            <option>Vétérans (35 ans et +)</option>
-          </select>
+          <label for="e-tarif">Tarifs</label>
+          <input type="text" id="e-tarif" placeholder="Ex. 15 € par joueur">
+        </div>
+      </div>
+      <div class="field">
+        <label>Public — âge <span style="color:var(--chalk-dim);font-weight:400;">(plusieurs choix possibles)</span></label>
+        <div class="chip-choices" id="e-age"></div>
+      </div>
+
+      <!-- Réservé au type « Voyage » : affiché/masqué par openEditModal(). -->
+      <div id="e-voyage" class="voyage-block hidden">
+        <h4 class="voyage-title">✈️ Détails du voyage</h4>
+        <div class="form-row">
+          <div class="field">
+            <label for="e-voy-date-depart">Date de départ</label>
+            <input type="date" id="e-voy-date-depart">
+          </div>
+          <div class="field">
+            <label for="e-voy-date-retour">Date de retour</label>
+            <input type="date" id="e-voy-date-retour">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label for="e-voy-lieux-depart">Lieux de départ possibles</label>
+            <input type="text" id="e-voy-lieux-depart" placeholder="Ex. Paris, Lyon, Marseille">
+          </div>
+          <div class="field">
+            <label for="e-voy-lieu-retour">Lieu de retour</label>
+            <input type="text" id="e-voy-lieu-retour" placeholder="Ex. Paris CDG">
+          </div>
+        </div>
+        <div class="field">
+          <label for="e-voy-destination">Destination</label>
+          <input type="text" id="e-voy-destination" placeholder="Ex. Barcelone, Espagne">
+        </div>
+        <div class="field">
+          <label for="e-voy-logement">Logement</label>
+          <input type="text" id="e-voy-logement" placeholder="Ex. Hôtel 3★ en pension complète">
         </div>
       </div>
       <div class="form-row">
