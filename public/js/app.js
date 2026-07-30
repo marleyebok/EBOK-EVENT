@@ -66,6 +66,36 @@ function readAgeChoices(containerId){
   return Array.from(box.querySelectorAll('input[type="checkbox"]:checked')).map(i=> i.value);
 }
 
+const DEFAULT_COUNTRY = 'France';
+
+/* Un événement sans pays est en France : c'était le seul cas possible avant
+   l'ouverture à l'international, et les fiches existantes n'ont pas ce champ. */
+function eventCountry(ev){
+  return (ev && ev.pays ? String(ev.pays) : DEFAULT_COUNTRY).trim() || DEFAULT_COUNTRY;
+}
+function isAbroad(ev){
+  return eventCountry(ev) !== DEFAULT_COUNTRY;
+}
+
+/* Coordonnées du centre d'un pays (fond de carte mondial). */
+function countryCoords(name){
+  const list = (window.WORLD_MAP && window.WORLD_MAP.countries) || [];
+  const row = list.find(r => r[0] === name);
+  return row ? { lat: row[1], lng: row[2] } : null;
+}
+
+/* Remplit un <select> avec la liste des pays, France en tête. */
+function renderCountrySelect(id, selected){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const list = (window.WORLD_MAP && window.WORLD_MAP.countries) || [];
+  const names = list.map(r => r[0]).filter(n => n !== DEFAULT_COUNTRY);
+  const current = selected || DEFAULT_COUNTRY;
+  el.innerHTML = [DEFAULT_COUNTRY, ...names]
+    .map(n => `<option value="${esc(n)}"${n === current ? ' selected' : ''}>${esc(n)}</option>`)
+    .join('');
+}
+
 /* Les détails de voyage (départ, destination, logement) ne concernent que les
    événements de type « Voyage » : ailleurs le bloc reste masqué. */
 function toggleVoyageBlock(blockId, type){
@@ -116,6 +146,7 @@ function eventCardHtml(ev){
         ${isPast(ev) ? `<span class="card-past-badge">Terminé</span>` : ``}
         ${ev.dispo && DISPO_META[ev.dispo] ? `<span class="dispo-badge ${DISPO_META[ev.dispo].cls}">${DISPO_META[ev.dispo].label}</span>` : ``}
         <button class="fav-btn ${favorites.has(ev.id) ? 'active' : ''}" data-fav="${ev.id}" aria-label="Enregistrer en favori" title="Mettre de côté">♥</button>
+        ${currentIsAdmin ? `<button class="edit-btn" data-edit="${esc(ev.id)}" aria-label="Modifier cet événement" title="Modifier">✏️</button>` : ``}
       </div>
       <div class="card-body">
         <h4>${ev.title}</h4>
@@ -148,7 +179,9 @@ function buildMap(){
      <text class="city-name" x="${x+8}" y="${y+3.5}">${name}</text>`
   ).join('');
 
-  const pins = events.map(ev=>{
+  // Les événements à l'étranger n'ont pas de place sur la carte des régions :
+  // ils sont repris par la vignette mondiale.
+  const pins = events.filter(ev=> !isAbroad(ev)).map(ev=>{
     const c = TYPE_COLORS[ev.type];
     return `<g class="pin" data-id="${ev.id}" data-type="${ev.type}">
       <circle class="core" cx="${ev.x}" cy="${ev.y}" r="8" fill="${c}"></circle>
@@ -202,6 +235,57 @@ function buildMap(){
     pin.addEventListener('mouseenter', ()=> showTooltip(pin));
     pin.addEventListener('mouseleave', hideTooltip);
     pin.addEventListener('click', (e)=>{ e.stopPropagation(); openEvent(pin.dataset.id); });
+  });
+
+  buildWorldMap();
+}
+
+/* Vignette mondiale : reprend les événements situés hors de France, placés
+   d'après leurs coordonnées ou, à défaut, le centre de leur pays. Le bloc
+   reste masqué tant qu'aucun événement n'est concerné. */
+function buildWorldMap(){
+  const box = document.getElementById('worldMini');
+  const svg = document.getElementById('worldMap');
+  const world = window.WORLD_MAP;
+  if(!box || !svg || !world) return;
+
+  // Un pays inconnu du fond de carte (faute de frappe, libellé importé) n'est
+  // pas plaçable : on compte les points réellement dessinés, pas les
+  // événements, pour que le compteur ne promette rien d'invisible.
+  const placed = [];
+  for(const ev of events){
+    if(!isAbroad(ev)) continue;
+    const country = eventCountry(ev);
+    const geo = (ev.lat != null && ev.lng != null)
+      ? { lat: ev.lat, lng: ev.lng }
+      : countryCoords(country);
+    if(geo) placed.push({ ev, country, geo });
+  }
+
+  box.classList.toggle('hidden', placed.length === 0);
+  if(placed.length === 0){ svg.innerHTML = ''; return; }
+
+  const counter = document.getElementById('worldMiniCount');
+  if(counter) counter.textContent = placed.length;
+
+  svg.setAttribute('viewBox', world.viewBox);
+  const pins = placed.map(({ ev, country, geo })=>{
+    const { x, y } = world.project(geo.lat, geo.lng);
+    const c = TYPE_COLORS[ev.type] || 'var(--orange)';
+    return `<g class="wpin" data-id="${esc(ev.id)}" tabindex="0" role="button" aria-label="${esc(ev.title)} — ${esc(country)}">
+      <title>${esc(ev.title)} — ${esc(country)}</title>
+      <circle class="wpin-halo" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="9"></circle>
+      <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5" fill="${c}"></circle>
+      <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.8" fill="#fff"></circle>
+    </g>`;
+  }).join('');
+
+  svg.innerHTML = `<path class="world-land" d="${world.land}"/><g class="world-pins">${pins}</g>`;
+  svg.querySelectorAll('.wpin').forEach(g=>{
+    g.addEventListener('click', ()=> openEvent(g.dataset.id));
+    g.addEventListener('keydown', e=>{
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openEvent(g.dataset.id); }
+    });
   });
 }
 
@@ -940,6 +1024,7 @@ function initCreatePage(){
   const label = document.getElementById('dzLabel');
 
   renderAgeChoices('c-age', []);
+  renderCountrySelect('c-pays', DEFAULT_COUNTRY);
 
   // Les détails de voyage n'ont de sens que pour ce type d'événement.
   const typeSel = document.getElementById('c-type');
@@ -1025,6 +1110,15 @@ function initCreatePage(){
     }else{
       coords = await resolveCoords(val('c-adresse'), city, region);
     }
+    // Hors de France, la base des villes françaises ne sait rien du lieu : on
+    // retombe sur le centre du pays, qui suffit à placer le point sur la
+    // vignette mondiale.
+    const pays = val('c-pays') || DEFAULT_COUNTRY;
+    if(pays !== DEFAULT_COUNTRY){
+      const cc = countryCoords(pays);
+      if(cc) coords = Object.assign({}, coords, { lat: cc.lat, lng: cc.lng });
+    }
+
     const {x, y}    = coords;
     const posterSrc = (preview && !preview.classList.contains('hidden')) ? preview.src : null;
     const visibility = document.querySelector('input[name="visibility"]:checked')?.value || 'standard';
@@ -1042,7 +1136,7 @@ function initCreatePage(){
       id: 'evt-' + Date.now(),
       title: val('c-nom') || 'Événement sans nom',
       type,
-      city, region,
+      city, region, pays,
       lieu: val('c-adresse') || city,
       x, y,
       lat: coords.lat != null ? coords.lat : null,
@@ -1533,7 +1627,9 @@ async function openEvent(id, opts){
         </div>
       </div>
       <h2>${ev.title}</h2>
-      <p class="event-org">Organisé par <b>${ev.org.name}</b></p>
+      <p class="event-org">Organisé par <b>${ev.org.name}</b>
+        ${currentIsAdmin ? `<button class="edit-inline" data-edit="${esc(ev.id)}" title="Modifier cet événement">✏️ Modifier</button>` : ``}
+      </p>
 
       <div class="info-grid">
         <div class="info-cell"><div class="k">Lieu</div><div class="v">${ev.lieu}</div></div>
@@ -1912,6 +2008,13 @@ function updateFavButtons(id){
 document.addEventListener('click', (e)=>{
   const btn = e.target.closest && e.target.closest('.fav-btn');
   if(btn){ e.preventDefault(); e.stopPropagation(); toggleFav(btn.dataset.fav); }
+}, true);
+
+// Idem pour le raccourci d'édition admin (pastille sur la carte ou bouton en
+// ligne sur la fiche) : il ouvre la modale, pas l'événement.
+document.addEventListener('click', (e)=>{
+  const btn = e.target.closest && e.target.closest('[data-edit]');
+  if(btn){ e.preventDefault(); e.stopPropagation(); openEditModal(btn.dataset.edit); }
 }, true);
 
 async function renderFavorites(){
@@ -2764,6 +2867,7 @@ function openEditModal(id){
   setFieldVal('e-date-end', ev.dateEnd);
   setFieldVal('e-sexe', ev.sexe || 'Mixte');
   setFieldVal('e-tarif', ev.tarif || '');
+  renderCountrySelect('e-pays', eventCountry(ev));
   renderAgeChoices('e-age', ev.age);
   fillVoyage('e', ev.voyage);
   toggleVoyageBlock('e-voyage', ev.type || 'Divers');
@@ -2834,6 +2938,7 @@ function initEditModal(){
       dateStart: gv('e-date-start'),
       dateEnd: gv('e-date-end') || gv('e-date-start'),
       sexe: gv('e-sexe'),
+      pays: gv('e-pays') || DEFAULT_COUNTRY,
       age: readAgeChoices('e-age'),
       tarif: gv('e-tarif'),
       voyage: readVoyage('e', gv('e-type') || 'Divers'),
@@ -2849,19 +2954,26 @@ function initEditModal(){
     // Recalcule TOUJOURS la position depuis la ville (corrige aussi les
     // événements anciens mal placés). Priorité : ville revalidée dans la
     // liste → base locale des villes → géocodage de l'adresse.
-    await ensureCitiesLoaded();
-    const picked = (editPickedLocation &&
-      normalizeCity(patch.city).startsWith(normalizeCity(editPickedLocation.city)))
-      ? editPickedLocation : null;
-    const loc = picked || cityCoordsLocal(patch.city);
-    if(loc){
-      patch.x = loc.x; patch.y = loc.y;
-      if(loc.lat != null){ patch.lat = loc.lat; patch.lng = loc.lng; }
-      if(loc.region) patch.region = loc.region;   // région officielle
+    // Hors de France, ces sources ne connaissent pas le lieu et replaceraient
+    // l'événement en métropole : on prend le centre du pays.
+    if(patch.pays !== DEFAULT_COUNTRY){
+      const cc = countryCoords(patch.pays);
+      if(cc){ patch.lat = cc.lat; patch.lng = cc.lng; }
     }else{
-      const c = await resolveCoords(gv('e-address'), patch.city, patch.region);
-      patch.x = c.x; patch.y = c.y;
-      if(c.lat != null){ patch.lat = c.lat; patch.lng = c.lng; }
+      await ensureCitiesLoaded();
+      const picked = (editPickedLocation &&
+        normalizeCity(patch.city).startsWith(normalizeCity(editPickedLocation.city)))
+        ? editPickedLocation : null;
+      const loc = picked || cityCoordsLocal(patch.city);
+      if(loc){
+        patch.x = loc.x; patch.y = loc.y;
+        if(loc.lat != null){ patch.lat = loc.lat; patch.lng = loc.lng; }
+        if(loc.region) patch.region = loc.region;   // région officielle
+      }else{
+        const c = await resolveCoords(gv('e-address'), patch.city, patch.region);
+        patch.x = c.x; patch.y = c.y;
+        if(c.lat != null){ patch.lat = c.lat; patch.lng = c.lng; }
+      }
     }
     if(editPosterData){ patch.poster = await hostPoster(editPosterData); }
 
