@@ -15,6 +15,98 @@ const DISPO_META = {
   complet: { label: 'Complet',         cls: 'dispo-complet' }
 };
 
+// Catégories d'âge. Un événement peut en viser plusieurs : `age` est une liste.
+const AGE_OPTIONS = ['Tout public', 'U7', 'U9', 'U11', 'U13', 'U15', 'U17',
+  'U18', 'U21', 'Adulte', 'Non renseigné'];
+
+/* Les fiches publiées avant le passage au multi-choix portent une tranche
+   unique ("Séniors (18-35 ans)"…). Plutôt que de réécrire la base, on traduit
+   ces valeurs à la lecture : rien n'est perdu, et une fiche rouverte puis
+   enregistrée repart naturellement au nouveau format. */
+const LEGACY_AGES = {
+  'Enfants':  ['U7', 'U9', 'U11'],
+  'Ados':     ['U13', 'U15', 'U17'],
+  'Séniors':  ['Adulte'],
+  'Vétérans': ['Adulte']
+};
+
+/* Renvoie toujours une liste de tranches, quel que soit le format stocké. */
+function ageList(age){
+  if(Array.isArray(age)) return age.filter(Boolean);
+  const raw = String(age == null ? '' : age).trim();
+  if(!raw) return [];
+  if(AGE_OPTIONS.includes(raw)) return [raw];
+  for(const prefix in LEGACY_AGES){
+    if(raw.startsWith(prefix)) return LEGACY_AGES[prefix];
+  }
+  return [raw];   // valeur inattendue : on l'affiche plutôt que de la perdre
+}
+
+function ageLabel(age){
+  const list = ageList(age);
+  return list.length ? list.join(', ') : 'Non renseigné';
+}
+
+/* Remplit un conteneur de cases à cocher (les 11 tranches) et coche `selected`. */
+function renderAgeChoices(containerId, selected){
+  const box = document.getElementById(containerId);
+  if(!box) return;
+  const on = new Set(ageList(selected));
+  box.innerHTML = AGE_OPTIONS.map(opt=>`
+    <label class="chip-choice">
+      <input type="checkbox" value="${opt}"${on.has(opt) ? ' checked' : ''}>
+      <span>${opt}</span>
+    </label>`).join('');
+}
+
+/* Tranches cochées dans un conteneur. */
+function readAgeChoices(containerId){
+  const box = document.getElementById(containerId);
+  if(!box) return [];
+  return Array.from(box.querySelectorAll('input[type="checkbox"]:checked')).map(i=> i.value);
+}
+
+/* Les détails de voyage (départ, destination, logement) ne concernent que les
+   événements de type « Voyage » : ailleurs le bloc reste masqué. */
+function toggleVoyageBlock(blockId, type){
+  const box = document.getElementById(blockId);
+  if(box) box.classList.toggle('hidden', type !== 'Voyage');
+}
+
+const VOYAGE_FIELDS = ['dateDepart', 'dateRetour', 'lieuxDepart', 'lieuRetour', 'destination', 'logement'];
+const VOYAGE_INPUT_SUFFIX = {
+  dateDepart:  'voy-date-depart',
+  dateRetour:  'voy-date-retour',
+  lieuxDepart: 'voy-lieux-depart',
+  lieuRetour:  'voy-lieu-retour',
+  destination: 'voy-destination',
+  logement:    'voy-logement'
+};
+
+/* Lit le bloc voyage d'un formulaire ("c" création / "e" édition).
+   Renvoie null hors type Voyage, pour ne rien stocker d'inutile. */
+function readVoyage(prefix, type){
+  if(type !== 'Voyage') return null;
+  const out = {};
+  let filled = false;
+  for(const key of VOYAGE_FIELDS){
+    const el = document.getElementById(`${prefix}-${VOYAGE_INPUT_SUFFIX[key]}`);
+    const v = (el && el.value || '').trim();
+    out[key] = v;
+    if(v) filled = true;
+  }
+  return filled ? out : null;
+}
+
+/* Remplit le bloc voyage d'un formulaire. */
+function fillVoyage(prefix, voyage){
+  const v = voyage || {};
+  for(const key of VOYAGE_FIELDS){
+    const el = document.getElementById(`${prefix}-${VOYAGE_INPUT_SUFFIX[key]}`);
+    if(el) el.value = v[key] || '';
+  }
+}
+
 function eventCardHtml(ev){
   return `
     <div class="event-card" data-id="${ev.id}">
@@ -29,7 +121,7 @@ function eventCardHtml(ev){
         <h4>${ev.title}</h4>
         <div class="card-meta">
           <b>${ev.city}</b> · ${fmtDateRange(ev.dateStart, ev.dateEnd)}<br>
-          ${ev.sexe} · ${ev.age} · ${ev.niveau}
+          ${ev.sexe} · ${ageLabel(ev.age)} · ${ev.niveau}
         </div>
       </div>
     </div>`;
@@ -174,7 +266,7 @@ function showTooltip(pin){
   tt.style.top = top+"px";
   tt.innerHTML = `<div class="tt-type" style="color:${TYPE_COLORS[ev.type]}">${ev.type}</div>
     <div class="tt-title">${ev.title}</div>
-    <div class="tt-meta">${ev.lieu}<br>${fmtDateRange(ev.dateStart,ev.dateEnd)}<br>${ev.sexe} · ${ev.age} · ${ev.niveau}</div>`;
+    <div class="tt-meta">${ev.lieu}<br>${fmtDateRange(ev.dateStart,ev.dateEnd)}<br>${ev.sexe} · ${ageLabel(ev.age)} · ${ev.niveau}</div>`;
   tt.classList.add('show');
 }
 function hideTooltip(){ document.getElementById('mapTooltip').classList.remove('show'); }
@@ -701,7 +793,7 @@ function renderResults(){
     if(searchStatus === 'upcoming' && isPast(ev)) return false;
     if(searchStatus === 'archived' && !isPast(ev)) return false;
     if(sexe !== 'all' && ev.sexe !== sexe && ev.sexe !== 'Mixte') return false;
-    if(age !== 'all' && ev.age !== age) return false;
+    if(age !== 'all' && !ageList(ev.age).includes(age)) return false;
     if(niveau !== 'all' && ev.niveau !== niveau) return false;
     if(afficheOnly && !ev.poster) return false;
     return true;
@@ -847,6 +939,16 @@ function initCreatePage(){
   const preview = document.getElementById('dzPreview');
   const label = document.getElementById('dzLabel');
 
+  renderAgeChoices('c-age', []);
+
+  // Les détails de voyage n'ont de sens que pour ce type d'événement.
+  const typeSel = document.getElementById('c-type');
+  if(typeSel){
+    const sync = ()=> toggleVoyageBlock('c-voyage', typeSel.value);
+    typeSel.addEventListener('change', sync);
+    sync();
+  }
+
   // Autocomplétion de ville (fixe la localisation + la région).
   attachCityAutocomplete('c-ville', 'c-ville-ac', pick=>{
     createPickedLocation = pick;
@@ -947,8 +1049,10 @@ function initCreatePage(){
       lng: coords.lng != null ? coords.lng : null,
       dateStart, dateEnd,
       sexe: val('c-sexe') || 'Mixte',
-      age: val('c-age') || 'Séniors (18-35 ans)',
+      age: readAgeChoices('c-age'),
       niveau: val('c-niveau') || 'Loisir',
+      tarif: val('c-tarif'),
+      voyage: readVoyage('c', type),
       poster: await hostPoster(posterSrc),
       description: val('c-desc'),
       infos: {
@@ -1385,12 +1489,18 @@ async function openEvent(id, opts){
     ev.placesTotal ? `${ev.placesTotal} places` : null,
     ev.dispo && DISPO_META[ev.dispo] ? DISPO_META[ev.dispo].label : null
   ].filter(Boolean).join(' · ');
+  const voyage = ev.voyage || {};
   const practicalRows = [
     infos.adresse ? {ic:"📍", k:"Adresse", v:infos.adresse} : null,
     infos.horaires ? {ic:"🕐", k:"Horaires", v:infos.horaires} : null,
     infos.buvette ? {ic:"🥤", k:"Buvette", v:infos.buvette} : null,
     infos.reservation ? {ic:"🎟", k:"Réservation", v:infos.reservation} : null,
+    ev.tarif ? {ic:"💶", k:"Tarifs", v:ev.tarif} : null,
     placesValue ? {ic:"🎫", k:"Places", v:placesValue} : null,
+    voyage.destination ? {ic:"🌍", k:"Destination", v:voyage.destination} : null,
+    (voyage.dateDepart || voyage.lieuxDepart) ? {ic:"🛫", k:"Départ", v:fmtVoyageLeg(voyage.dateDepart, voyage.lieuxDepart)} : null,
+    (voyage.dateRetour || voyage.lieuRetour) ? {ic:"🛬", k:"Retour", v:fmtVoyageLeg(voyage.dateRetour, voyage.lieuRetour)} : null,
+    voyage.logement ? {ic:"🏨", k:"Logement", v:voyage.logement} : null,
   ].filter(Boolean);
   const practicalHtml = practicalRows.length
     ? `<div class="practical-grid">${practicalRows.map(r=>`
@@ -1414,7 +1524,7 @@ async function openEvent(id, opts){
           <span class="badge solid" style="background:${TYPE_COLORS[ev.type]}">${ev.type}</span>
           <span class="badge">${ev.niveau}</span>
           <span class="badge">${ev.sexe}</span>
-          <span class="badge">${ev.age}</span>
+          <span class="badge">${ageLabel(ev.age)}</span>
         </div>
         <div class="viewer-counter">
           <span class="vc-icon">👁</span>
@@ -1569,6 +1679,13 @@ const MONTHS = ["janv.","févr.","mars","avr.","mai","juin","juil.","août","sep
 function fmtDate(d){
   const dt = new Date(d+"T00:00:00");
   return `${dt.getDate()} ${MONTHS[dt.getMonth()]}`;
+}
+/* Étape d'un voyage : « 12 juin — Paris, Lyon ». Chaque moitié est optionnelle. */
+function fmtVoyageLeg(date, lieu){
+  const parts = [];
+  if(date && /^\d{4}-\d{2}-\d{2}$/.test(date)) parts.push(fmtDate(date));
+  if(lieu) parts.push(lieu);
+  return parts.join(' — ');
 }
 function fmtDateRange(s,e){
   if(s===e) return fmtDate(s)+" 2026";
@@ -2440,6 +2557,15 @@ function prefillCreateFromImport(ev, poster){
   set('c-orgname', ev.orgName);
   set('c-insta', ev.insta);
   set('c-site', ev.site);
+  set('c-tarif', ev.tarif);
+  // Les tranches d'âge sont des cases à cocher : on ne touche à la sélection
+  // que si l'IA a effectivement reconnu quelque chose.
+  const ages = ageList(ev.age);
+  if(ages.length) renderAgeChoices('c-age', ages);
+  // Le type vient d'être renseigné : le bloc voyage doit suivre.
+  const type = document.getElementById('c-type');
+  if(type) toggleVoyageBlock('c-voyage', type.value);
+  if(ev.voyage) fillVoyage('c', ev.voyage);
   // Affiche récupérée : on l'injecte dans l'aperçu du dropzone.
   const preview = document.getElementById('dzPreview');
   const label = document.getElementById('dzLabel');
@@ -2637,7 +2763,14 @@ function openEditModal(id){
   setFieldVal('e-date-start', ev.dateStart);
   setFieldVal('e-date-end', ev.dateEnd);
   setFieldVal('e-sexe', ev.sexe || 'Mixte');
-  setFieldVal('e-age', ev.age || 'Séniors (18-35 ans)');
+  setFieldVal('e-tarif', ev.tarif || '');
+  renderAgeChoices('e-age', ev.age);
+  fillVoyage('e', ev.voyage);
+  toggleVoyageBlock('e-voyage', ev.type || 'Divers');
+  const eType = document.getElementById('e-type');
+  // Propriété (et non addEventListener) : la modale est rouverte à chaque
+  // édition, un écouteur ajouté s'y empilerait.
+  if(eType) eType.onchange = ()=> toggleVoyageBlock('e-voyage', eType.value);
   setFieldVal('e-places', ev.placesTotal != null ? ev.placesTotal : '');
   setFieldVal('e-dispo', ev.dispo || '');
   setFieldVal('e-status', ev.status === 'approved' ? 'approved' : 'pending');
@@ -2701,7 +2834,9 @@ function initEditModal(){
       dateStart: gv('e-date-start'),
       dateEnd: gv('e-date-end') || gv('e-date-start'),
       sexe: gv('e-sexe'),
-      age: gv('e-age'),
+      age: readAgeChoices('e-age'),
+      tarif: gv('e-tarif'),
+      voyage: readVoyage('e', gv('e-type') || 'Divers'),
       dispo: gv('e-dispo'),
       description: gv('e-desc'),
       status: gv('e-status') === 'approved' ? 'approved' : 'pending',

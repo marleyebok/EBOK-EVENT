@@ -31,7 +31,15 @@ const TYPES = [
   "Clinic Coachs", "Circuit 3x3", "Handibasket", "Matchs de Gala", "Divers"
 ];
 const FIELDS = ["title", "type", "city", "region", "address", "dateStart", "dateEnd",
-  "sexe", "age", "niveau", "description", "orgName", "insta", "site"];
+  "sexe", "niveau", "description", "orgName", "insta", "site", "tarif"];
+
+// Un événement peut viser plusieurs catégories : `age` est une liste.
+const AGE_OPTIONS = ["Tout public", "U7", "U9", "U11", "U13", "U15", "U17",
+  "U18", "U21", "Adulte", "Non renseigné"];
+
+// Détails propres aux séjours (type « Voyage »).
+const VOYAGE_FIELDS = ["dateDepart", "dateRetour", "lieuxDepart", "lieuRetour",
+  "destination", "logement"];
 
 /* Refuse les adresses internes / locales (protection SSRF de base). */
 function isBlockedHost(host) {
@@ -140,18 +148,40 @@ function normalizeEvent(e) {
   if (out.type && !TYPES.includes(out.type)) out.type = "Divers";
   if (!["Masculin", "Féminin", "Mixte"].includes(out.sexe)) out.sexe = "";
   out.insta = out.insta.replace(/^@/, "");
+
+  // `age` : liste, en ne gardant que les catégories connues. Le modèle renvoie
+  // parfois une chaîne unique ou "U13, U15" — les deux sont acceptés.
+  const rawAges = Array.isArray(e.age) ? e.age : String(e.age == null ? "" : e.age).split(",");
+  out.age = rawAges
+    .map(a => String(a).trim())
+    .filter(a => AGE_OPTIONS.includes(a));
+
+  // `voyage` : conservé uniquement pour un séjour effectivement renseigné.
+  const v = e.voyage || {};
+  const voyage = {};
+  let hasVoyage = false;
+  for (const k of VOYAGE_FIELDS) {
+    const value = (v[k] == null) ? "" : String(v[k]).trim();
+    voyage[k] = value;
+    if (value) hasVoyage = true;
+  }
+  out.voyage = (out.type === "Voyage" && hasVoyage) ? voyage : null;
+
   return out;
 }
 
 const RULES =
-`Réponds avec un OBJET JSON aux clés EXACTES : title, type, city, region, address, dateStart, dateEnd, sexe, age, niveau, description, orgName, insta, site.
+`Réponds avec un OBJET JSON aux clés EXACTES : title, type, city, region, address, dateStart, dateEnd, sexe, age, niveau, description, orgName, insta, site, tarif, voyage.
 Règles :
 - "type" : une seule valeur parmi [${TYPES.join(", ")}] (par défaut "Divers").
 - "dateStart" / "dateEnd" : format AAAA-MM-JJ. S'il n'y a qu'une date, mets-la dans les deux. Si une date manque, mets "". N'INVENTE JAMAIS de date.
 - "sexe" : "Masculin", "Féminin", "Mixte" ou "".
+- "age" : TABLEAU de catégories parmi [${AGE_OPTIONS.join(", ")}]. Les mentions "U13", "moins de 13 ans", "benjamins" donnent "U13", etc. Si l'événement est ouvert à tous, mets ["Tout public"]. Si rien n'est indiqué, mets [].
 - "region" : la région administrative française (ex. "Île-de-France", "Occitanie") déduite de la ville si possible, sinon "".
 - "description" : 2 à 4 phrases synthétiques en français.
 - "insta" : identifiant Instagram sans le @, sinon "".
+- "tarif" : le ou les prix indiqués, tels quels (ex. "15 € par joueur, gratuit -12 ans"), sinon "".
+- "voyage" : UNIQUEMENT si "type" vaut "Voyage", un objet aux clés dateDepart, dateRetour (AAAA-MM-JJ), lieuxDepart (villes de départ possibles), lieuRetour, destination, logement. Sinon mets null.
 - Laisse "" tout champ introuvable.`;
 
 function urlPrompt(today, url, page) {

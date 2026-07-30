@@ -375,6 +375,28 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .form-card h3{font-size:16px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;color:var(--chalk-dim);margin-bottom:18px;font-weight:700;}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
 .form-card .field{margin-bottom:16px;}
+
+/* Choix multiples en pastilles (catégories d'âge). */
+.chip-choices{display:flex;flex-wrap:wrap;gap:8px;}
+.chip-choice{
+  display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;
+  background:var(--asphalt-3);border:1px solid var(--line-strong);border-radius:999px;
+  padding:7px 13px;font-size:13px;font-weight:600;color:var(--chalk-dim);
+  transition:border-color .15s,color .15s,background .15s;
+}
+.chip-choice:hover{border-color:var(--chalk-dim);color:var(--chalk);}
+.chip-choice input{accent-color:var(--orange);margin:0;cursor:pointer;}
+.chip-choice:has(input:checked){border-color:var(--orange);color:var(--chalk);background:var(--asphalt-2);}
+
+/* Bloc réservé aux événements de type « Voyage ». */
+.voyage-block{
+  border:1px solid var(--line-strong);border-radius:12px;
+  padding:18px;margin-top:4px;background:var(--asphalt-3);
+}
+.voyage-title{
+  font-size:13px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;
+  color:var(--chalk-dim);margin-bottom:14px;font-weight:700;
+}
 .form-card textarea{
   background:var(--asphalt-3);border:1px solid var(--line-strong);color:var(--chalk);
   padding:11px 12px;border-radius:8px;font-size:14px;min-height:96px;resize:vertical;font-family:var(--font-body);
