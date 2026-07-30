@@ -158,15 +158,6 @@
         <svg id="franceMap" viewBox="0 0 560 560" xmlns="http://www.w3.org/2000/svg"></svg>
         <div class="map-tooltip" id="mapTooltip"></div>
 
-        <!-- Vignette monde : les événements hors de France ne peuvent pas être
-             placés sur la carte des régions. Masquée s'il n'y en a aucun. -->
-        <div class="world-mini hidden" id="worldMini">
-          <div class="world-mini-head">
-            <span>🌍 Hors de France</span>
-            <span class="world-mini-count" id="worldMiniCount"></span>
-          </div>
-          <svg id="worldMap" viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg"></svg>
-        </div>
       </div>
 
       <div class="results-grid home-list hidden" id="homeListView"></div>
@@ -896,7 +887,6 @@
 
 <!-- Données (carte des régions + événements) avant la logique applicative -->
 <script src="/js/france-map.js"></script>
-<script src="/js/world-map.js"></script>
 <script src="/js/data.js"></script>
 <script src="/js/app.js"></script>
 

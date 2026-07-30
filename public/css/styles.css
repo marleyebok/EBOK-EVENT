@@ -376,30 +376,30 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
 .form-card .field{margin-bottom:16px;}
 
-/* Vignette « hors de France » posée dans un coin de la carte des régions. */
-.world-mini{
-  position:absolute;right:14px;bottom:14px;width:290px;z-index:4;
+/* Encart « Monde » de la carte : raccourci vers les événements hors de France.
+   Volontairement schématique — il ne localise rien. */
+.world-inset{cursor:pointer;}
+.world-inset:focus{outline:none;}
+.globe-disc{fill:var(--asphalt-3);stroke:var(--line-strong);stroke-width:1;transition:fill .15s,stroke .15s;}
+.globe-line{fill:none;stroke:var(--line-strong);stroke-width:.9;transition:stroke .15s;}
+.world-inset:hover .globe-disc,.world-inset:focus .globe-disc{fill:var(--asphalt-2);stroke:var(--orange);}
+.world-inset:hover .globe-line,.world-inset:focus .globe-line{stroke:var(--orange);}
+.world-inset:hover .inset-label,.world-inset:focus .inset-label{fill:var(--orange);}
+.world-badge-bg{fill:var(--orange);}
+.world-badge{fill:#fff;font-family:var(--font-mono);font-size:12px;font-weight:700;}
+
+/* Rappel du filtre international sur la page de recherche. */
+.abroad-note{
+  grid-column:1/-1;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
   background:var(--asphalt-2);border:1px solid var(--line-strong);
-  border-radius:12px;padding:10px 12px 8px;box-shadow:0 6px 24px rgba(0,0,0,.45);
+  border-radius:10px;padding:10px 14px;font-size:13px;color:var(--chalk-dim);
 }
-.world-mini-head{
-  display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;
-  font-size:11px;font-family:var(--font-mono);text-transform:uppercase;
-  letter-spacing:1px;color:var(--chalk-dim);font-weight:700;
+.abroad-note button{
+  margin-left:auto;background:none;border:1px solid var(--line-strong);
+  color:var(--chalk-dim);border-radius:999px;padding:4px 12px;
+  font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-body);
 }
-.world-mini-count{
-  background:var(--orange);color:#fff;border-radius:999px;
-  padding:1px 8px;font-size:11px;
-}
-.world-mini svg{display:block;width:100%;height:auto;}
-.world-land{fill:var(--asphalt-3);stroke:var(--line-strong);stroke-width:.5;}
-.wpin{cursor:pointer;}
-.wpin-halo{fill:var(--orange);opacity:.22;transition:opacity .15s;}
-.wpin:hover .wpin-halo,.wpin:focus .wpin-halo{opacity:.5;}
-.wpin:focus{outline:none;}
-@media (max-width:860px){
-  .world-mini{position:static;width:auto;margin-top:12px;box-shadow:none;}
-}
+.abroad-note button:hover{border-color:var(--orange);color:var(--chalk);}
 
 /* Choix multiples en pastilles (catégories d'âge). */
 .chip-choices{display:flex;flex-wrap:wrap;gap:8px;}

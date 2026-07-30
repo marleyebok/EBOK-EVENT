@@ -77,21 +77,37 @@ function isAbroad(ev){
   return eventCountry(ev) !== DEFAULT_COUNTRY;
 }
 
-/* Coordonnées du centre d'un pays (fond de carte mondial). */
-function countryCoords(name){
-  const list = (window.WORLD_MAP && window.WORLD_MAP.countries) || [];
-  const row = list.find(r => r[0] === name);
-  return row ? { lat: row[1], lng: row[2] } : null;
+
+/* Codes ISO 3166-1 des pays. Les libellés français sont dérivés au moment de
+   l'affichage : embarquer la liste des noms coûterait plusieurs kilo-octets
+   pour un champ ouvert une fois par publication. */
+const COUNTRY_CODES = ('AD AE AF AG AL AM AO AR AT AU AZ BA BB BD BE BF BG BH BI BJ BN BO BR BS BT BW BY BZ ' +
+  'CA CD CF CG CH CI CL CM CN CO CR CU CV CY CZ DE DJ DK DM DO DZ EC EE EG ER ES ET FI FJ FM FR GA GB GD GE ' +
+  'GH GM GN GQ GR GT GW GY HN HR HT HU ID IE IL IN IQ IR IS IT JM JO JP KE KG KH KI KM KN KP KR KW KZ LA LB ' +
+  'LC LI LK LR LS LT LU LV LY MA MC MD ME MG MH MK ML MM MN MR MT MU MV MW MX MY MZ NA NE NG NI NL NO NP NR ' +
+  'NZ OM PA PE PG PH PK PL PT PW PY QA RO RS RU RW SA SB SC SD SE SG SI SK SL SM SN SO SR SS ST SV SY SZ TD ' +
+  'TG TH TJ TL TM TN TO TR TT TV TZ UA UG US UY UZ VC VE VN VU WS YE ZA ZM ZW').split(' ');
+
+let countryNamesCache = null;
+function countryNames(){
+  if(countryNamesCache) return countryNamesCache;
+  let names;
+  try{
+    const dn = new Intl.DisplayNames(['fr'], { type: 'region' });
+    names = COUNTRY_CODES.map(c => dn.of(c)).filter(n => n && n !== DEFAULT_COUNTRY);
+  }catch(e){
+    names = [];   // navigateur sans Intl.DisplayNames : le champ reste utilisable
+  }
+  countryNamesCache = [...new Set(names)].sort((a, b) => a.localeCompare(b, 'fr'));
+  return countryNamesCache;
 }
 
 /* Remplit un <select> avec la liste des pays, France en tête. */
 function renderCountrySelect(id, selected){
   const el = document.getElementById(id);
   if(!el) return;
-  const list = (window.WORLD_MAP && window.WORLD_MAP.countries) || [];
-  const names = list.map(r => r[0]).filter(n => n !== DEFAULT_COUNTRY);
   const current = selected || DEFAULT_COUNTRY;
-  el.innerHTML = [DEFAULT_COUNTRY, ...names]
+  el.innerHTML = [DEFAULT_COUNTRY, ...countryNames()]
     .map(n => `<option value="${esc(n)}"${n === current ? ' selected' : ''}>${esc(n)}</option>`)
     .join('');
 }
@@ -189,6 +205,29 @@ function buildMap(){
     </g>`;
   }).join('');
 
+  // Encart « reste du monde » : même principe qu'un territoire d'outre-mer,
+  // une vignette cliquable qui ouvre la recherche des événements hors France.
+  // Volontairement schématique — il ne localise rien, il sert de raccourci.
+  const abroadCount = events.filter(isAbroad).length;
+  const worldInset = `
+    <g class="world-inset" tabindex="0" role="button"
+       aria-label="Voir les événements hors de France${abroadCount ? ` (${abroadCount})` : ''}">
+      <title>Événements internationaux${abroadCount ? ` — ${abroadCount}` : ''}</title>
+      <rect class="inset-frame" x="12" y="16" width="104" height="104" rx="8"/>
+      <g class="globe" transform="translate(64 62)">
+        <circle class="globe-disc" r="30"/>
+        <ellipse class="globe-line" rx="12" ry="30"/>
+        <ellipse class="globe-line" rx="24" ry="30"/>
+        <line class="globe-line" x1="-30" y1="0" x2="30" y2="0"/>
+        <line class="globe-line" x1="-26" y1="-15" x2="26" y2="-15"/>
+        <line class="globe-line" x1="-26" y1="15" x2="26" y2="15"/>
+        <line class="globe-line" x1="0" y1="-30" x2="0" y2="30"/>
+      </g>
+      ${abroadCount ? `<circle class="world-badge-bg" cx="102" cy="30" r="12"/>
+      <text class="world-badge" x="102" y="34" text-anchor="middle">${abroadCount}</text>` : ''}
+      <text class="inset-label" x="64" y="112" text-anchor="middle">MONDE</text>
+    </g>`;
+
   // Encarts outre-mer (DROM) : cadre + territoire cliquable + libellé.
   const overseas = (typeof FRANCE_INSETS !== 'undefined') ? `
     <g class="overseas-layer">
@@ -217,6 +256,7 @@ function buildMap(){
     <g class="region-layer" id="regionLayer">${tops}</g>
     <g class="city-layer">${labels}</g>
     ${overseas}
+    ${worldInset}
     <g class="geo-layer">${geoMarker}</g>
     <g class="pin-layer">${pins}</g>`;
 
@@ -231,63 +271,22 @@ function buildMap(){
     });
   });
 
+  const world = svg.querySelector('.world-inset');
+  if(world){
+    world.addEventListener('click', openAbroadSearch);
+    world.addEventListener('keydown', e=>{
+      if(e.key==='Enter' || e.key===' '){ e.preventDefault(); openAbroadSearch(); }
+    });
+  }
+
   svg.querySelectorAll('.pin').forEach(pin=>{
     pin.addEventListener('mouseenter', ()=> showTooltip(pin));
     pin.addEventListener('mouseleave', hideTooltip);
     pin.addEventListener('click', (e)=>{ e.stopPropagation(); openEvent(pin.dataset.id); });
   });
 
-  buildWorldMap();
 }
 
-/* Vignette mondiale : reprend les événements situés hors de France, placés
-   d'après leurs coordonnées ou, à défaut, le centre de leur pays. Le bloc
-   reste masqué tant qu'aucun événement n'est concerné. */
-function buildWorldMap(){
-  const box = document.getElementById('worldMini');
-  const svg = document.getElementById('worldMap');
-  const world = window.WORLD_MAP;
-  if(!box || !svg || !world) return;
-
-  // Un pays inconnu du fond de carte (faute de frappe, libellé importé) n'est
-  // pas plaçable : on compte les points réellement dessinés, pas les
-  // événements, pour que le compteur ne promette rien d'invisible.
-  const placed = [];
-  for(const ev of events){
-    if(!isAbroad(ev)) continue;
-    const country = eventCountry(ev);
-    const geo = (ev.lat != null && ev.lng != null)
-      ? { lat: ev.lat, lng: ev.lng }
-      : countryCoords(country);
-    if(geo) placed.push({ ev, country, geo });
-  }
-
-  box.classList.toggle('hidden', placed.length === 0);
-  if(placed.length === 0){ svg.innerHTML = ''; return; }
-
-  const counter = document.getElementById('worldMiniCount');
-  if(counter) counter.textContent = placed.length;
-
-  svg.setAttribute('viewBox', world.viewBox);
-  const pins = placed.map(({ ev, country, geo })=>{
-    const { x, y } = world.project(geo.lat, geo.lng);
-    const c = TYPE_COLORS[ev.type] || 'var(--orange)';
-    return `<g class="wpin" data-id="${esc(ev.id)}" tabindex="0" role="button" aria-label="${esc(ev.title)} — ${esc(country)}">
-      <title>${esc(ev.title)} — ${esc(country)}</title>
-      <circle class="wpin-halo" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="9"></circle>
-      <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5" fill="${c}"></circle>
-      <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.8" fill="#fff"></circle>
-    </g>`;
-  }).join('');
-
-  svg.innerHTML = `<path class="world-land" d="${world.land}"/><g class="world-pins">${pins}</g>`;
-  svg.querySelectorAll('.wpin').forEach(g=>{
-    g.addEventListener('click', ()=> openEvent(g.dataset.id));
-    g.addEventListener('keydown', e=>{
-      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openEvent(g.dataset.id); }
-    });
-  });
-}
 
 /* Positionne chaque événement sur la carte à partir de sa ville (mêmes
    coordonnées projetées que les régions), avec un léger décalage stable
@@ -319,8 +318,18 @@ function stableJitter(id){
 function openRegionSearch(name){
   const form = document.getElementById('searchForm');
   if(form) form.reset();
+  searchAbroad = false;
   const lieu = document.getElementById('f-lieu');
   if(lieu) lieu.value = name;
+  showPage('search');
+  renderResults();
+}
+/* Depuis la vignette « Monde » : la recherche ne porte plus sur un lieu mais
+   sur tout ce qui se déroule hors de France. */
+function openAbroadSearch(){
+  const form = document.getElementById('searchForm');
+  if(form) form.reset();
+  searchAbroad = true;
   showPage('search');
   renderResults();
 }
@@ -838,6 +847,7 @@ document.getElementById('viewBtnList').addEventListener('click', ()=> setHomeVie
    SEARCH PAGE
    ========================================================= */
 let searchStatus = 'all';   // Statut de la recherche avancée : upcoming / archived / all
+let searchAbroad = false;   // Recherche restreinte aux événements hors de France
 function initSearchPage(){
   const typeSel = document.getElementById('f-type');
   Object.keys(TYPE_COLORS).forEach(t=>{
@@ -855,6 +865,7 @@ function initSearchPage(){
   document.getElementById('resetSearch').addEventListener('click', ()=>{
     document.getElementById('searchForm').reset();
     searchStatus = 'all';
+    searchAbroad = false;
     document.querySelectorAll('#statusFilterSearch .status-btn').forEach(b=> b.classList.toggle('active', b.dataset.status==='all'));
     renderResults();
   });
@@ -872,7 +883,9 @@ function renderResults(){
   const afficheOnly = document.getElementById('f-affiche').checked;
 
   let results = events.filter(ev=>{
-    if(lieu && !(ev.city.toLowerCase().includes(lieu) || ev.region.toLowerCase().includes(lieu) || ev.lieu.toLowerCase().includes(lieu))) return false;
+    if(searchAbroad && !isAbroad(ev)) return false;
+    if(lieu && !(ev.city.toLowerCase().includes(lieu) || ev.region.toLowerCase().includes(lieu)
+      || ev.lieu.toLowerCase().includes(lieu) || eventCountry(ev).toLowerCase().includes(lieu))) return false;
     if(type !== 'all' && ev.type !== type) return false;
     if(dStart && ev.dateEnd < dStart) return false;
     if(dEnd && ev.dateStart > dEnd) return false;
@@ -892,17 +905,31 @@ function renderResults(){
   if(region) renderRegionMap(region.name, results); else hideRegionMap();
 
   document.getElementById('resultsCount').textContent = `${results.length} résultat${results.length>1?'s':''}`;
+
+  // Sans repère visible, une liste restreinte au monde passerait pour un bug.
+  const abroadNote = searchAbroad
+    ? `<div class="abroad-note">🌍 Événements <b>hors de France</b> uniquement
+         <button type="button" id="abroadClear">Voir tout</button></div>`
+    : '';
+
   const grid = document.getElementById('resultsGrid');
   if(results.length===0){
-    grid.innerHTML = `<div class="empty-state"><h4>Aucun événement ne correspond</h4><p>Essaie d'élargir tes filtres — lieu, dates ou niveau.</p></div>`;
+    grid.innerHTML = `${abroadNote}<div class="empty-state"><h4>Aucun événement ne correspond</h4><p>${searchAbroad ? 'Aucun événement à l’étranger n’est publié pour le moment.' : 'Essaie d’élargir tes filtres — lieu, dates ou niveau.'}</p></div>`;
+    bindAbroadClear();
     return;
   }
-  grid.innerHTML = results.map(ev=>`
+  grid.innerHTML = abroadNote + results.map(ev=>`
 ${eventCardHtml(ev)}`).join('');
+  bindAbroadClear();
 
   grid.querySelectorAll('.event-card').forEach(card=>{
     card.addEventListener('click', ()=> openEvent(card.dataset.id));
   });
+}
+
+function bindAbroadClear(){
+  const btn = document.getElementById('abroadClear');
+  if(btn) btn.addEventListener('click', ()=>{ searchAbroad = false; renderResults(); });
 }
 
 /* ---- Carte régionale (page recherche) ---- */
@@ -1112,15 +1139,7 @@ function initCreatePage(){
     }else{
       coords = await resolveCoords(val('c-adresse'), city, region);
     }
-    // Hors de France, la base des villes françaises ne sait rien du lieu : on
-    // retombe sur le centre du pays, qui suffit à placer le point sur la
-    // vignette mondiale.
     const pays = val('c-pays') || DEFAULT_COUNTRY;
-    if(pays !== DEFAULT_COUNTRY){
-      const cc = countryCoords(pays);
-      if(cc) coords = Object.assign({}, coords, { lat: cc.lat, lng: cc.lng });
-    }
-
     const {x, y}    = coords;
     const posterSrc = (preview && !preview.classList.contains('hidden')) ? preview.src : null;
     const visibility = document.querySelector('input[name="visibility"]:checked')?.value || 'standard';
@@ -3009,11 +3028,8 @@ function initEditModal(){
     // événements anciens mal placés). Priorité : ville revalidée dans la
     // liste → base locale des villes → géocodage de l'adresse.
     // Hors de France, ces sources ne connaissent pas le lieu et replaceraient
-    // l'événement en métropole : on prend le centre du pays.
-    if(patch.pays !== DEFAULT_COUNTRY){
-      const cc = countryCoords(patch.pays);
-      if(cc){ patch.lat = cc.lat; patch.lng = cc.lng; }
-    }else{
+    // l'événement en métropole : on n'y touche pas.
+    if(patch.pays === DEFAULT_COUNTRY){
       await ensureCitiesLoaded();
       const picked = (editPickedLocation &&
         normalizeCity(patch.city).startsWith(normalizeCity(editPickedLocation.city)))
