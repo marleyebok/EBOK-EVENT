@@ -139,20 +139,20 @@ function fillVoyage(prefix, voyage){
 
 function eventCardHtml(ev){
   return `
-    <div class="event-card" data-id="${ev.id}">
+    <div class="event-card" data-id="${esc(ev.id)}">
       <div class="card-media">
-        ${ev.poster ? `<img src="${ev.poster}" alt="Affiche ${ev.title}">` : `<div style="width:100%;height:100%;background:linear-gradient(135deg, ${TYPE_COLORS[ev.type]}33, var(--asphalt-3));display:flex;align-items:center;justify-content:center;font-family:var(--font-display);color:${TYPE_COLORS[ev.type]};font-size:15px;">${ev.type.toUpperCase()}</div>`}
-        <span class="card-type-badge" style="background:${TYPE_COLORS[ev.type]}">${ev.type}</span>
+        ${safeImg(ev.poster) ? `<img src="${esc(safeImg(ev.poster))}" alt="Affiche ${esc(ev.title)}">` : `<div style="width:100%;height:100%;background:linear-gradient(135deg, ${typeColor(ev.type)}33, var(--asphalt-3));display:flex;align-items:center;justify-content:center;font-family:var(--font-display);color:${typeColor(ev.type)};font-size:15px;">${esc(String(ev.type || '').toUpperCase())}</div>`}
+        <span class="card-type-badge" style="background:${typeColor(ev.type)}">${esc(ev.type)}</span>
         ${isPast(ev) ? `<span class="card-past-badge">Terminé</span>` : ``}
         ${ev.dispo && DISPO_META[ev.dispo] ? `<span class="dispo-badge ${DISPO_META[ev.dispo].cls}">${DISPO_META[ev.dispo].label}</span>` : ``}
-        <button class="fav-btn ${favorites.has(ev.id) ? 'active' : ''}" data-fav="${ev.id}" aria-label="Enregistrer en favori" title="Mettre de côté">♥</button>
+        <button class="fav-btn ${favorites.has(ev.id) ? 'active' : ''}" data-fav="${esc(ev.id)}" aria-label="Enregistrer en favori" title="Mettre de côté">♥</button>
         ${currentIsAdmin ? `<button class="edit-btn" data-edit="${esc(ev.id)}" aria-label="Modifier cet événement" title="Modifier">✏️</button>` : ``}
       </div>
       <div class="card-body">
-        <h4>${ev.title}</h4>
+        <h4>${esc(ev.title)}</h4>
         <div class="card-meta">
-          <b>${ev.city}</b> · ${fmtDateRange(ev.dateStart, ev.dateEnd)}<br>
-          ${ev.sexe} · ${ageLabel(ev.age)} · ${ev.niveau}
+          <b>${esc(ev.city)}</b> · ${fmtDateRange(ev.dateStart, ev.dateEnd)}<br>
+          ${esc(ev.sexe)} · ${esc(ageLabel(ev.age))} · ${esc(ev.niveau)}
         </div>
       </div>
     </div>`;
@@ -183,7 +183,7 @@ function buildMap(){
   // ils sont repris par la vignette mondiale.
   const pins = events.filter(ev=> !isAbroad(ev)).map(ev=>{
     const c = TYPE_COLORS[ev.type];
-    return `<g class="pin" data-id="${ev.id}" data-type="${ev.type}">
+    return `<g class="pin" data-id="${esc(ev.id)}" data-type="${esc(ev.type)}">
       <circle class="core" cx="${ev.x}" cy="${ev.y}" r="8" fill="${c}"></circle>
       <circle cx="${ev.x}" cy="${ev.y}" r="2.6" fill="#fff"></circle>
     </g>`;
@@ -348,9 +348,9 @@ function showTooltip(pin){
   const top = (svgRect.top - wrapRect.top) + ev.y*scale;
   tt.style.left = left+"px";
   tt.style.top = top+"px";
-  tt.innerHTML = `<div class="tt-type" style="color:${TYPE_COLORS[ev.type]}">${ev.type}</div>
-    <div class="tt-title">${ev.title}</div>
-    <div class="tt-meta">${ev.lieu}<br>${fmtDateRange(ev.dateStart,ev.dateEnd)}<br>${ev.sexe} · ${ageLabel(ev.age)} · ${ev.niveau}</div>`;
+  tt.innerHTML = `<div class="tt-type" style="color:${typeColor(ev.type)}">${esc(ev.type)}</div>
+    <div class="tt-title">${esc(ev.title)}</div>
+    <div class="tt-meta">${esc(ev.lieu)}<br>${fmtDateRange(ev.dateStart,ev.dateEnd)}<br>${esc(ev.sexe)} · ${esc(ageLabel(ev.age))} · ${esc(ev.niveau)}</div>`;
   tt.classList.add('show');
 }
 function hideTooltip(){ document.getElementById('mapTooltip').classList.remove('show'); }
@@ -986,8 +986,8 @@ function regionDefaultPanel(list){
 /* Grande fiche affichée au survol d'un point. */
 function regionPreviewCard(ev){
   const c = TYPE_COLORS[ev.type] || '#FF5722';
-  const poster = ev.poster
-    ? `<img src="${ev.poster}" alt="Affiche ${esc(ev.title)}">`
+  const poster = safeImg(ev.poster)
+    ? `<img src="${esc(safeImg(ev.poster))}" alt="Affiche ${esc(ev.title)}">`
     : `<div class="rpv-ph" style="background:linear-gradient(160deg, ${c}55, var(--asphalt-3));color:${c}">${esc(ev.type || '')}</div>`;
   return `<div class="rpv-poster">${poster}</div>
     <div class="rpv-info">
@@ -1001,8 +1001,8 @@ function regionPreviewCard(ev){
 /* Petite carte de la liste par défaut. */
 function regionMiniCard(ev){
   const c = TYPE_COLORS[ev.type] || '#FF5722';
-  const thumb = ev.poster
-    ? `<img src="${ev.poster}" alt="">`
+  const thumb = safeImg(ev.poster)
+    ? `<img src="${esc(safeImg(ev.poster))}" alt="">`
     : `<div class="rmini-ph" style="background:${c}22;color:${c}">${esc((ev.type || '?').slice(0, 2))}</div>`;
   return `<button class="rmini" data-id="${esc(ev.id)}">
     <span class="rmini-thumb">${thumb}</span>
@@ -1561,18 +1561,19 @@ async function openEvent(id, opts){
   if(!ev) return false;
   currentGallery = ev.gallery || [];
   const el = document.getElementById('eventDetail');
-  const posterHtml = ev.poster
+  const posterHtml = safeImg(ev.poster)
     ? `<button type="button" class="poster-zoom" id="posterZoom" title="Agrandir l'affiche" aria-label="Agrandir l'affiche">
-         <img src="${ev.poster}" alt="Affiche ${ev.title}">
+         <img src="${esc(safeImg(ev.poster))}" alt="Affiche ${esc(ev.title)}">
          <span class="poster-zoom-ic">🔍</span>
        </button>`
-    : `<div style="aspect-ratio:3/4;background:linear-gradient(160deg, ${TYPE_COLORS[ev.type]}44, var(--asphalt-3));display:flex;align-items:center;justify-content:center;font-family:var(--font-display);color:${TYPE_COLORS[ev.type]};font-size:22px;text-align:center;padding:20px;">${ev.type.toUpperCase()}<br><span style="font-size:13px;color:var(--chalk-dim);font-family:var(--font-body);margin-top:8px;">Affiche à venir</span></div>`;
+    : `<div style="aspect-ratio:3/4;background:linear-gradient(160deg, ${typeColor(ev.type)}44, var(--asphalt-3));display:flex;align-items:center;justify-content:center;font-family:var(--font-display);color:${typeColor(ev.type)};font-size:22px;text-align:center;padding:20px;">${esc(String(ev.type || '').toUpperCase())}<br><span style="font-size:13px;color:var(--chalk-dim);font-family:var(--font-body);margin-top:8px;">Affiche à venir</span></div>`;
 
   const contactItems = [];
-  if(ev.org.insta) contactItems.push(`<a class="popover-item" href="https://instagram.com/${ev.org.insta}" target="_blank"><span class="ic">📷</span>Instagram — @${ev.org.insta}</a>`);
-  if(ev.org.site) contactItems.push(`<a class="popover-item" href="${ev.org.site}" target="_blank"><span class="ic">🔗</span>Site web</a>`);
-  if(ev.org.tel) contactItems.push(`<a class="popover-item" href="tel:${ev.org.tel.replace(/\\s/g,'')}"><span class="ic">📞</span>${ev.org.tel}</a>`);
-  if(ev.org.email) contactItems.push(`<a class="popover-item" href="mailto:${ev.org.email}"><span class="ic">✉️</span>${ev.org.email}</a>`);
+  if(ev.org.insta) contactItems.push(`<a class="popover-item" href="https://instagram.com/${encodeURIComponent(ev.org.insta)}" target="_blank" rel="noopener noreferrer"><span class="ic">📷</span>Instagram — @${esc(ev.org.insta)}</a>`);
+  const orgSite = safeUrl(ev.org.site);
+  if(orgSite) contactItems.push(`<a class="popover-item" href="${esc(orgSite)}" target="_blank" rel="noopener noreferrer"><span class="ic">🔗</span>Site web</a>`);
+  if(ev.org.tel) contactItems.push(`<a class="popover-item" href="tel:${encodeURIComponent(String(ev.org.tel).replace(/\\s/g,''))}"><span class="ic">📞</span>${esc(ev.org.tel)}</a>`);
+  if(ev.org.email) contactItems.push(`<a class="popover-item" href="mailto:${encodeURIComponent(ev.org.email)}"><span class="ic">✉️</span>${esc(ev.org.email)}</a>`);
   if(contactItems.length===0) contactItems.push(`<div class="popover-item" style="color:#7c7768;">Aucun contact renseigné</div>`);
 
   const shareUrl = `${location.origin}/evenement/${ev.id}`;
@@ -1598,13 +1599,13 @@ async function openEvent(id, opts){
   ].filter(Boolean);
   const practicalHtml = practicalRows.length
     ? `<div class="practical-grid">${practicalRows.map(r=>`
-        <div class="practical-item"><span class="ic">${r.ic}</span><div><div class="k">${r.k}</div><div class="v">${r.v}</div></div></div>`).join('')}</div>`
+        <div class="practical-item"><span class="ic">${r.ic}</span><div><div class="k">${esc(r.k)}</div><div class="v">${esc(r.v)}</div></div></div>`).join('')}</div>`
     : `<p class="practical-empty">Infos pratiques à venir — contacte l'organisateur pour en savoir plus.</p>`;
 
   const gallery = ev.gallery || [];
   const galleryHtml = gallery.length
     ? `<div class="photo-wall">${gallery.map((g,i)=>`
-        <div class="photo-card" data-photo="${i}"><div class="ph" style="background:${g.color}">${g.caption}</div><div class="cap">${g.caption}</div></div>`).join('')}</div>`
+        <div class="photo-card" data-photo="${i}"><div class="ph" style="background:${safeColor(g.color)}">${esc(g.caption)}</div><div class="cap">${esc(g.caption)}</div></div>`).join('')}</div>`
     : `<div class="gallery-empty">Aucune photo d'édition précédente pour le moment.</div>`;
 
   el.innerHTML = `
@@ -1615,10 +1616,10 @@ async function openEvent(id, opts){
     <div class="event-main">
       <div class="badges">
         <div class="badges-left">
-          <span class="badge solid" style="background:${TYPE_COLORS[ev.type]}">${ev.type}</span>
-          <span class="badge">${ev.niveau}</span>
-          <span class="badge">${ev.sexe}</span>
-          <span class="badge">${ageLabel(ev.age)}</span>
+          <span class="badge solid" style="background:${typeColor(ev.type)}">${esc(ev.type)}</span>
+          <span class="badge">${esc(ev.niveau)}</span>
+          <span class="badge">${esc(ev.sexe)}</span>
+          <span class="badge">${esc(ageLabel(ev.age))}</span>
         </div>
         <div class="viewer-counter">
           <span class="vc-icon">👁</span>
@@ -1626,19 +1627,19 @@ async function openEvent(id, opts){
           <span class="vc-label">curieux</span>
         </div>
       </div>
-      <h2>${ev.title}</h2>
-      <p class="event-org">Organisé par <b>${ev.org.name}</b>
+      <h2>${esc(ev.title)}</h2>
+      <p class="event-org">Organisé par <b>${esc(ev.org.name)}</b>
         ${currentIsAdmin ? `<button class="edit-inline" data-edit="${esc(ev.id)}" title="Modifier cet événement">✏️ Modifier</button>` : ``}
       </p>
 
       <div class="info-grid">
-        <div class="info-cell"><div class="k">Lieu</div><div class="v">${ev.lieu}</div></div>
-        <div class="info-cell"><div class="k">Région</div><div class="v">${ev.region}</div></div>
+        <div class="info-cell"><div class="k">Lieu</div><div class="v">${esc(ev.lieu)}</div></div>
+        <div class="info-cell"><div class="k">Région</div><div class="v">${esc(ev.region)}</div></div>
         <div class="info-cell"><div class="k">Dates</div><div class="v">${fmtDateRange(ev.dateStart, ev.dateEnd)}</div></div>
-        <div class="info-cell"><div class="k">Niveau</div><div class="v">${ev.niveau}</div></div>
+        <div class="info-cell"><div class="k">Niveau</div><div class="v">${esc(ev.niveau)}</div></div>
       </div>
 
-      <p class="event-desc">${ev.description}</p>
+      <p class="event-desc">${esc(ev.description)}</p>
 
       <div class="practical-block">
         <div class="practical-title">Infos pratiques</div>
@@ -1653,7 +1654,7 @@ async function openEvent(id, opts){
       <div class="action-row">
         <button class="btn btn-primary btn-lg" id="btnInfo">Se renseigner</button>
         <button class="btn btn-ghost btn-lg" id="btnShare">Partager</button>
-        <button class="btn btn-ghost btn-lg fav-btn fav-btn-lg ${favorites.has(ev.id) ? 'active' : ''}" data-fav="${ev.id}">${favorites.has(ev.id) ? '♥ Enregistré' : '♡ Enregistrer'}</button>
+        <button class="btn btn-ghost btn-lg fav-btn fav-btn-lg ${favorites.has(ev.id) ? 'active' : ''}" data-fav="${esc(ev.id)}">${favorites.has(ev.id) ? '♥ Enregistré' : '♡ Enregistrer'}</button>
 
         <div class="popover" id="popInfo">${contactItems.join('')}</div>
 
@@ -1829,15 +1830,15 @@ function renderFeatured(){
   // gauche + texte clair sur voile sombre (rendu premium, jamais "blanc").
   track.innerHTML = featured.map(ev=>{
     const c = TYPE_COLORS[ev.type] || '#FF5722';
-    const bg = ev.poster
-      ? `background-image:url('${ev.poster}')`
+    const bg = safeImg(ev.poster)
+      ? `background-image:url("${encodeURI(safeImg(ev.poster))}")`
       : `background:radial-gradient(120% 120% at 20% 0%, ${c}, #101014 70%)`;
-    const poster = ev.poster
-      ? `<img src="${ev.poster}" alt="Affiche ${esc(ev.title)}">`
+    const poster = safeImg(ev.poster)
+      ? `<img src="${esc(safeImg(ev.poster))}" alt="Affiche ${esc(ev.title)}">`
       : `<div class="fx-poster-ph" style="--c:${c}">${esc((ev.type||'').slice(0,12).toUpperCase())}</div>`;
     const meta = [fmtDateRange(ev.dateStart, ev.dateEnd), ev.niveau, ev.sexe].filter(Boolean).join(' · ');
     return `<div class="carousel-item">
-      <div class="fx-bg ${ev.poster ? 'blur' : ''}" style="${bg}"></div>
+      <div class="fx-bg ${safeImg(ev.poster) ? 'blur' : ''}" style="${bg}"></div>
       <div class="fx-scrim"></div>
       <div class="fx-content">
         <div class="fx-poster">${poster}</div>
@@ -2327,8 +2328,10 @@ async function renderProfile(){
   document.getElementById('profileEmail').textContent = currentUser.email || '';
   const initials = (name || '?').trim().slice(0,2).toUpperCase();
   const avatarEl = document.getElementById('profileAvatar');
-  if(currentProfile && currentProfile.photo){
-    avatarEl.style.backgroundImage = `url(${currentProfile.photo})`;
+  if(currentProfile && safeImg(currentProfile.photo)){
+    // Sans les guillemets ni encodeURI, une parenthèse dans l'URL referme le
+    // url(...) et laisse écrire la suite de la déclaration CSS.
+    avatarEl.style.backgroundImage = `url("${encodeURI(safeImg(currentProfile.photo))}")`;
     avatarEl.classList.add('has-photo');
     avatarEl.textContent = '';
   }else{
@@ -2430,6 +2433,41 @@ function esc(s){
   return String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+/* Échapper ne suffit pas dans un href : "javascript:..." reste exécutable une
+   fois entre guillemets. On n'autorise donc que les protocoles attendus, plus
+   les liens internes. Toute autre valeur devient un lien mort. */
+function safeUrl(u){
+  const s = String(u == null ? '' : u).trim();
+  if(!s) return '';
+  if(/^(https?:|mailto:|tel:)/i.test(s)) return s;
+  if(/^[/#?]/.test(s)) return s;          // relatif au site
+  return '';
+}
+
+/* Même principe pour une image. Les affiches d'avant la migration vers Blob
+   sont encore stockées en data-URI : on les garde, mais bornées aux images. */
+function safeImg(u){
+  const s = String(u == null ? '' : u).trim();
+  if(!s) return '';
+  if(/^data:image\/(png|jpe?g|gif|webp|avif);base64,[a-z0-9+/=\s]*$/i.test(s)) return s;
+  if(/^https?:\/\//i.test(s)) return s;
+  if(/^\//.test(s)) return s;
+  return '';
+}
+
+/* Une couleur de type inconnu (le serveur n'impose pas la liste) finirait
+   telle quelle dans un attribut style. */
+function typeColor(type){
+  return (typeof TYPE_COLORS !== 'undefined' && TYPE_COLORS[type]) || 'var(--chalk-dim)';
+}
+
+/* Couleur libre (galerie) : seule une valeur hexadécimale est reprise dans un
+   attribut style, le reste retombe sur le fond par défaut. */
+function safeColor(c){
+  const s = String(c == null ? '' : c).trim();
+  return /^#[0-9a-f]{3,8}$/i.test(s) ? s : 'var(--asphalt-3)';
 }
 
 /* Tous les événements (section admin) — rendu sous forme de tableau. */
@@ -2787,15 +2825,15 @@ function mineCardHtml(ev){
     ${starBtn}
     ${eventCardHtml(ev)}
     <div class="mine-dispo">
-      <label for="dispo-${ev.id}">Places&nbsp;:</label>
-      <select id="dispo-${ev.id}" data-dispo="${ev.id}">
+      <label for="dispo-${esc(ev.id)}">Places&nbsp;:</label>
+      <select id="dispo-${esc(ev.id)}" data-dispo="${esc(ev.id)}">
         ${opt('', '— Non précisé')}${opt('dispo','Places disponibles')}${opt('limite','Encore quelques places')}${opt('complet','Complet')}
       </select>
     </div>
     <div class="mine-card-actions">
-      <button class="btn btn-ghost" data-open="${ev.id}">Voir</button>
-      ${(currentIsAdmin && pending) ? `<button class="btn btn-approve" data-approve="${ev.id}">Valider</button>` : ''}
-      <button class="btn btn-danger" data-del="${ev.id}">Supprimer</button>
+      <button class="btn btn-ghost" data-open="${esc(ev.id)}">Voir</button>
+      ${(currentIsAdmin && pending) ? `<button class="btn btn-approve" data-approve="${esc(ev.id)}">Valider</button>` : ''}
+      <button class="btn btn-danger" data-del="${esc(ev.id)}">Supprimer</button>
     </div>
   </div>`;
 }
