@@ -26,7 +26,6 @@ EBOK-EVENT/
 │   ├── events.js             # CRUD événements
 │   ├── views.js              # Compteurs de « curieux »
 │   ├── account.js            # Session, profil diffuseur, favoris, liste membres
-│   ├── migrate.js            # Migration ponctuelle Firestore → Neon (admin)
 │   └── import-event.js       # Assistant IA (OpenRouter/Gemini) — réservé admin
 ├── package.json
 ├── vercel.json
@@ -95,17 +94,7 @@ Le schéma `event` (tables `events`, `views`, `profiles`) est **créé
 automatiquement** au premier appel API (`api/_lib.js` → `ensureSchema`). Aucun SQL
 manuel à lancer.
 
-### Migrer les événements existants (depuis Firestore)
-
-Une fois les variables d'env en place et connecté en admin, un `POST /api/migrate`
-rapatrie automatiquement les fiches `events` + compteurs `views` depuis l'ancien
-Firestore (lecture publique) vers Neon. Idempotent (relançable sans risque).
-
-```bash
-# token = jeton de session Clerk (voir README, section migration)
-curl -X POST https://<preview>.vercel.app/api/migrate \
-  -H "Authorization: Bearer <TOKEN_CLERK_ADMIN>"
-```
+---
 
 ## 👤 Comptes diffuseurs & administration
 

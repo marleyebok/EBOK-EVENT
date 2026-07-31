@@ -183,7 +183,3 @@ export async function isAdmin(uid) {
   }
 }
 
-/** Migration ponctuelle Firestore → Neon (admin). Renvoie le récap d'import. */
-export async function migrateFromFirestore(overwrite = false) {
-  return api("/api/migrate", { method: "POST", body: { overwrite } });
-}
