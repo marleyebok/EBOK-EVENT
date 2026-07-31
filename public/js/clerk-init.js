@@ -12,7 +12,7 @@ import {
   getAllEvents, getAllEventsForAdmin, getEvent, getEventsByUser,
   createEvent, updateEvent, approveEvent, deleteEvent, incrementViews,
   getFavorites, toggleFavorite, updateUserProfile, getAllUsers,
-  openSignIn, signOutUser, getSession, migrateFromFirestore,
+  openSignIn, signOutUser, getSession,
   uploadImage,
 } from "./services.js";
 import { loadClerk } from "./clerk.js";
@@ -22,7 +22,6 @@ window.EBOK_DATA = {
   getAllEvents, getAllEventsForAdmin, getEvent, getEventsByUser,
   createEvent, updateEvent, approveEvent, deleteEvent, incrementViews,
   getFavorites, toggleFavorite, updateUserProfile, getAllUsers,
-  migrateFromFirestore,
   uploadImage,
 };
 
@@ -92,7 +91,7 @@ async function hydrate() {
       window.EBOK.setEvents(list);
       console.info(`[EBOK] ${list.length} événement(s) chargé(s) depuis Neon.`);
     } else if (window.EBOK) {
-      console.info("[EBOK] Neon branché, base vide — lance la migration (/api/migrate) ou crée un événement.");
+      console.info("[EBOK] Neon branché, base vide — crée un événement pour démarrer.");
     }
   } catch (err) {
     console.warn("[EBOK] Données Neon indisponibles — données locales conservées.", err);
