@@ -1909,6 +1909,9 @@ function initPostersMaintenance(){
    plutôt que d'afficher un code d'erreur. */
 function messageForPosters(err){
   const code = String((err && (err.code || err.message)) || '');
+  if(/stockage_mal_configure/.test(code)){
+    return "⚠️ La valeur de BLOB_READ_WRITE_TOKEN n'a pas la forme attendue : elle doit commencer par « vercel_blob_rw_ », sans guillemets ni nom de variable. Corrige-la dans Vercel, puis redéploie.";
+  }
   if(/stockage_indisponible|503/.test(code)){
     return "⚠️ Aucun stockage de fichiers connecté : ajoute un Blob store dans Vercel → Storage, puis redéploie.";
   }
