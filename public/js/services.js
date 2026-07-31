@@ -173,6 +173,13 @@ export async function toggleFavorite(uid, eventId, add) {
   await api("/api/account", { method: "POST", body: { action: "toggleFavorite", eventId, add } });
 }
 
+/** Héberge un lot d'affiches encore stockées en base (admin).
+ *  Traité par lots côté serveur : renvoie `restant` et `relancer`. */
+export async function hostStoredPosters({ dry = false, limit = 5 } = {}) {
+  const q = `?limit=${encodeURIComponent(limit)}${dry ? "&dry=1" : ""}`;
+  return api("/api/migrate-posters" + q, { method: "POST" });
+}
+
 /** Vrai si l'utilisateur connecté est administrateur (autorité serveur). */
 export async function isAdmin(uid) {
   try {
