@@ -131,6 +131,17 @@ export async function isAdminUid(uid) {
 /* ------------------------------------------------------------------ */
 /* Aides requête / réponse                                             */
 /* ------------------------------------------------------------------ */
+/* Le jeton Blob est fourni par Vercel sous la forme `vercel_blob_rw_…`.
+   Saisi à la main depuis le snippet .env.local, il arrive souvent entouré de
+   guillemets ou précédé du nom de la variable : la route passerait alors la
+   garde de présence pour échouer plus loin sur une erreur opaque. On vérifie
+   donc la forme, pas seulement l'existence. */
+export function blobTokenState() {
+  const raw = process.env.BLOB_READ_WRITE_TOKEN;
+  if (!raw || !raw.trim()) return "absent";
+  return /^vercel_blob_rw_[A-Za-z0-9_-]+$/.test(raw.trim()) ? "ok" : "malforme";
+}
+
 export function json(res, status, obj) {
   res.statusCode = status;
   res.setHeader("Content-Type", "application/json; charset=utf-8");

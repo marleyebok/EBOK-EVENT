@@ -13,7 +13,7 @@
  * Calqué sur le patron déjà validé sur EBOK-MERCATO.
  */
 import { put } from "@vercel/blob";
-import { json, sessionUid } from "./_lib.js";
+import { json, sessionUid, blobTokenState } from "./_lib.js";
 
 export const config = { api: { bodyParser: false } };
 
@@ -27,9 +27,9 @@ export default async function handler(req, res) {
   const uid = await sessionUid(req);
   if (!uid) return json(res, 401, { error: "auth" });
 
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    return json(res, 503, { error: "stockage_indisponible" });
-  }
+  const blob = blobTokenState();
+  if (blob === "absent") return json(res, 503, { error: "stockage_indisponible" });
+  if (blob === "malforme") return json(res, 503, { error: "stockage_mal_configure" });
 
   const contentType = String(req.headers["content-type"] || "").split(";")[0].trim();
   if (!ALLOWED.has(contentType)) return json(res, 415, { error: "type_non_supporte" });

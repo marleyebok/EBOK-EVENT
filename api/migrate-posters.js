@@ -18,7 +18,7 @@
  * migrée n'est plus sélectionnée, on peut donc relancer sans risque.
  */
 import { put } from "@vercel/blob";
-import { ensureSchema, hasDb, sql, json, sessionUid, isAdminUid } from "./_lib.js";
+import { ensureSchema, hasDb, sql, json, sessionUid, isAdminUid, blobTokenState } from "./_lib.js";
 
 const MAX_BYTES = 8 * 1024 * 1024;
 const DEFAULT_LIMIT = 5;
@@ -75,8 +75,10 @@ export default async function handler(req, res) {
 
   const q = req.query || {};
   const dry = String(q.dry || "") === "1";
-  if (!dry && !process.env.BLOB_READ_WRITE_TOKEN) {
-    return json(res, 503, { error: "stockage_indisponible" });
+  if (!dry) {
+    const blob = blobTokenState();
+    if (blob === "absent") return json(res, 503, { error: "stockage_indisponible" });
+    if (blob === "malforme") return json(res, 503, { error: "stockage_mal_configure" });
   }
 
   const limit = Math.min(Math.max(parseInt(q.limit, 10) || DEFAULT_LIMIT, 1), 25);
