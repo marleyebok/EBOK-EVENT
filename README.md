@@ -82,6 +82,7 @@ fonctionne sur les **données de démo** de `data.js` (aucune casse).
 | `OPENROUTER_MODEL` | *(optionnel)* modèle(s) OpenRouter, séparés par des virgules — essayés dans l'ordre (défaut : deux modèles gratuits avec vision) | non |
 | `AI_PROVIDER` | *(optionnel)* `openrouter` (défaut) ou `gemini` | non |
 | `GEMINI_API_KEY` | Clé Google AI Studio — requise seulement si `AI_PROVIDER=gemini` | 🔒 oui |
+| `BLOB_READ_WRITE_TOKEN` | Stockage des affiches — **injectée automatiquement** en connectant un Blob store (Vercel → Storage) | 🔒 oui |
 | `ADMIN_EMAILS` | *(optionnel)* emails admin additionnels, séparés par virgules | non |
 
 > La clé Clerk **publishable** (`pk_live_…`) est **publique** et vit en dur dans
@@ -93,6 +94,24 @@ fonctionne sur les **données de démo** de `data.js` (aucune casse).
 Le schéma `event` (tables `events`, `views`, `profiles`) est **créé
 automatiquement** au premier appel API (`api/_lib.js` → `ensureSchema`). Aucun SQL
 manuel à lancer.
+
+### Hébergement des affiches (Vercel Blob)
+
+Les affiches sont déposées comme **fichiers** sur Vercel Blob (`api/upload.js`), et non
+stockées dans la base : le JSONB reste léger, et une vraie URL est indispensable à
+l'aperçu au partage (`og:image` n'accepte pas un data-URI).
+
+Pour l'activer : **Vercel → Storage** → créer un Blob store (ou ouvrir l'existant) →
+le connecter au projet. `BLOB_READ_WRITE_TOKEN` est alors injectée automatiquement —
+elle n'apparaît pas dans les variables saisies à la main. Redéploie ensuite.
+
+Tant qu'aucun store n'est connecté, `/api/upload` répond 503 et l'app **retombe
+proprement** sur le stockage en base : rien ne casse, les affiches s'affichent, mais
+elles alourdissent la base et ne servent pas d'aperçu au partage.
+
+Les affiches déjà enregistrées en base se rapatrient ensuite depuis
+**Mon profil → Administration → Hébergement des affiches** (traitement par lots,
+relançable sans risque).
 
 ---
 

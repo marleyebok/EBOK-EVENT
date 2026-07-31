@@ -629,6 +629,23 @@
       <div id="adminGrid"></div>
 
       <div class="profile-section-head admin-subhead">
+        <h3>🖼 Hébergement des affiches</h3>
+      </div>
+      <div class="maint-card">
+        <p class="maint-desc">
+          Les affiches déposées avant la mise en place du stockage de fichiers sont
+          enregistrées <b>dans la base</b>. Elles s'affichent normalement, mais alourdissent
+          la base et ne peuvent pas servir d'aperçu au partage sur les réseaux.
+          Cette action les dépose sur le stockage et les remplace par leur adresse.
+        </p>
+        <div class="maint-actions">
+          <button class="btn btn-ghost" id="postersDry">Analyser</button>
+          <button class="btn btn-primary" id="postersRun">Héberger les affiches</button>
+        </div>
+        <div class="maint-status" id="postersStatus"></div>
+      </div>
+
+      <div class="profile-section-head admin-subhead">
         <h3>👥 Membres inscrits</h3>
       </div>
       <div id="adminMembers"></div>

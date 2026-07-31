@@ -1847,6 +1847,76 @@ document.getElementById('adminRulesDismiss')?.addEventListener('click', ()=>{
   document.getElementById('adminRulesAlert')?.classList.add('hidden');
 });
 
+/* ---- Admin : hébergement des affiches encore stockées en base ----
+   Le serveur travaille par petits lots (une fonction serverless a un temps
+   d'exécution limité, et une image en base64 pèse lourd) : on relance tant
+   qu'il reste des fiches, en affichant la progression. */
+function initPostersMaintenance(){
+  const runBtn = document.getElementById('postersRun');
+  const dryBtn = document.getElementById('postersDry');
+  const status = document.getElementById('postersStatus');
+  if(!runBtn || !dryBtn || !status) return;
+
+  const setBusy = on =>{ runBtn.disabled = on; dryBtn.disabled = on; };
+  const say = (msg, cls='') =>{ status.className = 'maint-status' + (cls ? ' ' + cls : ''); status.textContent = msg; };
+
+  async function call(dry){
+    const fn = window.EBOK_DATA && window.EBOK_DATA.hostStoredPosters;
+    if(!fn){ say('Base non branchée : action indisponible.', 'ko'); return null; }
+    return fn({ dry });
+  }
+
+  dryBtn.addEventListener('click', async ()=>{
+    setBusy(true); say('⏳ Analyse en cours…');
+    try{
+      const r = await call(true);
+      if(!r) return;
+      say(r.restant
+        ? `${r.restant} fiche${r.restant > 1 ? 's' : ''} à héberger. Clique sur « Héberger les affiches » pour lancer.`
+        : '✅ Rien à faire : toutes les affiches sont déjà hébergées.');
+    }catch(err){
+      say(messageForPosters(err), 'ko');
+    }finally{ setBusy(false); }
+  });
+
+  runBtn.addEventListener('click', async ()=>{
+    setBusy(true);
+    let total = 0, ko = 0, libere = 0;
+    try{
+      // Boucle bornée : sans garde-fou, une fiche qui échoue en boucle
+      // relancerait indéfiniment la migration.
+      for(let tour = 0; tour < 100; tour++){
+        const r = await call(false);
+        if(!r) return;
+        total  += r.traitees || 0;
+        ko     += (r.echecs || []).length;
+        libere += r.allegementKo || 0;
+        say(`⏳ ${total} affiche${total > 1 ? 's' : ''} hébergée${total > 1 ? 's' : ''}… ${r.restant} restante${r.restant > 1 ? 's' : ''}`);
+        if(!r.relancer) break;
+      }
+      const allege = libere > 1024 ? `${(libere/1024).toFixed(1)} Mo` : `${libere} Ko`;
+      say(`✅ Terminé — ${total} affiche${total > 1 ? 's' : ''} hébergée${total > 1 ? 's' : ''}, ${allege} retirés de la base.`
+        + (ko ? ` ${ko} échec${ko > 1 ? 's' : ''} (voir la console).` : ''), 'ok');
+      await refreshPublicEvents();
+      renderAll();
+    }catch(err){
+      say(messageForPosters(err), 'ko');
+    }finally{ setBusy(false); }
+  });
+}
+
+/* La cause la plus probable est l'absence de stockage connecté : le dire
+   plutôt que d'afficher un code d'erreur. */
+function messageForPosters(err){
+  const code = String((err && (err.code || err.message)) || '');
+  if(/stockage_indisponible|503/.test(code)){
+    return "⚠️ Aucun stockage de fichiers connecté : ajoute un Blob store dans Vercel → Storage, puis redéploie.";
+  }
+  if(/admin|403/.test(code)) return "⚠️ Action réservée à l'administrateur.";
+  console.warn('[EBOK] hébergement des affiches :', err);
+  return "⚠️ L'hébergement a échoué. Réessaie dans un instant.";
+}
+
 let featuredTimer = null;   // défilement automatique du carrousel "à la une"
 
 function renderFeatured(){
@@ -3136,6 +3206,7 @@ initAuth();
 initEditModal();
 initProfileEdit();
 initAiImport();
+initPostersMaintenance();
 
 // Lien partagé vers une fiche : on l'ouvre dès le démarrage.
 tryOpenFromUrl();

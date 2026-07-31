@@ -790,6 +790,14 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .admin-table .col-center{text-align:center;}
 .admin-table .col-actions{text-align:right;}
 .admin-subhead{margin-top:34px;}
+/* Encart de maintenance admin (hébergement des affiches). */
+.maint-card{background:var(--asphalt-2);border:1px solid var(--line-strong);border-radius:12px;padding:18px 20px;}
+.maint-desc{font-size:13px;color:var(--chalk-dim);line-height:1.6;margin:0 0 14px;}
+.maint-desc b{color:var(--chalk);}
+.maint-actions{display:flex;gap:10px;flex-wrap:wrap;}
+.maint-status{font-size:13px;color:var(--chalk-dim);margin-top:12px;min-height:18px;}
+.maint-status.ok{color:var(--green,#1F8F6B);}
+.maint-status.ko{color:var(--orange);}
 .admin-count{font-size:12px;color:var(--chalk-dim);margin:0 0 10px;font-family:var(--font-mono);}
 .admin-table .muted{color:var(--chalk-dim);}
 /* Bandeau d'aide quand une action admin est refusée par les règles Firestore. */
