@@ -1242,3 +1242,172 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
   .dash-side .dash-sub { display: none; }
   .dash-main { padding: 20px 16px 40px; }
 }
+
+/* =========================================================
+   NAVIGATION MOBILE — bouton « Menu » + panneau plein écran
+   ---------------------------------------------------------
+   Au-delà de 900px, rien de tout ceci n'est visible : le
+   desktop garde la barre de liens classique.
+   ========================================================= */
+.nav-toggle{display:none;}
+.mnav{display:none;}
+.filters-toggle{display:none;}
+
+@media(max-width:900px){
+  /* Barre du haut : logo à gauche, bouton Menu à droite. Une seule ligne. */
+  .topbar{flex-wrap:nowrap;padding:12px 14px;gap:12px;}
+  .nav-links{display:none;}
+  .topbar-right .theme-toggle,
+  .topbar-right .account-area{display:none;}   /* les deux vivent dans le panneau */
+  .topbar-right{gap:0;}
+
+  .nav-toggle{
+    display:flex;align-items:center;gap:9px;
+    background:var(--asphalt-2);border:1px solid var(--line-strong);color:var(--chalk);
+    font-weight:800;font-size:13px;letter-spacing:.4px;
+    padding:9px 14px 9px 12px;border-radius:999px;cursor:pointer;transition:border-color .15s;
+  }
+  .nav-toggle:hover{border-color:var(--orange);}
+  .nav-toggle-bars{display:flex;flex-direction:column;gap:3.5px;width:16px;}
+  .nav-toggle-bars i{display:block;height:2.2px;border-radius:2px;background:currentColor;}
+  .nav-toggle.is-open .nav-toggle-bars{gap:0;width:16px;height:12px;position:relative;}
+  .nav-toggle.is-open .nav-toggle-bars i{position:absolute;top:5px;width:16px;}
+  .nav-toggle.is-open .nav-toggle-bars i:nth-child(1){transform:rotate(45deg);}
+  .nav-toggle.is-open .nav-toggle-bars i:nth-child(2){opacity:0;}
+  .nav-toggle.is-open .nav-toggle-bars i:nth-child(3){transform:rotate(-45deg);}
+
+  /* Le panneau démarre sous la barre, qui reste visible et cliquable. */
+  .mnav{
+    display:flex;flex-direction:column;
+    position:fixed;left:0;right:0;bottom:0;top:var(--topbar-h,64px);z-index:49;
+    background:var(--asphalt);
+    visibility:hidden;transform:translateX(100%);
+    transition:transform .24s cubic-bezier(.4,0,.2,1), visibility .24s;
+  }
+  .mnav.open{visibility:visible;transform:none;}
+  body.mnav-open{overflow:hidden;}
+}
+
+/* ---- contenu du panneau ---- */
+.mnav-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:18px 16px 24px;}
+
+.mnav-welcome{padding:2px 2px 6px;}
+.mnav-welcome h2{font-size:22px;}
+.mnav-welcome p{margin-top:7px;color:var(--chalk-dim);font-size:14px;line-height:1.45;}
+.mnav-auth{display:flex;gap:10px;margin-top:15px;}
+.mnav-auth .btn{flex:1;padding:14px 10px;font-size:15px;border-radius:12px;}
+
+.mnav-user{display:flex;align-items:center;gap:13px;padding:2px 2px 18px;}
+.mnav-avatar{
+  width:48px;height:48px;border-radius:50%;flex:none;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-size:17px;color:#191008;
+  background:linear-gradient(140deg,var(--orange),var(--yellow));
+  background-size:cover;background-position:center;
+}
+.mnav-idblock{min-width:0;}
+.mnav-name{font-family:var(--font-display);font-size:19px;letter-spacing:.5px;text-transform:uppercase;}
+.mnav-email{font-family:var(--font-mono);font-size:12px;color:var(--chalk-dim);margin-top:2px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+.mnav-cta{
+  display:flex;align-items:center;justify-content:center;gap:9px;width:100%;
+  background:var(--orange);color:#191008;font-weight:800;font-size:15px;
+  padding:15px;border:none;border-radius:13px;cursor:pointer;transition:background .15s;
+}
+.mnav-cta:hover{background:var(--orange-2);}
+
+.mnav-group{padding:18px 0 2px;}
+.mnav-group-title{
+  font-family:var(--font-mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--chalk-dim);padding:0 2px 8px;
+}
+.mnav-item{
+  display:flex;align-items:center;gap:13px;width:100%;
+  background:none;border:none;border-radius:12px;
+  color:var(--chalk);font-size:15px;font-weight:600;text-align:left;text-decoration:none;
+  padding:13px 12px;cursor:pointer;transition:background .15s;
+}
+.mnav-item:hover{background:var(--asphalt-2);}
+.mnav-item.active{background:var(--asphalt-3);font-weight:800;box-shadow:inset 3px 0 0 var(--orange);}
+.mnav-item.mnav-admin{color:var(--yellow);}
+.mnav-ic{width:22px;flex:none;text-align:center;font-size:16px;}
+.mnav-num{
+  margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--chalk-dim);
+  background:var(--asphalt-2);border:1px solid var(--line);border-radius:999px;padding:3px 9px;
+}
+.mnav-arrow{margin-left:auto;color:var(--chalk-dim);font-size:12px;font-weight:600;}
+.mnav-sep{height:1px;background:var(--line);margin:14px 2px;}
+
+/* Bascule de thème : même ligne que les autres entrées, avec un interrupteur. */
+.mnav-switch{
+  margin-left:auto;width:46px;height:26px;border-radius:999px;flex:none;position:relative;
+  background:var(--asphalt-3);border:1px solid var(--line-strong);transition:background .15s;
+}
+.mnav-switch::after{
+  content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;
+  background:var(--chalk-dim);transition:transform .18s ease, background .15s;
+}
+#mnavTheme.is-on .mnav-switch{background:var(--orange);border-color:var(--orange);}
+#mnavTheme.is-on .mnav-switch::after{transform:translateX(20px);background:#191008;}
+
+/* Galaxie EBOK : repliée par défaut, elle remplace l'ancienne barre du haut. */
+.mnav-galaxy{border-radius:12px;}
+.mnav-galaxy summary{
+  display:flex;align-items:center;gap:13px;padding:13px 12px;border-radius:12px;
+  font-size:15px;font-weight:600;cursor:pointer;list-style:none;
+}
+.mnav-galaxy summary::-webkit-details-marker{display:none;}
+.mnav-galaxy summary::after{content:"▾";margin-left:auto;color:var(--chalk-dim);font-size:12px;}
+.mnav-galaxy[open] summary::after{content:"▴";}
+.mnav-galaxy summary:hover{background:var(--asphalt-2);}
+.mnav-galaxy-list{padding:4px 0 8px;}
+.mnav-gx{
+  display:flex;align-items:center;gap:11px;padding:11px 12px 11px 34px;border-radius:10px;
+  font-size:14px;font-weight:600;color:var(--chalk);text-decoration:none;
+}
+a.mnav-gx:hover{background:var(--asphalt-2);}
+.mnav-gx.here{background:var(--asphalt-2);}
+.mnav-gx .mnav-arrow{font-family:var(--font-mono);font-size:10px;letter-spacing:.5px;}
+.mnav-dot{width:9px;height:9px;border-radius:50%;flex:none;}
+
+.mnav-foot{
+  flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:14px 18px;border-top:1px solid var(--line);background:var(--asphalt-2);
+}
+.mnav-logout{background:none;border:none;color:var(--chalk-dim);font-size:14px;font-weight:700;
+  padding:0;cursor:pointer;}
+.mnav-logout:hover{color:var(--red);}
+.mnav-mail{font-family:var(--font-mono);font-size:11px;color:var(--chalk-dim);text-decoration:none;
+  margin-left:auto;}
+
+/* =========================================================
+   FILTRES REPLIABLES (accueil, mobile)
+   ========================================================= */
+@media(max-width:900px){
+  .filters-toggle{
+    display:flex;align-items:center;gap:9px;width:100%;
+    background:var(--asphalt-2);border:1px solid var(--line-strong);border-radius:12px;
+    color:var(--chalk);font-weight:700;font-size:14px;
+    padding:13px 14px;margin-bottom:12px;cursor:pointer;transition:border-color .15s;
+  }
+  .filters-toggle:hover{border-color:var(--orange);}
+  .ft-count{
+    font-family:var(--font-mono);font-size:10px;letter-spacing:.6px;
+    text-transform:uppercase;background:rgba(255,87,34,0.16);color:var(--orange-2);
+    border:1px solid rgba(255,87,34,0.4);padding:3px 9px;border-radius:999px;
+  }
+  /* La pastille pousse le chevron à droite ; sans elle, c'est le chevron. */
+  .ft-count:not(.hidden){margin-left:auto;}
+  .ft-caret{color:var(--chalk-dim);font-size:11px;margin-left:auto;display:inline-block;}
+  .ft-count:not(.hidden) + .ft-caret{margin-left:0;}
+  .filters-toggle.is-open .ft-caret{transform:rotate(180deg);}
+
+  .filter-panel{display:none;}
+  .filter-panel.open{display:block;}
+
+  /* La rangée de liens ayant quitté la page, le compteur et le sélecteur
+     de vue tiennent de nouveau sur une seule ligne. */
+  .content-header{flex-direction:row;align-items:center;flex-wrap:wrap;gap:10px;}
+  .toggle-btn{padding:8px 13px;font-size:12.5px;}
+}

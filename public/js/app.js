@@ -2088,6 +2088,7 @@ async function loadFavorites(){
   }else{
     favorites = new Set();
   }
+  if(window.EBOK_NAV) window.EBOK_NAV.setCounts({favorites: favorites.size});
 }
 
 async function toggleFav(id){
@@ -2106,6 +2107,7 @@ async function toggleFav(id){
 }
 
 function updateFavButtons(id){
+  if(window.EBOK_NAV) window.EBOK_NAV.setCounts({favorites: favorites.size});
   const on = favorites.has(id);
   document.querySelectorAll(`.fav-btn[data-fav="${id}"]`).forEach(b=>{
     b.classList.toggle('active', on);
@@ -2364,6 +2366,20 @@ function updateAuthUI(){
   }
   const iaImport = document.getElementById('iaImport');
   if(iaImport) iaImport.classList.toggle('hidden', !currentIsAdmin);
+  syncMobileNav();
+}
+
+/* Reflète le compte courant dans le menu mobile (js/mobile-nav.js), qui est
+   chargé après ce fichier : on vérifie sa présence à chaque appel. */
+function syncMobileNav(){
+  if(!window.EBOK_NAV) return;
+  window.EBOK_NAV.setUser(currentUser ? {
+    name:  displayName(),
+    email: currentUser.email || '',
+    admin: !!currentIsAdmin,
+    photo: (currentProfile && safeImg(currentProfile.photo)) || ''
+  } : null);
+  window.EBOK_NAV.setCounts({favorites: favorites.size});
 }
 
 function initAuth(){
@@ -2531,6 +2547,9 @@ async function renderMyEvents(){
   await fillEventsGrid(grid,
     ()=> window.EBOK_DATA.getEventsByUser(currentUser.uid),
     "Aucun événement publié pour l'instant. Clique sur « Publier un événement » pour commencer !");
+  if(window.EBOK_NAV){
+    window.EBOK_NAV.setCounts({published: grid.querySelectorAll('.event-card').length});
+  }
 }
 
 /* ---- Administration : tableau de gestion des événements ---- */

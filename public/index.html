@@ -46,6 +46,12 @@
     <button class="navlink hidden" data-nav="profile" id="navProfile">Mon profil</button>
   </div>
   <div class="topbar-right">
+    <!-- Mobile : tout ce qui n'est pas du contenu passe dans le panneau (#mobileNav). -->
+    <button class="nav-toggle" id="navToggle" type="button"
+            aria-controls="mobileNav" aria-expanded="false" aria-label="Ouvrir le menu">
+      <span class="nav-toggle-bars" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="nav-toggle-label">Menu</span>
+    </button>
     <button class="theme-toggle" id="themeToggle" aria-label="Basculer thème clair / sombre" title="Thème clair / sombre">🌙</button>
     <div class="account-area" id="accountArea">
       <!-- Déconnecté -->
@@ -61,6 +67,91 @@
     </div>
   </div>
 </nav>
+
+<!-- ===================== MENU MOBILE =====================
+     Panneau plein écran ouvert par le bouton « Menu » de la barre du haut.
+     Les entrées portent data-nav : le routeur de app.js les câble tout seul. -->
+<div class="mnav" id="mobileNav" aria-label="Menu principal">
+  <div class="mnav-scroll">
+
+    <!-- Visiteur : l'accès au compte vit ici (et nulle part ailleurs sur mobile). -->
+    <div class="mnav-welcome" id="mnavWelcome">
+      <h2>Bienvenue 👋</h2>
+      <p>Crée un compte pour enregistrer tes événements favoris et publier les tiens.</p>
+      <div class="mnav-auth">
+        <button class="btn btn-ghost" id="mnavLogin" type="button">Se connecter</button>
+        <button class="btn btn-primary" id="mnavSignup" type="button">S'inscrire</button>
+      </div>
+    </div>
+
+    <!-- Connecté -->
+    <div class="mnav-user hidden" id="mnavUser">
+      <div class="mnav-avatar" id="mnavAvatar"></div>
+      <div class="mnav-idblock">
+        <div class="mnav-name" id="mnavName"></div>
+        <div class="mnav-email" id="mnavEmail"></div>
+      </div>
+    </div>
+
+    <button class="mnav-cta hidden" id="mnavCta" type="button" data-nav="create">
+      <span aria-hidden="true">➕</span> Publier un événement
+    </button>
+
+    <div class="mnav-group">
+      <div class="mnav-group-title">Naviguer</div>
+      <button class="mnav-item" type="button" data-nav="home" data-primary>
+        <span class="mnav-ic" aria-hidden="true">🗺️</span>Carte des événements
+      </button>
+      <button class="mnav-item" type="button" data-nav="search" data-primary>
+        <span class="mnav-ic" aria-hidden="true">🔍</span>Recherche avancée
+      </button>
+      <button class="mnav-item" type="button" id="mnavCreate" data-nav="create" data-primary>
+        <span class="mnav-ic" aria-hidden="true">➕</span>Publier un événement
+      </button>
+    </div>
+
+    <div class="mnav-group hidden" id="mnavSpace">
+      <div class="mnav-group-title">Mon espace</div>
+      <button class="mnav-item" type="button" data-nav="profile" data-primary>
+        <span class="mnav-ic" aria-hidden="true">👤</span>Mon profil
+      </button>
+      <button class="mnav-item" type="button" data-nav="profile" data-scroll="favoritesGrid">
+        <span class="mnav-ic" aria-hidden="true">♥</span>Événements enregistrés
+        <span class="mnav-num hidden" id="mnavFavCount"></span>
+      </button>
+      <button class="mnav-item" type="button" data-nav="profile" data-scroll="mineGrid">
+        <span class="mnav-ic" aria-hidden="true">📋</span>Mes événements publiés
+        <span class="mnav-num hidden" id="mnavMineCount"></span>
+      </button>
+      <button class="mnav-item mnav-admin hidden" type="button" id="mnavAdmin"
+              data-nav="profile" data-scroll="adminSection">
+        <span class="mnav-ic" aria-hidden="true">👑</span>Administration
+      </button>
+      <a class="mnav-item" href="/compte/general">
+        <span class="mnav-ic" aria-hidden="true">⚙️</span>Paramètres du compte
+        <span class="mnav-arrow" aria-hidden="true">↗</span>
+      </a>
+    </div>
+
+    <div class="mnav-sep"></div>
+
+    <button class="mnav-item" id="mnavTheme" type="button" aria-pressed="false">
+      <span class="mnav-ic" id="mnavThemeIc" aria-hidden="true">🌙</span>
+      <span id="mnavThemeLabel">Thème sombre</span>
+      <span class="mnav-switch" aria-hidden="true"></span>
+    </button>
+
+    <details class="mnav-galaxy">
+      <summary><span class="mnav-ic" aria-hidden="true">🌌</span>La galaxie EBOK</summary>
+      <div class="mnav-galaxy-list" id="mnavGalaxy"></div>
+    </details>
+  </div>
+
+  <div class="mnav-foot">
+    <button class="mnav-logout hidden" id="mnavLogout" type="button">Déconnexion</button>
+    <a class="mnav-mail" href="mailto:contact@ebok.fr">contact@ebok.fr</a>
+  </div>
+</div>
 
 <main>
 
@@ -92,7 +183,16 @@
     </div>
 
     <div class="map-layout" id="mapLayout">
-      <aside class="filter-panel">
+      <!-- Mobile uniquement : replie le panneau de filtres pour laisser voir la carte. -->
+      <button class="filters-toggle" id="filtersToggle" type="button"
+              aria-controls="filterPanel" aria-expanded="false">
+        <span aria-hidden="true">🔍</span>
+        <span>Filtrer</span>
+        <span class="ft-count hidden" id="filtersCount"></span>
+        <span class="ft-caret" aria-hidden="true">▾</span>
+      </button>
+
+      <aside class="filter-panel" id="filterPanel">
         <div class="panel-head"><span class="tag-dot"></span>RECHERCHE RAPIDE</div>
 
         <div class="filter-group fg-types">
@@ -904,6 +1004,7 @@
 <script src="/js/france-map.js"></script>
 <script src="/js/data.js"></script>
 <script src="/js/app.js"></script>
+<script src="/js/mobile-nav.js"></script>
 
 <!-- Base Neon (/api) + identité Clerk (clerk.ebok.fr). Voir js/clerk-init.js. -->
 <script type="module" src="/js/clerk-init.js"></script>
