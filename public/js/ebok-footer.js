@@ -2,9 +2,9 @@
    EBOK Galaxy Footer — pied de page commun aux applications EBOK.
    -------------------------------------------------------------------------
    Fichier IDENTIQUE dans chaque repo de la galaxie (event, video, mercato,
-   playbook…), comme ebok-galaxy.js. Pour modifier le pied de page partout :
-   éditer ce fichier puis recopier la même version dans chaque repo (jusqu'à
-   la mise en place d'un paquet partagé `ebok-ui`).
+   playbook…). Pour modifier le pied de page partout : éditer ce fichier puis
+   recopier la même version dans chaque repo (jusqu'à la mise en place d'un
+   paquet partagé `ebok-ui`).
 
    Intégration : <script src="/ebok-footer.js" defer></script>
    Aucune dépendance. Le pied de page s'ajoute à la fin du <body>.
