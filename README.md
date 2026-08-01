@@ -17,6 +17,7 @@ EBOK-EVENT/
 │   ├── js/
 │   │   ├── data.js           # Données de démo : événements, couleurs, carte
 │   │   ├── app.js            # Logique : nav, filtres, carte, recherche…
+│   │   ├── mobile-nav.js     # Menu « hamburger » + panneau plein écran (< 900 px)
 │   │   ├── services.js       # Couche API (Neon via /api + Clerk) — mêmes signatures
 │   │   ├── clerk.js          # Chargeur Clerk (identité unique de la galaxie EBOK)
 │   │   └── clerk-init.js     # Branchement : expose EBOK_DATA / EBOK_AUTH à app.js
@@ -27,6 +28,8 @@ EBOK-EVENT/
 │   ├── views.js              # Compteurs de « curieux »
 │   ├── account.js            # Session, profil diffuseur, favoris, liste membres
 │   └── import-event.js       # Assistant IA (OpenRouter/Gemini) — réservé admin
+├── docs/
+│   └── menu-mobile-galaxie.md  # Prompt de référence : porter le menu mobile dans les autres apps EBOK
 ├── package.json
 ├── vercel.json
 ├── .gitignore
