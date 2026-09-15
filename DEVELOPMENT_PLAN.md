@@ -4,6 +4,9 @@
 > (architecture, variables d'environnement, déploiement) ; ce fichier décrit
 > **ce qui reste à faire**. `EBOK_Event_Briefing.md` reste la référence produit
 > et design (palette, types d'événements, ton).
+>
+> 🚦 **Avant d'ouvrir le site au public**, dérouler la checklist de lancement
+> plus bas. Les points « Obligations légales » sont bloquants.
 
 **Dernière mise à jour :** septembre 2026
 
@@ -125,6 +128,93 @@ communautaire, mais dépend de la géolocalisation.
 - [ ] **Avis / discussion** — questions à l'organisateur, retours sur les
       éditions passées (demande de la modération)
 - [ ] **Billetterie / inscriptions** — avec commission
+
+---
+
+## 🚦 Avant le lancement public
+
+Checklist de mise en ligne. Les cases déjà cochées l'ont été après vérification
+dans le code — le reste est à faire.
+
+### ⚖️ Obligations légales *(bloquant — ne pas lancer sans)*
+
+- [ ] **Page « Politique de confidentialité » (RGPD)** — quelles données sont
+      collectées (compte Clerk, profil diffuseur, favoris, compteurs de vues),
+      pourquoi, combien de temps, et comment les supprimer. Citer les
+      sous-traitants : Clerk (comptes), Neon (base), Vercel (hébergement),
+      OpenRouter (assistant IA).
+- [ ] **Page « Conditions générales d'utilisation »** — qui peut publier, règles
+      de modération, responsabilité sur le contenu déposé par les diffuseurs,
+      droit à l'image des affiches.
+- [ ] **Mentions légales** — obligatoires en France : éditeur, hébergeur (Vercel),
+      contact. Souvent oubliées alors qu'elles sont exigées avec les CGU.
+- [ ] **Bandeau cookies** — à calibrer une fois l'outil de mesure choisi. Les
+      cookies de Clerk sont *strictement nécessaires* (pas de consentement
+      requis) ; un outil de mesure sans cookie (voir plus bas) évite le bandeau
+      de consentement. À trancher avec le point « Mesure d'audience ».
+- [ ] **Lien vers ces pages dans le pied de page**
+
+### 🔎 Référencement & partage
+
+- [x] **Titre et description** — présents, et **personnalisés par événement**
+      (`api/evenement.js` injecte titre, description, Open Graph et
+      schema.org/Event)
+- [x] **Favicon** — SVG + PNG + icône Apple, en place
+- [ ] **Image de partage réseaux sociaux** — ⚠️ aujourd'hui `og:image` pointe
+      vers `favicon-192.png` : une icône de 192 px, que WhatsApp, LinkedIn et
+      Facebook affichent en minuscule ou ignorent. Il faut une vraie image
+      **1200 × 630**. Passer aussi `twitter:card` de `summary` à
+      `summary_large_image`.
+- [ ] **`robots.txt`** — absent
+- [ ] **`sitemap.xml`** — absent. À générer dynamiquement depuis les événements
+      validés (une fonction `/api/sitemap`), sinon il sera périmé en permanence.
+
+### ⚡ Performance & accessibilité
+
+- [ ] **Poids des pages** — `cities-fr.js` pèse **244 Ko** et `france-map.js`
+      **88 Ko**. `cities-fr.js` est déjà chargé à la demande ; vérifier que rien
+      d'autre ne bloque le premier affichage.
+- [ ] **Compression des images** — `demo-ligue-c.jpg` fait 136 Ko et les trois
+      favicons 64 Ko à eux seuls. Les affiches déposées sont déjà compressées à
+      l'envoi (`compressImage`, 1200 px / qualité 0.8) ✅, mais servir aussi du
+      **WebP** allégerait nettement.
+- [ ] **Contraste** — à mesurer au contrastomètre. `--chalk-dim` (#ACA79A) sur
+      `--asphalt` (#17171A) passe, mais les petits textes gris du thème clair
+      sont à vérifier (viser AA : 4.5:1).
+- [x] **Textes alternatifs** — toutes les balises `<img>` du HTML ont un `alt`.
+      Reste à vérifier celles générées en JS (affiches, galeries).
+- [x] **Site responsive** — 14 requêtes média, testé sur mobile. À revalider
+      après chaque nouvelle page.
+
+### 🛡️ Robustesse & confiance
+
+- [x] **API hors du front** — déjà le cas : aucune clé secrète dans le
+      navigateur, tout passe par les fonctions `/api`. Seule la clé Clerk
+      *publishable* est exposée, et c'est son usage prévu.
+- [ ] **Forcer le HTTPS** — Vercel le fait déjà automatiquement (redirection +
+      certificat). Reste à **ajouter les en-têtes de sécurité** dans
+      `vercel.json` : `Strict-Transport-Security`, `X-Content-Type-Options`,
+      `Referrer-Policy`, et une `Content-Security-Policy`.
+- [ ] **Page 404 personnalisée** — absente : un lien mort affiche la page par
+      défaut de Vercel, qui ne ressemble pas au site.
+- [ ] **Liens cassés** — à passer au crible avant lancement, y compris les liens
+      externes des diffuseurs (site, Instagram).
+- [ ] **Validation des formulaires** — le HTML a des champs `required`, mais il
+      manque des messages d'erreur clairs et une vérification des formats
+      (URL, e-mail, dates cohérentes : fin après début).
+- [ ] **Anti-spam** — ⚠️ rien aujourd'hui. La publication exige un compte et
+      passe en modération, ce qui limite déjà beaucoup les dégâts. À renforcer
+      si besoin : limitation du nombre de publications par compte et par jour.
+      Voir aussi `/api/views`, en écriture ouverte (cf. dette technique).
+- [ ] **Mesure d'audience** — rien aujourd'hui. **Recommandation :** Vercel Web
+      Analytics ou Plausible — sans cookie, donc **pas de bandeau de
+      consentement** et conformes RGPD. Google Analytics imposerait le bandeau.
+
+### 🎯 Conversion
+
+- [ ] **Un seul appel à l'action** — la barre du haut propose aujourd'hui
+      « Se connecter », « S'inscrire » et « Publier un événement ». Décider ce
+      qu'on attend d'un premier visiteur et hiérarchiser en conséquence.
 
 ---
 
