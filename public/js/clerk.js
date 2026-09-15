@@ -1,15 +1,32 @@
 /* =========================================================
-   EBOK Event — CHARGEUR CLERK (identité unique de la galaxie EBOK)
+   EBOK Event — CHARGEUR CLERK (identité / comptes)
    ---------------------------------------------------------
-   La clé « publishable » est PUBLIQUE (elle part dans le navigateur) : on peut
-   la mettre ici sans risque. Elle encode aussi le domaine de l'instance Clerk,
-   d'où l'on charge clerk-js. Instance de PRODUCTION : clerk.ebok.fr.
+   ⚙️  CONFIGURATION — UNE SEULE LIGNE À CHANGER (voir ci-dessous).
 
-   Le reste du site (services.js, clerk-init.js) s'appuie sur ce module ; ne rien
-   changer ici lors d'une bascule d'environnement.
+   La clé « publishable » est PUBLIQUE (elle part dans le navigateur) : la
+   mettre ici est sans risque, c'est l'usage prévu par Clerk. Ne jamais mettre
+   la clé secrète (`sk_…`) dans ce fichier — elle vit uniquement dans la
+   variable d'environnement CLERK_SECRET_KEY sur Vercel.
+
+   Le domaine de l'instance Clerk est ENCODÉ DANS LA CLÉ : il est décodé plus
+   bas plutôt que recopié, pour qu'une bascule d'instance ne puisse pas laisser
+   les deux valeurs désynchronisées.
+
+   → Pour basculer vers une autre instance Clerk : remplacer PUBLISHABLE_KEY
+     par la clé de la nouvelle instance, et mettre à jour CLERK_SECRET_KEY sur
+     Vercel. Rien d'autre à toucher dans le code.
+     Procédure complète et conséquences : voir le README (« Comptes »).
    ========================================================= */
 const PUBLISHABLE_KEY = "pk_live_Y2xlcmsuZWJvay5mciQ";
-const FRONTEND_API = "clerk.ebok.fr"; // instance de production (décodé de la clé)
+
+/** Domaine de l'instance Clerk, décodé de la clé publishable. */
+function frontendApi(key) {
+  const encoded = key.replace(/^pk_(live|test)_/, "");
+  // La clé encode « <domaine>$ » en base64.
+  const decoded = atob(encoded).replace(/\$$/, "");
+  if (!decoded) throw new Error("Clé Clerk illisible : " + key.slice(0, 12) + "…");
+  return decoded;
+}
 
 let _loaded = null;
 
@@ -25,7 +42,7 @@ export function loadClerk() {
     s.async = true;
     s.crossOrigin = "anonymous";
     s.setAttribute("data-clerk-publishable-key", PUBLISHABLE_KEY);
-    s.src = `https://${FRONTEND_API}/npm/@clerk/clerk-js@5/dist/clerk.browser.js`;
+    s.src = `https://${frontendApi(PUBLISHABLE_KEY)}/npm/@clerk/clerk-js@5/dist/clerk.browser.js`;
     s.addEventListener("load", async () => {
       try {
         await window.Clerk.load();

@@ -24,10 +24,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/styles.css">
-<!-- Barre commune de la galaxie EBOK (fichier identique dans toutes les apps) -->
-<script src="/js/ebok-galaxy.js" defer></script>
-<!-- Pied de page commun de la galaxie (fichier identique dans toutes les apps) -->
-<script src="/js/ebok-footer.js" defer></script>
 </head>
 <body>
 
@@ -901,6 +897,17 @@
     </form>
   </div>
 </div>
+
+<footer class="site-footer">
+  <p class="site-footer-tag">L'agenda collaboratif du basket français</p>
+  <nav class="site-footer-links">
+    <button class="site-footer-link" data-nav="home">Accueil</button>
+    <button class="site-footer-link" data-nav="search">Recherche avancée</button>
+    <button class="site-footer-link" data-nav="create">Publier un événement</button>
+  </nav>
+  <p class="site-footer-contact">Une question, un événement à signaler ?
+    <a href="mailto:contact@ebok.fr">contact@ebok.fr</a></p>
+</footer>
 
 <!-- Données (carte des régions + événements) avant la logique applicative -->
 <script src="/js/france-map.js"></script>

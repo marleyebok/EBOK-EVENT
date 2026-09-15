@@ -1,5 +1,5 @@
 /**
- * /compte/general — identité et sécurité du compte unique EBOK.
+ * /compte/general — identité et sécurité du compte.
  * Tout est délégué au composant UserProfile de Clerk (nom, e-mail, mot de
  * passe, appareils, suppression du compte) : rien de maison ici.
  */

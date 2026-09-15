@@ -9,8 +9,6 @@
  *
  * Nécessite un Blob store connecté (variable BLOB_READ_WRITE_TOKEN). Sans elle,
  * la route répond 503 et l'app retombe proprement sur le data-URI.
- *
- * Calqué sur le patron déjà validé sur EBOK-MERCATO.
  */
 import { put } from "@vercel/blob";
 import { json, sessionUid, blobTokenState } from "./_lib.js";

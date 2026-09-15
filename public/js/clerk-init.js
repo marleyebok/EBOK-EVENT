@@ -1,8 +1,8 @@
 /* =========================================================
    EBOK Event — ACTIVATION NEON + CLERK
    ---------------------------------------------------------
-   Remplace l'ancien firebase-init.js. Branche la couche données (/api Neon) et
-   l'identité (Clerk) sur l'app. Activé via
+   Branche la couche données (/api Neon) et l'identité (Clerk) sur l'app.
+   Activé via
    <script type="module" src="js/clerk-init.js"> dans index.html.
 
    Tant que ce fichier n'est pas chargé, l'app tourne sur les données locales de
@@ -37,7 +37,7 @@ window.EBOK_AUTH = {
 };
 
 /* Transforme l'utilisateur Clerk en objet compatible avec app.js
-   (qui lit .uid, .email, .displayName et .getIdToken() — héritage Firebase). */
+   (qui lit .uid, .email, .displayName et .getIdToken()). */
 function normalize(clerk) {
   const u = clerk.user;
   if (!u) return null;

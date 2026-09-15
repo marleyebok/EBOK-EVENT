@@ -1,10 +1,8 @@
 /* =========================================================
    EBOK Event — COUCHE API (Neon via /api + Clerk)
    ---------------------------------------------------------
-   Remplace l'ancienne couche Firebase. Les SIGNATURES exportées n'ont pas
-   changé : app.js n'a (presque) pas à bouger. Les données passent par les
-   fonctions serverless /api/* (base Neon partagée, schéma « event ») ;
-   l'identité passe par Clerk (compte unique de la galaxie EBOK — voir clerk.js).
+   Les données passent par les fonctions serverless /api/* (base Neon,
+   schéma « event ») ; l'identité passe par Clerk (voir clerk.js).
 
    « Zéro miroir » : e-mail et nom réel sont lus en direct depuis Clerk, jamais
    copiés en base.
