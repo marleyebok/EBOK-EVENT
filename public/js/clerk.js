@@ -17,7 +17,7 @@
      Vercel. Rien d'autre à toucher dans le code.
      Procédure complète et conséquences : voir le README (« Comptes »).
    ========================================================= */
-const PUBLISHABLE_KEY = "pk_live_Y2xlcmsuZWJvay5mciQ";
+const PUBLISHABLE_KEY = "pk_test_bm9ybWFsLXNoaW5lci00MDYwLmNsZXJrLmFjY291bnRzLmRldiQ";
 
 /** Domaine de l'instance Clerk, décodé de la clé publishable. */
 function frontendApi(key) {

@@ -171,24 +171,27 @@ variable d'env `ADMIN_EMAILS` sur Vercel (aucune modif de code).
 > l'admin peut tout gérer. « Zéro miroir » : e-mail et nom sont lus en direct
 > depuis Clerk, jamais copiés en base.
 
-### Basculer vers une instance Clerk dédiée
+### L'instance Clerk
 
-Les comptes tournent encore sur l'instance Clerk **`clerk.ebok.fr`**, partagée
-avec d'autres applications. Pour rendre EBOK Event totalement indépendant, il
-lui faut sa propre instance. Compter **15 minutes**.
+EBOK Event a sa **propre instance Clerk**, indépendante. Le site pointe dessus
+via `PUBLISHABLE_KEY` dans `public/js/clerk.js` (une seule ligne : le domaine de
+l'instance est décodé de la clé, il n'y a pas de seconde valeur à garder
+synchronisée). Le serveur utilise la clé secrète correspondante, dans la
+variable d'environnement `CLERK_SECRET_KEY` sur Vercel.
+
+L'instance est pour l'instant en **mode développement** (clé `pk_test_…`) : elle
+fonctionne, mais limite le nombre de comptes et affiche un bandeau Clerk. Voir
+« Passer en production » ci-dessous.
+
+#### Changer d'instance
 
 > ⚠️ **Les comptes ne se transfèrent pas** d'une instance Clerk à l'autre. Tous
-> les membres devront **se réinscrire**, et les événements déjà publiés
-> perdront le lien avec leur diffuseur (leur `user_id` pointera vers un compte
-> disparu). Les droits admin, eux, se retrouvent tout seuls : l'administrateur
-> est reconnu par son **e-mail**, pas par son identifiant.
->
-> À faire **tant qu'il n'y a pas encore de diffuseurs inscrits** : à ce
-> moment-là, l'opération ne coûte rien.
+> les membres devraient **se réinscrire**, et les événements déjà publiés
+> perdraient le lien avec leur diffuseur (leur `user_id` pointerait vers un
+> compte disparu). Les droits admin, eux, se retrouvent tout seuls :
+> l'administrateur est reconnu par son **e-mail**, pas par son identifiant.
 
-#### 1. Créer l'instance
-
-Sur [dashboard.clerk.com](https://dashboard.clerk.com) → **Create application**.
+Réglages attendus d'une instance, sur [dashboard.clerk.com](https://dashboard.clerk.com) :
 
 | Réglage | Valeur |
 |---|---|
@@ -197,29 +200,16 @@ Sur [dashboard.clerk.com](https://dashboard.clerk.com) → **Create application*
 | Google | ✅ activé |
 | Le reste (Facebook, Apple…) | ❌ laissé désactivé |
 
-Clerk affiche alors les deux clés. La `pk_…` est **publique**, la `sk_…` est
-**secrète** — cette dernière ne doit jamais entrer dans le code ni dans une
-conversation.
+Puis, **dans cet ordre** (une seule mise en ligne, pas de coupure) :
 
-#### 2. Brancher le site (une seule ligne)
+1. **Vercel → Settings → Environment Variables** : modifier `CLERK_SECRET_KEY`
+   avec la clé `sk_…` de la nouvelle instance. La coller **nue** — sans
+   guillemets, sans `CLERK_SECRET_KEY=` devant. Cocher *Production*, *Preview*
+   et *Development*.
+2. Remplacer `PUBLISHABLE_KEY` dans `public/js/clerk.js` par la clé `pk_…`.
+3. Pousser : le déploiement déclenché prend les deux changements d'un coup.
 
-Dans `public/js/clerk.js`, remplacer la valeur de `PUBLISHABLE_KEY` :
-
-```js
-const PUBLISHABLE_KEY = "pk_test_LA-CLÉ-DE-LA-NOUVELLE-INSTANCE";
-```
-
-**C'est la seule ligne à changer.** Le domaine de l'instance est décodé de la
-clé, il n'y a pas de seconde valeur à garder synchronisée. Fonctionne avec une
-clé `pk_test_…` (instance de développement) comme `pk_live_…` (production).
-
-#### 3. Brancher le serveur
-
-Sur **Vercel → Settings → Environment Variables**, remplacer
-`CLERK_SECRET_KEY` par la clé `sk_…` de la nouvelle instance, puis
-**redéployer** (un simple `git push` suffit).
-
-#### 4. Passer en production *(quand le domaine est prêt)*
+#### Passer en production *(quand le domaine est prêt)*
 
 Une instance de développement fonctionne tout de suite, mais affiche un bandeau
 « development mode » et limite le nombre de comptes. Pour passer en production :
@@ -227,9 +217,10 @@ Une instance de développement fonctionne tout de suite, mais affiche un bandeau
 1. Dans Clerk → **Domains**, ajouter `event.ebok.fr`.
 2. Ajouter chez ton hébergeur DNS les enregistrements CNAME que Clerk indique
    (il vérifie automatiquement).
-3. Reprendre les étapes 2 et 3 avec les clés `pk_live_…` / `sk_live_…`.
+3. Reprendre la procédure « Changer d'instance » ci-dessus avec les clés
+   `pk_live_…` / `sk_live_…`.
 
-#### 5. Vérifier
+#### Vérifier
 
 Un script contrôle l'instance à ta place :
 
@@ -253,7 +244,7 @@ Puis, à la main sur le site :
       IA est visible sur la page de publication
 - [ ] Publier un événement avec un compte non-admin → il part bien « en attente »
 
-#### 6. Et les événements déjà publiés ?
+#### Et les événements déjà publiés ?
 
 S'il y en a, leur `user_id` pointe vers des comptes disparus. Deux options :
 les réattribuer en base une fois les diffuseurs réinscrits, ou les laisser
