@@ -10,23 +10,37 @@ Site web responsive, thème sombre (identité streetball/urbain), sans framework
 
 ```
 EBOK-EVENT/
-├── public/                  # Le site (déployable tel quel)
-│   ├── index.html           # Structure HTML des 4 pages (SPA)
+├── public/                   # Le site (déployable tel quel)
+│   ├── index.html            # Structure HTML des 4 pages (SPA)
+│   ├── compte/               # Espace compte (hors SPA)
+│   │   ├── profil.html       # Profil diffuseur
+│   │   └── general.html      # Identité & sécurité (composant Clerk)
 │   ├── css/
 │   │   └── styles.css        # Toute la mise en forme
 │   ├── js/
 │   │   ├── data.js           # Données de démo : événements, couleurs, carte
 │   │   ├── app.js            # Logique : nav, filtres, carte, recherche…
-│   │   ├── services.js       # Couche API (Neon via /api + Clerk) — mêmes signatures
-│   │   ├── clerk.js          # Chargeur Clerk (identité unique de la galaxie EBOK)
-│   │   └── clerk-init.js     # Branchement : expose EBOK_DATA / EBOK_AUTH à app.js
+│   │   ├── france-map.js     # Tracés SVG des régions
+│   │   ├── cities-fr.js      # Villes de France (autocomplétion hors ligne)
+│   │   ├── services.js       # Couche API (Neon via /api + Clerk)
+│   │   ├── clerk.js          # Chargeur Clerk — ⚙️ config de l'instance
+│   │   ├── clerk-init.js     # Branchement : expose EBOK_DATA / EBOK_AUTH à app.js
+│   │   ├── compte-shell.js   # Coquille de l'espace compte (sidebar, portail)
+│   │   ├── compte-profil.js  # Profil diffuseur
+│   │   └── compte-general.js # Identité & sécurité
 │   └── assets/               # Images
 ├── api/                      # Fonctions serverless Vercel (Neon + Clerk)
 │   ├── _lib.js               # Client Neon, vérif token Clerk, schéma « event »
 │   ├── events.js             # CRUD événements
 │   ├── views.js              # Compteurs de « curieux »
 │   ├── account.js            # Session, profil diffuseur, favoris, liste membres
+│   ├── upload.js             # Dépôt d'images sur Vercel Blob
+│   ├── evenement.js          # Métadonnées de partage par événement (Open Graph)
+│   ├── migrate-posters.js    # Reprise des affiches stockées en base (ponctuel)
 │   └── import-event.js       # Assistant IA (OpenRouter/Gemini) — réservé admin
+├── lib/services/             # Assistant IA, indépendant du fournisseur
+├── DEVELOPMENT_PLAN.md       # Feuille de route : ce qui reste à faire
+├── EBOK_Event_Briefing.md    # Référence produit & design
 ├── package.json
 ├── vercel.json
 ├── .gitignore
@@ -34,6 +48,10 @@ EBOK-EVENT/
 ```
 
 Le code était initialement dans **un seul fichier HTML monolithique** ; il a été découpé en modules HTML / CSS / JS pour être maintenable, sans changer le comportement.
+
+> **EBOK Event est un produit autonome.** Il ne dépend d'aucune autre application
+> et n'en mentionne aucune. Seuls les comptes tournent encore sur une instance
+> Clerk partagée — voir « Basculer vers une instance Clerk dédiée » plus bas.
 
 ---
 
@@ -67,10 +85,15 @@ cd public && python3 -m http.server 8080
 
 ## 🔌 Base de données : Neon + Clerk
 
-L'app utilise la **base Neon partagée de la galaxie EBOK** (schéma `event`) via des
-fonctions serverless `/api/*`, et **Clerk** pour l'identité (compte unique de la
-galaxie, `clerk.ebok.fr`). Tant que la base n'est pas configurée, le site
-fonctionne sur les **données de démo** de `data.js` (aucune casse).
+L'app utilise une base **Neon** (Postgres serverless, schéma `event`) via des
+fonctions serverless `/api/*`, et **Clerk** pour les comptes. Tant que la base
+n'est pas configurée, le site fonctionne sur les **données de démo** de
+`data.js` (aucune casse).
+
+> Le schéma `event` est **entièrement isolé** : la base peut être partagée avec
+> d'autres projets sans aucune conséquence pour EBOK Event. Les comptes, eux,
+> tournent encore sur une instance Clerk partagée — voir « Basculer vers une
+> instance Clerk dédiée ».
 
 ### Variables d'environnement (Vercel → Settings → Environment Variables)
 
@@ -138,6 +161,32 @@ variable d'env `ADMIN_EMAILS` sur Vercel (aucune modif de code).
 > l'admin peut tout gérer. « Zéro miroir » : e-mail et nom sont lus en direct
 > depuis Clerk, jamais copiés en base.
 
+### Basculer vers une instance Clerk dédiée
+
+Les comptes tournent encore sur l'instance Clerk **`clerk.ebok.fr`**, partagée
+avec d'autres applications. Pour rendre EBOK Event totalement indépendant, il
+faut sa propre instance.
+
+> ⚠️ **Les comptes ne se transfèrent pas** d'une instance Clerk à l'autre. Tous
+> les membres devront **se réinscrire**, et les événements déjà publiés
+> perdront le lien avec leur diffuseur (leur `user_id` pointera vers un compte
+> disparu). Les droits admin, eux, se retrouvent tout seuls : l'administrateur
+> est reconnu par son **e-mail**, pas par son identifiant.
+>
+> À faire de préférence **avant** d'avoir beaucoup de diffuseurs inscrits.
+
+1. Créer une instance sur [dashboard.clerk.com](https://dashboard.clerk.com)
+   et y activer **e-mail + Google**.
+2. Dans `public/js/clerk.js`, remplacer `PUBLISHABLE_KEY` par la clé de la
+   nouvelle instance. **C'est la seule ligne à changer** : le domaine de
+   l'instance est décodé de la clé, il n'y a pas de seconde valeur à garder
+   synchronisée. Fonctionne avec une clé `pk_test_…` comme `pk_live_…`.
+3. Sur Vercel, remplacer `CLERK_SECRET_KEY` par la clé secrète de la nouvelle
+   instance, puis **redéployer**.
+4. Reprendre les événements devenus orphelins : soit réattribuer leur `user_id`
+   en base une fois les diffuseurs réinscrits, soit les laisser sous le compte
+   admin.
+
 ---
 
 ## 🤖 Assistant IA — import d'un événement depuis un lien
@@ -180,9 +229,10 @@ journalier passe à 1 000 dès 10 $ de crédits achetés une seule fois). Attent
 > L'endpoint valide le **jeton de session Clerk** de l'appelant et vérifie que son
 > e-mail est admin : l'assistant IA est **réservé à l'administrateur**.
 
-### Étape suivante du plan
+### Suite du plan
 
-**Géolocalisation réelle** (distance Haversine + autocomplétion de ville) — détaillé dans `DEVELOPMENT_PLAN.md`.
+La feuille de route (ce qui est fait, ce qui reste, la dette technique connue)
+vit dans **`DEVELOPMENT_PLAN.md`** — c'est la seule source de vérité.
 
 ### Déploiement
 
