@@ -84,6 +84,44 @@ export function clerkAppearance() {
   };
 }
 
+/* ------------------------------------------------------------------ */
+/* Redirections après connexion                                        */
+/* ------------------------------------------------------------------ */
+/* Sans consigne explicite, Clerk renvoie vers le « Home URL » réglé dans son
+   tableau de bord — un réglage extérieur au dépôt, qu'une mauvaise valeur
+   suffit à transformer en redirection vers un autre site. On impose donc le
+   retour depuis le code : l'utilisateur revient exactement sur la page d'où il
+   est parti, y compris après le détour par Google.
+
+   `forceRedirectUrl` l'emporte sur la configuration du tableau de bord ;
+   `fallbackRedirectUrl` couvre les cas où Clerk l'ignore. */
+function urlDeRetour() {
+  // Origine + chemin : on retire les paramètres ajoutés par le retour OAuth.
+  return window.location.origin + window.location.pathname;
+}
+
+/** Mêmes redirections, sous les noms attendus par Clerk.load(). */
+function optionsDeChargement() {
+  const retour = urlDeRetour();
+  return {
+    signInForceRedirectUrl: retour,
+    signInFallbackRedirectUrl: retour,
+    signUpForceRedirectUrl: retour,
+    signUpFallbackRedirectUrl: retour,
+  };
+}
+
+/** Options de redirection à passer à openSignIn / openSignUp. */
+export function redirectionOptions() {
+  const retour = urlDeRetour();
+  return {
+    forceRedirectUrl: retour,
+    fallbackRedirectUrl: retour,
+    signUpForceRedirectUrl: retour,
+    signUpFallbackRedirectUrl: retour,
+  };
+}
+
 let _loaded = null;
 
 /** Charge clerk-js une seule fois et renvoie l'instance `window.Clerk` prête. */
@@ -91,7 +129,9 @@ export function loadClerk() {
   if (_loaded) return _loaded;
   _loaded = new Promise((resolve, reject) => {
     if (window.Clerk) {
-      window.Clerk.load({ appearance: clerkAppearance() }).then(() => resolve(window.Clerk)).catch(reject);
+      window.Clerk.load({ appearance: clerkAppearance(), ...optionsDeChargement() })
+        .then(() => resolve(window.Clerk))
+        .catch(reject);
       return;
     }
     const s = document.createElement("script");
@@ -101,7 +141,10 @@ export function loadClerk() {
     s.src = `https://${frontendApi(PUBLISHABLE_KEY)}/npm/@clerk/clerk-js@5/dist/clerk.browser.js`;
     s.addEventListener("load", async () => {
       try {
-        await window.Clerk.load({ appearance: clerkAppearance() });
+        await window.Clerk.load({
+          appearance: clerkAppearance(),
+          ...optionsDeChargement(),
+        });
         resolve(window.Clerk);
       } catch (e) {
         reject(e);

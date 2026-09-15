@@ -210,6 +210,23 @@ dans le code — le reste est à faire.
       Analytics ou Plausible — sans cookie, donc **pas de bandeau de
       consentement** et conformes RGPD. Google Analytics imposerait le bandeau.
 
+### 🎨 Finitions
+
+- [ ] **Refondre le pied de page** — le pied de page actuel est une reprise
+      minimale, posée pour remplacer celui de la galaxie : trois liens de
+      navigation et une adresse de contact, sans travail graphique. À repenser
+      pour qu'il tienne la comparaison avec le reste du site, et pour accueillir
+      les liens légaux obligatoires (RGPD, CGU, mentions légales).
+- [ ] **Adresse de contact** — celle du pied de page est à remplacer par une
+      adresse propre à EBOK Event (voir « aucun lien vers l'extérieur »
+      ci-dessous).
+
+> 🚫 **Règle :** aucun lien, aucune mention et aucune adresse renvoyant vers
+> `ebok.fr` ou une autre application. EBOK Event se présente comme un produit
+> seul. Les redirections après connexion sont verrouillées côté code
+> (`redirectionOptions()` dans `public/js/clerk.js`) pour qu'un réglage du
+> tableau de bord Clerk ne puisse pas envoyer un visiteur ailleurs.
+
 ### 🎯 Conversion
 
 - [ ] **Un seul appel à l'action** — la barre du haut propose aujourd'hui

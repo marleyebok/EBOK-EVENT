@@ -7,7 +7,7 @@
    « Zéro miroir » : e-mail et nom réel sont lus en direct depuis Clerk, jamais
    copiés en base.
    ========================================================= */
-import { loadClerk, authHeader, clerkAppearance } from "./clerk.js";
+import { loadClerk, authHeader, clerkAppearance, redirectionOptions } from "./clerk.js";
 
 /* Petit client HTTP : chaque appel porte le token de session Clerk. */
 async function api(path, { method = "GET", body } = {}) {
@@ -116,7 +116,7 @@ export async function openSignIn(mode) {
   const clerk = await loadClerk();
   // L'habillage est recalculé ici pour suivre la bascule clair / sombre faite
   // après le chargement de Clerk.
-  const opts = { appearance: clerkAppearance() };
+  const opts = { appearance: clerkAppearance(), ...redirectionOptions() };
   if (mode === "signup") clerk.openSignUp(opts);
   else clerk.openSignIn(opts);
 }
