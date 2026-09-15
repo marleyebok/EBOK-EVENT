@@ -45,6 +45,7 @@ select,input,textarea{font-family:var(--font-body);}
 .brand span{color:var(--orange);}
 .brand-mark{color:var(--orange);font-size:14px;}
 .nav-links{display:flex;gap:6px;}
+.nav-short{display:none;}
 .navlink{
   background:none;border:none;color:var(--chalk-dim);font-weight:600;font-size:14px;
   padding:10px 16px;border-radius:999px;transition:all .15s;
@@ -373,7 +374,16 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .form-grid-3{grid-template-columns:1.2fr 1fr 1fr;}
 .form-card{background:var(--asphalt-2);border:1px solid var(--line);border-radius:var(--radius);padding:26px;}
 .form-card h3{font-size:16px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;color:var(--chalk-dim);margin-bottom:18px;font-weight:700;}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+/* `minmax(0, 1fr)` : sans lui, la largeur intrinsèque des champs — celle d'un
+   `input[type=date]` en particulier — empêche les colonnes de se réduire, et
+   tout le formulaire déborde de l'écran sur mobile. */
+.form-row{display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:16px;}
+/* Aucun champ ne doit pouvoir pousser sa colonne au-delà de sa largeur. */
+.form-card{max-width:100%;}
+.form-card .field{min-width:0;}
+.form-card input,
+.form-card select,
+.form-card textarea{width:100%;min-width:0;max-width:100%;box-sizing:border-box;}
 .form-card .field{margin-bottom:16px;}
 
 /* Encart « Monde » de la carte : raccourci vers les événements hors de France.
@@ -669,9 +679,14 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
   /* Barre du haut : logo + contrôles sur une ligne, nav défilante en dessous */
   .topbar{flex-wrap:wrap;padding:12px 14px;gap:10px;}
   .brand{font-size:18px;}
-  .nav-links{order:3;width:100%;justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto;gap:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
-  .nav-links::-webkit-scrollbar{display:none;}
-  .navlink{padding:8px 13px;font-size:13px;white-space:nowrap;flex:none;}
+  /* La navigation défilait à l'horizontale : il fallait la balayer du doigt
+     pour atteindre « Publier », qui était coupé au bord de l'écran. Les
+     libellés raccourcis tiennent désormais sur la ligne, et le retour à la
+     ligne sert de filet de sécurité sur les écrans les plus étroits. */
+  .nav-links{order:3;width:100%;justify-content:flex-start;flex-wrap:wrap;gap:6px;}
+  .navlink{padding:8px 13px;font-size:13px;white-space:nowrap;flex:0 1 auto;}
+  .nav-long{display:none;}
+  .nav-short{display:inline;}
   .nav-cta{font-size:13px;padding:9px 13px;}
   .account-name{max-width:120px;}
 
