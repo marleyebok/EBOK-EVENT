@@ -10,23 +10,39 @@ Site web responsive, thème sombre (identité streetball/urbain), sans framework
 
 ```
 EBOK-EVENT/
-├── public/                  # Le site (déployable tel quel)
-│   ├── index.html           # Structure HTML des 4 pages (SPA)
+├── public/                   # Le site (déployable tel quel)
+│   ├── index.html            # Structure HTML des 4 pages (SPA)
+│   ├── compte/               # Espace compte (hors SPA)
+│   │   ├── profil.html       # Profil diffuseur
+│   │   └── general.html      # Identité & sécurité (composant Clerk)
 │   ├── css/
 │   │   └── styles.css        # Toute la mise en forme
 │   ├── js/
 │   │   ├── data.js           # Données de démo : événements, couleurs, carte
 │   │   ├── app.js            # Logique : nav, filtres, carte, recherche…
-│   │   ├── services.js       # Couche API (Neon via /api + Clerk) — mêmes signatures
-│   │   ├── clerk.js          # Chargeur Clerk (identité unique de la galaxie EBOK)
-│   │   └── clerk-init.js     # Branchement : expose EBOK_DATA / EBOK_AUTH à app.js
+│   │   ├── france-map.js     # Tracés SVG des régions
+│   │   ├── cities-fr.js      # Villes de France (autocomplétion hors ligne)
+│   │   ├── services.js       # Couche API (Neon via /api + Clerk)
+│   │   ├── clerk.js          # Chargeur Clerk — ⚙️ config de l'instance
+│   │   ├── clerk-init.js     # Branchement : expose EBOK_DATA / EBOK_AUTH à app.js
+│   │   ├── compte-shell.js   # Coquille de l'espace compte (sidebar, portail)
+│   │   ├── compte-profil.js  # Profil diffuseur
+│   │   └── compte-general.js # Identité & sécurité
 │   └── assets/               # Images
 ├── api/                      # Fonctions serverless Vercel (Neon + Clerk)
 │   ├── _lib.js               # Client Neon, vérif token Clerk, schéma « event »
 │   ├── events.js             # CRUD événements
 │   ├── views.js              # Compteurs de « curieux »
 │   ├── account.js            # Session, profil diffuseur, favoris, liste membres
+│   ├── upload.js             # Dépôt d'images sur Vercel Blob
+│   ├── evenement.js          # Métadonnées de partage par événement (Open Graph)
+│   ├── migrate-posters.js    # Reprise des affiches stockées en base (ponctuel)
 │   └── import-event.js       # Assistant IA (OpenRouter/Gemini) — réservé admin
+├── lib/services/             # Assistant IA, indépendant du fournisseur
+├── scripts/
+│   └── verifier-clerk.mjs    # Contrôle l'instance Clerk (npm run clerk:check)
+├── DEVELOPMENT_PLAN.md       # Feuille de route : ce qui reste à faire
+├── EBOK_Event_Briefing.md    # Référence produit & design
 ├── package.json
 ├── vercel.json
 ├── .gitignore
@@ -34,6 +50,10 @@ EBOK-EVENT/
 ```
 
 Le code était initialement dans **un seul fichier HTML monolithique** ; il a été découpé en modules HTML / CSS / JS pour être maintenable, sans changer le comportement.
+
+> **EBOK Event est un produit autonome.** Il ne dépend d'aucune autre application
+> et n'en mentionne aucune. Seuls les comptes tournent encore sur une instance
+> Clerk partagée — voir « Basculer vers une instance Clerk dédiée » plus bas.
 
 ---
 
@@ -67,10 +87,15 @@ cd public && python3 -m http.server 8080
 
 ## 🔌 Base de données : Neon + Clerk
 
-L'app utilise la **base Neon partagée de la galaxie EBOK** (schéma `event`) via des
-fonctions serverless `/api/*`, et **Clerk** pour l'identité (compte unique de la
-galaxie, `clerk.ebok.fr`). Tant que la base n'est pas configurée, le site
-fonctionne sur les **données de démo** de `data.js` (aucune casse).
+L'app utilise une base **Neon** (Postgres serverless, schéma `event`) via des
+fonctions serverless `/api/*`, et **Clerk** pour les comptes. Tant que la base
+n'est pas configurée, le site fonctionne sur les **données de démo** de
+`data.js` (aucune casse).
+
+> Le schéma `event` est **entièrement isolé** : la base peut être partagée avec
+> d'autres projets sans aucune conséquence pour EBOK Event. Les comptes, eux,
+> tournent encore sur une instance Clerk partagée — voir « Basculer vers une
+> instance Clerk dédiée ».
 
 ### Variables d'environnement (Vercel → Settings → Environment Variables)
 
@@ -117,8 +142,16 @@ relançable sans risque).
 
 ## 👤 Comptes diffuseurs & administration
 
-L'authentification (email + Google) est gérée par le **widget Clerk** (bouton
-« Se connecter » de la barre du haut).
+L'authentification (e-mail + Google) est **entièrement** gérée par le **widget
+Clerk** (bouton « Se connecter » de la barre du haut). Il n'y a pas de
+formulaire maison : inscription, connexion, vérification de l'e-mail, mot de
+passe oublié et gestion des appareils viennent de Clerk. Le widget est habillé
+aux couleurs du site et suit la bascule clair / sombre (voir `clerkAppearance()`
+dans `public/js/clerk.js`).
+
+Si Clerk est injoignable (bloqueur de contenu, coupure réseau), les boutons de
+compte sont **grisés** et un bandeau l'explique — plutôt que des boutons qui ne
+répondent pas.
 
 - **Diffuseur** : se connecte via Clerk, publie des événements (mis **en attente de
   validation**), les gère dans **« Mes événements »**.
@@ -137,6 +170,85 @@ variable d'env `ADMIN_EMAILS` sur Vercel (aucune modif de code).
 > fonctions `/api` : un diffuseur ne touche qu'à ses propres événements, seul
 > l'admin peut tout gérer. « Zéro miroir » : e-mail et nom sont lus en direct
 > depuis Clerk, jamais copiés en base.
+
+### L'instance Clerk
+
+EBOK Event a sa **propre instance Clerk**, indépendante. Le site pointe dessus
+via `PUBLISHABLE_KEY` dans `public/js/clerk.js` (une seule ligne : le domaine de
+l'instance est décodé de la clé, il n'y a pas de seconde valeur à garder
+synchronisée). Le serveur utilise la clé secrète correspondante, dans la
+variable d'environnement `CLERK_SECRET_KEY` sur Vercel.
+
+L'instance est pour l'instant en **mode développement** (clé `pk_test_…`) : elle
+fonctionne, mais limite le nombre de comptes et affiche un bandeau Clerk. Voir
+« Passer en production » ci-dessous.
+
+#### Changer d'instance
+
+> ⚠️ **Les comptes ne se transfèrent pas** d'une instance Clerk à l'autre. Tous
+> les membres devraient **se réinscrire**, et les événements déjà publiés
+> perdraient le lien avec leur diffuseur (leur `user_id` pointerait vers un
+> compte disparu). Les droits admin, eux, se retrouvent tout seuls :
+> l'administrateur est reconnu par son **e-mail**, pas par son identifiant.
+
+Réglages attendus d'une instance, sur [dashboard.clerk.com](https://dashboard.clerk.com) :
+
+| Réglage | Valeur |
+|---|---|
+| Application name | `EBOK Event` |
+| Email address | ✅ activé |
+| Google | ✅ activé |
+| Le reste (Facebook, Apple…) | ❌ laissé désactivé |
+
+Puis, **dans cet ordre** (une seule mise en ligne, pas de coupure) :
+
+1. **Vercel → Settings → Environment Variables** : modifier `CLERK_SECRET_KEY`
+   avec la clé `sk_…` de la nouvelle instance. La coller **nue** — sans
+   guillemets, sans `CLERK_SECRET_KEY=` devant. Cocher *Production*, *Preview*
+   et *Development*.
+2. Remplacer `PUBLISHABLE_KEY` dans `public/js/clerk.js` par la clé `pk_…`.
+3. Pousser : le déploiement déclenché prend les deux changements d'un coup.
+
+#### Passer en production *(quand le domaine est prêt)*
+
+Une instance de développement fonctionne tout de suite, mais affiche un bandeau
+« development mode » et limite le nombre de comptes. Pour passer en production :
+
+1. Dans Clerk → **Domains**, ajouter `event.ebok.fr`.
+2. Ajouter chez ton hébergeur DNS les enregistrements CNAME que Clerk indique
+   (il vérifie automatiquement).
+3. Reprendre la procédure « Changer d'instance » ci-dessus avec les clés
+   `pk_live_…` / `sk_live_…`.
+
+#### Vérifier
+
+Un script contrôle l'instance à ta place :
+
+```bash
+npm run clerk:check                     # vérifie la clé actuellement dans le code
+npm run clerk:check -- pk_test_xxxxx    # vérifie une clé AVANT de la coller
+```
+
+Il te dit si la clé est bien formée, si l'instance répond, si e-mail et Google
+sont bien activés, si tu es en développement ou en production, et si ta clé
+secrète correspond bien à ta clé publique. Chaque problème est accompagné du
+chemin exact à suivre dans le tableau de bord Clerk.
+
+Puis, à la main sur le site :
+
+- [ ] Créer un compte depuis le site → il apparaît dans Clerk → **Users**
+- [ ] Se déconnecter, se reconnecter
+- [ ] Connexion avec Google
+- [ ] Sur `/compte/general`, le composant Clerk s'affiche aux couleurs du site
+- [ ] Avec `marley.ebok@gmail.com`, le badge **Admin** apparaît et l'assistant
+      IA est visible sur la page de publication
+- [ ] Publier un événement avec un compte non-admin → il part bien « en attente »
+
+#### Et les événements déjà publiés ?
+
+S'il y en a, leur `user_id` pointe vers des comptes disparus. Deux options :
+les réattribuer en base une fois les diffuseurs réinscrits, ou les laisser
+sous le compte admin (ils restent visibles et modifiables par l'admin).
 
 ---
 
@@ -180,9 +292,10 @@ journalier passe à 1 000 dès 10 $ de crédits achetés une seule fois). Attent
 > L'endpoint valide le **jeton de session Clerk** de l'appelant et vérifie que son
 > e-mail est admin : l'assistant IA est **réservé à l'administrateur**.
 
-### Étape suivante du plan
+### Suite du plan
 
-**Géolocalisation réelle** (distance Haversine + autocomplétion de ville) — détaillé dans `DEVELOPMENT_PLAN.md`.
+La feuille de route (ce qui est fait, ce qui reste, la dette technique connue)
+vit dans **`DEVELOPMENT_PLAN.md`** — c'est la seule source de vérité.
 
 ### Déploiement
 

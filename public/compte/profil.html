@@ -3,21 +3,24 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Mon profil — EBOK Event</title>
+  <title>Profil diffuseur — EBOK Event</title>
   <meta name="robots" content="noindex, nofollow" />
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/styles.css" />
 </head>
-<body>
+<body data-clerk-theme="light">
   <div class="dash" id="dash" hidden>
     <aside class="dash-side" id="dashSide"></aside>
 
     <main class="dash-main">
       <div class="dash-head">
-        <h1>Mon profil</h1>
-        <p class="dash-crumb">Compte · Profil — ces infos sont valables sur toute la galaxie EBOK.</p>
+        <h1>Profil diffuseur</h1>
+        <p class="dash-crumb">
+          Compte · Profil diffuseur — ces informations pré-remplissent le formulaire
+          de publication et s'affichent sur tes événements.
+        </p>
       </div>
 
       <div class="dash-error" id="error" hidden></div>
@@ -26,24 +29,44 @@
         <p class="dash-muted">Chargement de ton profil…</p>
       </div>
 
-      <!-- Profil rempli : affichage en lecture seule. -->
-      <div class="dash-card" id="filled" hidden>
-        <dl class="dash-dl" id="rows"></dl>
-      </div>
+      <form class="dash-card dash-form" id="form" hidden>
+        <div class="dash-field">
+          <label for="orgname">Nom du diffuseur</label>
+          <input type="text" id="orgname" placeholder="Ex. Ligue C by Courtcuts" autocomplete="organization" />
+          <p class="dash-hint">Le nom affiché comme organisateur sur tes événements.</p>
+        </div>
 
-      <!-- Questionnaire pas encore rempli. -->
-      <div class="dash-card" id="empty" hidden>
-        <p style="margin-top:0"><strong>Ton profil n'est pas encore rempli.</strong></p>
-        <p class="dash-muted">
-          Quelques questions rapides pour personnaliser ton compte sur toute la galaxie.
-        </p>
-        <a class="dash-btn" data-onboarding href="#" style="margin-top:6px">Remplir mon profil</a>
-      </div>
+        <div class="dash-field">
+          <label for="orgcity">Ville</label>
+          <input type="text" id="orgcity" placeholder="Ex. Montpellier" autocomplete="address-level2" />
+        </div>
 
-      <p class="dash-muted" id="editNote" hidden>
-        Pour modifier ces informations, refais le questionnaire —
-        <a data-onboarding href="#" style="color:var(--d-accent);font-weight:600">Modifier mon profil</a>.
-      </p>
+        <div class="dash-field">
+          <label for="orginsta">Instagram</label>
+          <input type="text" id="orginsta" placeholder="@moncompte" />
+        </div>
+
+        <div class="dash-field">
+          <label for="orgsite">Site web</label>
+          <input type="url" id="orgsite" placeholder="https://…" />
+        </div>
+
+        <div class="dash-field">
+          <label for="orgemail">E-mail de contact</label>
+          <input type="email" id="orgemail" placeholder="contact@…" autocomplete="email" />
+          <p class="dash-hint">Laisse vide pour utiliser l'e-mail de ton compte.</p>
+        </div>
+
+        <div class="dash-field">
+          <label for="orgtel">Téléphone</label>
+          <input type="tel" id="orgtel" placeholder="06 00 00 00 00" autocomplete="tel" />
+        </div>
+
+        <div class="dash-form-actions">
+          <button class="dash-btn" type="submit" id="save">Enregistrer</button>
+          <span class="dash-muted" id="status" role="status" aria-live="polite"></span>
+        </div>
+      </form>
 
       <p class="dash-muted" style="margin-top:16px">
         Nom, e-mail, mot de passe ou suppression du compte →

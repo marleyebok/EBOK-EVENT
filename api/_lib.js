@@ -1,14 +1,12 @@
 /**
  * Bibliothèque commune des fonctions serverless EBOK Event (Neon + Clerk).
  *
- * Calquée sur le patron déjà validé sur EBOK-MERCATO.
- *
- * Identité : gérée par CLERK (compte unique de la galaxie EBOK, clerk.ebok.fr).
+ * Identité : gérée par CLERK.
  * Les fonctions ci-dessous valident le token de session Clerk envoyé par le
  * front (`Authorization: Bearer <token>`), et lisent l'e-mail / le nom réel à la
  * volée depuis Clerk (« zéro miroir » : aucune copie locale des identités).
  *
- * Données (DATABASE_URL, base Neon partagée de la galaxie — schéma `event`) :
+ * Données (DATABASE_URL, base Neon — schéma `event`) :
  *   event.events   : fiches événements (colonnes indexables + JSONB `data`)
  *   event.views    : compteurs de « curieux » (vues) par événement
  *   event.profiles : profils diffuseurs propres à Event (JSONB) + favoris,

@@ -1,6 +1,5 @@
 /**
  * Compte EBOK Event : session, profil diffuseur et favoris.
- * Remplace la collection Firestore `users` (profils + favoris).
  *
  *   GET  /api/account            → session courante : identité Clerk (email,
  *                                  nom, isAdmin) + profil Event + favoris
@@ -82,7 +81,7 @@ export default async function handler(req, res) {
 
       if (action === "saveProfile") {
         const incoming = stripIdentity(body.profile || {});
-        // Fusion avec le profil existant (comme setDoc({merge:true}) côté Firestore).
+        // Fusion avec le profil existant : les clés absentes sont conservées.
         await sql()`
           INSERT INTO event.profiles (user_id, profile)
           VALUES (${uid}, ${JSON.stringify(incoming)}::jsonb)

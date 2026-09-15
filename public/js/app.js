@@ -1046,6 +1046,29 @@ function wireRegionPanel(panel){
 /* =========================================================
    CREATE EVENT PAGE
    ========================================================= */
+/* Valeur du profil diffuseur (renseigné sur /compte/profil), chaîne vide si absent. */
+function org(key){
+  return (currentProfile && currentProfile[key]) ? String(currentProfile[key]) : '';
+}
+
+/* Pré-remplit le bloc « organisateur » du formulaire de publication avec le
+   profil diffuseur. On ne touche QU'AUX champs laissés vides : une saisie en
+   cours n'est jamais écrasée. */
+function prefillOrgFromProfile(){
+  if(!currentProfile) return;
+  const map = {
+    'c-orgname': 'orgname',
+    'c-insta':   'orginsta',
+    'c-site':    'orgsite',
+    'c-tel':     'orgtel',
+    'c-email':   'orgemail',
+  };
+  for(const [id, key] of Object.entries(map)){
+    const el = document.getElementById(id);
+    if(el && !el.value && currentProfile[key]) el.value = currentProfile[key];
+  }
+}
+
 function initCreatePage(){
   const dz = document.getElementById('dropzone');
   const input = document.getElementById('c-affiche');
@@ -1076,7 +1099,7 @@ function initCreatePage(){
     const file = input.files[0];
     if(!file) return;
     try{
-      preview.src = await compressImage(file, 1200, 0.8);   // réduit le poids pour Firestore
+      preview.src = await compressImage(file, 1200, 0.8);   // réduit le poids avant hébergement
       preview.classList.remove('hidden');
       label.style.display = 'none';
     }catch(err){ console.warn('[EBOK] Compression affiche échouée', err); }
@@ -1145,7 +1168,7 @@ function initCreatePage(){
     const visibility = document.querySelector('input[name="visibility"]:checked')?.value || 'standard';
 
     // L'admin (ou le mode démo local) publie directement ; un diffuseur passe
-    // en validation. On CRÉE toujours l'événement en "pending" côté Firebase :
+    // en validation. On CRÉE toujours l'événement en "pending" côté serveur :
     // tout compte connecté a le droit de créer SON propre événement en attente,
     // ce qui évite un refus des règles. L'admin le publie ensuite via une mise
     // à jour "propriétaire" (autorisée sur ses propres événements) — pas besoin
@@ -1184,15 +1207,15 @@ function initCreatePage(){
       status,
       userId: currentUser ? currentUser.uid : null,
       org: {
-        name: val('c-orgname') || (currentProfile && (currentProfile.orgname || currentProfile.name)) || 'Organisateur',
-        insta: val('c-insta').replace(/^@/, ''),
-        site: val('c-site'),
-        tel: val('c-tel'),
-        email: val('c-email') || (currentUser ? currentUser.email : '')
+        name: val('c-orgname') || org('orgname') || (currentProfile && currentProfile.name) || 'Organisateur',
+        insta: (val('c-insta') || org('orginsta')).replace(/^@/, ''),
+        site: val('c-site') || org('orgsite'),
+        tel: val('c-tel') || org('orgtel'),
+        email: val('c-email') || org('orgemail') || (currentUser ? currentUser.email : '')
       }
     };
 
-    // Persistance : si Firebase est branché, on enregistre en base.
+    // Persistance : si la base est branchée, on enregistre.
     // Sinon l'événement reste en mémoire (visible jusqu'au rechargement).
     let persisted = false;
     let published = false;   // vrai si l'événement est visible publiquement tout de suite
@@ -1208,7 +1231,7 @@ function initCreatePage(){
           catch(e){ console.warn('[EBOK] Publication directe refusée — événement laissé en attente.', e); }
         }
       }catch(err){
-        console.warn('[EBOK] Enregistrement Firebase échoué.', err);
+        console.warn('[EBOK] Enregistrement en base échoué.', err);
         const code = String((err && err.code) || '').toLowerCase();
         const msg  = String((err && err.message) || '');
         const tooBig = /longer than|exceeds the maximum|invalid-argument|maximum allowed size/i.test(code + ' ' + msg);
@@ -1216,7 +1239,7 @@ function initCreatePage(){
         if(tooBig){
           banner = "⚠️ Enregistrement impossible : l'affiche ou les photos sont trop lourdes. Réessaie avec une image plus légère.";
         }else if(code.includes('permission-denied') || code.includes('unauthenticated')){
-          // Règles Firestore : le compte n'a pas le droit d'écrire cet événement.
+          // Le serveur refuse : le compte n'a pas le droit d'écrire cet événement.
           banner = "⚠️ Publication refusée par la base de données. Vérifie que tu es bien connecté à ton compte, puis réessaie. Si tu publies en tant qu'admin, il se peut que ton email ne soit pas encore reconnu comme administrateur.";
         }else if(code.includes('unavailable') || code.includes('network') || /network|offline/i.test(msg)){
           banner = "⚠️ Connexion à la base impossible. Vérifie ta connexion internet et réessaie.";
@@ -1227,7 +1250,7 @@ function initCreatePage(){
         return;
       }
     }else if(wantApproved){
-      // Mode démo (sans Firebase) : rien à enregistrer, on affiche directement.
+      // Mode démo (sans base) : rien à enregistrer, on affiche directement.
       newEvent.status = 'approved';
       published = true;
     }
@@ -1283,7 +1306,7 @@ function showConfirm(mode){
    s'appuyant sur les villes connues. À remplacer par une vraie
    géolocalisation (lat/lon + géocodage) à la phase géolocalisation. */
 /* Réduit et compresse une image (affiche / photo) avant stockage.
-   Firestore limite un document à 1 Mo : une image brute en base64 dépasse
+   Une image brute en base64 pèse très lourd en base : la compression
    vite cette limite, d'où l'échec d'enregistrement. On redimensionne à
    `maxDim` px max et on ré-encode en JPEG. */
 function compressImage(file, maxDim = 1200, quality = 0.8){
@@ -1575,7 +1598,7 @@ async function openEvent(id, opts){
   const fromUrl = Boolean(opts && opts.fromUrl);
   let ev = events.find(e=>e.id===id);
   // Événement absent de la liste publique (ex. en attente de validation) :
-  // on le récupère directement depuis Firebase si possible.
+  // on le récupère directement depuis la base si possible.
   if(!ev && window.EBOK_DATA && typeof window.EBOK_DATA.getEvent === 'function'){
     try{ ev = await window.EBOK_DATA.getEvent(id); }catch(e){ /* ignore */ }
   }
@@ -1742,7 +1765,7 @@ async function openEvent(id, opts){
 async function loadAndAnimateViews(id){
   const seed = VIEW_SEEDS[id] || 120;
   let count = null;
-  // 1) Source privilégiée : Firebase (compteur partagé entre tous les visiteurs).
+  // 1) Source privilégiée : la base (compteur partagé entre tous les visiteurs).
   if(window.EBOK_DATA && typeof window.EBOK_DATA.incrementViews === 'function'){
     try{
       const c = await window.EBOK_DATA.incrementViews(id, seed);
@@ -2058,7 +2081,7 @@ function showPage(name){
   // Publier exige un compte : on propose la connexion sans masquer le formulaire.
   if(name === 'create' && !currentUser && window.EBOK_AUTH){ openAuth('login'); }
   // Précharge la base des villes dès qu'on arrive sur la page de publication.
-  if(name === 'create') ensureCitiesLoaded();
+  if(name === 'create'){ ensureCitiesLoaded(); prefillOrgFromProfile(); }
   if(name === 'profile') renderProfile();
   // Quitter une fiche événement : on revient à l'URL racine.
   if(!syncingFromUrl && name !== 'event' && eventIdFromUrl()) setUrl('/');
@@ -2082,7 +2105,7 @@ async function loadFavorites(){
     try{ favorites = new Set(await window.EBOK_DATA.getFavorites(currentUser.uid)); }
     catch(e){ favorites = new Set(); }
   }else if(!window.EBOK_AUTH){
-    // Mode démo (sans Firebase) : on garde les favoris en local.
+    // Mode démo (sans base) : on garde les favoris en local.
     try{ favorites = new Set(JSON.parse(localStorage.getItem('ebok-favs') || '[]')); }
     catch(e){ favorites = new Set(); }
   }else{
@@ -2157,46 +2180,52 @@ async function renderFavorites(){
   });
 }
 
+/* ---------- Connexion (déléguée à Clerk) ---------- */
+/* Il n'y a pas de formulaire de connexion maison : e-mail, mot de passe,
+   Google, vérification et réinitialisation sont entièrement gérés par le
+   widget Clerk (voir js/clerk.js). */
+
+/** Ouvre le widget Clerk. `tab` vaut 'login' ou 'signup'. */
 function openAuth(tab){
-  // Identité déléguée à Clerk : on ouvre le widget Clerk (email + Google) plutôt
-  // que la fenêtre de connexion maison. Celle-ci ne sert plus qu'en mode démo
-  // (Clerk non branché).
   if(window.EBOK_AUTH && typeof window.EBOK_AUTH.openSignIn === 'function'){
     window.EBOK_AUTH.openSignIn(tab === 'signup' ? 'signup' : 'login');
     return;
   }
-  switchAuthTab(tab || 'login');
-  document.getElementById('authError').classList.add('hidden');
-  const modal = document.getElementById('authModal');
-  modal.classList.add('open');
-  modal.setAttribute('aria-hidden', 'false');
+  // Clerk n'a pas pu se charger : on le dit, plutôt que de ne rien faire.
+  showAuthUnavailable();
 }
-function closeAuth(){
-  const modal = document.getElementById('authModal');
-  modal.classList.remove('open');
-  modal.setAttribute('aria-hidden', 'true');
+
+/* Bandeau affiché quand le service de comptes est injoignable (Clerk bloqué
+   par un bloqueur de contenu, coupure réseau, site ouvert en file://). Sans
+   lui, les boutons « Se connecter » resteraient sans effet et sans
+   explication. */
+function showAuthUnavailable(){
+  let box = document.getElementById('authUnavailable');
+  if(!box){
+    box = document.createElement('div');
+    box.id = 'authUnavailable';
+    box.className = 'auth-unavailable';
+    box.setAttribute('role', 'alert');
+    box.innerHTML =
+      '<span>Les comptes sont momentanément injoignables. '
+      + 'Vérifie ta connexion ou désactive ton bloqueur de publicités, puis recharge la page.</span>'
+      + '<button type="button" class="auth-unavailable-close" aria-label="Fermer">&times;</button>';
+    box.querySelector('button').addEventListener('click', ()=> box.remove());
+    document.body.appendChild(box);
+  }
+  clearTimeout(showAuthUnavailable._t);
+  showAuthUnavailable._t = setTimeout(()=> box.remove(), 10000);
 }
-function switchAuthTab(tab){
-  document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
-  document.getElementById('tabSignup').classList.toggle('active', tab === 'signup');
-  document.getElementById('loginForm').classList.toggle('hidden', tab !== 'login');
-  document.getElementById('signupForm').classList.toggle('hidden', tab !== 'signup');
-  document.getElementById('authError').classList.add('hidden');
-}
-function showAuthError(msg){
-  const e = document.getElementById('authError');
-  e.textContent = msg;
-  e.classList.remove('hidden');
-}
-function authMessage(err){
-  const c = (err && err.code) || '';
-  if(c.includes('email-already-in-use')) return "Cet email a déjà un compte. Essaie de te connecter.";
-  if(c.includes('invalid-email')) return "Adresse email invalide.";
-  if(c.includes('weak-password')) return "Mot de passe trop court (6 caractères minimum).";
-  if(c.includes('invalid-credential') || c.includes('wrong-password') || c.includes('user-not-found'))
-    return "Email ou mot de passe incorrect.";
-  if(c.includes('too-many-requests')) return "Trop de tentatives. Réessaie dans quelques minutes.";
-  return "Une erreur est survenue. Réessaie.";
+
+/* Grise les boutons de compte tant que Clerk n'a pas répondu. Appelé par
+   clerk-init.js : `ready` faux = service injoignable. */
+function setAuthAvailable(ready){
+  for(const id of ['btnLogin', 'btnSignup']){
+    const el = document.getElementById(id);
+    if(!el) continue;
+    el.disabled = !ready;
+    el.title = ready ? '' : 'Service de comptes momentanément injoignable';
+  }
 }
 
 /* ---------- Profil membre (questions inscription + édition) ---------- */
@@ -2367,54 +2396,8 @@ function updateAuthUI(){
 }
 
 function initAuth(){
-  const modal = document.getElementById('authModal');
-  // Injecte les questions de profil dans le formulaire d'inscription.
-  const suProfile = document.getElementById('su-profile');
-  if(suProfile){ suProfile.innerHTML = profileFieldsHtml('su-'); wireProfileFields('su-'); }
   document.getElementById('btnLogin').addEventListener('click', ()=> openAuth('login'));
   document.getElementById('btnSignup').addEventListener('click', ()=> openAuth('signup'));
-  document.getElementById('authClose').addEventListener('click', closeAuth);
-  bindBackdropClose(modal, closeAuth);
-  document.getElementById('tabLogin').addEventListener('click', ()=> switchAuthTab('login'));
-  document.getElementById('tabSignup').addEventListener('click', ()=> switchAuthTab('signup'));
-
-  document.getElementById('loginForm').addEventListener('submit', async e=>{
-    e.preventDefault();
-    if(!window.EBOK_AUTH){ showAuthError("Connexion indisponible (Firebase non activé)."); return; }
-    try{
-      await window.EBOK_AUTH.signIn(
-        document.getElementById('login-email').value.trim(),
-        document.getElementById('login-pass').value
-      );
-      closeAuth();
-    }catch(err){ showAuthError(authMessage(err)); }
-  });
-
-  document.getElementById('signupForm').addEventListener('submit', async e=>{
-    e.preventDefault();
-    if(!window.EBOK_AUTH){ showAuthError("Inscription indisponible (Firebase non activé)."); return; }
-    const profile = Object.assign(
-      { name: document.getElementById('su-name').value.trim() },
-      readProfileFields('su-')
-    );
-    try{
-      await window.EBOK_AUTH.signUp(
-        document.getElementById('su-email').value.trim(),
-        document.getElementById('su-pass').value,
-        profile
-      );
-      closeAuth();
-    }catch(err){ showAuthError(authMessage(err)); }
-  });
-
-  // Connexion avec Google
-  document.getElementById('btnGoogle').addEventListener('click', async ()=>{
-    if(!window.EBOK_AUTH || !window.EBOK_AUTH.signInWithGoogle){
-      showAuthError("Connexion Google indisponible (à activer dans Firebase)."); return;
-    }
-    try{ await window.EBOK_AUTH.signInWithGoogle(); closeAuth(); }
-    catch(err){ showAuthError(authMessage(err)); }
-  });
 
   const logout = async ()=>{
     if(window.EBOK_AUTH) await window.EBOK_AUTH.signOutUser();
@@ -2583,7 +2566,7 @@ async function renderAdminEvents(){
   const wrap = document.getElementById('adminGrid');
   if(!wrap) return;
   if(!window.EBOK_DATA){
-    wrap.innerHTML = `<div class="empty-state"><p>Disponible une fois Firebase activé.</p></div>`;
+    wrap.innerHTML = `<div class="empty-state"><p>Disponible une fois la base connectée.</p></div>`;
     return;
   }
   wrap.innerHTML = `<div class="empty-state"><p>Chargement…</p></div>`;
@@ -2656,7 +2639,7 @@ async function renderAdminMembers(){
   const wrap = document.getElementById('adminMembers');
   if(!wrap) return;
   if(!window.EBOK_DATA || !window.EBOK_DATA.getAllUsers){
-    wrap.innerHTML = `<div class="empty-state"><p>Disponible une fois Firebase activé.</p></div>`;
+    wrap.innerHTML = `<div class="empty-state"><p>Disponible une fois la base connectée.</p></div>`;
     return;
   }
   wrap.innerHTML = `<div class="empty-state"><p>Chargement…</p></div>`;
@@ -2730,7 +2713,7 @@ function initAiImport(){
 async function runImport(payload, pending){
   const status = document.getElementById('ia-status');
   const btn = document.getElementById('ia-btn');
-  // L'assistant est réservé à l'administrateur (jeton Firebase + email admin).
+  // L'assistant est réservé à l'administrateur (jeton Clerk + email admin).
   if(!currentIsAdmin){ status.textContent = 'Assistant IA réservé à l’administrateur.'; return; }
   status.textContent = pending;
   btn.disabled = true;
@@ -2840,7 +2823,7 @@ function isPermissionError(err){
 }
 
 /* Affiche le bandeau d'aide / diagnostic dans l'espace admin.
-   `err` est l'erreur Firebase remontée par l'action refusée (facultatif). */
+   `err` est l'erreur serveur remontée par l'action refusée (facultatif). */
 function showAdminRulesAlert(err){
   const box = document.getElementById('adminRulesAlert');
   if(!box) return;
@@ -2848,7 +2831,7 @@ function showAdminRulesAlert(err){
   const code = err ? String((err.code || '') || '') : '';
   const message = err ? String((err.message || '') || '') : '';
 
-  // Identité serveur : email/uid réellement transmis à Firestore.
+  // Identité serveur : email/uid réellement transmis à l'API.
   const email = (currentUser && currentUser.email) || '(inconnu)';
   const uid = (currentUser && currentUser.uid) || '(inconnu)';
   const emailKnownAdmin = /^marley\.ebok@gmail\.com$/i.test(email);
@@ -2902,7 +2885,7 @@ async function handleToggleFeatured(id){
 async function fillEventsGrid(grid, fetcher, emptyMsg){
   if(!grid) return;
   if(!window.EBOK_DATA){
-    grid.innerHTML = `<div class="empty-state"><p>Disponible une fois Firebase activé.</p></div>`;
+    grid.innerHTML = `<div class="empty-state"><p>Disponible une fois la base connectée.</p></div>`;
     return;
   }
   grid.innerHTML = `<div class="empty-state"><p>Chargement…</p></div>`;
@@ -3143,7 +3126,7 @@ function initEditModal(){
 
 /* Redessine tout ce qui dépend des données (carte, carrousel, listes).
    Appelé au démarrage, quand un événement est publié, et quand une
-   source externe (Firebase) renvoie les données. Ne rebranche PAS les
+   source externe (clerk-init.js) renvoie les données. Ne rebranche PAS les
    écouteurs des filtres (faits une seule fois via initHomeFilters). */
 function renderAll(){
   buildMap();
@@ -3152,13 +3135,15 @@ function renderAll(){
   renderResults();
 }
 
-/* Point d'entrée exposé pour la couche de données optionnelle (Firebase).
-   Tant que Firebase n'est pas branché, l'app tourne sur les données
-   locales de data.js. */
+/* Point d'entrée exposé pour la couche de données optionnelle (clerk-init.js).
+   Tant qu'elle n'est pas branchée, l'app tourne sur les données locales
+   de data.js. */
 window.EBOK = {
   get events(){ return events; },
   setEvents(list){ if(Array.isArray(list)) events = list; renderAll(); tryOpenFromUrl(); },
   addEvent(ev){ events = [ev, ...events]; renderAll(); },
+  // Appelé par clerk-init.js selon que le service de comptes répond ou non.
+  setAuthAvailable,
   // Appelé par clerk-init.js à chaque connexion / déconnexion.
   async onAuthChanged(user, profile, admin){
     currentUser = user || null;
@@ -3167,6 +3152,7 @@ window.EBOK = {
     updateAuthUI();
     await loadFavorites();
     renderAll();                 // rafraîchit les ♥ sur les cartes
+    prefillOrgFromProfile();     // le profil diffuseur arrive avec la session
     if(document.getElementById('page-profile').classList.contains('active')) renderProfile();
   }
 };
@@ -3190,12 +3176,6 @@ function initTheme(){
   });
 }
 
-/* =========================================================
-   BANDEAU « GALAXIE EBOK »
-   ---------------------------------------------------------
-   Défilement continu des logos des applications EBOK, en bas de
-   l'accueil. Les images sont à déposer dans public/assets/galaxy/.
-   ========================================================= */
 // Écouteurs (une seule fois) + premier rendu sur les données locales.
 initTheme();           // applique le thème mémorisé avant le rendu
 initGeoloc();          // restaure une éventuelle position avant le 1er dessin
@@ -3214,10 +3194,3 @@ initPostersMaintenance();
 // Lien partagé vers une fiche : on l'ouvre dès le démarrage.
 tryOpenFromUrl();
 
-// Si une source de données externe est branchée (clerk-init.js), on
-// remplace les données locales par celles de la base dès qu'elles arrivent.
-if(window.EBOK_DATA && typeof window.EBOK_DATA.getAllEvents === 'function'){
-  window.EBOK_DATA.getAllEvents()
-    .then(list=>{ if(Array.isArray(list) && list.length){ events = list; renderAll(); } })
-    .catch(err=> console.warn('[EBOK] Données Firebase indisponibles — affichage des données locales.', err));
-}

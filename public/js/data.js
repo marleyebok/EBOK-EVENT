@@ -35,7 +35,7 @@ const TYPE_COLORS = {
 };
 
 // `let` (et non `const`) : la liste peut être remplacée au chargement
-// par les données venues de Firebase (voir app.js → renderAll / EBOK.setEvents).
+// par les données venues de la base (voir app.js → renderAll / EBOK.setEvents).
 let events = [
   {
     id:"ligue-c",

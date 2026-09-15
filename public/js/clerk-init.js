@@ -1,8 +1,8 @@
 /* =========================================================
    EBOK Event — ACTIVATION NEON + CLERK
    ---------------------------------------------------------
-   Remplace l'ancien firebase-init.js. Branche la couche données (/api Neon) et
-   l'identité (Clerk) sur l'app. Activé via
+   Branche la couche données (/api Neon) et l'identité (Clerk) sur l'app.
+   Activé via
    <script type="module" src="js/clerk-init.js"> dans index.html.
 
    Tant que ce fichier n'est pas chargé, l'app tourne sur les données locales de
@@ -26,18 +26,15 @@ window.EBOK_DATA = {
   hostStoredPosters,
 };
 
-// Couche authentification exposée à app.js. `openSignIn` ouvre le widget Clerk ;
-// les anciens noms (signIn/signUp/signInWithGoogle) y renvoient pour compat.
+// Couche authentification exposée à app.js. Tout passe par le widget Clerk :
+// e-mail, mot de passe, Google, vérification et réinitialisation.
 window.EBOK_AUTH = {
   openSignIn,
-  signIn: () => openSignIn("login"),
-  signUp: () => openSignIn("signup"),
-  signInWithGoogle: () => openSignIn("login"),
   signOutUser,
 };
 
 /* Transforme l'utilisateur Clerk en objet compatible avec app.js
-   (qui lit .uid, .email, .displayName et .getIdToken() — héritage Firebase). */
+   (qui lit .uid, .email, .displayName et .getIdToken()). */
 function normalize(clerk) {
   const u = clerk.user;
   if (!u) return null;
@@ -79,8 +76,14 @@ async function relay(clerk) {
     const clerk = await loadClerk();
     clerk.addListener(() => relay(clerk));
     relay(clerk);
+    if (window.EBOK && window.EBOK.setAuthAvailable) window.EBOK.setAuthAvailable(true);
   } catch (e) {
-    console.warn("[EBOK] Clerk indisponible — connexion désactivée.", e);
+    // Bloqueur de contenu, coupure réseau, instance mal configurée… On le
+    // signale à l'app pour qu'elle grise les boutons plutôt que de laisser
+    // l'utilisateur cliquer dans le vide.
+    console.warn("[EBOK] Service de comptes injoignable.", e);
+    window.EBOK_AUTH = null;
+    if (window.EBOK && window.EBOK.setAuthAvailable) window.EBOK.setAuthAvailable(false);
   }
 })();
 

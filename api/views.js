@@ -1,5 +1,5 @@
 /**
- * Compteurs de « curieux » (vues) — remplace la collection Firestore `views`.
+ * Compteurs de « curieux » (vues) par événement.
  *
  *   GET  /api/views?id=X            → lit le compteur (0 si absent)
  *   POST /api/views?id=X&seed=N     → incrémente et renvoie la nouvelle valeur.

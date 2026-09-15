@@ -276,21 +276,17 @@ function isPast(ev) { return ev.dateEnd < TODAY; }
 
 ## 🚀 Prochaines Étapes Prioritaires
 
-### Phase 1 (MVP + Backend)
-1. **Firebase/Supabase setup** → tables `events`, `users`, `submissions`
-2. **Auth diffuseurs** → signup/login
-3. **API CRUD événements** → créer, lire, modifier
-4. **Géolocalisation réelle** → remplacer rayon km approximatif par vraie distance + autocomplete ville
+> La feuille de route détaillée vit dans **`DEVELOPMENT_PLAN.md`** — source de
+> vérité unique. Le backend (base, comptes, CRUD, modération, dashboards
+> diffuseur et admin, favoris) est **déjà en place** ; la liste ci-dessous n'est
+> qu'un rappel des grands axes restants.
 
-### Phase 2 (Monétisation)
-5. **Intégration Stripe** → paiement featured/mailing
-6. **Dashboard diffuseur** → stats vues, modifier event, gérer featured
-7. **Admin dashboard** → modération, stats globales
-
-### Phase 3 (Engagement)
-8. **Notifications** → "Événement match tes préfs" email
-9. **Système likes** → ♥ "Suivre" événement
-10. **Évaluations** → notes/commentaires
+1. **Géolocalisation réelle** → distance de Haversine à la place du rayon approximatif
+2. **« J'y vais »** → compteur de participants intéressés (preuve sociale)
+3. **Ajouter à mon agenda** → export `.ics`
+4. **Répertoire des playgrounds 3x3** → recensement communautaire sur la carte
+5. **Alertes e-mail** → « préviens-moi des *tournois* près de *Montpellier* »
+6. **Billetterie / inscriptions** → avec commission (plus tard)
 
 ---
 

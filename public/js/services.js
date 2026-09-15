@@ -1,22 +1,13 @@
 /* =========================================================
    EBOK Event — COUCHE API (Neon via /api + Clerk)
    ---------------------------------------------------------
-   Remplace l'ancienne couche Firebase. Les SIGNATURES exportées n'ont pas
-   changé : app.js n'a (presque) pas à bouger. Les données passent par les
-   fonctions serverless /api/* (base Neon partagée, schéma « event ») ;
-   l'identité passe par Clerk (compte unique de la galaxie EBOK — voir clerk.js).
+   Les données passent par les fonctions serverless /api/* (base Neon,
+   schéma « event ») ; l'identité passe par Clerk (voir clerk.js).
 
    « Zéro miroir » : e-mail et nom réel sont lus en direct depuis Clerk, jamais
    copiés en base.
    ========================================================= */
-import { loadClerk, authHeader } from "./clerk.js";
-
-/* Emails administrateurs — doit rester cohérent avec api/_lib.js (ADMIN_EMAILS).
-   L'autorité finale est le serveur (isAdmin via l'e-mail Clerk). */
-const ADMIN_EMAILS = ["marley.ebok@gmail.com"];
-export function isAdminEmail(email) {
-  return !!email && ADMIN_EMAILS.includes(email.trim().toLowerCase());
-}
+import { loadClerk, authHeader, clerkAppearance } from "./clerk.js";
 
 /* Petit client HTTP : chaque appel porte le token de session Clerk. */
 async function api(path, { method = "GET", body } = {}) {
@@ -123,8 +114,11 @@ export async function incrementViews(eventId, seed = 0) {
 /** Ouvre le widget Clerk (connexion ou inscription). */
 export async function openSignIn(mode) {
   const clerk = await loadClerk();
-  if (mode === "signup") clerk.openSignUp();
-  else clerk.openSignIn();
+  // L'habillage est recalculé ici pour suivre la bascule clair / sombre faite
+  // après le chargement de Clerk.
+  const opts = { appearance: clerkAppearance() };
+  if (mode === "signup") clerk.openSignUp(opts);
+  else clerk.openSignIn(opts);
 }
 
 /** Déconnexion. */
@@ -133,23 +127,11 @@ export async function signOutUser() {
   await clerk.signOut();
 }
 
-/* Compat : les anciens noms redirigent vers le widget Clerk (email + Google
-   sont gérés par Clerk lui-même ; plus de formulaire maison). */
-export async function signIn() { return openSignIn("login"); }
-export async function signUp() { return openSignIn("signup"); }
-export async function signInWithGoogle() { return openSignIn("login"); }
-
 /* ---------- Session / profil / favoris ---------- */
 
 /** Session courante : { user:{uid,email,displayName,isAdmin}|null, profile, favorites }. */
 export async function getSession() {
   return api("/api/account");
-}
-
-/** Profil diffuseur de la session (null si non connecté). */
-export async function getUserProfile(uid) {
-  const d = await api("/api/account");
-  return d.profile || null;
 }
 
 /** Tous les membres inscrits (réservé à l'admin). */
@@ -179,14 +161,3 @@ export async function hostStoredPosters({ dry = false, limit = 5 } = {}) {
   const q = `?limit=${encodeURIComponent(limit)}${dry ? "&dry=1" : ""}`;
   return api("/api/migrate-posters" + q, { method: "POST" });
 }
-
-/** Vrai si l'utilisateur connecté est administrateur (autorité serveur). */
-export async function isAdmin(uid) {
-  try {
-    const d = await api("/api/account");
-    return !!(d.user && d.user.isAdmin);
-  } catch {
-    return false;
-  }
-}
-

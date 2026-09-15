@@ -1,408 +1,258 @@
-# 🚀 EBOK Event — Plan de Développement pour Claude Code
+# 🚀 EBOK Event — Plan de développement
 
-## 📍 Contexte du Projet
+> Feuille de route unique du projet. Le `README.md` décrit **comment ça marche**
+> (architecture, variables d'environnement, déploiement) ; ce fichier décrit
+> **ce qui reste à faire**. `EBOK_Event_Briefing.md` reste la référence produit
+> et design (palette, types d'événements, ton).
+>
+> 🚦 **Avant d'ouvrir le site au public**, dérouler la checklist de lancement
+> plus bas. Les points « Obligations légales » sont bloquants.
 
-**EBOK Event** est un agenda collaboratif du basketball français. MVP actuel = HTML/CSS/JS pur, 22 événements en hardcode, interface complète mais sans backend.
-
-**État actuel :**
-- ✅ Design complet (mode sombre)
-- ✅ Tous les filtres fonctionnels (carte, recherche, calendrier)
-- ✅ Carrousel "À la une" (Netflix-style)
-- ✅ Formulaire publication événement
-- ✅ Page détail événement avec compteur de visites
-- ❌ Pas de backend (données hardcodées)
-- ❌ Pas d'authentification
-- ❌ Pas de paiement
-- ❌ Pas de géolocalisation réelle
+**Dernière mise à jour :** septembre 2026
 
 ---
 
-## 🎯 Objectifs pour Cette Session
+## 📍 Où en est le projet
 
-### Phase 1 : Préparation Projet (2-3h)
-**Objectif :** transformer HTML monolithique en structure professionnelle
+EBOK Event est **en ligne et fonctionnel**, avec un vrai backend. Ce n'est plus
+un MVP statique.
+
+**Pile technique**
+
+| Couche | Choix |
+|---|---|
+| Front | HTML / CSS / JS pur, sans framework ni build |
+| Base de données | **Neon** (Postgres serverless), schéma `event` |
+| Comptes | **Clerk** (e-mail + Google) |
+| Fichiers | **Vercel Blob** (affiches, galeries) |
+| Hébergement | **Vercel** — statique `public/` + fonctions `/api` |
+| Assistant IA | **OpenRouter** (Gemini en alternative) |
+
+> ⚠️ **Firebase n'a jamais été utilisé.** Les anciennes versions de ce plan
+> décrivaient une architecture Firebase qui n'a pas été retenue. Si tu croises
+> encore ce mot quelque part, c'est une coquille à corriger.
+
+**Produit autonome.** EBOK Event ne dépend plus d'EBOK Basketball ni des autres
+applications : plus de barre de navigation commune, plus de pied de page
+partagé, plus de lecture du profil du site mère. Seul reste le point ci-dessous.
+
+---
+
+## ✅ Ce qui est fait
+
+- [x] Découpage HTML / CSS / JS en modules
+- [x] Base Neon + schéma créé automatiquement (`api/_lib.js` → `ensureSchema`)
+- [x] Comptes Clerk : inscription, connexion, e-mail + Google, widget habillé aux couleurs du site
+- [x] Rôles et droits vérifiés **côté serveur** : public / diffuseur / admin
+- [x] CRUD événements complet + circuit de validation (`pending` → `approved`)
+- [x] Compteurs de « curieux », favoris, profil membre
+- [x] Profil diffuseur (`/compte/profil`) qui pré-remplit le formulaire de publication
+- [x] Affiches hébergées sur Vercel Blob + reprise des affiches stockées en base
+- [x] Aperçu au partage et indexation par événement (`api/evenement.js` → Open Graph + schema.org)
+- [x] Carte de France interactive, carte du monde pour l'étranger
+- [x] Assistant IA d'import depuis un lien ou une image (réservé admin)
+- [x] Autocomplétion de ville hors ligne (`cities-fr.js`) + repli sur la Base Adresse Nationale
+- [x] Thème clair / sombre
+- [x] Échappement des données d'événement dans les rendus HTML (XSS stocké)
+
+---
+
+## 🎯 Chantier en cours : instance Clerk dédiée
+
+Côté code, **tout est prêt** : la connexion repose entièrement sur le widget
+Clerk (plus de formulaire maison), le widget est habillé aux couleurs du site,
+une panne du service est signalée à l'utilisateur, et la bascule d'instance ne
+demande qu'**une seule ligne**. Il reste l'étape qui se fait sur le tableau de
+bord Clerk : **créer l'instance dédiée** — marche à suivre détaillée dans le
+README (« Basculer vers une instance Clerk dédiée »).
+
+**⚠️ Conséquence à assumer :** les comptes ne se transfèrent pas d'une instance
+Clerk à l'autre. Tous les membres devront **se réinscrire**, et les événements
+déjà publiés perdront le lien avec leur diffuseur (leur `user_id` pointera vers
+un compte qui n'existe plus). L'admin étant reconnu par **e-mail** et non par
+identifiant, les droits d'administration, eux, se retrouvent automatiquement.
+
+> 👉 **Tant qu'il n'y a aucun diffuseur inscrit, l'opération est gratuite.**
+> Plus on attend, plus la réinscription coûte cher. La marche à suivre complète
+> (réglages Clerk, clés, passage en production, liste de vérification) est dans
+> le README — elle n'est pas recopiée ici pour éviter que les deux versions
+> divergent.
+
+---
+
+## 🔜 Prochaines étapes
+
+### 1. Géolocalisation réelle *(prioritaire)*
+
+Le filtre « autour de moi » repose encore sur un rayon approximatif.
+
+> ℹ️ **À savoir avant de commencer :** `app.js` contient déjà la logique
+> (`initGeoloc`, `setGeoUI`, `showGeoStatus`, le curseur de rayon), mais les
+> éléments correspondants — `geoBtn`, `geoStatus`, `radiusFilter`,
+> `radiusValue` — **n'existent pas dans `index.html`**. L'interface a été
+> retirée sans le code. Tout est protégé par des `if(!el) return;`, donc rien
+> ne casse : il reste à remettre l'interface et à brancher le calcul réel.
+
+- [ ] Demander la position au navigateur et la mémoriser
+- [ ] Stocker `latitude` / `longitude` sur chaque événement (les coordonnées des
+      villes sont déjà dans `cities-fr.js` — la moitié du travail est faite)
+- [ ] Remplacer le rayon approximatif par la **formule de Haversine**
+- [ ] Trier les résultats par distance réelle
+
+### 2. « J'y vais » *(petit effort, fort impact)*
+
+Compteur de participants intéressés : preuve sociale, et première brique vers la
+billetterie.
+
+- [ ] Table `event.attendees` (`event_id`, `user_id`), ou un champ dans `profiles`
+- [ ] Bouton sur la fiche événement, réservé aux membres connectés
+- [ ] Compteur affiché sur la fiche et sur les cartes
+
+### 3. Ajouter à mon agenda *(petit effort)*
+
+- [ ] Génération d'un fichier `.ics` (Google / Apple Agenda), côté navigateur
+
+### 4. Répertoire des playgrounds 3x3 *(gros chantier)*
+
+Recenser les terrains de France et les afficher sur la carte. Fort potentiel
+communautaire, mais dépend de la géolocalisation.
+
+- [ ] Entité « terrain » en base (distincte des événements)
+- [ ] Affichage sur la carte + filtre « autour de moi »
+- [ ] Contribution communautaire avec modération admin
+
+### 5. Plus tard
+
+- [ ] **Alertes e-mail** — « préviens-moi des *tournois* près de *Montpellier* »
+      (nécessite un service d'envoi type Resend ou SendGrid)
+- [ ] **Avis / discussion** — questions à l'organisateur, retours sur les
+      éditions passées (demande de la modération)
+- [ ] **Billetterie / inscriptions** — avec commission
+
+---
+
+## 🚦 Avant le lancement public
+
+Checklist de mise en ligne. Les cases déjà cochées l'ont été après vérification
+dans le code — le reste est à faire.
+
+### ⚖️ Obligations légales *(bloquant — ne pas lancer sans)*
+
+- [ ] **Page « Politique de confidentialité » (RGPD)** — quelles données sont
+      collectées (compte Clerk, profil diffuseur, favoris, compteurs de vues),
+      pourquoi, combien de temps, et comment les supprimer. Citer les
+      sous-traitants : Clerk (comptes), Neon (base), Vercel (hébergement),
+      OpenRouter (assistant IA).
+- [ ] **Page « Conditions générales d'utilisation »** — qui peut publier, règles
+      de modération, responsabilité sur le contenu déposé par les diffuseurs,
+      droit à l'image des affiches.
+- [ ] **Mentions légales** — obligatoires en France : éditeur, hébergeur (Vercel),
+      contact. Souvent oubliées alors qu'elles sont exigées avec les CGU.
+- [ ] **Bandeau cookies** — à calibrer une fois l'outil de mesure choisi. Les
+      cookies de Clerk sont *strictement nécessaires* (pas de consentement
+      requis) ; un outil de mesure sans cookie (voir plus bas) évite le bandeau
+      de consentement. À trancher avec le point « Mesure d'audience ».
+- [ ] **Lien vers ces pages dans le pied de page**
+
+### 🔎 Référencement & partage
+
+- [x] **Titre et description** — présents, et **personnalisés par événement**
+      (`api/evenement.js` injecte titre, description, Open Graph et
+      schema.org/Event)
+- [x] **Favicon** — SVG + PNG + icône Apple, en place
+- [ ] **Image de partage réseaux sociaux** — ⚠️ aujourd'hui `og:image` pointe
+      vers `favicon-192.png` : une icône de 192 px, que WhatsApp, LinkedIn et
+      Facebook affichent en minuscule ou ignorent. Il faut une vraie image
+      **1200 × 630**. Passer aussi `twitter:card` de `summary` à
+      `summary_large_image`.
+- [ ] **`robots.txt`** — absent
+- [ ] **`sitemap.xml`** — absent. À générer dynamiquement depuis les événements
+      validés (une fonction `/api/sitemap`), sinon il sera périmé en permanence.
+
+### ⚡ Performance & accessibilité
+
+- [ ] **Poids des pages** — `cities-fr.js` pèse **244 Ko** et `france-map.js`
+      **88 Ko**. `cities-fr.js` est déjà chargé à la demande ; vérifier que rien
+      d'autre ne bloque le premier affichage.
+- [ ] **Compression des images** — `demo-ligue-c.jpg` fait 136 Ko et les trois
+      favicons 64 Ko à eux seuls. Les affiches déposées sont déjà compressées à
+      l'envoi (`compressImage`, 1200 px / qualité 0.8) ✅, mais servir aussi du
+      **WebP** allégerait nettement.
+- [ ] **Contraste** — à mesurer au contrastomètre. `--chalk-dim` (#ACA79A) sur
+      `--asphalt` (#17171A) passe, mais les petits textes gris du thème clair
+      sont à vérifier (viser AA : 4.5:1).
+- [x] **Textes alternatifs** — toutes les balises `<img>` du HTML ont un `alt`.
+      Reste à vérifier celles générées en JS (affiches, galeries).
+- [x] **Site responsive** — 14 requêtes média, testé sur mobile. À revalider
+      après chaque nouvelle page.
+
+### 🛡️ Robustesse & confiance
+
+- [x] **API hors du front** — déjà le cas : aucune clé secrète dans le
+      navigateur, tout passe par les fonctions `/api`. Seule la clé Clerk
+      *publishable* est exposée, et c'est son usage prévu.
+- [ ] **Forcer le HTTPS** — Vercel le fait déjà automatiquement (redirection +
+      certificat). Reste à **ajouter les en-têtes de sécurité** dans
+      `vercel.json` : `Strict-Transport-Security`, `X-Content-Type-Options`,
+      `Referrer-Policy`, et une `Content-Security-Policy`.
+- [ ] **Page 404 personnalisée** — absente : un lien mort affiche la page par
+      défaut de Vercel, qui ne ressemble pas au site.
+- [ ] **Liens cassés** — à passer au crible avant lancement, y compris les liens
+      externes des diffuseurs (site, Instagram).
+- [ ] **Validation des formulaires** — le HTML a des champs `required`, mais il
+      manque des messages d'erreur clairs et une vérification des formats
+      (URL, e-mail, dates cohérentes : fin après début).
+- [ ] **Anti-spam** — ⚠️ rien aujourd'hui. La publication exige un compte et
+      passe en modération, ce qui limite déjà beaucoup les dégâts. À renforcer
+      si besoin : limitation du nombre de publications par compte et par jour.
+      Voir aussi `/api/views`, en écriture ouverte (cf. dette technique).
+- [ ] **Mesure d'audience** — rien aujourd'hui. **Recommandation :** Vercel Web
+      Analytics ou Plausible — sans cookie, donc **pas de bandeau de
+      consentement** et conformes RGPD. Google Analytics imposerait le bandeau.
+
+### 🎯 Conversion
+
+- [ ] **Un seul appel à l'action** — la barre du haut propose aujourd'hui
+      « Se connecter », « S'inscrire » et « Publier un événement ». Décider ce
+      qu'on attend d'un premier visiteur et hiérarchiser en conséquence.
+
+---
+
+## 🧹 Dette technique connue
+
+| Sujet | Détail | Urgence |
+|---|---|---|
+| `public/js/app.js` | 144 Ko dans un seul fichier. À découper par domaine (carte, filtres, publication, compte, admin) avant qu'il ne devienne intenable. | moyenne |
+| `/api/views` | Écriture ouverte : pas d'authentification ni de limite, n'importe qui peut gonfler un compteur en boucle. À sécuriser si le chiffre doit servir d'argument commercial. | moyenne |
+| Liste publique | `LIMIT 1000` en dur, sans pagination. Suffisant aujourd'hui ; à revoir vers quelques centaines d'événements. | basse |
+| `api/migrate-posters.js` | Migration ponctuelle data-URI → Blob. Supprimable une fois qu'il ne reste plus d'affiche en base (le mode `?dry=1` permet de le vérifier sans rien écrire). | basse |
+| Aucun test | Le projet n'a aucun test automatisé. Les régressions se voient en production. | à décider |
+
+---
+
+## 🔒 Règles à ne pas enfreindre
+
+- **Jamais** de `sk_…`, de `DATABASE_URL` ni de clé d'API dans le code ou dans
+  une conversation. Ces valeurs vivent dans les variables d'environnement Vercel.
+- La clé Clerk **publishable** (`pk_…`) est publique : sa place est bien dans
+  `public/js/clerk.js`.
+- Les droits se vérifient **côté serveur**, dans `/api`. Un contrôle côté
+  navigateur est un confort d'affichage, jamais une sécurité.
+- Toute donnée saisie par un membre est **échappée** avant d'être injectée dans
+  du HTML (cf. `esc()` dans `app.js`).
+- « Zéro miroir » : l'e-mail et le nom réel sont lus en direct depuis Clerk,
+  jamais recopiés en base.
+
+---
+
+## 🛠️ Commandes utiles
 
 ```bash
-# 1. Créer structure de projet
-mkdir ebok-event
-cd ebok-event
-
-# 2. Créer les dossiers
-mkdir -p src/{html,css,js,assets} public backend
-
-# 3. Initialiser Git (optionnel mais recommandé)
-git init
-
-# 4. Initialiser npm
-npm init -y
+npm start                  # serveur local sur http://localhost:8080
+npx vercel dev             # idem, avec les fonctions /api (nécessite les variables d'env)
+npm run clerk:check        # vérifie que l'instance Clerk est bien configurée
+node --check public/js/app.js   # contrôle de syntaxe rapide
 ```
 
-### Phase 2 : Refactoriser le Code (4-5h)
-**Objectif :** séparer HTML/CSS/JS, le rendre maintenable
-
-**À faire :**
-
-1. **Créer `index.html`** (structure HTML seule)
-   - Retirer tout le `<style>` et `<script>`
-   - Garder seulement HTML + liens vers fichiers externes
-   - Placer dans `public/`
-
-2. **Créer `styles.css`** (tous les CSS)
-   - Extraire du HTML
-   - Placer dans `public/css/`
-   - Lier dans `<head>` : `<link rel="stylesheet" href="css/styles.css">`
-
-3. **Créer `app.js`** (tout le JS)
-   - Extraire du HTML
-   - Placer dans `public/js/`
-   - Lier avant `</body>` : `<script src="js/app.js"></script>`
-
-4. **Créer `data.js`** (tableau events + constantes)
-   - Séparer `const events = [...]` et `const TYPE_COLORS = {...}`
-   - Placer dans `public/js/data.js`
-   - Importer dans `app.js` avant utilisation
-
-**Résultat attendu :**
-```
-ebok-event/
-├── public/
-│   ├── index.html
-│   ├── css/
-│   │   └── styles.css
-│   ├── js/
-│   │   ├── app.js
-│   │   └── data.js
-│   └── assets/
-│       └── [images si besoin]
-├── backend/
-│   └── [à créer]
-└── package.json
-```
-
-### Phase 3 : Mettre en Place Firebase (5-6h)
-**Objectif :** avoir une vraie base de données
-
-**À faire :**
-
-1. **Installer Firebase**
-   ```bash
-   npm install firebase
-   ```
-
-2. **Créer `public/js/firebase-config.js`**
-   ```javascript
-   import { initializeApp } from 'firebase/app';
-   import { getFirestore } from 'firebase/firestore';
-   import { getAuth } from 'firebase/auth';
-
-   const firebaseConfig = {
-     apiKey: "YOUR_KEY",
-     authDomain: "YOUR_DOMAIN",
-     projectId: "YOUR_PROJECT",
-     storageBucket: "YOUR_BUCKET",
-     messagingSenderId: "YOUR_ID",
-     appId: "YOUR_APP_ID"
-   };
-
-   export const app = initializeApp(firebaseConfig);
-   export const db = getFirestore(app);
-   export const auth = getAuth(app);
-   ```
-
-3. **Créer Firebase project** (via console.firebase.google.com)
-   - Nom : "ebok-event"
-   - Enable Firestore Database (test mode pour MVP)
-   - Enable Authentication (Email/Password)
-   - Copier config dans le fichier ci-dessus
-
-4. **Créer collections Firestore :**
-   - `events` (documents des événements)
-   - `users` (profils diffuseurs)
-   - `views` (comptage curieux par event)
-
-5. **Migrer les données hardcodées**
-   - Créer script d'import : lire `data.js`, uploader tous les events dans Firestore
-   - Ou importer manuellement (22 events = 10min)
-
-### Phase 4 : Connecter le Frontend à Firebase (6-8h)
-**Objectif :** l'app lit/écrit via Firestore au lieu de hardcode
-
-**À faire :**
-
-1. **Créer `public/js/services.js`** (couche API)
-   ```javascript
-   import { db } from './firebase-config.js';
-   import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
-
-   // Récupérer tous les events
-   export async function getAllEvents() {
-     const q = collection(db, 'events');
-     const snapshot = await getDocs(q);
-     return snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
-   }
-
-   // Ajouter un event (depuis formulaire)
-   export async function createEvent(eventData) {
-     return await addDoc(collection(db, 'events'), eventData);
-   }
-
-   // Mettre à jour compteur vues
-   export async function incrementViews(eventId) {
-     // logique...
-   }
-
-   // etc.
-   ```
-
-2. **Remplacer appels `const events = [...]` par fetch Firebase**
-   ```javascript
-   // Au lieu de :
-   // const events = [{...}, {...}];
-
-   // Faire :
-   let events = [];
-   getAllEvents().then(data => {
-     events = data;
-     renderFeatured();
-     buildMap();
-     // etc.
-   });
-   ```
-
-3. **Connecter le formulaire publication**
-   - Au submit, appeler `createEvent(formData)`
-   - Afficher confirmation + redirection
-
-4. **Tester :** ajouter un event via formulaire, vérifier dans Firestore, ça apparaît sur la carte
-
-### Phase 5 : Authentification Diffuseurs (4-5h)
-**Objectif :** les diffuseurs se connectent
-
-**À faire :**
-
-1. **Créer page "Connexion" (`login.html`)**
-   - Email + password
-   - Bouton "S'inscrire"
-   - Appeler Firebase Auth
-
-2. **Créer page "Inscription"`
-   - Email + password (x2)
-   - Infos organisateur (nom, insta, etc.)
-   - Créer user + document dans collection `users`
-
-3. **Ajouter état authentification globale**
-   ```javascript
-   import { onAuthStateChanged } from 'firebase/auth';
-   import { auth } from './firebase-config.js';
-
-   let currentUser = null;
-   onAuthStateChanged(auth, (user) => {
-     currentUser = user;
-     updateUIBasedOnAuth();
-   });
-   ```
-
-4. **Protéger le formulaire création event**
-   - Afficher seulement si connecté
-   - Au submit, ajouter `userId: currentUser.uid` à l'event
-
-5. **Créer "Mes événements" pour diffuseurs**
-   - Lire events où `userId === currentUser.uid`
-   - Afficher liste + boutons éditer/supprimer
-
-### Phase 6 : Géolocalisation (3-4h)
-**Objectif :** "événements près de moi" qui marche vraiment
-
-**À faire :**
-
-1. **Demander permission géolocalisation**
-   ```javascript
-   navigator.geolocation.getCurrentPosition(position => {
-     const userLat = position.coords.latitude;
-     const userLng = position.coords.longitude;
-     // Sauvegarder localStorage
-   });
-   ```
-
-2. **Ajouter lat/lng aux events (Firestore)**
-   - Chaque event a `latitude`, `longitude`
-   - Ou utiliser API Google Maps Geocoding pour convertir "Montpellier" → lat/lng
-
-3. **Remplacer logique rayon km approximatif**
-   - Utiliser Haversine formula (distance réelle entre deux points géo)
-   - Filtrer events dans rayon de l'utilisateur
-
-4. **Autocomplete ville avec Maps API**
-   ```javascript
-   // Utiliser Google Places API pour sugg. villes
-   ```
-
----
-
-## 📋 Checklist Étape par Étape
-
-### Session 1 : Setup (2-3h)
-- [ ] Créer dossiers projet
-- [ ] Séparer HTML/CSS/JS en fichiers
-- [ ] Vérifier que tout fonctionne encore
-
-### Session 2 : Firebase Setup (3-4h)
-- [ ] Créer Firebase project
-- [ ] Installer SDK
-- [ ] Créer collections Firestore
-- [ ] Importer les 22 events
-
-### Session 3 : Frontend → Firebase (4-5h)
-- [ ] Créer `services.js`
-- [ ] Remplacer `const events` par `getAllEvents()`
-- [ ] Tester carte/recherche avec données Firestore
-
-### Session 4 : Auth Diffuseurs (3-4h)
-- [ ] Pages login/signup
-- [ ] Auth Firebase
-- [ ] "Mes événements" dashboard
-
-### Session 5 : Géolocalisation (2-3h)
-- [ ] Demander permission + stocker position
-- [ ] Calcul distance réelle
-- [ ] Autocomplete villes
-
-### Session 6 : Polish (1-2h)
-- [ ] Tester sur mobile
-- [ ] Fixer bugs responsive
-- [ ] Optimiser images
-- [ ] Deploy (Firebase Hosting recommandé)
-
----
-
-## 🔧 Commandes Utiles
-
-```bash
-# Installer dépendances
-npm install firebase
-
-# Développement local (si besoin serveur)
-npm install -D http-server
-npx http-server public/
-
-# Build (optionnel, avec bundler plus tard)
-# npm install -D vite
-# npx vite build
-
-# Deploy sur Firebase
-npm install -g firebase-tools
-firebase login
-firebase init hosting
-firebase deploy
-```
-
----
-
-## 📁 Fichiers à Créer/Modifier
-
-### À créer :
-- `public/index.html` (séparé)
-- `public/css/styles.css` (tout le CSS)
-- `public/js/app.js` (tout le JS)
-- `public/js/data.js` (events + constantes)
-- `public/js/firebase-config.js` (config Firebase)
-- `public/js/services.js` (API Firebase)
-- `public/login.html` (page connexion)
-- `public/signup.html` (page inscription)
-- `.gitignore` (ignorer `node_modules/`, `.env`)
-- `.env` ou `firebase-config.js` (secrets Firebase)
-
-### À modifier :
-- `package.json` (ajouter scripts)
-
----
-
-## ⚙️ Configuration Recommandée
-
-### Firebase (Test Mode)
-```
-Rules :
-allow read, write: if true;  // DANGER : prod seulement pour MVP
-
-Collections :
-- events {id, title, type, city, ...}
-- users {id, email, name, insta, ...}
-- views {eventId, count}
-```
-
-### Déploiement (optionnel pour MVP)
-- **Frontend :** Firebase Hosting (gratuit, deploy en 1 sec)
-- **Backend :** Firebase Cloud Functions (si besoin logique)
-
----
-
-## 🚨 Pièges à Éviter
-
-❌ **Ne pas :** Laisser clés Firebase en public → utiliser `.env` + variables d'env  
-❌ **Ne pas :** Oublier index sur Firestore → ajouter si requêtes lentes  
-❌ **Ne pas :** Pusher les events un par un → batch import si 100+  
-❌ **Ne pas :** Async sans await → tous les fetch Firebase doivent être attendus
-
----
-
-## 🎯 Points de Contrôle (Tester Après Chaque Phase)
-
-1. **Après Phase 1** : HTML séparé charge, styles appliqués, JS exécuté
-2. **Après Phase 2** : Firebase connecté, events chargent depuis Firestore
-3. **Après Phase 3** : Formulaire crée un event dans Firestore, apparaît sur carte
-4. **Après Phase 4** : Login/signup works, utilisateur peut créer event
-5. **Après Phase 5** : Géolocalisation demandée, filtre rayon fonctionne
-6. **Après Phase 6** : Tout sur mobile, page rapide, pas d'erreurs console
-
----
-
-## 📚 Ressources Utiles
-
-- **Firebase Docs :** https://firebase.google.com/docs
-- **Firestore Data Model :** https://firebase.google.com/docs/firestore/data-model
-- **Firebase Auth :** https://firebase.google.com/docs/auth/web/start
-- **Haversine Distance :** https://www.movable-type.co.uk/scripts/latlong.html
-- **Google Maps API :** https://developers.google.com/maps/documentation
-
----
-
-## 🎬 Commandes Initiales à Exécuter Tout de Suite
-
-```bash
-# 1. Créer structure
-mkdir -p ebok-event/public/{css,js,assets} ebok-event/backend
-cd ebok-event
-
-# 2. Init npm
-npm init -y
-
-# 3. Installer Firebase
-npm install firebase
-
-# 4. Créer .gitignore
-echo "node_modules/" > .gitignore
-echo ".env" >> .gitignore
-
-# 5. Créer fichier config vide
-touch public/js/firebase-config.js
-
-# 6. Vérifier structure
-tree  # ou : ls -R
-```
-
----
-
-## ✅ Validation Finale
-
-Quand tout est fait :
-- [ ] Tous les 22 events chargent depuis Firestore
-- [ ] Filtres fonctionnent (carte, recherche, calendrier, géo)
-- [ ] Diffuseurs peuvent créer/éditer/supprimer leurs events
-- [ ] Compteur curieux s'incrémente (pas de dépendance localStorage)
-- [ ] Mobile responsive et rapide
-- [ ] Code séparé en modules logiques
-- [ ] Déployé sur Firebase Hosting ou serveur personnel
-
----
-
-**Bon développement ! 🚀 Claude Code va pouvoir exécuter ce plan étape par étape.**
+> Le site est **statique** : pas d'étape de build, pas de bundler. Un fichier
+> modifié est actif au rechargement de la page.

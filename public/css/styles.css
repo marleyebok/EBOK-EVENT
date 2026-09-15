@@ -693,7 +693,6 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
   .featured-actions{flex-wrap:wrap;}
   .submit-row{flex-direction:column;align-items:stretch;gap:12px;}
   .btn-lg{width:100%;}
-  .auth-box{padding:26px 20px 20px;}
 }
 
 /* =========================================================
@@ -800,7 +799,7 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .maint-status.ko{color:var(--orange);}
 .admin-count{font-size:12px;color:var(--chalk-dim);margin:0 0 10px;font-family:var(--font-mono);}
 .admin-table .muted{color:var(--chalk-dim);}
-/* Bandeau d'aide quand une action admin est refusée par les règles Firestore. */
+/* Bandeau d'aide quand une action admin est refusée par le serveur. */
 .admin-rules-alert{display:flex;gap:14px;align-items:flex-start;margin:0 0 18px;padding:16px 18px;
   background:rgba(240,193,75,.10);border:1px solid rgba(240,193,75,.4);border-radius:12px;}
 .admin-rules-alert .ara-ic{font-size:24px;line-height:1;}
@@ -862,8 +861,6 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .edit-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
 
 /* Questions de profil (inscription + édition) */
-.auth-subhead{font-family:var(--font-mono);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--chalk-dim);margin:18px 0 10px;}
-.auth-subhead span{text-transform:none;letter-spacing:0;font-weight:400;}
 .field-hint{color:var(--chalk-dim);font-weight:400;font-size:12px;}
 .chip-checks{display:flex;flex-wrap:wrap;gap:8px;}
 .chip-check{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border:1px solid var(--line-strong);border-radius:999px;cursor:pointer;font-size:13px;user-select:none;transition:border-color .15s ease, background .15s ease;}
@@ -885,40 +882,25 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .about-v{display:block;color:var(--chalk);font-weight:600;}
 .about-empty{color:var(--chalk-dim);font-size:14px;}
 
-/* Modale d'authentification */
-.auth-modal{
-  position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;
-  background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);padding:20px;
+
+/* Bandeau « service de comptes injoignable » (Clerk bloqué ou hors ligne).
+   Affiché seulement en cas de panne : sans lui, les boutons de connexion
+   resteraient sans effet et sans explication. */
+.auth-unavailable{
+  position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:300;
+  display:flex;align-items:center;gap:14px;max-width:min(520px, calc(100vw - 32px));
+  background:var(--asphalt-2);border:1px solid rgba(232,72,58,0.5);
+  border-left:4px solid var(--red);border-radius:12px;
+  padding:14px 16px;color:var(--chalk);font-size:14px;line-height:1.45;
+  box-shadow:0 10px 30px rgba(0,0,0,0.35);animation:fadein .25s ease;
 }
-.auth-modal.open{display:flex;animation:fadein .25s ease;}
-.auth-box{
-  position:relative;width:100%;max-width:420px;background:var(--asphalt-2);
-  border:1px solid var(--line-strong);border-radius:18px;padding:32px 28px 24px;
+.auth-unavailable-close{
+  background:none;border:none;color:var(--chalk-dim);font-size:22px;line-height:1;
+  flex:none;cursor:pointer;
 }
-.auth-close{
-  position:absolute;top:14px;right:16px;background:none;border:none;color:var(--chalk-dim);
-  font-size:26px;line-height:1;cursor:pointer;
-}
-.auth-close:hover{color:var(--chalk);}
-.auth-tabs{display:flex;gap:6px;background:var(--asphalt-3);padding:5px;border-radius:12px;margin-bottom:22px;}
-.auth-tab{
-  flex:1;background:none;border:none;color:var(--chalk-dim);font-weight:700;font-size:14px;
-  padding:10px;border-radius:8px;transition:all .15s;
-}
-.auth-tab.active{background:var(--orange);color:#191008;}
-.auth-form{display:flex;flex-direction:column;gap:14px;}
-.auth-form .field{display:flex;flex-direction:column;gap:6px;}
-.auth-form label{font-family:var(--font-mono);font-size:12px;color:var(--chalk-dim);text-transform:uppercase;letter-spacing:0.5px;}
-.auth-form input{
-  background:var(--asphalt-3);border:1px solid var(--line);border-radius:10px;
-  padding:11px 13px;color:var(--chalk);font-size:15px;
-}
-.auth-form input:focus{outline:none;border-color:var(--orange);}
-.auth-error{
-  margin-top:14px;background:rgba(232,72,58,0.14);border:1px solid rgba(232,72,58,0.5);
-  color:#ff8f84;border-radius:10px;padding:10px 13px;font-size:13px;
-}
-.auth-note{margin-top:16px;color:var(--chalk-dim);font-size:12px;text-align:center;line-height:1.4;}
+.auth-unavailable-close:hover{color:var(--chalk);}
+/* Boutons de compte grisés tant que le service ne répond pas. */
+#btnLogin:disabled,#btnSignup:disabled{opacity:.45;cursor:not-allowed;}
 
 /* =========================================================
    TYPE D'ÉVÉNEMENT — chips colorées (remplace les cases à cocher)
@@ -1088,18 +1070,6 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .account-name:hover{color:var(--chalk);background:var(--asphalt-3);}
 .account-name b{color:var(--chalk);}
 
-/* Bouton Google (blanc dans les deux thèmes = charte Google) */
-.btn-google{
-  width:100%;display:flex;align-items:center;justify-content:center;gap:10px;
-  background:#fff;color:#3c4043;border:1px solid rgba(0,0,0,0.18);
-  font-family:var(--font-body);font-weight:700;font-size:14px;padding:11px;border-radius:10px;
-  cursor:pointer;transition:box-shadow .15s;
-}
-.btn-google:hover{box-shadow:0 2px 10px rgba(0,0,0,0.25);}
-.btn-google .g-icon{width:18px;height:18px;flex:none;}
-.auth-sep{display:flex;align-items:center;gap:12px;margin:16px 0;color:var(--chalk-dim);font-size:12px;text-transform:uppercase;letter-spacing:1px;}
-.auth-sep::before,.auth-sep::after{content:"";flex:1;height:1px;background:var(--line-strong);}
-
 /* Page profil */
 .profile-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:44px 0 10px;flex-wrap:wrap;}
 .profile-id{display:flex;align-items:center;gap:16px;}
@@ -1116,9 +1086,8 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 
 /* =========================================================
    ESPACE COMPTE (/compte) — tableau de bord, sidebar repliable.
-   Même structure que les autres apps de la galaxie (cf. Playbook) :
-   un compte unique, les mêmes réglages partout. Palette claire autonome :
-   ne dépend pas du thème (sombre/clair) du site public d'Event.
+   Palette claire autonome : ne dépend pas du thème (sombre/clair)
+   du site public d'Event.
    ========================================================= */
 
 /* L'attribut `hidden` doit masquer même un élément à `display` explicite
@@ -1228,6 +1197,26 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
   .dash-dl-row { grid-template-columns: 1fr; gap: 2px; }
 }
 
+/* --- Formulaire du profil diffuseur (/compte/profil) --- */
+.dash-form { display: flex; flex-direction: column; gap: 18px; }
+.dash-field { display: flex; flex-direction: column; gap: 6px; }
+.dash-field label { font-size: 13.5px; font-weight: 600; color: var(--d-ink); }
+.dash-field input {
+  font: inherit; font-size: 15px; color: var(--d-ink); background: #fff;
+  border: 1px solid var(--d-line); border-radius: 10px; padding: 10px 12px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.dash-field input:focus {
+  outline: none; border-color: var(--d-accent); box-shadow: 0 0 0 3px var(--d-accent-soft);
+}
+.dash-hint { margin: 0; font-size: 12.5px; color: var(--d-muted); }
+.dash-form-actions {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding-top: 4px; border-top: 1px solid var(--d-line); margin-top: 4px;
+}
+.dash-form-actions .dash-btn { margin-top: 14px; }
+.dash-form-actions #status { margin-top: 14px; font-size: 13.5px; }
+
 /* --- Portail de connexion (non connecté) --- */
 .dash-gate { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--d-bg); padding: 20px; }
 .dash-gate-card { background: #fff; border: 1px solid var(--d-line); border-radius: 18px; padding: 30px; max-width: 420px; text-align: center; }
@@ -1241,4 +1230,38 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
   .dash-side .dash-label { display: none; }
   .dash-side .dash-sub { display: none; }
   .dash-main { padding: 20px 16px 40px; }
+}
+
+/* =========================================================
+   PIED DE PAGE
+   ---------------------------------------------------------
+   Les couleurs dérivent des variables de thème : il suit donc
+   automatiquement la bascule clair / sombre.
+   ========================================================= */
+.site-footer{
+  margin-top:64px;padding:34px 24px 30px;
+  border-top:1px solid var(--line);
+  text-align:center;
+}
+.site-footer-tag{
+  font-family:var(--font-mono);font-size:12.5px;letter-spacing:0.4px;
+  color:var(--chalk-dim);margin:0 0 18px;
+}
+.site-footer-links{
+  display:flex;justify-content:center;flex-wrap:wrap;gap:8px 26px;margin-bottom:22px;
+}
+.site-footer-link{
+  background:none;border:0;padding:0;color:var(--chalk);
+  font-size:14px;font-weight:600;opacity:.75;transition:opacity .15s,color .15s;
+}
+.site-footer-link:hover{opacity:1;color:var(--orange);}
+.site-footer-contact{
+  padding-top:20px;border-top:1px solid var(--line);
+  font-size:13.5px;color:var(--chalk-dim);
+}
+.site-footer-contact a{color:var(--orange);text-decoration:underline;text-underline-offset:3px;}
+.site-footer-contact a:hover{opacity:.8;}
+@media(max-width:700px){
+  .site-footer{margin-top:44px;padding:26px 16px 24px;}
+  .site-footer-links{gap:8px 18px;}
 }

@@ -1,5 +1,5 @@
 /**
- * Événements EBOK Event (remplace la collection Firestore `events`).
+ * Événements EBOK Event.
  *
  *   GET    /api/events            → événements publics (status = approved)
  *   GET    /api/events?id=X       → un événement (public s'il est approuvé,
