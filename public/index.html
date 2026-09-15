@@ -43,6 +43,20 @@
     <button class="navlink" data-nav="create"><span class="nav-long">Publier un événement</span><span class="nav-short">Publier</span></button>
     <button class="navlink hidden" data-nav="profile" id="navProfile">Mon profil</button>
   </div>
+  <!-- Actions rapides du mobile : la recherche et la publication restent à
+       portée de pouce, le reste passe dans le volet. -->
+  <div class="topbar-mobile">
+    <button class="icon-btn" data-nav="search" aria-label="Rechercher un événement" title="Rechercher">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+    </button>
+    <button class="icon-btn icon-btn-cta" data-nav="create" aria-label="Publier un événement" title="Publier">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+    <button class="icon-btn" id="btnMenu" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="sideMenu">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+    </button>
+  </div>
+
   <div class="topbar-right">
     <button class="theme-toggle" id="themeToggle" aria-label="Basculer thème clair / sombre" title="Thème clair / sombre">🌙</button>
     <div class="account-area" id="accountArea">
@@ -59,6 +73,50 @@
     </div>
   </div>
 </nav>
+
+<!-- Volet de navigation (mobile). Construit ici plutôt qu'en JS pour rester
+     lisible ; son contenu s'adapte à l'état connecté via des classes. -->
+<div class="menu-backdrop" id="menuBackdrop" hidden></div>
+<aside class="side-menu" id="sideMenu" role="dialog" aria-modal="true" aria-label="Menu" hidden>
+  <div class="side-menu-head">
+    <span class="side-menu-title">Menu</span>
+    <button class="icon-btn" id="btnMenuClose" aria-label="Fermer le menu">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+    </button>
+  </div>
+
+  <!-- Déconnecté -->
+  <div class="side-menu-account" id="menuOut">
+    <p class="side-menu-hint">Crée un compte pour enregistrer tes favoris et publier tes événements.</p>
+    <button class="btn btn-primary" id="menuSignup">S'inscrire</button>
+    <button class="btn btn-ghost" id="menuLogin">Se connecter</button>
+  </div>
+
+  <!-- Connecté -->
+  <div class="side-menu-account hidden" id="menuLogged">
+    <div class="side-menu-user">
+      <div class="side-menu-avatar" id="menuAvatar"></div>
+      <div>
+        <strong id="menuName"></strong>
+        <span class="side-menu-mail" id="menuMail"></span>
+      </div>
+    </div>
+  </div>
+
+  <nav class="side-menu-nav">
+    <button class="side-menu-link" data-nav="home"><span>🏠</span> Accueil</button>
+    <button class="side-menu-link" data-nav="search"><span>🔍</span> Recherche avancée</button>
+    <button class="side-menu-link" data-nav="create"><span>➕</span> Publier un événement</button>
+    <button class="side-menu-link menu-auth hidden" data-menu-section="section-favoris"><span>♥</span> Mes favoris</button>
+    <button class="side-menu-link menu-auth hidden" data-menu-section="section-mes-evenements"><span>📋</span> Mes événements</button>
+    <button class="side-menu-link menu-auth hidden" data-nav="profile"><span>👤</span> Mon profil</button>
+  </nav>
+
+  <div class="side-menu-foot">
+    <button class="side-menu-link" id="menuTheme"><span id="menuThemeIcon">🌙</span> <span id="menuThemeLabel">Thème clair</span></button>
+    <button class="side-menu-link menu-auth hidden" id="menuLogout"><span>↩</span> Déconnexion</button>
+  </div>
+</aside>
 
 <main>
 
@@ -595,14 +653,14 @@
       <div class="about-grid" id="profileAbout"></div>
     </div>
 
-    <div class="profile-section">
+    <div class="profile-section" id="section-favoris">
       <div class="profile-section-head">
-        <h3>♥ Événements enregistrés</h3>
+        <h3>♥ Mes favoris</h3>
       </div>
       <div class="results-grid" id="favoritesGrid"></div>
     </div>
 
-    <div class="profile-section">
+    <div class="profile-section" id="section-mes-evenements">
       <div class="profile-section-head">
         <h3 id="mineTitle">Mes événements publiés</h3>
         <button class="btn btn-primary" data-nav="create">+ Publier un événement</button>

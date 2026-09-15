@@ -2085,7 +2085,14 @@ function showPage(name){
   if(name === 'profile'){ renderProfile(); renderOnboardingNudge(); }
   // Quitter une fiche événement : on revient à l'URL racine.
   if(!syncingFromUrl && name !== 'event' && eventIdFromUrl()) setUrl('/');
+  syncMenuActif(name);
   window.scrollTo({top:0, behavior:'instant'});
+}
+/* Met en valeur la page courante dans le volet. */
+function syncMenuActif(nom){
+  for(const l of document.querySelectorAll('.side-menu-link[data-nav]')){
+    l.classList.toggle('active', l.dataset.nav === nom);
+  }
 }
 document.querySelectorAll('[data-nav]').forEach(el=>{
   el.addEventListener('click', ()=> showPage(el.dataset.nav));
@@ -2435,6 +2442,110 @@ function initAuth(){
   document.getElementById('btnLogout2').addEventListener('click', logout);
 
   updateAuthUI();
+}
+
+/* =========================================================
+   VOLET DE NAVIGATION (mobile)
+   ---------------------------------------------------------
+   La barre du haut empilait trois rangées sur mobile et la navigation défilait
+   à l'horizontale. Elle se réduit à quatre boutons ; tout le reste vit ici.
+   ========================================================= */
+let menuOuvert = false;
+
+function ouvrirMenu(){
+  const volet = document.getElementById('sideMenu');
+  const fond = document.getElementById('menuBackdrop');
+  if(!volet) return;
+  syncMenu();
+  volet.hidden = false;
+  fond.hidden = false;
+  menuOuvert = true;
+  document.getElementById('btnMenu')?.setAttribute('aria-expanded', 'true');
+  // Empêche la page de défiler derrière le volet.
+  document.body.style.overflow = 'hidden';
+  document.getElementById('btnMenuClose')?.focus();
+}
+
+function fermerMenu(){
+  const volet = document.getElementById('sideMenu');
+  const fond = document.getElementById('menuBackdrop');
+  if(!volet) return;
+  volet.hidden = true;
+  fond.hidden = true;
+  menuOuvert = false;
+  document.getElementById('btnMenu')?.setAttribute('aria-expanded', 'false');
+  document.body.style.overflow = '';
+}
+
+/* Aligne le contenu du volet sur l'état de connexion et le thème. */
+function syncMenu(){
+  const connecte = !!currentUser;
+  document.getElementById('menuOut')?.classList.toggle('hidden', connecte);
+  document.getElementById('menuLogged')?.classList.toggle('hidden', !connecte);
+  for(const el of document.querySelectorAll('.menu-auth')){
+    el.classList.toggle('hidden', !connecte);
+  }
+  if(connecte){
+    const nom = displayName();
+    document.getElementById('menuName').textContent = nom;
+    document.getElementById('menuMail').textContent = currentUser.email || '';
+    const avatar = document.getElementById('menuAvatar');
+    const photo = currentProfile && safeImg(currentProfile.photo);
+    if(photo){
+      avatar.style.backgroundImage = `url("${encodeURI(photo)}")`;
+      avatar.textContent = '';
+    }else{
+      avatar.style.backgroundImage = '';
+      avatar.textContent = (nom || '?').trim().slice(0, 2).toUpperCase();
+    }
+  }
+  // Le libellé du thème annonce ce vers quoi on bascule, pas l'état courant.
+  const clair = document.documentElement.getAttribute('data-theme') === 'light';
+  const icone = document.getElementById('menuThemeIcon');
+  const label = document.getElementById('menuThemeLabel');
+  if(icone) icone.textContent = clair ? '🌙' : '☀️';
+  if(label) label.textContent = clair ? 'Thème sombre' : 'Thème clair';
+}
+
+function initMenu(){
+  const bouton = document.getElementById('btnMenu');
+  if(!bouton) return;
+  bouton.addEventListener('click', ()=> menuOuvert ? fermerMenu() : ouvrirMenu());
+  document.getElementById('btnMenuClose').addEventListener('click', fermerMenu);
+  document.getElementById('menuBackdrop').addEventListener('click', fermerMenu);
+  document.addEventListener('keydown', e=>{ if(e.key === 'Escape' && menuOuvert) fermerMenu(); });
+
+  // Naviguer referme le volet : sinon il masque la page qu'on vient d'ouvrir.
+  for(const lien of document.querySelectorAll('.side-menu-link[data-nav]')){
+    lien.addEventListener('click', fermerMenu);
+  }
+
+  // Raccourcis vers une section de la page « Mon profil ».
+  for(const lien of document.querySelectorAll('[data-menu-section]')){
+    lien.addEventListener('click', ()=>{
+      const cible = lien.dataset.menuSection;
+      fermerMenu();
+      showPage('profile');
+      // Laisse le temps à la page de se dessiner avant de faire défiler.
+      setTimeout(()=>{
+        document.getElementById(cible)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 120);
+    });
+  }
+
+  document.getElementById('menuLogin').addEventListener('click', ()=>{ fermerMenu(); openAuth('login'); });
+  document.getElementById('menuSignup').addEventListener('click', ()=>{ fermerMenu(); openAuth('signup'); });
+  document.getElementById('menuLogout').addEventListener('click', async ()=>{
+    fermerMenu();
+    if(window.EBOK_AUTH) await window.EBOK_AUTH.signOutUser();
+    showPage('home');
+  });
+  document.getElementById('menuTheme').addEventListener('click', ()=>{
+    const suivant = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    applyTheme(suivant);
+    localStorage.setItem('ebok-theme', suivant);
+    syncMenu();
+  });
 }
 
 /* =========================================================
@@ -3494,6 +3605,7 @@ window.EBOK = {
     renderAll();                 // rafraîchit les ♥ sur les cartes
     prefillOrgFromProfile();     // le profil diffuseur arrive avec la session
     renderOnboardingNudge();
+    syncMenu();                  // le volet reflète l'état de connexion
     maybeOpenOnboarding();       // première connexion : on pose les 4 questions
     if(document.getElementById('page-profile').classList.contains('active')) renderProfile();
   }
@@ -3531,6 +3643,7 @@ initAuth();
 initEditModal();
 initProfileEdit();
 initOnboarding();
+initMenu();
 initAiImport();
 initPostersMaintenance();
 

@@ -55,6 +55,9 @@ partagé, plus de lecture du profil du site mère. Seul reste le point ci-dessou
 - [x] Assistant IA d'import depuis un lien ou une image (réservé admin)
 - [x] Autocomplétion de ville hors ligne (`cities-fr.js`) + repli sur la Base Adresse Nationale
 - [x] Thème clair / sombre
+- [x] Barre du haut compacte sur mobile et tablette (logo, loupe, +, menu) avec
+      volet latéral : compte, navigation, favoris, mes événements, thème,
+      déconnexion
 - [x] Échappement des données d'événement dans les rendus HTML (XSS stocké)
 
 ---
@@ -113,11 +116,30 @@ billetterie.
 - [ ] Bouton sur la fiche événement, réservé aux membres connectés
 - [ ] Compteur affiché sur la fiche et sur les cartes
 
-### 3. Ajouter à mon agenda *(petit effort)*
+### 3. Tableau de bord diffuseur & mesure d'audience
+
+Les favoris et « Mes événements publiés » existent déjà, mais enfouis dans la
+page « Mon profil ». Il faut en faire des destinations à part entière, et leur
+adjoindre des statistiques exploitables par un organisateur.
+
+- [ ] **Sécuriser `/api/views` d'abord** — écriture ouverte aujourd'hui : pas
+      d'authentification, pas de limite, n'importe qui gonfle un compteur avec
+      une boucle. Tant que ce n'est pas fermé, les chiffres ne valent rien face
+      à un annonceur. Prévoir une limite par IP et une déduplication par session.
+- [ ] **Statistiques par événement** — vues, et clics sur chaque canal de contact
+- [ ] **Comptage des clics sur les contacts.** Décision prise : **téléphone et
+      e-mail sont masqués et révélés au clic** (ce qui bloque au passage les
+      robots collecteurs de spam) ; **les réseaux sociaux restent affichés en
+      lien direct**, mais tous les clics sont comptés. Cacher n'est pas
+      nécessaire pour mesurer — c'est un choix séparé, justifié seulement pour
+      le téléphone et l'e-mail.
+- [ ] **Modification d'un événement depuis le tableau de bord**
+
+### 4. Ajouter à mon agenda *(petit effort)*
 
 - [ ] Génération d'un fichier `.ics` (Google / Apple Agenda), côté navigateur
 
-### 4. Répertoire des playgrounds 3x3 *(gros chantier)*
+### 5. Répertoire des playgrounds 3x3 *(gros chantier)*
 
 Recenser les terrains de France et les afficher sur la carte. Fort potentiel
 communautaire, mais dépend de la géolocalisation.
@@ -131,7 +153,7 @@ communautaire, mais dépend de la géolocalisation.
 > Pour les structures, Instagram et LinkedIn sont recopiés dans le profil
 > diffuseur et apparaissent donc sur les fiches événement.
 
-### 5. Plus tard
+### 6. Plus tard
 
 - [ ] **Alertes e-mail** — « préviens-moi des *tournois* près de *Montpellier* »
       (nécessite un service d'envoi type Resend ou SendGrid)
@@ -222,6 +244,8 @@ dans le code — le reste est à faire.
 
 ### 🎨 Finitions
 
+- [x] ~~Barre du haut sur mobile~~ — refaite : une seule rangée, plus de
+      chevauchement, plus de navigation défilante à l'horizontale
 - [ ] **Refondre le pied de page** — le pied de page actuel est une reprise
       minimale, posée pour remplacer celui de la galaxie : trois liens de
       navigation et une adresse de contact, sans travail graphique. À repenser
