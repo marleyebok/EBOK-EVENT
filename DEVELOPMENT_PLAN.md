@@ -217,15 +217,19 @@ dans le code — le reste est à faire.
       navigation et une adresse de contact, sans travail graphique. À repenser
       pour qu'il tienne la comparaison avec le reste du site, et pour accueillir
       les liens légaux obligatoires (RGPD, CGU, mentions légales).
-- [ ] **Adresse de contact** — celle du pied de page est à remplacer par une
-      adresse propre à EBOK Event (voir « aucun lien vers l'extérieur »
-      ci-dessous).
+- [ ] **Contact** — l'adresse `contact@ebok.fr` est affichée en clair, donc
+      exposée aux robots collecteurs de spam. À remplacer par un formulaire lors
+      de la refonte du pied de page.
 
-> 🚫 **Règle :** aucun lien, aucune mention et aucune adresse renvoyant vers
-> `ebok.fr` ou une autre application. EBOK Event se présente comme un produit
-> seul. Les redirections après connexion sont verrouillées côté code
+> 🚫 **Règle :** aucun lien et aucune mention renvoyant vers `ebok.fr` ou une
+> autre application. EBOK Event se présente comme un produit seul. Les
+> redirections après connexion sont verrouillées côté code
 > (`redirectionOptions()` dans `public/js/clerk.js`) pour qu'un réglage du
 > tableau de bord Clerk ne puisse pas envoyer un visiteur ailleurs.
+>
+> Seule exception, assumée : l'adresse de contact du pied de page reste
+> `contact@ebok.fr`. C'est un `mailto:`, il n'envoie donc personne vers le
+> site — c'est simplement la boîte mail qui existe.
 
 ### 🎯 Conversion
 
