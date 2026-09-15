@@ -26,13 +26,10 @@ window.EBOK_DATA = {
   hostStoredPosters,
 };
 
-// Couche authentification exposée à app.js. `openSignIn` ouvre le widget Clerk ;
-// les anciens noms (signIn/signUp/signInWithGoogle) y renvoient pour compat.
+// Couche authentification exposée à app.js. Tout passe par le widget Clerk :
+// e-mail, mot de passe, Google, vérification et réinitialisation.
 window.EBOK_AUTH = {
   openSignIn,
-  signIn: () => openSignIn("login"),
-  signUp: () => openSignIn("signup"),
-  signInWithGoogle: () => openSignIn("login"),
   signOutUser,
 };
 
@@ -79,8 +76,14 @@ async function relay(clerk) {
     const clerk = await loadClerk();
     clerk.addListener(() => relay(clerk));
     relay(clerk);
+    if (window.EBOK && window.EBOK.setAuthAvailable) window.EBOK.setAuthAvailable(true);
   } catch (e) {
-    console.warn("[EBOK] Clerk indisponible — connexion désactivée.", e);
+    // Bloqueur de contenu, coupure réseau, instance mal configurée… On le
+    // signale à l'app pour qu'elle grise les boutons plutôt que de laisser
+    // l'utilisateur cliquer dans le vide.
+    console.warn("[EBOK] Service de comptes injoignable.", e);
+    window.EBOK_AUTH = null;
+    if (window.EBOK && window.EBOK.setAuthAvailable) window.EBOK.setAuthAvailable(false);
   }
 })();
 

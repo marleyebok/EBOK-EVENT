@@ -5,7 +5,7 @@
  * La sidebar est construite ici (et pas dans chaque page HTML) pour rester
  * identique d'une section à l'autre.
  */
-import { loadClerk } from './clerk.js';
+import { loadClerk, clerkAppearance } from './clerk.js';
 
 const COLLAPSE_KEY = 'eboke-dash-collapsed';
 
@@ -64,12 +64,9 @@ function showGate(clerk) {
   document.body.appendChild(gate);
 
   if (clerk) {
-    document
-      .getElementById('gateSignin')
-      .addEventListener('click', () => clerk.openSignIn({ oauthFlow: 'popup' }));
-    document
-      .getElementById('gateSignup')
-      .addEventListener('click', () => clerk.openSignUp({ oauthFlow: 'popup' }));
+    const opts = { oauthFlow: 'popup', appearance: clerkAppearance() };
+    document.getElementById('gateSignin').addEventListener('click', () => clerk.openSignIn(opts));
+    document.getElementById('gateSignup').addEventListener('click', () => clerk.openSignUp(opts));
   }
 }
 

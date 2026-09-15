@@ -28,6 +28,62 @@ function frontendApi(key) {
   return decoded;
 }
 
+/* ------------------------------------------------------------------ */
+/* Habillage du widget Clerk                                           */
+/* ------------------------------------------------------------------ */
+/* Sans cette configuration, le widget s'affiche avec son thème clair par
+   défaut : illisible au milieu du site sombre. Les valeurs reprennent celles
+   de css/styles.css.
+
+   Deux palettes, parce que les deux contextes diffèrent :
+   - le site public suit la bascule clair / sombre (`data-theme` sur <html>) ;
+   - l'espace compte (/compte) est toujours clair — ces pages le déclarent avec
+     <body data-clerk-theme="light">. */
+const PALETTES = {
+  dark: {
+    colorBackground: "#1F1F23",
+    colorText: "#F3EEE2",
+    colorTextSecondary: "#ACA79A",
+    colorInputBackground: "#28282D",
+    colorInputText: "#F3EEE2",
+  },
+  light: {
+    colorBackground: "#FFFFFF",
+    colorText: "#1D2530",
+    colorTextSecondary: "#6A7280",
+    colorInputBackground: "#FFFFFF",
+    colorInputText: "#1D2530",
+  },
+};
+
+/** Thème à appliquer : forcé par la page, sinon celui du site (sombre par défaut). */
+function themeMode() {
+  const forced = document.body?.dataset?.clerkTheme;
+  if (forced === "light" || forced === "dark") return forced;
+  return document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+}
+
+/** Options `appearance` du widget, recalculées à chaque ouverture pour suivre
+ *  la bascule de thème. */
+export function clerkAppearance() {
+  return {
+    variables: {
+      colorPrimary: "#FF5722",
+      colorDanger: "#E8483A",
+      colorSuccess: "#1F8F6B",
+      colorWarning: "#FFC93C",
+      fontFamily: "'Work Sans', sans-serif",
+      borderRadius: "10px",
+      ...PALETTES[themeMode()],
+    },
+    elements: {
+      // Le bouton principal reprend le ton du site : pas de MAJUSCULES forcées.
+      formButtonPrimary: { textTransform: "none", fontWeight: 700, fontSize: "15px" },
+      footerAction: { fontWeight: 600 },
+    },
+  };
+}
+
 let _loaded = null;
 
 /** Charge clerk-js une seule fois et renvoie l'instance `window.Clerk` prête. */
@@ -35,7 +91,7 @@ export function loadClerk() {
   if (_loaded) return _loaded;
   _loaded = new Promise((resolve, reject) => {
     if (window.Clerk) {
-      window.Clerk.load().then(() => resolve(window.Clerk)).catch(reject);
+      window.Clerk.load({ appearance: clerkAppearance() }).then(() => resolve(window.Clerk)).catch(reject);
       return;
     }
     const s = document.createElement("script");
@@ -45,7 +101,7 @@ export function loadClerk() {
     s.src = `https://${frontendApi(PUBLISHABLE_KEY)}/npm/@clerk/clerk-js@5/dist/clerk.browser.js`;
     s.addEventListener("load", async () => {
       try {
-        await window.Clerk.load();
+        await window.Clerk.load({ appearance: clerkAppearance() });
         resolve(window.Clerk);
       } catch (e) {
         reject(e);

@@ -39,7 +39,7 @@ partagé, plus de lecture du profil du site mère. Seul reste le point ci-dessou
 
 - [x] Découpage HTML / CSS / JS en modules
 - [x] Base Neon + schéma créé automatiquement (`api/_lib.js` → `ensureSchema`)
-- [x] Comptes Clerk : inscription, connexion, e-mail + Google
+- [x] Comptes Clerk : inscription, connexion, e-mail + Google, widget habillé aux couleurs du site
 - [x] Rôles et droits vérifiés **côté serveur** : public / diffuseur / admin
 - [x] CRUD événements complet + circuit de validation (`pending` → `approved`)
 - [x] Compteurs de « curieux », favoris, profil membre
@@ -56,8 +56,12 @@ partagé, plus de lecture du profil du site mère. Seul reste le point ci-dessou
 
 ## 🎯 Chantier en cours : instance Clerk dédiée
 
-Les comptes tournent encore sur l'instance Clerk `clerk.ebok.fr`, partagée avec
-les autres applications. Il faut une instance propre à EBOK Event.
+Côté code, **tout est prêt** : la connexion repose entièrement sur le widget
+Clerk (plus de formulaire maison), le widget est habillé aux couleurs du site,
+une panne du service est signalée à l'utilisateur, et la bascule d'instance ne
+demande qu'**une seule ligne**. Il reste l'étape qui se fait sur le tableau de
+bord Clerk : **créer l'instance dédiée** — marche à suivre détaillée dans le
+README (« Basculer vers une instance Clerk dédiée »).
 
 **⚠️ Conséquence à assumer :** les comptes ne se transfèrent pas d'une instance
 Clerk à l'autre. Tous les membres devront **se réinscrire**, et les événements
@@ -65,17 +69,11 @@ déjà publiés perdront le lien avec leur diffuseur (leur `user_id` pointera ve
 un compte qui n'existe plus). L'admin étant reconnu par **e-mail** et non par
 identifiant, les droits d'administration, eux, se retrouvent automatiquement.
 
-**Marche à suivre**
-
-1. Créer une instance sur `dashboard.clerk.com` (activer e-mail + Google).
-2. Remplacer `PUBLISHABLE_KEY` dans `public/js/clerk.js` — **une seule ligne**,
-   le domaine de l'instance est décodé de la clé.
-3. Mettre à jour `CLERK_SECRET_KEY` sur Vercel, puis redéployer.
-4. Reprendre les événements orphelins : soit réattribuer `user_id` en base une
-   fois les diffuseurs réinscrits, soit les laisser sous le compte admin.
-
-> À faire de préférence **avant** d'avoir beaucoup de diffuseurs inscrits :
-> plus on attend, plus la réinscription coûte cher.
+> 👉 **Tant qu'il n'y a aucun diffuseur inscrit, l'opération est gratuite.**
+> Plus on attend, plus la réinscription coûte cher. La marche à suivre complète
+> (réglages Clerk, clés, passage en production, liste de vérification) est dans
+> le README — elle n'est pas recopiée ici pour éviter que les deux versions
+> divergent.
 
 ---
 
@@ -84,6 +82,13 @@ identifiant, les droits d'administration, eux, se retrouvent automatiquement.
 ### 1. Géolocalisation réelle *(prioritaire)*
 
 Le filtre « autour de moi » repose encore sur un rayon approximatif.
+
+> ℹ️ **À savoir avant de commencer :** `app.js` contient déjà la logique
+> (`initGeoloc`, `setGeoUI`, `showGeoStatus`, le curseur de rayon), mais les
+> éléments correspondants — `geoBtn`, `geoStatus`, `radiusFilter`,
+> `radiusValue` — **n'existent pas dans `index.html`**. L'interface a été
+> retirée sans le code. Tout est protégé par des `if(!el) return;`, donc rien
+> ne casse : il reste à remettre l'interface et à brancher le calcul réel.
 
 - [ ] Demander la position au navigateur et la mémoriser
 - [ ] Stocker `latitude` / `longitude` sur chaque événement (les coordonnées des

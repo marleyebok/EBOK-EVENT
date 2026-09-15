@@ -4,10 +4,14 @@
  * passe, appareils, suppression du compte) : rien de maison ici.
  */
 import { mountCompteShell } from './compte-shell.js';
+import { clerkAppearance } from './clerk.js';
 
 const clerk = await mountCompteShell('general');
 if (clerk) {
-  clerk.mountUserProfile(document.getElementById('userProfile'), { routing: 'hash' });
+  clerk.mountUserProfile(document.getElementById('userProfile'), {
+    routing: 'hash',
+    appearance: clerkAppearance(),
+  });
 
   document
     .getElementById('signout')

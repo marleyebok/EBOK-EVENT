@@ -2180,46 +2180,52 @@ async function renderFavorites(){
   });
 }
 
+/* ---------- Connexion (déléguée à Clerk) ---------- */
+/* Il n'y a pas de formulaire de connexion maison : e-mail, mot de passe,
+   Google, vérification et réinitialisation sont entièrement gérés par le
+   widget Clerk (voir js/clerk.js). */
+
+/** Ouvre le widget Clerk. `tab` vaut 'login' ou 'signup'. */
 function openAuth(tab){
-  // Identité déléguée à Clerk : on ouvre le widget Clerk (email + Google) plutôt
-  // que la fenêtre de connexion maison. Celle-ci ne sert plus qu'en mode démo
-  // (Clerk non branché).
   if(window.EBOK_AUTH && typeof window.EBOK_AUTH.openSignIn === 'function'){
     window.EBOK_AUTH.openSignIn(tab === 'signup' ? 'signup' : 'login');
     return;
   }
-  switchAuthTab(tab || 'login');
-  document.getElementById('authError').classList.add('hidden');
-  const modal = document.getElementById('authModal');
-  modal.classList.add('open');
-  modal.setAttribute('aria-hidden', 'false');
+  // Clerk n'a pas pu se charger : on le dit, plutôt que de ne rien faire.
+  showAuthUnavailable();
 }
-function closeAuth(){
-  const modal = document.getElementById('authModal');
-  modal.classList.remove('open');
-  modal.setAttribute('aria-hidden', 'true');
+
+/* Bandeau affiché quand le service de comptes est injoignable (Clerk bloqué
+   par un bloqueur de contenu, coupure réseau, site ouvert en file://). Sans
+   lui, les boutons « Se connecter » resteraient sans effet et sans
+   explication. */
+function showAuthUnavailable(){
+  let box = document.getElementById('authUnavailable');
+  if(!box){
+    box = document.createElement('div');
+    box.id = 'authUnavailable';
+    box.className = 'auth-unavailable';
+    box.setAttribute('role', 'alert');
+    box.innerHTML =
+      '<span>Les comptes sont momentanément injoignables. '
+      + 'Vérifie ta connexion ou désactive ton bloqueur de publicités, puis recharge la page.</span>'
+      + '<button type="button" class="auth-unavailable-close" aria-label="Fermer">&times;</button>';
+    box.querySelector('button').addEventListener('click', ()=> box.remove());
+    document.body.appendChild(box);
+  }
+  clearTimeout(showAuthUnavailable._t);
+  showAuthUnavailable._t = setTimeout(()=> box.remove(), 10000);
 }
-function switchAuthTab(tab){
-  document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
-  document.getElementById('tabSignup').classList.toggle('active', tab === 'signup');
-  document.getElementById('loginForm').classList.toggle('hidden', tab !== 'login');
-  document.getElementById('signupForm').classList.toggle('hidden', tab !== 'signup');
-  document.getElementById('authError').classList.add('hidden');
-}
-function showAuthError(msg){
-  const e = document.getElementById('authError');
-  e.textContent = msg;
-  e.classList.remove('hidden');
-}
-function authMessage(err){
-  const c = (err && err.code) || '';
-  if(c.includes('email-already-in-use')) return "Cet email a déjà un compte. Essaie de te connecter.";
-  if(c.includes('invalid-email')) return "Adresse email invalide.";
-  if(c.includes('weak-password')) return "Mot de passe trop court (6 caractères minimum).";
-  if(c.includes('invalid-credential') || c.includes('wrong-password') || c.includes('user-not-found'))
-    return "Email ou mot de passe incorrect.";
-  if(c.includes('too-many-requests')) return "Trop de tentatives. Réessaie dans quelques minutes.";
-  return "Une erreur est survenue. Réessaie.";
+
+/* Grise les boutons de compte tant que Clerk n'a pas répondu. Appelé par
+   clerk-init.js : `ready` faux = service injoignable. */
+function setAuthAvailable(ready){
+  for(const id of ['btnLogin', 'btnSignup']){
+    const el = document.getElementById(id);
+    if(!el) continue;
+    el.disabled = !ready;
+    el.title = ready ? '' : 'Service de comptes momentanément injoignable';
+  }
 }
 
 /* ---------- Profil membre (questions inscription + édition) ---------- */
@@ -2390,54 +2396,8 @@ function updateAuthUI(){
 }
 
 function initAuth(){
-  const modal = document.getElementById('authModal');
-  // Injecte les questions de profil dans le formulaire d'inscription.
-  const suProfile = document.getElementById('su-profile');
-  if(suProfile){ suProfile.innerHTML = profileFieldsHtml('su-'); wireProfileFields('su-'); }
   document.getElementById('btnLogin').addEventListener('click', ()=> openAuth('login'));
   document.getElementById('btnSignup').addEventListener('click', ()=> openAuth('signup'));
-  document.getElementById('authClose').addEventListener('click', closeAuth);
-  bindBackdropClose(modal, closeAuth);
-  document.getElementById('tabLogin').addEventListener('click', ()=> switchAuthTab('login'));
-  document.getElementById('tabSignup').addEventListener('click', ()=> switchAuthTab('signup'));
-
-  document.getElementById('loginForm').addEventListener('submit', async e=>{
-    e.preventDefault();
-    if(!window.EBOK_AUTH){ showAuthError("Connexion indisponible pour le moment."); return; }
-    try{
-      await window.EBOK_AUTH.signIn(
-        document.getElementById('login-email').value.trim(),
-        document.getElementById('login-pass').value
-      );
-      closeAuth();
-    }catch(err){ showAuthError(authMessage(err)); }
-  });
-
-  document.getElementById('signupForm').addEventListener('submit', async e=>{
-    e.preventDefault();
-    if(!window.EBOK_AUTH){ showAuthError("Inscription indisponible pour le moment."); return; }
-    const profile = Object.assign(
-      { name: document.getElementById('su-name').value.trim() },
-      readProfileFields('su-')
-    );
-    try{
-      await window.EBOK_AUTH.signUp(
-        document.getElementById('su-email').value.trim(),
-        document.getElementById('su-pass').value,
-        profile
-      );
-      closeAuth();
-    }catch(err){ showAuthError(authMessage(err)); }
-  });
-
-  // Connexion avec Google
-  document.getElementById('btnGoogle').addEventListener('click', async ()=>{
-    if(!window.EBOK_AUTH || !window.EBOK_AUTH.signInWithGoogle){
-      showAuthError("Connexion Google indisponible pour le moment."); return;
-    }
-    try{ await window.EBOK_AUTH.signInWithGoogle(); closeAuth(); }
-    catch(err){ showAuthError(authMessage(err)); }
-  });
 
   const logout = async ()=>{
     if(window.EBOK_AUTH) await window.EBOK_AUTH.signOutUser();
@@ -3182,6 +3142,8 @@ window.EBOK = {
   get events(){ return events; },
   setEvents(list){ if(Array.isArray(list)) events = list; renderAll(); tryOpenFromUrl(); },
   addEvent(ev){ events = [ev, ...events]; renderAll(); },
+  // Appelé par clerk-init.js selon que le service de comptes répond ou non.
+  setAuthAvailable,
   // Appelé par clerk-init.js à chaque connexion / déconnexion.
   async onAuthChanged(user, profile, admin){
     currentUser = user || null;

@@ -140,8 +140,16 @@ relançable sans risque).
 
 ## 👤 Comptes diffuseurs & administration
 
-L'authentification (email + Google) est gérée par le **widget Clerk** (bouton
-« Se connecter » de la barre du haut).
+L'authentification (e-mail + Google) est **entièrement** gérée par le **widget
+Clerk** (bouton « Se connecter » de la barre du haut). Il n'y a pas de
+formulaire maison : inscription, connexion, vérification de l'e-mail, mot de
+passe oublié et gestion des appareils viennent de Clerk. Le widget est habillé
+aux couleurs du site et suit la bascule clair / sombre (voir `clerkAppearance()`
+dans `public/js/clerk.js`).
+
+Si Clerk est injoignable (bloqueur de contenu, coupure réseau), les boutons de
+compte sont **grisés** et un bandeau l'explique — plutôt que des boutons qui ne
+répondent pas.
 
 - **Diffuseur** : se connecte via Clerk, publie des événements (mis **en attente de
   validation**), les gère dans **« Mes événements »**.
@@ -165,7 +173,7 @@ variable d'env `ADMIN_EMAILS` sur Vercel (aucune modif de code).
 
 Les comptes tournent encore sur l'instance Clerk **`clerk.ebok.fr`**, partagée
 avec d'autres applications. Pour rendre EBOK Event totalement indépendant, il
-faut sa propre instance.
+lui faut sa propre instance. Compter **15 minutes**.
 
 > ⚠️ **Les comptes ne se transfèrent pas** d'une instance Clerk à l'autre. Tous
 > les membres devront **se réinscrire**, et les événements déjà publiés
@@ -173,19 +181,67 @@ faut sa propre instance.
 > disparu). Les droits admin, eux, se retrouvent tout seuls : l'administrateur
 > est reconnu par son **e-mail**, pas par son identifiant.
 >
-> À faire de préférence **avant** d'avoir beaucoup de diffuseurs inscrits.
+> À faire **tant qu'il n'y a pas encore de diffuseurs inscrits** : à ce
+> moment-là, l'opération ne coûte rien.
 
-1. Créer une instance sur [dashboard.clerk.com](https://dashboard.clerk.com)
-   et y activer **e-mail + Google**.
-2. Dans `public/js/clerk.js`, remplacer `PUBLISHABLE_KEY` par la clé de la
-   nouvelle instance. **C'est la seule ligne à changer** : le domaine de
-   l'instance est décodé de la clé, il n'y a pas de seconde valeur à garder
-   synchronisée. Fonctionne avec une clé `pk_test_…` comme `pk_live_…`.
-3. Sur Vercel, remplacer `CLERK_SECRET_KEY` par la clé secrète de la nouvelle
-   instance, puis **redéployer**.
-4. Reprendre les événements devenus orphelins : soit réattribuer leur `user_id`
-   en base une fois les diffuseurs réinscrits, soit les laisser sous le compte
-   admin.
+#### 1. Créer l'instance
+
+Sur [dashboard.clerk.com](https://dashboard.clerk.com) → **Create application**.
+
+| Réglage | Valeur |
+|---|---|
+| Application name | `EBOK Event` |
+| Email address | ✅ activé |
+| Google | ✅ activé |
+| Le reste (Facebook, Apple…) | ❌ laissé désactivé |
+
+Clerk affiche alors les deux clés. La `pk_…` est **publique**, la `sk_…` est
+**secrète** — cette dernière ne doit jamais entrer dans le code ni dans une
+conversation.
+
+#### 2. Brancher le site (une seule ligne)
+
+Dans `public/js/clerk.js`, remplacer la valeur de `PUBLISHABLE_KEY` :
+
+```js
+const PUBLISHABLE_KEY = "pk_test_LA-CLÉ-DE-LA-NOUVELLE-INSTANCE";
+```
+
+**C'est la seule ligne à changer.** Le domaine de l'instance est décodé de la
+clé, il n'y a pas de seconde valeur à garder synchronisée. Fonctionne avec une
+clé `pk_test_…` (instance de développement) comme `pk_live_…` (production).
+
+#### 3. Brancher le serveur
+
+Sur **Vercel → Settings → Environment Variables**, remplacer
+`CLERK_SECRET_KEY` par la clé `sk_…` de la nouvelle instance, puis
+**redéployer** (un simple `git push` suffit).
+
+#### 4. Passer en production *(quand le domaine est prêt)*
+
+Une instance de développement fonctionne tout de suite, mais affiche un bandeau
+« development mode » et limite le nombre de comptes. Pour passer en production :
+
+1. Dans Clerk → **Domains**, ajouter `event.ebok.fr`.
+2. Ajouter chez ton hébergeur DNS les enregistrements CNAME que Clerk indique
+   (il vérifie automatiquement).
+3. Reprendre les étapes 2 et 3 avec les clés `pk_live_…` / `sk_live_…`.
+
+#### 5. Vérifier
+
+- [ ] Créer un compte depuis le site → il apparaît dans Clerk → **Users**
+- [ ] Se déconnecter, se reconnecter
+- [ ] Connexion avec Google
+- [ ] Sur `/compte/general`, le composant Clerk s'affiche aux couleurs du site
+- [ ] Avec `marley.ebok@gmail.com`, le badge **Admin** apparaît et l'assistant
+      IA est visible sur la page de publication
+- [ ] Publier un événement avec un compte non-admin → il part bien « en attente »
+
+#### 6. Et les événements déjà publiés ?
+
+S'il y en a, leur `user_id` pointe vers des comptes disparus. Deux options :
+les réattribuer en base une fois les diffuseurs réinscrits, ou les laisser
+sous le compte admin (ils restent visibles et modifiables par l'admin).
 
 ---
 
