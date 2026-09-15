@@ -708,6 +708,21 @@
         </div>
       </div>
 
+      <!-- 3 bis — Structures organisatrices uniquement -->
+      <div class="ob-step" data-step="structure" hidden>
+        <h3>Ta structure</h3>
+        <p class="edit-sub">Ces infos s'afficheront sur les événements que tu publieras.</p>
+        <div class="field">
+          <label for="ob-orgname">Nom de la structure</label>
+          <input type="text" id="ob-orgname" placeholder="Ex. Ligue C by Courtcuts" autocomplete="organization">
+        </div>
+        <div class="field">
+          <label for="ob-orgsite">Site web <span class="field-hint">(facultatif)</span></label>
+          <input type="url" id="ob-orgsite" placeholder="https://…">
+        </div>
+        <p class="field-hint">Tes réseaux sociaux te seront demandés juste après.</p>
+      </div>
+
       <!-- 4 — Ville -->
       <div class="ob-step" data-step="ville" hidden>
         <h3>Ta ville</h3>
@@ -724,6 +739,36 @@
         <h3>Quels événements t'intéressent ?</h3>
         <p class="edit-sub">Trois choix maximum.</p>
         <div class="chip-checks" data-interests="ob-" id="ob-interests"></div>
+      </div>
+
+      <!-- 6 — Réseaux sociaux, communs à tous les profils, tous facultatifs -->
+      <div class="ob-step" data-step="reseaux" hidden>
+        <h3>Tes réseaux</h3>
+        <p class="edit-sub">
+          Tout est facultatif. Tu peux passer cette étape et la remplir plus tard.
+        </p>
+        <div class="socials-grid">
+          <div class="field social-field">
+            <label for="ob-instagram">📸 Instagram</label>
+            <input type="text" id="ob-instagram" placeholder="@moncompte">
+          </div>
+          <div class="field social-field">
+            <label for="ob-tiktok">🎵 TikTok</label>
+            <input type="text" id="ob-tiktok" placeholder="@moncompte">
+          </div>
+          <div class="field social-field">
+            <label for="ob-snapchat">👻 Snapchat</label>
+            <input type="text" id="ob-snapchat" placeholder="moncompte">
+          </div>
+          <div class="field social-field">
+            <label for="ob-facebook">📘 Facebook</label>
+            <input type="text" id="ob-facebook" placeholder="Nom ou lien du profil">
+          </div>
+          <div class="field social-field">
+            <label for="ob-linkedin">💼 LinkedIn</label>
+            <input type="text" id="ob-linkedin" placeholder="Lien de ton profil">
+          </div>
+        </div>
       </div>
 
       <div class="edit-error hidden" id="onboardingError"></div>

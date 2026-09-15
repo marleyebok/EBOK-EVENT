@@ -2229,7 +2229,19 @@ function setAuthAvailable(ready){
 }
 
 /* ---------- Profil membre (questions inscription + édition) ---------- */
-const ROLE_OPTIONS = ["Joueur", "Coach", "Organisateur", "Club", "Ligue", "Autre"];
+const ROLE_OPTIONS = ["Joueur", "Coach", "Organisateur", "Club", "Ligue", "Entreprise", "Média", "Autre"];
+/* Rôles qui publient au nom d'une structure : on leur demande son identité à
+   l'inscription, ce qui pré-remplit ensuite le formulaire de publication. */
+const ROLES_STRUCTURE = ["Organisateur", "Club", "Ligue", "Entreprise", "Média"];
+/* Réseaux proposés à tous les profils, tous facultatifs. Stockés sous
+   `socials`, et non à la racine du profil, pour ne pas mélanger l'identité
+   d'un membre avec ses comptes. */
+const SOCIAL_KEYS = ["instagram", "tiktok", "snapchat", "facebook", "linkedin"];
+/* Libellés affichés dans « À propos de moi ». */
+const SOCIAL_LABELS = [
+  ["instagram", "Instagram"], ["tiktok", "TikTok"], ["snapchat", "Snapchat"],
+  ["facebook", "Facebook"], ["linkedin", "LinkedIn"],
+];
 const INTEREST_OPTIONS = ["Tournois", "Camps", "Circuit 3x3", "Détections", "All-Star Game", "Clinic Coachs", "Show", "Voyage", "Matchs de Gala", "Handibasket"];
 const MAX_INTERESTS = 3;
 /* Niveaux de pratique, du plus accessible au plus élevé. Posés aux joueurs à
@@ -2301,6 +2313,16 @@ function profileFieldsHtml(p){
     <div class="field">
       <label>Événements qui t'intéressent le plus <span class="field-hint">(${MAX_INTERESTS} choix max)</span></label>
       <div class="chip-checks" data-interests="${p}">${interests}</div>
+    </div>
+    <div class="field">
+      <label>Tes réseaux <span class="field-hint">(facultatif)</span></label>
+      <div class="socials-grid">
+        ${SOCIAL_LABELS.map(([cle, label])=> `
+          <div class="field social-field">
+            <label for="${p}${cle}">${esc(label)}</label>
+            <input type="text" id="${p}${cle}" placeholder="${cle === 'facebook' || cle === 'linkedin' ? 'Nom ou lien' : '@moncompte'}">
+          </div>`).join('')}
+      </div>
     </div>`;
 }
 
@@ -2359,7 +2381,8 @@ function readProfileFields(p){
     sexe: g('sexe'),
     practice: isPlayerOrCoach ? g('practice') : '',
     favClub: g('favClub'),
-    interests
+    interests,
+    socials: Object.fromEntries(SOCIAL_KEYS.map(c=> [c, g(c).replace(/^@/, '')])),
   };
 }
 
@@ -2375,6 +2398,8 @@ function fillProfileFields(p, prof){
   s('sexe', prof.sexe || '');
   s('practice', prof.practice || '');
   s('favClub', prof.favClub || '');
+  const socials = prof.socials || {};
+  for(const cle of SOCIAL_KEYS) s(cle, socials[cle] || '');
   const set = new Set(prof.interests || []);
   document.querySelectorAll(`[data-interests="${p}"] input[type=checkbox]`).forEach(x=>{ x.checked = set.has(x.value); });
   wireProfileFields(p);
@@ -2434,7 +2459,10 @@ let obEtape = 0;                 // index dans la liste des étapes actives
    joueur : la liste est donc recalculée à chaque changement de rôle, et la
    progression suit. */
 function obEtapes(){
-  return ['pseudo', 'role', ...(obRole === 'Joueur' ? ['joueur'] : []), 'ville', 'interets'];
+  let specifique = [];
+  if(obRole === 'Joueur') specifique = ['joueur'];
+  else if(ROLES_STRUCTURE.includes(obRole)) specifique = ['structure'];
+  return ['pseudo', 'role', ...specifique, 'ville', 'interets', 'reseaux'];
 }
 
 /* Vrai si le profil mérite encore d'être complété. `onboarded` est posé à
@@ -2467,11 +2495,26 @@ function obAller(i){
   // Retour masqué sur la première carte ; « C'est parti » sur la dernière.
   document.getElementById('obBack').classList.toggle('hidden', obEtape === 0);
   const derniere = obEtape === total - 1;
+  // La dernière carte est facultative : le bouton doit le dire, pour qu'on ose
+  // la traverser sans rien remplir.
+  const done = document.getElementById('obDone');
+  if(derniere) done.textContent = courante === 'reseaux' ? 'Terminer' : "C'est parti";
   // Sur la carte « rôle », choisir une pastille fait avancer tout seul :
   // un bouton « Suivant » n'y ajoute rien et encombre l'écran au doigt.
   const avanceSeule = courante === 'role';
   document.getElementById('obNext').classList.toggle('hidden', derniere || avanceSeule);
   document.getElementById('obDone').classList.toggle('hidden', !derniere);
+
+  // « Quels événements t'intéressent » n'a pas de sens pour un club : il en
+  // organise, il ne les suit pas.
+  if(courante === 'interets'){
+    const titre = document.querySelector('.ob-step[data-step="interets"] h3');
+    if(titre){
+      titre.textContent = ROLES_STRUCTURE.includes(obRole)
+        ? "Quels événements organises-tu ?"
+        : "Quels événements t'intéressent ?";
+    }
+  }
 
   // Le curseur va dans le champ de la carte : une saisie de moins au doigt.
   const champ = document.querySelector(`.ob-step[data-step="${courante}"] input[type=text], .ob-step[data-step="${courante}"] input[type=number]`);
@@ -2520,6 +2563,15 @@ function openOnboarding(){
   if(ville && !ville.value) ville.value = p.ville || '';
   const age = document.getElementById('ob-age');
   if(age && !age.value && p.age != null) age.value = p.age;
+  for(const [id, cle] of [['ob-orgname','orgname'], ['ob-orgsite','orgsite']]){
+    const el = document.getElementById(id);
+    if(el && !el.value && p[cle]) el.value = p[cle];
+  }
+  const socials = p.socials || {};
+  for(const cle of SOCIAL_KEYS){
+    const el = document.getElementById('ob-' + cle);
+    if(el && !el.value && socials[cle]) el.value = socials[cle];
+  }
   if(p.role){ obRole = p.role; obMarquePastille('ob-role', p.role); }
   if(p.niveau){ obNiveau = p.niveau; obMarquePastille('ob-niveau', p.niveau); }
   if(Array.isArray(p.interests)){
@@ -2642,6 +2694,30 @@ function initOnboarding(){
       data.age = null;
       data.niveau = '';
     }
+    // Identité de la structure : elle nourrit le profil diffuseur et pré-remplit
+    // le formulaire de publication. Sans elle, les événements se publient sous
+    // le nom générique « Organisateur ».
+    // On ne l'efface PAS quand le rôle change : contrairement à l'âge, un
+    // joueur peut tout à fait organiser par ailleurs.
+    // Réseaux sociaux, communs à tous les profils. L'arobase est ajoutée à
+    // l'affichage : on ne la stocke pas.
+    data.socials = {};
+    for(const cle of SOCIAL_KEYS){
+      data.socials[cle] = document.getElementById('ob-' + cle).value.trim().replace(/^@/, '');
+    }
+
+    if(ROLES_STRUCTURE.includes(data.role)){
+      data.orgname = document.getElementById('ob-orgname').value.trim();
+      data.orgsite = document.getElementById('ob-orgsite').value.trim();
+      // La ville déjà demandée sert aussi de ville de la structure : autant ne
+      // pas poser deux fois la même question.
+      if(data.ville) data.orgcity = data.ville;
+      // Pour une structure, ces deux réseaux servent aussi de contact sur les
+      // fiches événement : on les recopie là où le formulaire de publication
+      // les attend, plutôt que de les redemander.
+      data.orginsta = data.socials.instagram;
+      data.orglinkedin = data.socials.linkedin;
+    }
     // Coordonnées de la ville : elles préparent le filtre « autour de moi ».
     if(onboardingVille && onboardingVille.city === data.ville){
       data.villeLat = onboardingVille.lat;
@@ -2713,6 +2789,10 @@ function renderProfileAbout(){
     p.practice ? ['Niveau / club', p.practice] : null,
     p.favClub ? ['Club préféré', p.favClub] : null,
     (Array.isArray(p.interests) && p.interests.length) ? ['Événements préférés', p.interests.join(', ')] : null,
+    ...SOCIAL_LABELS.map(([cle, label])=>{
+      const v = p.socials && p.socials[cle];
+      return v ? [label, v] : null;
+    }),
   ].filter(Boolean);
   if(!rows.length){
     box.innerHTML = `<p class="about-empty">Complète ton profil pour qu'EBOK te propose les événements qui te ressemblent.</p>`;

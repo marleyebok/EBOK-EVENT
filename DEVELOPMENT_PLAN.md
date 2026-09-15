@@ -47,6 +47,8 @@ partagé, plus de lecture du profil du site mère. Seul reste le point ci-dessou
 - [x] CRUD événements complet + circuit de validation (`pending` → `approved`)
 - [x] Compteurs de « curieux », favoris, profil membre
 - [x] Profil diffuseur (`/compte/profil`) qui pré-remplit le formulaire de publication
+- [x] Questionnaire de bienvenue à la première connexion : une question par carte,
+      questions propres aux joueurs et aux structures, réseaux sociaux facultatifs
 - [x] Affiches hébergées sur Vercel Blob + reprise des affiches stockées en base
 - [x] Aperçu au partage et indexation par événement (`api/evenement.js` → Open Graph + schema.org)
 - [x] Carte de France interactive, carte du monde pour l'étranger
@@ -96,6 +98,9 @@ Le filtre « autour de moi » repose encore sur un rayon approximatif.
 - [ ] Demander la position au navigateur et la mémoriser
 - [ ] Stocker `latitude` / `longitude` sur chaque événement (les coordonnées des
       villes sont déjà dans `cities-fr.js` — la moitié du travail est faite)
+- [x] Ville du membre et ses coordonnées, collectées au questionnaire de
+      bienvenue (`ville`, `villeLat`, `villeLng`) — le point de départ du
+      filtre « autour de moi » est donc déjà en base
 - [ ] Remplacer le rayon approximatif par la **formule de Haversine**
 - [ ] Trier les résultats par distance réelle
 
@@ -120,6 +125,11 @@ communautaire, mais dépend de la géolocalisation.
 - [ ] Entité « terrain » en base (distincte des événements)
 - [ ] Affichage sur la carte + filtre « autour de moi »
 - [ ] Contribution communautaire avec modération admin
+
+> 💡 Les réseaux sociaux des membres (`socials`) sont collectés mais ne sont
+> affichés nulle part côté public : ils attendent la brique « communauté ».
+> Pour les structures, Instagram et LinkedIn sont recopiés dans le profil
+> diffuseur et apparaissent donc sur les fiches événement.
 
 ### 5. Plus tard
 

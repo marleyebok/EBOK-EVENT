@@ -20,6 +20,7 @@ const FIELDS = {
   orgcity: 'orgcity',
   orginsta: 'orginsta',
   orgsite: 'orgsite',
+  orglinkedin: 'orglinkedin',
   orgemail: 'orgemail',
   orgtel: 'orgtel',
 };
