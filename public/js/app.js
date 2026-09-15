@@ -2426,6 +2426,16 @@ function initAuth(){
    ========================================================= */
 let onboardingVille = null;      // ville choisie dans l'autocomplétion (lat/lng)
 let onboardingRefuse = false;    // « Plus tard » cliqué dans cette session
+let obRole = '';                 // rôle choisi (pilote l'étape « joueur »)
+let obNiveau = '';               // niveau choisi
+let obEtape = 0;                 // index dans la liste des étapes actives
+
+/* Étapes affichées, dans l'ordre. L'étape « joueur » n'existe que pour un
+   joueur : la liste est donc recalculée à chaque changement de rôle, et la
+   progression suit. */
+function obEtapes(){
+  return ['pseudo', 'role', ...(obRole === 'Joueur' ? ['joueur'] : []), 'ville', 'interets'];
+}
 
 /* Vrai si le profil mérite encore d'être complété. `onboarded` est posé à
    l'enregistrement : il distingue « jamais répondu » de « répondu en laissant
@@ -2436,6 +2446,59 @@ function profilIncomplet(){
   if(p.onboarded) return false;
   // Profil déjà nourri autrement (ancien membre) : on ne le dérange pas.
   return !(p.pseudo && p.role);
+}
+
+/* Affiche l'étape demandée et met à jour progression et boutons. */
+function obAller(i){
+  const etapes = obEtapes();
+  obEtape = Math.max(0, Math.min(i, etapes.length - 1));
+  const courante = etapes[obEtape];
+
+  for(const el of document.querySelectorAll('#onboardingModal .ob-step')){
+    el.hidden = el.dataset.step !== courante;
+  }
+  document.getElementById('onboardingError').classList.add('hidden');
+
+  // Progression : « Question 2 sur 5 » + barre.
+  const total = etapes.length;
+  document.getElementById('obProgressTxt').textContent = `Question ${obEtape + 1} sur ${total}`;
+  document.getElementById('obProgressFill').style.width = `${((obEtape + 1) / total) * 100}%`;
+
+  // Retour masqué sur la première carte ; « C'est parti » sur la dernière.
+  document.getElementById('obBack').classList.toggle('hidden', obEtape === 0);
+  const derniere = obEtape === total - 1;
+  // Sur la carte « rôle », choisir une pastille fait avancer tout seul :
+  // un bouton « Suivant » n'y ajoute rien et encombre l'écran au doigt.
+  const avanceSeule = courante === 'role';
+  document.getElementById('obNext').classList.toggle('hidden', derniere || avanceSeule);
+  document.getElementById('obDone').classList.toggle('hidden', !derniere);
+
+  // Le curseur va dans le champ de la carte : une saisie de moins au doigt.
+  const champ = document.querySelector(`.ob-step[data-step="${courante}"] input[type=text], .ob-step[data-step="${courante}"] input[type=number]`);
+  if(champ) setTimeout(()=> champ.focus(), 50);
+}
+
+/* Contrôle de l'étape courante. Renvoie un message d'erreur, ou null si tout va
+   bien. Seuls le pseudo et le rôle sont exigés : le reste enrichit le profil
+   sans être indispensable. */
+function obValide(){
+  const etape = obEtapes()[obEtape];
+  if(etape === 'pseudo' && !document.getElementById('ob-pseudo').value.trim()){
+    return "Indique le nom qu'on affichera.";
+  }
+  if(etape === 'role' && !obRole) return "Choisis ce qui te correspond le mieux.";
+  return null;
+}
+
+function obSuivant(){
+  const erreur = obValide();
+  if(erreur){
+    const box = document.getElementById('onboardingError');
+    box.textContent = erreur;
+    box.classList.remove('hidden');
+    return;
+  }
+  obAller(obEtape + 1);
 }
 
 function closeOnboarding(){
@@ -2453,26 +2516,43 @@ function openOnboarding(){
   // Pré-remplissage : le nom vient de Google, autant ne pas le redemander.
   const pseudo = document.getElementById('ob-pseudo');
   if(pseudo && !pseudo.value) pseudo.value = p.pseudo || p.name || currentUser.displayName || '';
-  const role = document.getElementById('ob-role');
-  if(role && p.role) role.value = p.role;
   const ville = document.getElementById('ob-ville');
   if(ville && !ville.value) ville.value = p.ville || '';
   const age = document.getElementById('ob-age');
   if(age && !age.value && p.age != null) age.value = p.age;
-  const niveau = document.getElementById('ob-niveau');
-  if(niveau && p.niveau) niveau.value = p.niveau;
-  // Le bloc joueur suit le rôle rechargé.
-  const blocJoueur = document.getElementById('ob-joueur');
-  if(blocJoueur && role) blocJoueur.classList.toggle('hidden', role.value !== 'Joueur');
+  if(p.role){ obRole = p.role; obMarquePastille('ob-role', p.role); }
+  if(p.niveau){ obNiveau = p.niveau; obMarquePastille('ob-niveau', p.niveau); }
   if(Array.isArray(p.interests)){
     for(const box of document.querySelectorAll('#ob-interests input[type=checkbox]')){
       box.checked = p.interests.includes(box.value);
     }
   }
 
-  document.getElementById('onboardingError').classList.add('hidden');
+  obAller(0);
   modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
+}
+
+/* Marque la pastille choisie dans un groupe de choix unique. */
+function obMarquePastille(groupeId, valeur){
+  for(const b of document.querySelectorAll(`#${groupeId} .chip-pick`)){
+    b.classList.toggle('selected', b.dataset.value === valeur);
+    b.setAttribute('aria-pressed', b.dataset.value === valeur ? 'true' : 'false');
+  }
+}
+
+/* Construit un groupe de pastilles à choix unique. */
+function obGroupePastilles(groupeId, options, onPick){
+  const groupe = document.getElementById(groupeId);
+  groupe.innerHTML = options.map(o=>
+    `<button type="button" class="chip-pick" data-value="${esc(o)}" aria-pressed="false">${esc(o)}</button>`
+  ).join('');
+  groupe.addEventListener('click', e=>{
+    const btn = e.target.closest('.chip-pick');
+    if(!btn) return;
+    obMarquePastille(groupeId, btn.dataset.value);
+    onPick(btn.dataset.value);
+  });
 }
 
 /* Affiche ou masque le rappel de la page « Mon profil ». */
@@ -2493,20 +2573,13 @@ function initOnboarding(){
   const modal = document.getElementById('onboardingModal');
   if(!modal) return;
 
-  // Choix construits depuis les mêmes listes que le reste du site.
-  const role = document.getElementById('ob-role');
-  role.innerHTML = `<option value="">—</option>` +
-    ROLE_OPTIONS.map(r=> `<option value="${esc(r)}">${esc(r)}</option>`).join('');
-
-  const niveau = document.getElementById('ob-niveau');
-  niveau.innerHTML = `<option value="">—</option>` +
-    NIVEAU_OPTIONS.map(n=> `<option value="${esc(n)}">${esc(n)}</option>`).join('');
-
-  // Âge et niveau ne concernent que les joueurs : on ne les montre qu'à eux.
-  const blocJoueur = document.getElementById('ob-joueur');
-  const syncJoueur = ()=> blocJoueur.classList.toggle('hidden', role.value !== 'Joueur');
-  role.addEventListener('change', syncJoueur);
-  syncJoueur();
+  // Pastilles plutôt qu'un menu déroulant : bien plus confortable au pouce.
+  // Choisir fait avancer tout seul — un geste de moins par question.
+  obGroupePastilles('ob-role', ROLE_OPTIONS, v=>{
+    obRole = v;
+    setTimeout(()=> obSuivant(), 180);   // laisse voir la sélection
+  });
+  obGroupePastilles('ob-niveau', NIVEAU_OPTIONS, v=>{ obNiveau = v; });
 
   document.getElementById('ob-interests').innerHTML = INTEREST_OPTIONS.map(i=>
     `<label class="chip-check"><input type="checkbox" value="${esc(i)}"><span>${esc(i)}</span></label>`
@@ -2529,6 +2602,16 @@ function initOnboarding(){
     }
   });
 
+  document.getElementById('obNext').addEventListener('click', obSuivant);
+  document.getElementById('obBack').addEventListener('click', ()=> obAller(obEtape - 1));
+
+  // Entrée valide l'étape au lieu d'envoyer le formulaire incomplet.
+  modal.addEventListener('keydown', e=>{
+    if(e.key !== 'Enter') return;
+    const etapes = obEtapes();
+    if(obEtape < etapes.length - 1){ e.preventDefault(); obSuivant(); }
+  });
+
   const plusTard = ()=>{ onboardingRefuse = true; closeOnboarding(); renderOnboardingNudge(); };
   document.getElementById('onboardingSkip').addEventListener('click', plusTard);
   document.getElementById('onboardingLater').addEventListener('click', plusTard);
@@ -2542,23 +2625,23 @@ function initOnboarding(){
 
     const data = {
       pseudo: document.getElementById('ob-pseudo').value.trim(),
-      role: document.getElementById('ob-role').value,
+      role: obRole,
       ville: document.getElementById('ob-ville').value.trim(),
       interests: [...document.querySelectorAll('#ob-interests input:checked')].map(b=> b.value),
       onboarded: true,
     };
+    // Le pseudo sert de nom d'affichage, comme dans la modale d'édition.
+    if(data.pseudo) data.name = data.pseudo;
     // Âge et niveau n'ont de sens que pour un joueur : on ne les enregistre
     // que dans ce cas, et on efface d'anciennes valeurs si le rôle a changé.
     if(data.role === 'Joueur'){
       const age = parseInt(document.getElementById('ob-age').value, 10);
       data.age = Number.isFinite(age) ? age : null;
-      data.niveau = document.getElementById('ob-niveau').value;
+      data.niveau = obNiveau;
     }else{
       data.age = null;
       data.niveau = '';
     }
-    // Le pseudo sert de nom d'affichage, comme dans la modale d'édition.
-    if(data.pseudo) data.name = data.pseudo;
     // Coordonnées de la ville : elles préparent le filtre « autour de moi ».
     if(onboardingVille && onboardingVille.city === data.ville){
       data.villeLat = onboardingVille.lat;

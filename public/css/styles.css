@@ -1235,15 +1235,66 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 /* =========================================================
    BIENVENUE — formulaire de profil à la première connexion
    ========================================================= */
-.onboarding-box{max-width:560px;}
-.onboarding-box h3{font-size:24px;}
-.onboarding-box .edit-sub{margin-bottom:22px;}
+.onboarding-box{max-width:520px;}
+.onboarding-box h3{font-size:23px;line-height:1.2;}
+.onboarding-box .edit-sub{margin:8px 0 22px;}
+.onboarding-box .field{margin-bottom:16px;}
+.onboarding-box .field-hint{margin-top:8px;}
 /* La liste de villes doit passer au-dessus du reste du formulaire. */
 .onboarding-box .ac-field{position:relative;z-index:2;}
-/* Sans cela, l'indication de ville touche le bloc suivant. */
-.onboarding-box .field{margin-bottom:16px;}
-.onboarding-box .field-hint{margin-top:6px;}
-.onboarding-box .form-row{margin-bottom:16px;}
+
+/* Une carte par question : hauteur minimale pour que les boutons ne sautent
+   pas d'une étape à l'autre. */
+.ob-step{min-height:196px;}
+.ob-step[hidden]{display:none;}
+
+/* Progression. La marge à droite évite que la barre passe sous la croix. */
+.ob-progress{margin:0 44px 22px 0;}
+.ob-progress-bar{height:4px;background:var(--asphalt-3);border-radius:999px;overflow:hidden;}
+.ob-progress-bar span{
+  display:block;height:100%;width:0;background:var(--orange);
+  border-radius:999px;transition:width .3s ease;
+}
+.ob-progress-txt{
+  margin-top:8px;font-family:var(--font-mono);font-size:11.5px;
+  letter-spacing:.4px;color:var(--chalk-dim);text-transform:uppercase;
+}
+
+/* Choix unique en pastilles : plus confortable au pouce qu'un menu déroulant. */
+.chip-picks{display:flex;flex-wrap:wrap;gap:9px;}
+.chip-pick{
+  background:none;border:1px solid var(--line-strong);color:var(--chalk-dim);
+  border-radius:999px;padding:11px 17px;font-size:14px;font-weight:600;
+  transition:border-color .15s, background .15s, color .15s;
+}
+.chip-pick:hover{border-color:var(--chalk-dim);color:var(--chalk);}
+.chip-pick.selected{
+  background:rgba(255,87,34,0.16);border-color:var(--orange);color:var(--chalk);
+}
+
+/* Barre d'actions : « Retour » à gauche, le reste à droite. */
+.ob-actions{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  margin-top:24px;padding-top:18px;border-top:1px solid var(--line);flex-wrap:wrap;
+}
+.ob-actions-right{display:flex;align-items:center;gap:10px;margin-left:auto;}
+
+@media(max-width:600px){
+  .onboarding-box{padding:24px 18px 18px;}
+  .onboarding-box h3{font-size:20px;}
+  .ob-step{min-height:170px;}
+  /* Au doigt : l'action principale seule en pleine largeur, les deux
+     secondaires côte à côte en dessous. Trois boutons empilés mangeaient tout
+     l'écran. `display:contents` sort les boutons de leur conteneur pour qu'ils
+     deviennent tous des éléments de la même rangée, et donc ordonnables. */
+  .ob-actions{flex-wrap:wrap;gap:10px;}
+  .ob-actions-right{display:contents;}
+  .ob-actions #obNext,
+  .ob-actions #obDone{order:-1;width:100%;}
+  .ob-actions #obBack{order:1;flex:1;}
+  .ob-actions #onboardingLater{order:2;flex:1;}
+  .chip-pick{flex:1 1 auto;text-align:center;}
+}
 
 /* Rappel sur « Mon profil » tant que le profil n'est pas complété. */
 .onboarding-nudge{

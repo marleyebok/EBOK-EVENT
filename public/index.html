@@ -664,54 +664,77 @@
 </div>
 
 <!-- ===================== BIENVENUE (1re connexion) ===================== -->
+<!-- Une question par carte : sur mobile, six champs dans une modale obligent à
+     faire défiler, ce qui fait abandonner. Les cartes sont affichées une à une
+     par app.js (initOnboarding). -->
 <div class="edit-modal" id="onboardingModal" aria-hidden="true">
   <div class="edit-box onboarding-box">
     <button class="edit-close" id="onboardingSkip" aria-label="Plus tard">&times;</button>
-    <h3>Bienvenue sur EBOK Event 🏀</h3>
-    <p class="edit-sub">
-      Quatre questions rapides pour te proposer les événements qui te correspondent.
-      Tu peux les modifier à tout moment.
-    </p>
+
+    <div class="ob-progress">
+      <div class="ob-progress-bar"><span id="obProgressFill"></span></div>
+      <p class="ob-progress-txt" id="obProgressTxt"></p>
+    </div>
 
     <form id="onboardingForm">
-      <div class="field">
-        <label for="ob-pseudo">Comment veux-tu qu'on t'appelle ?</label>
-        <input type="text" id="ob-pseudo" placeholder="Ex. Marley B." autocomplete="nickname" required>
+      <!-- 1 — Pseudo -->
+      <div class="ob-step" data-step="pseudo">
+        <h3>Bienvenue sur EBOK Event 🏀</h3>
+        <p class="edit-sub">Comment veux-tu qu'on t'appelle ?</p>
+        <div class="field">
+          <input type="text" id="ob-pseudo" placeholder="Ex. Marley B." autocomplete="nickname">
+          <p class="field-hint">C'est le nom qui s'affichera sur le site.</p>
+        </div>
       </div>
 
-      <div class="field">
-        <label for="ob-role">Tu es…</label>
-        <select id="ob-role" required></select>
+      <!-- 2 — Rôle -->
+      <div class="ob-step" data-step="role" hidden>
+        <h3>Tu es…</h3>
+        <p class="edit-sub">Pour te proposer ce qui te concerne vraiment.</p>
+        <div class="chip-picks" id="ob-role"></div>
       </div>
 
-      <!-- Questions posées uniquement aux joueurs (affichées par app.js). -->
-      <div class="form-row hidden" id="ob-joueur">
+      <!-- 3 — Joueurs uniquement -->
+      <div class="ob-step" data-step="joueur" hidden>
+        <h3>Ton profil de joueur</h3>
+        <p class="edit-sub">Pour repérer les événements de ta catégorie.</p>
         <div class="field">
           <label for="ob-age">Ton âge</label>
           <input type="number" id="ob-age" min="5" max="99" placeholder="Ex. 24">
         </div>
         <div class="field">
-          <label for="ob-niveau">Ton niveau</label>
-          <select id="ob-niveau"></select>
+          <label>Ton niveau</label>
+          <div class="chip-picks" id="ob-niveau"></div>
         </div>
       </div>
 
-      <div class="field ac-field">
-        <label for="ob-ville">Ta ville</label>
-        <input type="text" id="ob-ville" placeholder="Ex. Montpellier" autocomplete="address-level2">
-        <div class="ac-list hidden" id="ob-ville-ac"></div>
-        <p class="field-hint" id="ob-ville-hint">Pour te montrer en priorité ce qui se passe près de chez toi.</p>
+      <!-- 4 — Ville -->
+      <div class="ob-step" data-step="ville" hidden>
+        <h3>Ta ville</h3>
+        <p class="edit-sub">Pour te montrer en priorité ce qui se passe près de chez toi.</p>
+        <div class="field ac-field">
+          <input type="text" id="ob-ville" placeholder="Ex. Montpellier" autocomplete="address-level2">
+          <div class="ac-list hidden" id="ob-ville-ac"></div>
+          <p class="field-hint" id="ob-ville-hint">Commence à taper, on te propose la liste.</p>
+        </div>
       </div>
 
-      <div class="field">
-        <label>Quels événements t'intéressent ? <span class="field-hint">(3 choix max)</span></label>
+      <!-- 5 — Centres d'intérêt -->
+      <div class="ob-step" data-step="interets" hidden>
+        <h3>Quels événements t'intéressent ?</h3>
+        <p class="edit-sub">Trois choix maximum.</p>
         <div class="chip-checks" data-interests="ob-" id="ob-interests"></div>
       </div>
 
       <div class="edit-error hidden" id="onboardingError"></div>
-      <div class="edit-actions">
-        <button type="button" class="btn btn-ghost" id="onboardingLater">Plus tard</button>
-        <button type="submit" class="btn btn-primary">C'est parti</button>
+
+      <div class="ob-actions">
+        <button type="button" class="btn btn-ghost" id="obBack">← Retour</button>
+        <div class="ob-actions-right">
+          <button type="button" class="btn btn-ghost" id="onboardingLater">Plus tard</button>
+          <button type="button" class="btn btn-primary" id="obNext">Suivant</button>
+          <button type="submit" class="btn btn-primary hidden" id="obDone">C'est parti</button>
+        </div>
       </div>
     </form>
   </div>
