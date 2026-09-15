@@ -1233,6 +1233,34 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 }
 
 /* =========================================================
+   BIENVENUE — formulaire de profil à la première connexion
+   ========================================================= */
+.onboarding-box{max-width:560px;}
+.onboarding-box h3{font-size:24px;}
+.onboarding-box .edit-sub{margin-bottom:22px;}
+/* La liste de villes doit passer au-dessus du reste du formulaire. */
+.onboarding-box .ac-field{position:relative;z-index:2;}
+/* Sans cela, l'indication de ville touche le bloc suivant. */
+.onboarding-box .field{margin-bottom:16px;}
+.onboarding-box .field-hint{margin-top:6px;}
+.onboarding-box .form-row{margin-bottom:16px;}
+
+/* Rappel sur « Mon profil » tant que le profil n'est pas complété. */
+.onboarding-nudge{
+  display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;
+  margin-top:28px;padding:18px 22px;
+  background:linear-gradient(120deg, rgba(255,87,34,0.16), var(--asphalt-2) 70%);
+  border:1px solid rgba(255,87,34,0.4);border-radius:var(--radius);
+}
+.onboarding-nudge strong{font-size:15px;}
+.onboarding-nudge p{margin-top:4px;color:var(--chalk-dim);font-size:13.5px;line-height:1.45;}
+.onboarding-nudge .btn{flex:none;}
+@media(max-width:600px){
+  .onboarding-nudge{flex-direction:column;align-items:stretch;}
+  .onboarding-nudge .btn{width:100%;}
+}
+
+/* =========================================================
    PIED DE PAGE
    ---------------------------------------------------------
    Les couleurs dérivent des variables de thème : il suit donc

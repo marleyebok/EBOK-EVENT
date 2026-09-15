@@ -2082,7 +2082,7 @@ function showPage(name){
   if(name === 'create' && !currentUser && window.EBOK_AUTH){ openAuth('login'); }
   // Précharge la base des villes dès qu'on arrive sur la page de publication.
   if(name === 'create'){ ensureCitiesLoaded(); prefillOrgFromProfile(); }
-  if(name === 'profile') renderProfile();
+  if(name === 'profile'){ renderProfile(); renderOnboardingNudge(); }
   // Quitter une fiche événement : on revient à l'URL racine.
   if(!syncingFromUrl && name !== 'event' && eventIdFromUrl()) setUrl('/');
   window.scrollTo({top:0, behavior:'instant'});
@@ -2232,6 +2232,9 @@ function setAuthAvailable(ready){
 const ROLE_OPTIONS = ["Joueur", "Coach", "Organisateur", "Club", "Ligue", "Autre"];
 const INTEREST_OPTIONS = ["Tournois", "Camps", "Circuit 3x3", "Détections", "All-Star Game", "Clinic Coachs", "Show", "Voyage", "Matchs de Gala", "Handibasket"];
 const MAX_INTERESTS = 3;
+/* Niveaux de pratique, du plus accessible au plus élevé. Posés aux joueurs à
+   l'inscription (voir la modale de bienvenue). */
+const NIVEAU_OPTIONS = ["Loisir", "Département", "Région", "National", "Pro"];
 const profilePhoto = {};          // dataURL de la photo, par préfixe ("su-", "pe-")
 
 // Applique l'aperçu de la photo de profil pour un préfixe donné.
@@ -2409,6 +2412,178 @@ function initAuth(){
   updateAuthUI();
 }
 
+/* =========================================================
+   BIENVENUE — formulaire de profil à la première connexion
+   ---------------------------------------------------------
+   Le formulaire de profil complet existe, mais il est enfoui dans
+   « Mon profil » → Modifier : personne ne l'ouvre spontanément, et les profils
+   restent vides. On pose donc les quatre questions qui servent vraiment, une
+   fois, au moment où l'utilisateur vient de s'inscrire.
+
+   Passable : « Plus tard » ferme sans rien enregistrer. Un rappel reste alors
+   sur la page « Mon profil » jusqu'à ce que ce soit fait. On ne redemande pas
+   dans la même session, pour ne pas harceler.
+   ========================================================= */
+let onboardingVille = null;      // ville choisie dans l'autocomplétion (lat/lng)
+let onboardingRefuse = false;    // « Plus tard » cliqué dans cette session
+
+/* Vrai si le profil mérite encore d'être complété. `onboarded` est posé à
+   l'enregistrement : il distingue « jamais répondu » de « répondu en laissant
+   des champs vides », qu'on ne doit pas relancer indéfiniment. */
+function profilIncomplet(){
+  const p = currentProfile;
+  if(!p) return true;
+  if(p.onboarded) return false;
+  // Profil déjà nourri autrement (ancien membre) : on ne le dérange pas.
+  return !(p.pseudo && p.role);
+}
+
+function closeOnboarding(){
+  const modal = document.getElementById('onboardingModal');
+  if(!modal) return;
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+}
+
+function openOnboarding(){
+  const modal = document.getElementById('onboardingModal');
+  if(!modal || !currentUser) return;
+  const p = currentProfile || {};
+
+  // Pré-remplissage : le nom vient de Google, autant ne pas le redemander.
+  const pseudo = document.getElementById('ob-pseudo');
+  if(pseudo && !pseudo.value) pseudo.value = p.pseudo || p.name || currentUser.displayName || '';
+  const role = document.getElementById('ob-role');
+  if(role && p.role) role.value = p.role;
+  const ville = document.getElementById('ob-ville');
+  if(ville && !ville.value) ville.value = p.ville || '';
+  const age = document.getElementById('ob-age');
+  if(age && !age.value && p.age != null) age.value = p.age;
+  const niveau = document.getElementById('ob-niveau');
+  if(niveau && p.niveau) niveau.value = p.niveau;
+  // Le bloc joueur suit le rôle rechargé.
+  const blocJoueur = document.getElementById('ob-joueur');
+  if(blocJoueur && role) blocJoueur.classList.toggle('hidden', role.value !== 'Joueur');
+  if(Array.isArray(p.interests)){
+    for(const box of document.querySelectorAll('#ob-interests input[type=checkbox]')){
+      box.checked = p.interests.includes(box.value);
+    }
+  }
+
+  document.getElementById('onboardingError').classList.add('hidden');
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+}
+
+/* Affiche ou masque le rappel de la page « Mon profil ». */
+function renderOnboardingNudge(){
+  const nudge = document.getElementById('onboardingNudge');
+  if(nudge) nudge.classList.toggle('hidden', !profilIncomplet());
+}
+
+/* Ouvre le formulaire si c'est une première connexion. Appelé à chaque
+   changement d'état d'authentification. */
+function maybeOpenOnboarding(){
+  if(!currentUser || onboardingRefuse) return;
+  if(!profilIncomplet()) return;
+  openOnboarding();
+}
+
+function initOnboarding(){
+  const modal = document.getElementById('onboardingModal');
+  if(!modal) return;
+
+  // Choix construits depuis les mêmes listes que le reste du site.
+  const role = document.getElementById('ob-role');
+  role.innerHTML = `<option value="">—</option>` +
+    ROLE_OPTIONS.map(r=> `<option value="${esc(r)}">${esc(r)}</option>`).join('');
+
+  const niveau = document.getElementById('ob-niveau');
+  niveau.innerHTML = `<option value="">—</option>` +
+    NIVEAU_OPTIONS.map(n=> `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+
+  // Âge et niveau ne concernent que les joueurs : on ne les montre qu'à eux.
+  const blocJoueur = document.getElementById('ob-joueur');
+  const syncJoueur = ()=> blocJoueur.classList.toggle('hidden', role.value !== 'Joueur');
+  role.addEventListener('change', syncJoueur);
+  syncJoueur();
+
+  document.getElementById('ob-interests').innerHTML = INTEREST_OPTIONS.map(i=>
+    `<label class="chip-check"><input type="checkbox" value="${esc(i)}"><span>${esc(i)}</span></label>`
+  ).join('');
+
+  // Limite à MAX_INTERESTS. On réutilise la règle du formulaire de profil
+  // plutôt que de la réécrire : elle grise aussi visuellement les chips
+  // devenues indisponibles (classe `disabled` sur le label).
+  wireProfileFields('ob-');
+
+  // Autocomplétion de ville : même composant que le formulaire de publication,
+  // donc mêmes données et mêmes coordonnées.
+  ensureCitiesLoaded();
+  attachCityAutocomplete('ob-ville', 'ob-ville-ac', pick=>{
+    onboardingVille = pick;
+    const hint = document.getElementById('ob-ville-hint');
+    if(hint){
+      hint.textContent = '📍 ' + pick.city + (pick.region ? ' · ' + pick.region : '');
+      hint.style.color = 'var(--green)';
+    }
+  });
+
+  const plusTard = ()=>{ onboardingRefuse = true; closeOnboarding(); renderOnboardingNudge(); };
+  document.getElementById('onboardingSkip').addEventListener('click', plusTard);
+  document.getElementById('onboardingLater').addEventListener('click', plusTard);
+
+  const rouvrir = document.getElementById('btnOpenOnboarding');
+  if(rouvrir) rouvrir.addEventListener('click', ()=>{ onboardingRefuse = false; openOnboarding(); });
+
+  document.getElementById('onboardingForm').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const erreur = document.getElementById('onboardingError');
+
+    const data = {
+      pseudo: document.getElementById('ob-pseudo').value.trim(),
+      role: document.getElementById('ob-role').value,
+      ville: document.getElementById('ob-ville').value.trim(),
+      interests: [...document.querySelectorAll('#ob-interests input:checked')].map(b=> b.value),
+      onboarded: true,
+    };
+    // Âge et niveau n'ont de sens que pour un joueur : on ne les enregistre
+    // que dans ce cas, et on efface d'anciennes valeurs si le rôle a changé.
+    if(data.role === 'Joueur'){
+      const age = parseInt(document.getElementById('ob-age').value, 10);
+      data.age = Number.isFinite(age) ? age : null;
+      data.niveau = document.getElementById('ob-niveau').value;
+    }else{
+      data.age = null;
+      data.niveau = '';
+    }
+    // Le pseudo sert de nom d'affichage, comme dans la modale d'édition.
+    if(data.pseudo) data.name = data.pseudo;
+    // Coordonnées de la ville : elles préparent le filtre « autour de moi ».
+    if(onboardingVille && onboardingVille.city === data.ville){
+      data.villeLat = onboardingVille.lat;
+      data.villeLng = onboardingVille.lng;
+      data.region = onboardingVille.region || '';
+    }
+
+    if(window.EBOK_DATA && window.EBOK_DATA.updateUserProfile){
+      try{
+        await window.EBOK_DATA.updateUserProfile(currentUser.uid, data);
+      }catch(err){
+        erreur.textContent = "Enregistrement impossible. Réessaie dans un instant.";
+        erreur.classList.remove('hidden');
+        return;
+      }
+    }
+
+    currentProfile = Object.assign({}, currentProfile, data);
+    closeOnboarding();
+    updateAuthUI();
+    renderOnboardingNudge();
+    if(document.getElementById('page-profile').classList.contains('active')) renderProfile();
+  });
+}
+
 /* ---- Page "Mon profil" (favoris + événements publiés + admin) ---- */
 async function renderProfile(){
   if(!currentUser) return;
@@ -2450,6 +2625,8 @@ function renderProfileAbout(){
     roleLabel ? ['Profil', roleLabel] : null,
     (p.age != null && p.age !== '') ? ['Âge', p.age + ' ans'] : null,
     p.sexe ? ['Sexe', p.sexe] : null,
+    p.niveau ? ['Niveau', p.niveau] : null,
+    p.ville ? ['Ville', p.ville] : null,
     p.practice ? ['Niveau / club', p.practice] : null,
     p.favClub ? ['Club préféré', p.favClub] : null,
     (Array.isArray(p.interests) && p.interests.length) ? ['Événements préférés', p.interests.join(', ')] : null,
@@ -3153,6 +3330,8 @@ window.EBOK = {
     await loadFavorites();
     renderAll();                 // rafraîchit les ♥ sur les cartes
     prefillOrgFromProfile();     // le profil diffuseur arrive avec la session
+    renderOnboardingNudge();
+    maybeOpenOnboarding();       // première connexion : on pose les 4 questions
     if(document.getElementById('page-profile').classList.contains('active')) renderProfile();
   }
 };
@@ -3188,6 +3367,7 @@ initCreatePage();
 initAuth();
 initEditModal();
 initProfileEdit();
+initOnboarding();
 initAiImport();
 initPostersMaintenance();
 

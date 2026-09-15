@@ -579,6 +579,14 @@
       <button class="btn btn-ghost" id="btnLogout2">Déconnexion</button>
     </div>
 
+    <div class="onboarding-nudge hidden" id="onboardingNudge">
+      <div>
+        <strong>Ton profil n'est pas complet.</strong>
+        <p>Quatre questions rapides pour qu'EBOK te propose les événements qui te correspondent.</p>
+      </div>
+      <button class="btn btn-primary" id="btnOpenOnboarding">Compléter</button>
+    </div>
+
     <div class="profile-section">
       <div class="profile-section-head">
         <h3>🧢 À propos de moi</h3>
@@ -653,6 +661,60 @@
 <div class="lightbox" id="lightbox">
   <button class="lightbox-close" id="lightboxClose">&times;</button>
   <div id="lightboxContent"></div>
+</div>
+
+<!-- ===================== BIENVENUE (1re connexion) ===================== -->
+<div class="edit-modal" id="onboardingModal" aria-hidden="true">
+  <div class="edit-box onboarding-box">
+    <button class="edit-close" id="onboardingSkip" aria-label="Plus tard">&times;</button>
+    <h3>Bienvenue sur EBOK Event 🏀</h3>
+    <p class="edit-sub">
+      Quatre questions rapides pour te proposer les événements qui te correspondent.
+      Tu peux les modifier à tout moment.
+    </p>
+
+    <form id="onboardingForm">
+      <div class="field">
+        <label for="ob-pseudo">Comment veux-tu qu'on t'appelle ?</label>
+        <input type="text" id="ob-pseudo" placeholder="Ex. Marley B." autocomplete="nickname" required>
+      </div>
+
+      <div class="field">
+        <label for="ob-role">Tu es…</label>
+        <select id="ob-role" required></select>
+      </div>
+
+      <!-- Questions posées uniquement aux joueurs (affichées par app.js). -->
+      <div class="form-row hidden" id="ob-joueur">
+        <div class="field">
+          <label for="ob-age">Ton âge</label>
+          <input type="number" id="ob-age" min="5" max="99" placeholder="Ex. 24">
+        </div>
+        <div class="field">
+          <label for="ob-niveau">Ton niveau</label>
+          <select id="ob-niveau"></select>
+        </div>
+      </div>
+
+      <div class="field ac-field">
+        <label for="ob-ville">Ta ville</label>
+        <input type="text" id="ob-ville" placeholder="Ex. Montpellier" autocomplete="address-level2">
+        <div class="ac-list hidden" id="ob-ville-ac"></div>
+        <p class="field-hint" id="ob-ville-hint">Pour te montrer en priorité ce qui se passe près de chez toi.</p>
+      </div>
+
+      <div class="field">
+        <label>Quels événements t'intéressent ? <span class="field-hint">(3 choix max)</span></label>
+        <div class="chip-checks" data-interests="ob-" id="ob-interests"></div>
+      </div>
+
+      <div class="edit-error hidden" id="onboardingError"></div>
+      <div class="edit-actions">
+        <button type="button" class="btn btn-ghost" id="onboardingLater">Plus tard</button>
+        <button type="submit" class="btn btn-primary">C'est parti</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <!-- ===================== MODALE ÉDITION (ADMIN) ===================== -->
