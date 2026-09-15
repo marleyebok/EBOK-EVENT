@@ -160,6 +160,7 @@ communautaire, mais dépend de la géolocalisation.
 ```bash
 npm start                  # serveur local sur http://localhost:8080
 npx vercel dev             # idem, avec les fonctions /api (nécessite les variables d'env)
+npm run clerk:check        # vérifie que l'instance Clerk est bien configurée
 node --check public/js/app.js   # contrôle de syntaxe rapide
 ```
 

@@ -39,6 +39,8 @@ EBOK-EVENT/
 │   ├── migrate-posters.js    # Reprise des affiches stockées en base (ponctuel)
 │   └── import-event.js       # Assistant IA (OpenRouter/Gemini) — réservé admin
 ├── lib/services/             # Assistant IA, indépendant du fournisseur
+├── scripts/
+│   └── verifier-clerk.mjs    # Contrôle l'instance Clerk (npm run clerk:check)
 ├── DEVELOPMENT_PLAN.md       # Feuille de route : ce qui reste à faire
 ├── EBOK_Event_Briefing.md    # Référence produit & design
 ├── package.json
@@ -228,6 +230,20 @@ Une instance de développement fonctionne tout de suite, mais affiche un bandeau
 3. Reprendre les étapes 2 et 3 avec les clés `pk_live_…` / `sk_live_…`.
 
 #### 5. Vérifier
+
+Un script contrôle l'instance à ta place :
+
+```bash
+npm run clerk:check                     # vérifie la clé actuellement dans le code
+npm run clerk:check -- pk_test_xxxxx    # vérifie une clé AVANT de la coller
+```
+
+Il te dit si la clé est bien formée, si l'instance répond, si e-mail et Google
+sont bien activés, si tu es en développement ou en production, et si ta clé
+secrète correspond bien à ta clé publique. Chaque problème est accompagné du
+chemin exact à suivre dans le tableau de bord Clerk.
+
+Puis, à la main sur le site :
 
 - [ ] Créer un compte depuis le site → il apparaît dans Clerk → **Users**
 - [ ] Se déconnecter, se reconnecter

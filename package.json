@@ -7,7 +7,8 @@
   "scripts": {
     "start": "npx http-server public -p 8080 -c-1 -o",
     "dev": "npx http-server public -p 8080 -c-1 -o",
-    "serve": "npx http-server public -p 8080 -c-1"
+    "serve": "npx http-server public -p 8080 -c-1",
+    "clerk:check": "node scripts/verifier-clerk.mjs"
   },
   "keywords": [
     "basket",
