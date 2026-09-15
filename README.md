@@ -114,6 +114,23 @@ n'est pas configurée, le site fonctionne sur les **données de démo** de
 > `public/js/clerk.js` — c'est normal. Ne mets **jamais** `sk_…` ni `DATABASE_URL`
 > dans le code ou dans le chat.
 
+### Compteurs de « curieux »
+
+Le compteur de chaque fiche est **public** : il doit fonctionner sans compte,
+puisque la plupart des visiteurs n'en ont pas. Il est donc protégé autrement.
+
+- Un même visiteur n'est compté **qu'une fois par jour et par événement**. Le
+  chiffre affiché correspond à des curieux distincts, pas à des requêtes.
+- Le navigateur ne peut plus fixer de valeur de départ : un compteur part de 1.
+- Au-delà de 150 événements vus par un même visiteur dans la journée, le
+  comptage s'arrête pour lui — les pages restent servies normalement.
+
+**Vie privée :** aucune adresse IP n'est conservée. La déduplication repose sur
+une empreinte SHA-256 tronquée de (jour + secret serveur + IP + navigateur),
+donc non réversible et renouvelée chaque jour, purgée au bout de 7 jours. Elle
+ne sert qu'à éviter les doublons et les abus, jamais à suivre quelqu'un — **à
+mentionner dans la politique de confidentialité**.
+
 ### Schéma
 
 Le schéma `event` (tables `events`, `views`, `profiles`) est **créé

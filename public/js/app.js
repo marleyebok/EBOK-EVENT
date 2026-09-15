@@ -1763,12 +1763,16 @@ async function openEvent(id, opts){
 
 /* ---- compteur de spectateurs (partagé si le stockage est dispo, sinon local) ---- */
 async function loadAndAnimateViews(id){
+  // Valeur de départ des données de DÉMONSTRATION uniquement : elle rend les
+  // fiches d'exemple crédibles quand aucune base n'est branchée. Elle n'est
+  // jamais envoyée au serveur — un vrai compteur part de zéro et ne reflète
+  // que des visites réelles.
   const seed = VIEW_SEEDS[id] || 120;
   let count = null;
   // 1) Source privilégiée : la base (compteur partagé entre tous les visiteurs).
   if(window.EBOK_DATA && typeof window.EBOK_DATA.incrementViews === 'function'){
     try{
-      const c = await window.EBOK_DATA.incrementViews(id, seed);
+      const c = await window.EBOK_DATA.incrementViews(id);
       if(typeof c === 'number' && !isNaN(c)) count = c;
     }catch(e){ count = null; }
   }

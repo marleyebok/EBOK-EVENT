@@ -122,10 +122,15 @@ Les favoris et « Mes événements publiés » existent déjà, mais enfouis dan
 page « Mon profil ». Il faut en faire des destinations à part entière, et leur
 adjoindre des statistiques exploitables par un organisateur.
 
-- [ ] **Sécuriser `/api/views` d'abord** — écriture ouverte aujourd'hui : pas
-      d'authentification, pas de limite, n'importe qui gonfle un compteur avec
-      une boucle. Tant que ce n'est pas fermé, les chiffres ne valent rien face
-      à un annonceur. Prévoir une limite par IP et une déduplication par session.
+- [x] **Compteurs sécurisés** — un visiteur n'est compté qu'une fois par jour et
+      par événement (empreinte salée, non réversible, purgée à 7 jours) ; le
+      paramètre `seed` envoyé par le navigateur, qui permettait de fixer un
+      compteur à la valeur de son choix, est ignoré ; un garde-fou stoppe le
+      comptage au-delà de 150 événements par visiteur et par jour.
+- [ ] **Remettre à zéro les compteurs déjà gonflés** — décision à prendre : les
+      valeurs actuelles en base partent de 120 par événement (ancien
+      comportement) et ont pu être manipulées. Les conserver, c'est afficher
+      des chiffres qu'on ne peut pas défendre.
 - [ ] **Statistiques par événement** — vues, et clics sur chaque canal de contact
 - [ ] **Comptage des clics sur les contacts.** Décision prise : **téléphone et
       e-mail sont masqués et révélés au clic** (ce qui bloque au passage les
@@ -246,6 +251,7 @@ dans le code — le reste est à faire.
 
 - [x] ~~Barre du haut sur mobile~~ — refaite : une seule rangée, plus de
       chevauchement, plus de navigation défilante à l'horizontale
+- [ ] **Remplacer le logo** — celui affiché aujourd'hui n'est pas le bon.
 - [ ] **Refondre le pied de page** — le pied de page actuel est une reprise
       minimale, posée pour remplacer celui de la galaxie : trois liens de
       navigation et une adresse de contact, sans travail graphique. À repenser
@@ -278,7 +284,7 @@ dans le code — le reste est à faire.
 | Sujet | Détail | Urgence |
 |---|---|---|
 | `public/js/app.js` | 144 Ko dans un seul fichier. À découper par domaine (carte, filtres, publication, compte, admin) avant qu'il ne devienne intenable. | moyenne |
-| `/api/views` | Écriture ouverte : pas d'authentification ni de limite, n'importe qui peut gonfler un compteur en boucle. À sécuriser si le chiffre doit servir d'argument commercial. | moyenne |
+| Compteurs hérités | Les valeurs déjà en base ont démarré à 120 par événement et ont pu être manipulées avant la sécurisation. À remettre à zéro si elles doivent servir d'argument commercial. | moyenne |
 | Liste publique | `LIMIT 1000` en dur, sans pagination. Suffisant aujourd'hui ; à revoir vers quelques centaines d'événements. | basse |
 | `api/migrate-posters.js` | Migration ponctuelle data-URI → Blob. Supprimable une fois qu'il ne reste plus d'affiche en base (le mode `?dry=1` permet de le vérifier sans rien écrire). | basse |
 | Aucun test | Le projet n'a aucun test automatisé. Les régressions se voient en production. | à décider |

@@ -100,12 +100,11 @@ export async function deleteEvent(id) {
   await api("/api/events?id=" + encodeURIComponent(id), { method: "DELETE" });
 }
 
-/** Incrémente le compteur de « curieux » et renvoie la nouvelle valeur. */
-export async function incrementViews(eventId, seed = 0) {
-  const d = await api(
-    "/api/views?id=" + encodeURIComponent(eventId) + "&seed=" + (seed || 0),
-    { method: "POST" }
-  );
+/** Compte une visite sur une fiche et renvoie la valeur à jour.
+ *  Le serveur ne compte qu'une fois par visiteur, par événement et par jour ;
+ *  il ignore toute valeur de départ envoyée depuis le navigateur. */
+export async function incrementViews(eventId) {
+  const d = await api("/api/views?id=" + encodeURIComponent(eventId), { method: "POST" });
   return d.count;
 }
 

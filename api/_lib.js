@@ -9,6 +9,8 @@
  * Données (DATABASE_URL, base Neon — schéma `event`) :
  *   event.events   : fiches événements (colonnes indexables + JSONB `data`)
  *   event.views    : compteurs de « curieux » (vues) par événement
+ *   event.view_hits : empreintes de visiteurs, pour ne compter chacun qu'une
+ *                    fois par jour et par événement (purgée au bout de 7 jours)
  *   event.profiles : profils diffuseurs propres à Event (JSONB) + favoris,
  *                    indexés par l'ID utilisateur Clerk. Ne contient NI e-mail
  *                    NI nom réel (lus en direct depuis Clerk).
@@ -65,6 +67,19 @@ export async function ensureSchema() {
       event_id TEXT PRIMARY KEY,
       count INTEGER NOT NULL DEFAULT 0
     )`;
+  /* Une ligne par visiteur, par événement et par jour. Sert à ne compter
+     qu'une fois un même visiteur : sans elle, le compteur suit le nombre de
+     requêtes, pas le nombre de curieux. `visitor` est une empreinte salée,
+     non réversible et renouvelée chaque jour (voir api/views.js). */
+  await q`
+    CREATE TABLE IF NOT EXISTS event.view_hits (
+      event_id TEXT NOT NULL,
+      visitor  TEXT NOT NULL,
+      day      DATE NOT NULL,
+      PRIMARY KEY (event_id, visitor, day)
+    )`;
+  await q`CREATE INDEX IF NOT EXISTS view_hits_day_idx ON event.view_hits (day)`;
+  await q`CREATE INDEX IF NOT EXISTS view_hits_visitor_idx ON event.view_hits (visitor, day)`;
   await q`
     CREATE TABLE IF NOT EXISTS event.profiles (
       user_id TEXT PRIMARY KEY,
