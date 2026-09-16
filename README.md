@@ -155,10 +155,19 @@ et pourra être rejoué.
 **Mettre en service :**
 
 1. Créer un compte sur [resend.com](https://resend.com) (3 000 e-mails/mois gratuits)
-2. Y ajouter le domaine d'envoi et créer les enregistrements **SPF et DKIM** qu'il
-   indique dans ta zone DNS — sans eux, les alertes partent en indésirables, et
-   une réputation d'expéditeur abîmée est longue à réparer
-3. Créer une clé d'API, la mettre dans `RESEND_API_KEY` sur Vercel, puis redéployer
+2. Y ajouter **`event.ebok.fr`** comme domaine d'envoi (le sous-domaine, pas
+   `ebok.fr`) : l'expéditeur reste cohérent avec le site, et la réputation
+   d'envoi se construit à part du domaine principal
+3. Créer chez OVH les enregistrements **SPF, DKIM et DMARC** affichés par Resend,
+   tels quels — sans eux, les alertes partent en indésirables, et une réputation
+   d'expéditeur abîmée est longue à réparer. Resend affiche « Verified » une fois
+   la zone propagée (quelques minutes à quelques heures)
+4. Créer une clé d'API en **Sending access**, la poser dans `RESEND_API_KEY` sur
+   Vercel (Settings → Environment Variables, les trois environnements), puis
+   redéployer
+
+L'expéditeur par défaut est `EBOK Event <alertes@event.ebok.fr>` ; la variable
+`ALERTS_FROM` permet d'en changer sans toucher au code.
 
 Tant que la clé est absente, l'application le note dans les journaux et continue
 de fonctionner normalement — aucune alerte n'est simplement envoyée.
