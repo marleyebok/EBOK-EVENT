@@ -140,6 +140,15 @@ adjoindre des statistiques exploitables par un organisateur.
       le téléphone et l'e-mail.
 - [ ] **Modification d'un événement depuis le tableau de bord**
 
+### 3 bis. Alertes e-mail ✅
+
+- [x] Page « Mes alertes » : régions, types, période, jusqu'à 10 par membre
+- [x] Déclenchement à la **validation** d'un événement, pas à sa création
+- [x] Envoi par Resend, désinscription par jeton sans connexion
+- [x] Trace des envois : revalider n'envoie pas deux fois ; un envoi raté est rejouable
+- [ ] **Reste à faire par toi :** créer le compte Resend, configurer SPF/DKIM sur
+      le domaine, et poser `RESEND_API_KEY` sur Vercel (voir README)
+
 ### 4. Ajouter à mon agenda *(petit effort)*
 
 - [ ] Génération d'un fichier `.ics` (Google / Apple Agenda), côté navigateur
@@ -160,8 +169,12 @@ communautaire, mais dépend de la géolocalisation.
 
 ### 6. Plus tard
 
-- [ ] **Alertes e-mail** — « préviens-moi des *tournois* près de *Montpellier* »
-      (nécessite un service d'envoi type Resend ou SendGrid)
+- [ ] **Alertes par ville + rayon** — la zone se choisit aujourd'hui par région,
+      ce qui reste large. Le rayon autour d'une ville demande les coordonnées
+      des événements, donc le chantier géolocalisation.
+- [ ] **Alertes par SMS** — écartées pour l'instant : environ 0,05 € par envoi,
+      et surtout il faudrait vérifier le numéro par code, sans quoi la
+      plateforme servirait à spammer des tiers.
 - [ ] **Avis / discussion** — questions à l'organisateur, retours sur les
       éditions passées (demande de la modération)
 - [ ] **Billetterie / inscriptions** — avec commission

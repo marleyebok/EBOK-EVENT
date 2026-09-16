@@ -115,6 +115,8 @@ n'est pas configurée, le site fonctionne sur les **données de démo** de
 | `GEMINI_API_KEY` | Clé Google AI Studio — requise seulement si `AI_PROVIDER=gemini` | 🔒 oui |
 | `BLOB_READ_WRITE_TOKEN` | Stockage des affiches — **injectée automatiquement** en connectant un Blob store (Vercel → Storage) | 🔒 oui |
 | `ADMIN_EMAILS` | *(optionnel)* emails admin additionnels, séparés par virgules | non |
+| `RESEND_API_KEY` | Envoi des alertes e-mail (resend.com) — sans elle, aucune alerte n'est envoyée et le reste du site fonctionne | 🔒 oui |
+| `ALERTS_FROM` | *(optionnel)* expéditeur des alertes (défaut : `EBOK Event <alertes@ebok.fr>`) | non |
 
 > La clé Clerk **publishable** (`pk_live_…`) est **publique** et vit en dur dans
 > `public/js/clerk.js` — c'est normal. Ne mets **jamais** `sk_…` ni `DATABASE_URL`
@@ -136,6 +138,34 @@ une empreinte SHA-256 tronquée de (jour + secret serveur + IP + navigateur),
 donc non réversible et renouvelée chaque jour, purgée au bout de 7 jours. Elle
 ne sert qu'à éviter les doublons et les abus, jamais à suivre quelqu'un — **à
 mentionner dans la politique de confidentialité**.
+
+### Alertes e-mail
+
+Un membre décrit ce qui l'intéresse — régions, types d'événement, période — et
+reçoit un e-mail dès qu'un événement correspondant est **validé**. Le
+déclenchement est bien à la validation et non à la création : un événement de
+diffuseur part « en attente », et alerter plus tôt annoncerait des événements
+qu'on va peut-être refuser.
+
+Un critère laissé vide ne filtre pas : une alerte sans région couvre toute la
+France. Chaque envoi est tracé (`event.alert_sends`), donc revalider un
+événement ne renvoie pas un second message. Un envoi qui échoue efface sa trace
+et pourra être rejoué.
+
+**Mettre en service :**
+
+1. Créer un compte sur [resend.com](https://resend.com) (3 000 e-mails/mois gratuits)
+2. Y ajouter le domaine d'envoi et créer les enregistrements **SPF et DKIM** qu'il
+   indique dans ta zone DNS — sans eux, les alertes partent en indésirables, et
+   une réputation d'expéditeur abîmée est longue à réparer
+3. Créer une clé d'API, la mettre dans `RESEND_API_KEY` sur Vercel, puis redéployer
+
+Tant que la clé est absente, l'application le note dans les journaux et continue
+de fonctionner normalement — aucune alerte n'est simplement envoyée.
+
+Chaque e-mail porte un lien de désinscription à jeton, utilisable **sans être
+connecté** : c'est ce qu'exige un message légitime, et ça protège la réputation
+du domaine.
 
 ### Schéma
 

@@ -2087,7 +2087,7 @@ function showPage(name){
   if(name === 'create' && !currentUser && window.EBOK_AUTH){ openAuth('login'); }
   // Précharge la base des villes dès qu'on arrive sur la page de publication.
   if(name === 'create'){ ensureCitiesLoaded(); prefillOrgFromProfile(); }
-  if(name === 'profile'){ renderProfile(); renderOnboardingNudge(); }
+  if(name === 'profile'){ renderProfile(); renderOnboardingNudge(); renderAlertes(); }
   // Quitter une fiche événement : on revient à l'URL racine.
   if(!syncingFromUrl && name !== 'event' && eventIdFromUrl()) setUrl('/');
   syncMenuActif(name);
@@ -2877,6 +2877,181 @@ function initOnboarding(){
   });
 }
 
+/* =========================================================
+   MES ALERTES
+   ---------------------------------------------------------
+   Le membre décrit ce qui l'intéresse ; le serveur lui écrit quand un
+   événement VALIDÉ correspond. Un critère laissé vide ne filtre pas : une
+   alerte sans région couvre toute la France.
+   ========================================================= */
+let mesAlertes = [];
+let alerteEnCours = null;          // id de l'alerte modifiée, null si création
+
+/* Régions proposées : celles de la base de villes, pour que les valeurs
+   coïncident exactement avec celles enregistrées sur les événements. */
+function regionsDisponibles(){
+  const r = window.CITIES_FR_REGIONS;
+  if(r) return [...new Set(Object.values(r))].sort((a,b)=> a.localeCompare(b,'fr'));
+  // Repli si la base de villes n'est pas encore chargée : les régions déjà
+  // présentes sur les événements affichés.
+  return [...new Set(events.map(e=> e.region).filter(Boolean))].sort();
+}
+
+async function chargerAlertes(){
+  if(!currentUser || !window.EBOK_DATA || !window.EBOK_DATA.getAlerts){ mesAlertes = []; return; }
+  try{ mesAlertes = await window.EBOK_DATA.getAlerts(); }
+  catch(e){ mesAlertes = []; }
+}
+
+function renderAlertes(){
+  const box = document.getElementById('alertsList');
+  if(!box) return;
+  if(!currentUser){
+    box.innerHTML = `<div class="empty-state"><p>Connecte-toi pour créer des alertes.</p></div>`;
+    return;
+  }
+  if(!mesAlertes.length){
+    box.innerHTML = `<div class="empty-state"><h4>Aucune alerte</h4>
+      <p>Crée ta première alerte pour être prévenu des événements qui te correspondent.</p></div>`;
+    return;
+  }
+  box.innerHTML = mesAlertes.map(a=> `
+    <div class="alert-card ${a.actif ? '' : 'inactive'}">
+      <div class="alert-main">
+        <strong>${esc(a.nom)}</strong>
+        <span class="alert-criteres">${esc(resumeCriteres(a.criteres))}</span>
+      </div>
+      <div class="alert-actions">
+        <button class="btn btn-ghost" data-alert-toggle="${esc(a.id)}">${a.actif ? 'Suspendre' : 'Réactiver'}</button>
+        <button class="btn btn-ghost" data-alert-edit="${esc(a.id)}">Modifier</button>
+        <button class="btn btn-ghost alert-del" data-alert-del="${esc(a.id)}" aria-label="Supprimer">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+/* AAAA-MM-JJ → JJ/MM/AAAA. Un format ISO se lit mal en français. */
+function dateAlerteFr(v){
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v || ''));
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : String(v || '');
+}
+
+/* Même formulation que côté serveur (lib/alertes.js) : le membre doit lire la
+   même chose dans l'interface et dans l'e-mail qu'il reçoit. */
+function resumeCriteres(c){
+  c = c || {};
+  const bouts = [];
+  bouts.push(c.regions && c.regions.length ? c.regions.join(', ') : 'toute la France');
+  bouts.push(c.types && c.types.length ? c.types.join(', ') : 'tous les types');
+  if(c.du && c.au) bouts.push(`du ${dateAlerteFr(c.du)} au ${dateAlerteFr(c.au)}`);
+  else if(c.du) bouts.push(`à partir du ${dateAlerteFr(c.du)}`);
+  else if(c.au) bouts.push(`jusqu'au ${dateAlerteFr(c.au)}`);
+  return bouts.join(' · ');
+}
+
+function closeAlertModal(){
+  const m = document.getElementById('alertModal');
+  m.classList.remove('open');
+  m.setAttribute('aria-hidden', 'true');
+}
+
+function openAlertModal(id){
+  const m = document.getElementById('alertModal');
+  if(!m || !currentUser) return;
+  alerteEnCours = id || null;
+  const a = id ? mesAlertes.find(x=> x.id === id) : null;
+  const c = (a && a.criteres) || {};
+
+  document.getElementById('alertTitle').textContent = a ? "Modifier l'alerte" : 'Nouvelle alerte';
+  document.getElementById('al-nom').value = a ? (a.nom || '') : '';
+  document.getElementById('al-du').value = c.du || '';
+  document.getElementById('al-au').value = c.au || '';
+
+  const coche = (id, valeurs, choisies)=>{
+    document.getElementById(id).innerHTML = valeurs.map(v=>
+      `<label class="chip-check"><input type="checkbox" value="${esc(v)}"${(choisies||[]).includes(v) ? ' checked' : ''}><span>${esc(v)}</span></label>`
+    ).join('');
+  };
+  coche('al-regions', regionsDisponibles(), c.regions);
+  coche('al-types', Object.keys(TYPE_COLORS), c.types);
+
+  document.getElementById('alertError').classList.add('hidden');
+  m.classList.add('open');
+  m.setAttribute('aria-hidden', 'false');
+}
+
+function initAlertes(){
+  const m = document.getElementById('alertModal');
+  if(!m) return;
+  document.getElementById('btnNewAlert').addEventListener('click', ()=>{
+    if(!currentUser && window.EBOK_AUTH){ openAuth('login'); return; }
+    openAlertModal(null);
+  });
+  document.getElementById('alertClose').addEventListener('click', closeAlertModal);
+  document.getElementById('alertCancel').addEventListener('click', closeAlertModal);
+  bindBackdropClose(m, closeAlertModal);
+
+  // Actions des cartes, par délégation : la liste est redessinée à chaque
+  // changement, rebrancher les écouteurs à chaque fois serait fragile.
+  document.getElementById('alertsList').addEventListener('click', async e=>{
+    const btn = e.target.closest('[data-alert-edit],[data-alert-del],[data-alert-toggle]');
+    if(!btn) return;
+    if(btn.dataset.alertEdit) return openAlertModal(btn.dataset.alertEdit);
+    if(btn.dataset.alertToggle){
+      const a = mesAlertes.find(x=> x.id === btn.dataset.alertToggle);
+      if(a && window.EBOK_DATA.updateAlert){
+        // On adopte l'alerte telle que le serveur la renvoie, plutôt que de
+        // basculer l'état à l'aveugle : si l'écriture n'a pas abouti, l'affichage
+        // ne doit pas prétendre le contraire.
+        const maj = await window.EBOK_DATA.updateAlert(a.id, { actif: !a.actif });
+        Object.assign(a, maj || { actif: !a.actif });
+        renderAlertes();
+      }
+      return;
+    }
+    if(btn.dataset.alertDel){
+      if(!confirm('Supprimer cette alerte ?')) return;
+      if(window.EBOK_DATA.deleteAlert) await window.EBOK_DATA.deleteAlert(btn.dataset.alertDel);
+      mesAlertes = mesAlertes.filter(x=> x.id !== btn.dataset.alertDel);
+      renderAlertes();
+    }
+  });
+
+  document.getElementById('alertForm').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const erreur = document.getElementById('alertError');
+    const coches = id => [...document.querySelectorAll(`#${id} input:checked`)].map(x=> x.value);
+    const du = document.getElementById('al-du').value;
+    const au = document.getElementById('al-au').value;
+    if(du && au && du > au){
+      erreur.textContent = "La date de fin précède la date de début.";
+      erreur.classList.remove('hidden');
+      return;
+    }
+    const donnees = {
+      nom: document.getElementById('al-nom').value.trim(),
+      criteres: { regions: coches('al-regions'), types: coches('al-types'), du, au },
+    };
+    try{
+      if(alerteEnCours){
+        const maj = await window.EBOK_DATA.updateAlert(alerteEnCours, donnees);
+        const i = mesAlertes.findIndex(x=> x.id === alerteEnCours);
+        if(i >= 0 && maj) mesAlertes[i] = maj;
+      }else{
+        const creee = await window.EBOK_DATA.createAlert(donnees);
+        if(creee) mesAlertes.unshift(creee);
+      }
+    }catch(err){
+      erreur.textContent = err && err.code === 'trop_d_alertes'
+        ? "Tu as atteint la limite de 10 alertes. Supprimes-en une pour en créer une nouvelle."
+        : "Enregistrement impossible. Réessaie dans un instant.";
+      erreur.classList.remove('hidden');
+      return;
+    }
+    closeAlertModal();
+    renderAlertes();
+  });
+}
+
 /* ---- Page "Mon profil" (favoris + événements publiés + admin) ---- */
 async function renderProfile(){
   if(!currentUser) return;
@@ -3629,6 +3804,8 @@ window.EBOK = {
     prefillOrgFromProfile();     // le profil diffuseur arrive avec la session
     renderOnboardingNudge();
     syncMenu();                  // le volet reflète l'état de connexion
+    await chargerAlertes();
+    renderAlertes();
     maybeOpenOnboarding();       // première connexion : on pose les 4 questions
     if(document.getElementById('page-profile').classList.contains('active')) renderProfile();
   }
@@ -3668,6 +3845,7 @@ initEditModal();
 initProfileEdit();
 initOnboarding();
 initMenu();
+initAlertes();
 initAiImport();
 initPostersMaintenance();
 

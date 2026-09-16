@@ -16,7 +16,8 @@
  * type, city, region, dates, poster, org, infos, gallery, x/y…). On reconstitue
  * l'objet EXACTEMENT comme avant pour ne rien changer côté app.js.
  */
-import { ensureSchema, hasDb, sql, json, readBody, newId, ms, sessionUid, isAdminUid } from "./_lib.js";
+import { ensureSchema, hasDb, sql, json, readBody, newId, ms, sessionUid, isAdminUid, clerkUser } from "./_lib.js";
+import { correspond, message, envoyer } from "../lib/alertes.js";
 
 /* Champs promus en colonnes : ils ne sont pas dupliqués dans `data`. */
 const COLUMN_FIELDS = ["id", "status", "user_id", "userId", "featured", "createdAt", "created_at"];
@@ -42,6 +43,44 @@ function dataBlob(obj) {
   const data = { ...obj };
   for (const k of COLUMN_FIELDS) delete data[k];
   return data;
+}
+
+/**
+ * Prévient les membres dont une alerte correspond à cet événement.
+ *
+ * Les e-mails ne sont pas lus en base : « zéro miroir », l'adresse vient de
+ * Clerk à la volée. Chaque envoi est tracé dans event.alert_sends, sans quoi
+ * une revalidation renverrait le même message aux mêmes personnes.
+ */
+async function notifierAlertes(ev, req) {
+  const alertes = await sql()`SELECT * FROM event.alerts WHERE actif = true`;
+  if (!alertes.length) return;
+
+  const hote = req.headers["x-forwarded-host"] || req.headers.host || "event.ebok.fr";
+  const site = `https://${hote}`;
+
+  for (const a of alertes) {
+    if (!correspond(ev, a.criteres)) continue;
+
+    // Déjà prévenu pour cet événement ? `ON CONFLICT DO NOTHING` rend la
+    // vérification atomique : deux validations simultanées n'enverront pas deux
+    // e-mails.
+    const pris = await sql()`
+      INSERT INTO event.alert_sends (alert_id, event_id) VALUES (${a.id}, ${ev.id})
+      ON CONFLICT DO NOTHING RETURNING alert_id`;
+    if (!pris.length) continue;
+
+    const { email } = await clerkUser(a.user_id);
+    if (!email) continue;
+
+    const { sujet, texte, html } = message(ev, a, site);
+    const ok = await envoyer({ destinataire: email, sujet, texte, html });
+    // Envoi raté : on retire la trace pour pouvoir réessayer plus tard.
+    if (!ok) {
+      await sql()`
+        DELETE FROM event.alert_sends WHERE alert_id = ${a.id} AND event_id = ${ev.id}`;
+    }
+  }
 }
 
 export default async function handler(req, res) {
@@ -123,7 +162,16 @@ export default async function handler(req, res) {
           data     = data || ${JSON.stringify(rest)}::jsonb
         WHERE id = ${id}`;
       const out = await sql()`SELECT * FROM event.events_lecture WHERE id = ${id}`;
-      return json(res, 200, { event: toEvent(out[0]) });
+      const fiche = toEvent(out[0]);
+
+      // Un événement qui vient d'être validé déclenche les alertes. On le fait
+      // APRÈS l'écriture et sans l'attendre : un service d'e-mail lent ou en
+      // panne ne doit pas faire échouer une validation déjà enregistrée.
+      if (nextStatus === "approved" && row.status !== "approved") {
+        notifierAlertes(fiche, req).catch((e) => console.error("alertes:", e));
+      }
+
+      return json(res, 200, { event: fiche });
     }
 
     if (req.method === "DELETE") {

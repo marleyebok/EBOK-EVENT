@@ -14,6 +14,7 @@ import {
   getFavorites, toggleFavorite, updateUserProfile, getAllUsers,
   openSignIn, signOutUser, getSession, hostStoredPosters,
   uploadImage,
+  getAlerts, createAlert, updateAlert, deleteAlert,
 } from "./services.js";
 import { loadClerk } from "./clerk.js";
 
@@ -24,6 +25,7 @@ window.EBOK_DATA = {
   getFavorites, toggleFavorite, updateUserProfile, getAllUsers,
   uploadImage,
   hostStoredPosters,
+  getAlerts, createAlert, updateAlert, deleteAlert,
 };
 
 // Couche authentification exposée à app.js. Tout passe par le widget Clerk :

@@ -154,6 +154,28 @@ export async function toggleFavorite(uid, eventId, add) {
   await api("/api/account", { method: "POST", body: { action: "toggleFavorite", eventId, add } });
 }
 
+/* ---------- Alertes e-mail ---------- */
+
+/** Alertes du membre connecté. */
+export async function getAlerts() {
+  return (await api("/api/alerts")).alerts || [];
+}
+
+/** Crée une alerte et renvoie l'alerte créée. */
+export async function createAlert(donnees) {
+  return (await api("/api/alerts", { method: "POST", body: donnees })).alert;
+}
+
+/** Modifie une alerte (nom, critères, ou activation). */
+export async function updateAlert(id, patch) {
+  return (await api("/api/alerts?id=" + encodeURIComponent(id), { method: "PATCH", body: patch })).alert;
+}
+
+/** Supprime une alerte. */
+export async function deleteAlert(id) {
+  await api("/api/alerts?id=" + encodeURIComponent(id), { method: "DELETE" });
+}
+
 /** Héberge un lot d'affiches encore stockées en base (admin).
  *  Traité par lots côté serveur : renvoie `restant` et `relancer`. */
 export async function hostStoredPosters({ dry = false, limit = 5 } = {}) {

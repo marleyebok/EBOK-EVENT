@@ -11,6 +11,9 @@
  *   event.views    : compteurs de « curieux » (vues) par événement
  *   event.view_hits : empreintes de visiteurs, pour ne compter chacun qu'une
  *                    fois par jour et par événement (purgée au bout de 7 jours)
+ *   event.alerts   : alertes e-mail des membres (critères JSONB + jeton de
+ *                    désinscription)
+ *   event.alert_sends : envois déjà effectués, pour ne pas alerter deux fois
  *   event.profiles : profils diffuseurs propres à Event (JSONB) + favoris,
  *                    indexés par l'ID utilisateur Clerk. Ne contient NI e-mail
  *                    NI nom réel (lus en direct depuis Clerk).
@@ -87,6 +90,35 @@ export async function ensureSchema() {
       favorites JSONB NOT NULL DEFAULT '[]',
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )`;
+  /* Alertes : un membre décrit ce qui l'intéresse (régions, types, période) et
+     reçoit un e-mail quand un événement validé y correspond. `criteres` est un
+     JSONB pour que les critères puissent s'enrichir sans migration.
+     `jeton` sert au lien de désinscription : il permet de se désabonner sans
+     être connecté, ce qu'exige un e-mail légitime. */
+  await q`
+    CREATE TABLE IF NOT EXISTS event.alerts (
+      id         TEXT PRIMARY KEY,
+      user_id    TEXT NOT NULL,
+      nom        TEXT NOT NULL DEFAULT '',
+      criteres   JSONB NOT NULL DEFAULT '{}',
+      actif      BOOLEAN NOT NULL DEFAULT true,
+      jeton      TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`;
+  await q`CREATE INDEX IF NOT EXISTS alerts_user_idx ON event.alerts (user_id)`;
+  await q`CREATE INDEX IF NOT EXISTS alerts_actif_idx ON event.alerts (actif)`;
+  await q`CREATE UNIQUE INDEX IF NOT EXISTS alerts_jeton_idx ON event.alerts (jeton)`;
+
+  /* Trace des envois : sans elle, revalider un événement déjà validé
+     renverrait un second e-mail aux mêmes personnes. */
+  await q`
+    CREATE TABLE IF NOT EXISTS event.alert_sends (
+      alert_id TEXT NOT NULL,
+      event_id TEXT NOT NULL,
+      sent_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+      PRIMARY KEY (alert_id, event_id)
+    )`;
+
   /* Vue de lecture : chaque fiche porte son nombre de favoris. Les favoris
      vivent dans event.profiles.favorites (un tableau JSONB par membre) ; on
      les déplie ici pour compter par événement. Écrire la jointure une seule

@@ -658,6 +658,18 @@
       <div class="results-grid" id="favoritesGrid"></div>
     </div>
 
+    <div class="profile-section" id="section-alertes">
+      <div class="profile-section-head">
+        <h3>🔔 Mes alertes</h3>
+        <button class="btn btn-primary" id="btnNewAlert">+ Créer une alerte</button>
+      </div>
+      <p class="section-hint">
+        Décris ce qui t'intéresse : on te prévient par e-mail dès qu'un événement
+        correspondant est publié.
+      </p>
+      <div id="alertsList"></div>
+    </div>
+
     <div class="profile-section" id="section-mes-evenements">
       <div class="profile-section-head">
         <h3 id="mineTitle">Mes événements publiés</h3>
@@ -836,6 +848,52 @@
           <button type="button" class="btn btn-primary" id="obNext">Suivant</button>
           <button type="submit" class="btn btn-primary hidden" id="obDone">C'est parti</button>
         </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===================== ALERTE ===================== -->
+<div class="edit-modal" id="alertModal" aria-hidden="true">
+  <div class="edit-box">
+    <button class="edit-close" id="alertClose" aria-label="Fermer">&times;</button>
+    <h3 id="alertTitle">Nouvelle alerte</h3>
+    <p class="edit-sub">
+      Laisse un champ vide pour ne pas filtrer dessus. Une alerte sans région
+      couvre toute la France.
+    </p>
+
+    <form id="alertForm">
+      <div class="field">
+        <label for="al-nom">Nom de l'alerte <span class="field-hint">(facultatif)</span></label>
+        <input type="text" id="al-nom" placeholder="Ex. Tournois près de chez moi">
+      </div>
+
+      <div class="field">
+        <label>Régions</label>
+        <div class="chip-checks" id="al-regions"></div>
+      </div>
+
+      <div class="field">
+        <label>Types d'événement</label>
+        <div class="chip-checks" id="al-types"></div>
+      </div>
+
+      <div class="form-row">
+        <div class="field">
+          <label for="al-du">À partir du <span class="field-hint">(facultatif)</span></label>
+          <input type="date" id="al-du">
+        </div>
+        <div class="field">
+          <label for="al-au">Jusqu'au <span class="field-hint">(facultatif)</span></label>
+          <input type="date" id="al-au">
+        </div>
+      </div>
+
+      <div class="edit-error hidden" id="alertError"></div>
+      <div class="edit-actions">
+        <button type="button" class="btn btn-ghost" id="alertCancel">Annuler</button>
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
       </div>
     </form>
   </div>
