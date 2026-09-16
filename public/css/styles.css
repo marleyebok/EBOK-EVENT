@@ -156,14 +156,28 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 @media(max-width:700px){
   .featured{grid-template-columns:1fr;}
   .carousel-item{min-height:0;}
-  .fx-content{gap:18px;padding:22px;min-height:0;flex-direction:row;align-items:center;}
-  .fx-poster{flex-basis:110px;width:110px;}
-  .carousel-nav{width:36px;height:36px;font-size:16px;}
+  /* Les flèches passent en bas à droite : au centre, elles recouvraient la
+     ville et le titre. La réserve en bas leur laisse la place. */
+  .fx-content{gap:16px;padding:20px 20px 60px;min-height:0;flex-direction:row;align-items:center;}
+  .fx-poster{flex-basis:118px;width:118px;}
+  .carousel-nav{
+    width:36px;height:36px;font-size:15px;
+    top:auto;bottom:12px;transform:none;
+  }
+  .carousel-prev{left:auto;right:58px;}
+  .carousel-next{right:12px;}
   .fx-text h3{font-size:22px;}
   .fx-text{gap:9px;}
 }
 @media(max-width:460px){
-  .fx-poster{display:none;}   /* place au texte sur très petit écran */
+  /* L'affiche était masquée ici « pour laisser la place au texte ». Sur un site
+     d'événements, elle EST le contenu : on la garde, simplement plus petite. */
+  .fx-poster{flex-basis:108px;width:108px;}
+  .fx-content{gap:14px;padding:18px 16px 54px;}
+  .fx-text h3{font-size:19px;}
+  .carousel-nav{width:34px;height:34px;bottom:10px;}
+  .carousel-prev{right:52px;}
+  .carousel-next{right:10px;}
 }
 
 .content-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
