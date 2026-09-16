@@ -16,7 +16,9 @@
 
    Variables d'environnement (Vercel > Settings > Environment Variables) :
    - OPENROUTER_API_KEY (obligatoire si AI_PROVIDER=openrouter) clé gratuite openrouter.ai
-   - OPENROUTER_MODEL   (optionnel)  modèle OpenRouter à utiliser (défaut : voir OpenRouterProvider.js)
+   - OPENROUTER_MODEL   (optionnel)  modèle(s) à essayer, séparés par des virgules.
+     Si tous échouent, le catalogue OpenRouter est interrogé pour prendre le
+     relais avec d'autres modèles gratuits (voir OpenRouterProvider.js).
    - GEMINI_API_KEY     (obligatoire si AI_PROVIDER=gemini)     clé Google AI Studio
      ⚠️ l'offre gratuite Gemini est bloquée pour les comptes UE / UK / Suisse.
    - CLERK_SECRET_KEY (obligatoire)  pour valider le jeton de session Clerk
