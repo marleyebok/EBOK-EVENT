@@ -3624,7 +3624,8 @@ function applyTheme(theme){
   if(btn) btn.textContent = theme === 'light' ? '☀️' : '🌙';
 }
 function initTheme(){
-  const saved = localStorage.getItem('ebok-theme') || 'dark';
+  // Clair par défaut ; le sombre reste disponible via la bascule.
+  const saved = localStorage.getItem('ebok-theme') || 'light';
   applyTheme(saved);
   const btn = document.getElementById('themeToggle');
   if(btn) btn.addEventListener('click', ()=>{

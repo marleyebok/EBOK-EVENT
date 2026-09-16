@@ -54,7 +54,7 @@ partagé, plus de lecture du profil du site mère. Seul reste le point ci-dessou
 - [x] Carte de France interactive, carte du monde pour l'étranger
 - [x] Assistant IA d'import depuis un lien ou une image (réservé admin)
 - [x] Autocomplétion de ville hors ligne (`cities-fr.js`) + repli sur la Base Adresse Nationale
-- [x] Thème clair / sombre
+- [x] Thème clair par défaut, bascule sombre conservée et mémorisée
 - [x] Barre du haut compacte sur mobile et tablette (logo, loupe, +, menu) avec
       volet latéral : compte, navigation, favoris, mes événements, thème,
       déconnexion
@@ -127,10 +127,9 @@ adjoindre des statistiques exploitables par un organisateur.
       paramètre `seed` envoyé par le navigateur, qui permettait de fixer un
       compteur à la valeur de son choix, est ignoré ; un garde-fou stoppe le
       comptage au-delà de 150 événements par visiteur et par jour.
-- [ ] **Remettre à zéro les compteurs déjà gonflés** — décision à prendre : les
-      valeurs actuelles en base partent de 120 par événement (ancien
-      comportement) et ont pu être manipulées. Les conserver, c'est afficher
-      des chiffres qu'on ne peut pas défendre.
+- [ ] **Remettre à zéro les compteurs déjà gonflés** — décidé : on repart de
+      zéro. Requête prête dans `scripts/reset-compteurs.sql`, à exécuter dans
+      la console Neon (SQL Editor).
 - [ ] **Statistiques par événement** — vues, et clics sur chaque canal de contact
 - [ ] **Comptage des clics sur les contacts.** Décision prise : **téléphone et
       e-mail sont masqués et révélés au clic** (ce qui bloque au passage les
