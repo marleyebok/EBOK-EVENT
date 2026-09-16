@@ -162,6 +162,15 @@ qu'un confort d'interface. Il est là pour être éprouvé sur de vraies affiche
 - [ ] Décider ensuite, au vu des résultats, s'il est ouvert aux diffuseurs — et
       si oui, prévoir un garde-fou de coût (l'appel au modèle est payant)
 - [ ] Pré-requis d'exploitation : `OPENROUTER_API_KEY` posée sur Vercel
+- [x] ~~Survivre à la saturation des modèles gratuits~~ — quand toute la liste
+      `OPENROUTER_MODEL` échoue, le catalogue OpenRouter est interrogé pour
+      prendre le relais avec d'autres modèles gratuits (et, si une affiche est
+      envoyée, seulement ceux qui lisent les images).
+- [ ] **Si la saturation persiste** — les modèles gratuits sont partagés entre
+      tous les utilisateurs d'OpenRouter et lâchent aux heures pleines. Créditer
+      le compte de quelques euros donne accès aux modèles payants, à un coût de
+      l'ordre du centime par affiche analysée. À trancher une fois la fiabilité
+      mesurée.
 
 ### 3 quater. Campagne e-mail ciblée (prestation 50 €)
 
