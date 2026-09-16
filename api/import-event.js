@@ -211,7 +211,11 @@ Date du jour : ${today}`;
 async function runAI(parts, prompt) {
   const ai = new AIService();
   const event = await ai.extractEvent({ parts, prompt });
-  return normalizeEvent(event);
+  const fiche = normalizeEvent(event);
+  // Le modèle retenu remonte jusqu'à l'interface : quand l'extraction se
+  // trompe, savoir qui a répondu est la première information utile.
+  fiche.modele = event.__modele || "";
+  return fiche;
 }
 
 export default async function handler(req, res) {

@@ -357,13 +357,22 @@ Quand le motif ne nomme aucun modèle, c'est bien la clé, et les deux cas ne se
   confidentialité du compte OpenRouter : les modèles gratuits exigent d'autoriser l'usage des données
   (*Settings → Privacy*), sans quoi aucun point d'accès ne correspond.
 
+### Quel modèle a répondu ?
+
+Le message de succès affiche le modèle retenu — il change d'un import à l'autre,
+selon ce qui est disponible. C'est la première information à noter quand
+l'extraction se trompe : tel modèle confond les dates, tel autre invente un lieu.
+
 ### Quotas et modèles de repli
 
 Les modèles `:free` sont **partagés entre tous les utilisateurs d'OpenRouter** : un `429` signifie
 souvent que le fournisseur en amont est momentanément saturé, et **pas** que le quota du compte est
 épuisé. L'assistant essaie donc les modèles de `OPENROUTER_MODEL` **dans l'ordre** jusqu'à ce que
 l'un réponde, puis, s'ils échouent tous, **les modèles gratuits du catalogue** (et seulement ceux qui
-lisent les images quand une affiche est envoyée). Le message d'erreur affiché reprend le motif exact
+lisent les images quand une affiche est envoyée), en préférant les familles d'instruction éprouvées
+— llama, qwen, mistral, gemma, deepseek… — aux modèles expérimentaux, qui tiennent mal une consigne
+de format. Le format JSON est par ailleurs exigé du fournisseur lui-même (`response_format`) quand le
+modèle le prend en charge, et redemandé sans lui sinon. Le message d'erreur affiché reprend le motif exact
 renvoyé par OpenRouter, qui permet de distinguer les deux cas.
 
 Limites de l'offre gratuite OpenRouter : **20 requêtes/minute** et **50 requêtes/jour** (ce plafond
