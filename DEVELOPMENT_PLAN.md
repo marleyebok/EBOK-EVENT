@@ -149,6 +149,30 @@ adjoindre des statistiques exploitables par un organisateur.
 - [ ] **Reste à faire par toi :** créer le compte Resend, configurer SPF/DKIM sur
       le domaine, et poser `RESEND_API_KEY` sur Vercel (voir README)
 
+### 3 ter. Rendre l'assistant IA d'import opérationnel *(admin seulement)*
+
+L'encart « Coller une annonce, l'IA remplit le formulaire » a été **retiré de la
+page « Publier un événement »** : il n'est pas encore assez fiable pour être
+montré, même à l'admin. Le code reste en place et volontairement intact —
+`initAiImport()` dans `public/js/app.js` et la route `api/import-event.js`.
+
+- [ ] Fiabiliser l'extraction (dates, lieu, catégorie, tarifs) et mesurer le
+      taux de champs corrects sur de vraies annonces
+- [ ] Le rebrancher **uniquement dans le tableau de bord admin**, pas sur la
+      page publique de publication
+- [ ] Décider ensuite, au vu des résultats, s'il est ouvert aux diffuseurs
+
+### 3 quater. Campagne e-mail ciblée (prestation 50 €)
+
+Affichée dans « Booster ta visibilité » en **« Bientôt disponible »**, non
+cliquable : l'option existe pour tester l'intérêt avant d'être développée.
+
+- [ ] Page de commande avec un court questionnaire sur le public visé
+      (région, catégorie, niveau, type de pratique)
+- [ ] Sélection des destinataires : membres correspondant au ciblage, en
+      réutilisant la mécanique de correspondance des alertes (`lib/alertes.js`)
+- [ ] Encaissement et suivi de la campagne
+
 ### 4. Ajouter à mon agenda *(petit effort)*
 
 - [ ] Génération d'un fichier `.ics` (Google / Apple Agenda), côté navigateur

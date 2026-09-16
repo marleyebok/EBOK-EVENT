@@ -1697,9 +1697,9 @@ async function openEvent(id, opts){
       </div>
 
       <div class="action-row">
-        <button class="btn btn-primary btn-lg" id="btnInfo">Se renseigner</button>
+        <button class="btn btn-primary btn-lg fav-btn fav-btn-lg ${favorites.has(ev.id) ? 'active' : ''}" data-fav="${esc(ev.id)}">${favorites.has(ev.id) ? '♥ Enregistré' : '♡ Enregistrer'}${favBadge(Number(ev.favCount) || 0)}</button>
         <button class="btn btn-ghost btn-lg" id="btnShare">Partager</button>
-        <button class="btn btn-ghost btn-lg fav-btn fav-btn-lg ${favorites.has(ev.id) ? 'active' : ''}" data-fav="${esc(ev.id)}">${favorites.has(ev.id) ? '♥ Enregistré' : '♡ Enregistrer'}${favBadge(Number(ev.favCount) || 0)}</button>
+        <button class="btn btn-ghost btn-lg" id="btnInfo">Se renseigner</button>
 
         <div class="popover" id="popInfo">${contactItems.join('')}</div>
 
@@ -2449,8 +2449,7 @@ function updateAuthUI(){
     document.getElementById('accountName').innerHTML =
       `<b>${displayName()}</b>${currentIsAdmin ? '<span class="account-badge-admin">Admin</span>' : ''}`;
   }
-  const iaImport = document.getElementById('iaImport');
-  if(iaImport) iaImport.classList.toggle('hidden', !currentIsAdmin);
+
 }
 
 function initAuth(){
@@ -2954,6 +2953,35 @@ function closeAlertModal(){
   m.setAttribute('aria-hidden', 'true');
 }
 
+/* Menus déroulants des critères d'alerte.
+   Une liste de pastilles occupait presque tout l'écran sur mobile : on garde
+   les mêmes cases à cocher (le formulaire lit toujours `#id input:checked`)
+   mais repliées dans un <details>, dont le résumé rappelle la sélection. */
+function resumeMenuAlerte(id, vide, pluriel){
+  const panneau = document.getElementById(id);
+  const cible = document.getElementById(id + '-resume');
+  if(!panneau || !cible) return;
+  const choisis = [...panneau.querySelectorAll('input:checked')].map(x=> x.value);
+  // Au-delà de deux, énumérer devient illisible : on compte.
+  cible.textContent = choisis.length === 0 ? vide
+    : choisis.length <= 2 ? choisis.join(', ')
+    : `${choisis.length} ${pluriel} sélectionnés`;
+  document.getElementById(id + '-drop')?.classList.toggle('has-pick', choisis.length > 0);
+}
+
+function remplirMenuAlerte(id, valeurs, choisies, vide, pluriel){
+  const panneau = document.getElementById(id);
+  if(!panneau) return;
+  panneau.innerHTML = valeurs.map(v=>
+    `<label class="pick-item"><input type="checkbox" value="${esc(v)}"${(choisies||[]).includes(v) ? ' checked' : ''}><span>${esc(v)}</span></label>`
+  ).join('');
+  // Le menu est reconstruit à chaque ouverture : on rebranche ici plutôt que
+  // de déléguer, et on referme le <details> resté ouvert de la fois d'avant.
+  panneau.onchange = ()=> resumeMenuAlerte(id, vide, pluriel);
+  document.getElementById(id + '-drop')?.removeAttribute('open');
+  resumeMenuAlerte(id, vide, pluriel);
+}
+
 function openAlertModal(id){
   const m = document.getElementById('alertModal');
   if(!m || !currentUser) return;
@@ -2966,13 +2994,8 @@ function openAlertModal(id){
   document.getElementById('al-du').value = c.du || '';
   document.getElementById('al-au').value = c.au || '';
 
-  const coche = (id, valeurs, choisies)=>{
-    document.getElementById(id).innerHTML = valeurs.map(v=>
-      `<label class="chip-check"><input type="checkbox" value="${esc(v)}"${(choisies||[]).includes(v) ? ' checked' : ''}><span>${esc(v)}</span></label>`
-    ).join('');
-  };
-  coche('al-regions', regionsDisponibles(), c.regions);
-  coche('al-types', Object.keys(TYPE_COLORS), c.types);
+  remplirMenuAlerte('al-regions', regionsDisponibles(), c.regions, 'Toute la France', 'régions');
+  remplirMenuAlerte('al-types', Object.keys(TYPE_COLORS), c.types, 'Tous les types', 'types');
 
   document.getElementById('alertError').classList.add('hidden');
   m.classList.add('open');
@@ -3337,6 +3360,12 @@ async function refreshPublicEvents(){
 }
 
 /* ---- Assistant IA : import d'un événement (lien ou image) ---- */
+/* Assistant IA d'import. L'encart a été RETIRÉ de la page de publication : il
+   n'est pas encore assez fiable pour être montré, même à l'admin. Ces fonctions
+   sont conservées volontairement — elles marchent avec api/import-event.js, qui
+   reste en place — et seront rebranchées dans le tableau de bord admin (voir
+   DEVELOPMENT_PLAN.md). Elles ne s'exécutent pas tant qu'aucun élément #ia-* 
+   n'existe dans la page. */
 function initAiImport(){
   const btn = document.getElementById('ia-btn');
   const input = document.getElementById('ia-url');
