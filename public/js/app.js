@@ -370,13 +370,6 @@ function hideTooltip(){ document.getElementById('mapTooltip').classList.remove('
    ========================================================= */
 
 function initHomeFilters(){
-  document.querySelectorAll('#statusFilterHome .status-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      homeStatus = btn.dataset.status;
-      document.querySelectorAll('#statusFilterHome .status-btn').forEach(b=> b.classList.toggle('active', b===btn));
-      applyMapFilters();
-    });
-  });
 
   // Barre de recherche ville/région avec autocomplétion
   const cities = [...new Set(events.flatMap(e=>[e.city, e.region]))].sort();
@@ -665,7 +658,6 @@ function updateTypeLabel(){
 }
 
 let homeView = 'map';
-let homeStatus = 'upcoming';
 let homeCity = '';
 let homeRadius = 200;
 
@@ -787,14 +779,19 @@ function initGeoloc(){
   });
 }
 
+/* Tri d'affichage commun aux listes d'événements : du plus récent au plus
+   ancien. Les fiches passées gardent leur pastille « Terminé », elles restent
+   donc reconnaissables au milieu des autres. */
+function parDateRecente(a, b){
+  return String(b.dateStart || '').localeCompare(String(a.dateStart || ''));
+}
+
 function computeHomeFilteredEvents(){
   const checkedTypes = Array.from(document.querySelectorAll('#typeFilterHome .type-chip.active')).map(c=>c.dataset.type);
   
   return events.filter(ev=>{
     // Aucune pastille cochée = aucune restriction de type (tout est affiché).
     if(checkedTypes.length && !checkedTypes.includes(ev.type)) return false;
-    if(homeStatus === 'upcoming' && isPast(ev)) return false;
-    if(homeStatus === 'archived' && !isPast(ev)) return false;
     if(periodStart && ev.dateEnd < periodStart) return false;
     if(periodEnd && ev.dateStart > periodEnd) return false;
     if(homeCity){
@@ -826,7 +823,7 @@ function renderHomeList(filtered){
     grid.innerHTML = `<div class="empty-state"><h4>Aucun événement ne correspond</h4><p>Essaie d'élargir tes filtres — semaine ou type d'événement.</p></div>`;
     return;
   }
-  grid.innerHTML = filtered.slice().sort((a,b)=> a.dateStart.localeCompare(b.dateStart)).map(ev=>`
+  grid.innerHTML = filtered.slice().sort(parDateRecente).map(ev=>`
 ${eventCardHtml(ev)}`).join('');
   grid.querySelectorAll('.event-card').forEach(card=>{
     card.addEventListener('click', ()=> openEvent(card.dataset.id));
@@ -885,7 +882,7 @@ function renderResults(){
     if(niveau !== 'all' && ev.niveau !== niveau) return false;
     if(afficheOnly && !ev.poster) return false;
     return true;
-  }).sort((a,b)=> a.dateStart.localeCompare(b.dateStart));
+  }).sort(parDateRecente);
 
   // Carte régionale si le filtre lieu vise une seule région.
   const lieuRaw = document.getElementById('f-lieu').value.trim();
@@ -2191,7 +2188,7 @@ async function renderFavorites(){
     grid.innerHTML = `<div class="empty-state"><h4>Aucun favori</h4><p>Clique sur le ♥ d'un événement pour le mettre de côté.</p></div>`;
     return;
   }
-  list.sort((a,b)=> a.dateStart.localeCompare(b.dateStart));
+  list.sort(parDateRecente);
   grid.innerHTML = list.map(eventCardHtml).join('');
   grid.querySelectorAll('.event-card').forEach(card=>{
     card.addEventListener('click', ()=> openEvent(card.dataset.id));
