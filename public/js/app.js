@@ -847,7 +847,6 @@ document.getElementById('viewBtnList').addEventListener('click', ()=> setHomeVie
 /* =========================================================
    SEARCH PAGE
    ========================================================= */
-let searchStatus = 'all';   // Statut de la recherche avancée : upcoming / archived / all
 let searchAbroad = false;   // Recherche restreinte aux événements hors de France
 function initSearchPage(){
   const typeSel = document.getElementById('f-type');
@@ -855,19 +854,10 @@ function initSearchPage(){
     const opt = document.createElement('option'); opt.value=t; opt.textContent=t;
     typeSel.appendChild(opt);
   });
-  document.querySelectorAll('#statusFilterSearch .status-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      searchStatus = btn.dataset.status;
-      document.querySelectorAll('#statusFilterSearch .status-btn').forEach(b=> b.classList.toggle('active', b===btn));
-      renderResults();
-    });
-  });
   document.getElementById('searchForm').addEventListener('submit',(e)=>{ e.preventDefault(); renderResults(); });
   document.getElementById('resetSearch').addEventListener('click', ()=>{
     document.getElementById('searchForm').reset();
-    searchStatus = 'all';
     searchAbroad = false;
-    document.querySelectorAll('#statusFilterSearch .status-btn').forEach(b=> b.classList.toggle('active', b.dataset.status==='all'));
     renderResults();
   });
   renderResults();
@@ -890,8 +880,6 @@ function renderResults(){
     if(type !== 'all' && ev.type !== type) return false;
     if(dStart && ev.dateEnd < dStart) return false;
     if(dEnd && ev.dateStart > dEnd) return false;
-    if(searchStatus === 'upcoming' && isPast(ev)) return false;
-    if(searchStatus === 'archived' && !isPast(ev)) return false;
     if(sexe !== 'all' && ev.sexe !== sexe && ev.sexe !== 'Mixte') return false;
     if(age !== 'all' && !ageList(ev.age).includes(age)) return false;
     if(niveau !== 'all' && ev.niveau !== niveau) return false;
@@ -2449,7 +2437,10 @@ function updateAuthUI(){
     document.getElementById('accountName').innerHTML =
       `<b>${displayName()}</b>${currentIsAdmin ? '<span class="account-badge-admin">Admin</span>' : ''}`;
   }
-
+  // L'assistant IA d'import n'est montré qu'à l'admin. La route serveur
+  // revérifie l'e-mail : masquer l'encart n'est qu'un confort d'interface.
+  const iaImport = document.getElementById('iaImport');
+  if(iaImport) iaImport.classList.toggle('hidden', !currentIsAdmin);
 }
 
 function initAuth(){
@@ -3392,11 +3383,10 @@ async function refreshPublicEvents(){
 }
 
 /* ---- Assistant IA : import d'un événement (lien ou image) ---- */
-/* Assistant IA d'import. L'encart a été RETIRÉ de la page de publication : il
-   n'est pas encore assez fiable pour être montré, même à l'admin. Ces fonctions
-   sont conservées volontairement — elles marchent avec api/import-event.js, qui
-   reste en place — et seront rebranchées dans le tableau de bord admin (voir
-   DEVELOPMENT_PLAN.md). Elles ne s'exécutent pas tant qu'aucun élément #ia-* 
+/* Assistant IA d'import — visible uniquement pour l'admin (updateAuthUI), et
+   revérifié côté serveur par api/import-event.js. Il reste en observation : on
+   mesure sa fiabilité sur de vraies affiches avant de décider s'il est ouvert
+   aux diffuseurs (voir DEVELOPMENT_PLAN.md). Elles ne s'exécutent pas tant qu'aucun élément #ia-* 
    n'existe dans la page. */
 function initAiImport(){
   const btn = document.getElementById('ia-btn');

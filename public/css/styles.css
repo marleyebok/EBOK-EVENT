@@ -792,6 +792,8 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 /* Assistant IA — import depuis un lien */
 .ia-import{background:linear-gradient(150deg, rgba(157,111,255,0.10), var(--asphalt-2));border:1px solid var(--line);border-radius:16px;padding:18px 18px 16px;margin-bottom:26px;}
 .ia-import-head h3{font-size:17px;margin-bottom:4px;}
+/* Rappelle que l'encart n'est pas visible par les diffuseurs. */
+.ia-admin-tag{background:var(--yellow);color:#191008;font-family:var(--font-mono);font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;text-transform:uppercase;letter-spacing:1px;margin-left:8px;vertical-align:middle;}
 .ia-import-head p{font-size:13px;color:var(--chalk-dim);margin-bottom:14px;max-width:640px;}
 .ia-import-row{display:flex;gap:10px;flex-wrap:wrap;}
 .ia-import-row input{flex:1;min-width:220px;padding:11px 14px;border:1px solid var(--line-strong);border-radius:10px;background:var(--asphalt-3);color:var(--chalk);font-size:14px;}
