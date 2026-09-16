@@ -30,8 +30,12 @@ function toEvent(row) {
     userId: row.user_id,
     featured: row.featured,
     createdAt: ms(row.created_at),
+    // Nombre de membres ayant mis l'événement en favori. Public : c'est
+    // l'indicateur de popularité affiché sur la fiche et les cartes.
+    favCount: Number(row.fav_count || 0),
   };
 }
+
 
 /** Extrait le blob `data` (tout sauf les champs promus en colonnes). */
 function dataBlob(obj) {
@@ -56,16 +60,16 @@ export default async function handler(req, res) {
     if (req.method === "GET") {
       if (mine) {
         if (!uid) return json(res, 401, { error: "auth" });
-        const rows = await sql()`SELECT * FROM event.events WHERE user_id = ${uid} ORDER BY created_at DESC`;
+        const rows = await sql()`SELECT * FROM event.events_lecture WHERE user_id = ${uid} ORDER BY created_at DESC`;
         return json(res, 200, { events: rows.map(toEvent) });
       }
       if (all) {
         if (!(await isAdminUid(uid))) return json(res, 403, { error: "admin" });
-        const rows = await sql()`SELECT * FROM event.events ORDER BY created_at DESC`;
+        const rows = await sql()`SELECT * FROM event.events_lecture ORDER BY created_at DESC`;
         return json(res, 200, { events: rows.map(toEvent) });
       }
       if (id) {
-        const rows = await sql()`SELECT * FROM event.events WHERE id = ${id}`;
+        const rows = await sql()`SELECT * FROM event.events_lecture WHERE id = ${id}`;
         const row = rows[0];
         if (!row) return json(res, 404, { error: "introuvable" });
         if (row.status !== "approved" && row.user_id !== uid && !(await isAdminUid(uid))) {
@@ -74,7 +78,7 @@ export default async function handler(req, res) {
         return json(res, 200, { event: toEvent(row) });
       }
       // Liste publique : uniquement les événements validés.
-      const rows = await sql()`SELECT * FROM event.events WHERE status = 'approved' ORDER BY created_at DESC LIMIT 1000`;
+      const rows = await sql()`SELECT * FROM event.events_lecture WHERE status = 'approved' ORDER BY created_at DESC LIMIT 1000`;
       return json(res, 200, { events: rows.map(toEvent) });
     }
 
@@ -91,14 +95,14 @@ export default async function handler(req, res) {
       await sql()`
         INSERT INTO event.events (id, status, user_id, featured, data)
         VALUES (${eid}, ${status}, ${uid}, ${featured}, ${JSON.stringify(data)}::jsonb)`;
-      const rows = await sql()`SELECT * FROM event.events WHERE id = ${eid}`;
+      const rows = await sql()`SELECT * FROM event.events_lecture WHERE id = ${eid}`;
       return json(res, 200, { id: eid, event: toEvent(rows[0]) });
     }
 
     if (req.method === "PATCH" || req.method === "PUT") {
       if (!uid) return json(res, 401, { error: "auth" });
       if (!id) return json(res, 400, { error: "id" });
-      const rows = await sql()`SELECT * FROM event.events WHERE id = ${id}`;
+      const rows = await sql()`SELECT * FROM event.events_lecture WHERE id = ${id}`;
       const row = rows[0];
       if (!row) return json(res, 404, { error: "introuvable" });
       const admin = await isAdminUid(uid);
@@ -118,7 +122,7 @@ export default async function handler(req, res) {
           featured = COALESCE(${nextFeatured}, featured),
           data     = data || ${JSON.stringify(rest)}::jsonb
         WHERE id = ${id}`;
-      const out = await sql()`SELECT * FROM event.events WHERE id = ${id}`;
+      const out = await sql()`SELECT * FROM event.events_lecture WHERE id = ${id}`;
       return json(res, 200, { event: toEvent(out[0]) });
     }
 

@@ -87,6 +87,21 @@ export async function ensureSchema() {
       favorites JSONB NOT NULL DEFAULT '[]',
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )`;
+  /* Vue de lecture : chaque fiche porte son nombre de favoris. Les favoris
+     vivent dans event.profiles.favorites (un tableau JSONB par membre) ; on
+     les déplie ici pour compter par événement. Écrire la jointure une seule
+     fois évite qu'une des requêtes l'oublie et renvoie un total à zéro.
+     Les ÉCRITURES continuent de viser event.events directement. */
+  await q`
+    CREATE OR REPLACE VIEW event.events_lecture AS
+    SELECT e.*, COALESCE(f.n, 0) AS fav_count
+    FROM event.events e
+    LEFT JOIN (
+      SELECT v.value AS event_id, COUNT(*)::int AS n
+      FROM event.profiles p, jsonb_array_elements_text(p.favorites) v
+      GROUP BY 1
+    ) f ON f.event_id = e.id`;
+
   ready = true;
 }
 

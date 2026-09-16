@@ -107,14 +107,15 @@ Le filtre « autour de moi » repose encore sur un rayon approximatif.
 - [ ] Remplacer le rayon approximatif par la **formule de Haversine**
 - [ ] Trier les résultats par distance réelle
 
-### 2. « J'y vais » *(petit effort, fort impact)*
+### 2. Popularité des événements ✅
 
-Compteur de participants intéressés : preuve sociale, et première brique vers la
-billetterie.
-
-- [ ] Table `event.attendees` (`event_id`, `user_id`), ou un champ dans `profiles`
-- [ ] Bouton sur la fiche événement, réservé aux membres connectés
-- [ ] Compteur affiché sur la fiche et sur les cartes
+- [x] **Compteur public de favoris** — plutôt qu'un second bouton « Ça
+      m'intéresse » à côté de « Enregistrer », qui aurait divisé le signal et
+      fait hésiter, le favori existant SERT d'indicateur d'intérêt et son total
+      devient public. Le total est calculé par la vue `event.events_lecture` et
+      voyage avec la fiche : pas de requête supplémentaire. Masqué à zéro, et
+      il bouge dès le clic sans attendre le serveur.
+- [ ] Afficher aussi le total dans le tableau de bord du diffuseur
 
 ### 3. Tableau de bord diffuseur & mesure d'audience
 

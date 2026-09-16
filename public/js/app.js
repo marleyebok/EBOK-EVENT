@@ -162,6 +162,7 @@ function eventCardHtml(ev){
         ${isPast(ev) ? `<span class="card-past-badge">Terminé</span>` : ``}
         ${ev.dispo && DISPO_META[ev.dispo] ? `<span class="dispo-badge ${DISPO_META[ev.dispo].cls}">${DISPO_META[ev.dispo].label}</span>` : ``}
         <button class="fav-btn ${favorites.has(ev.id) ? 'active' : ''}" data-fav="${esc(ev.id)}" aria-label="Enregistrer en favori" title="Mettre de côté">♥</button>
+        <span class="fav-count ${Number(ev.favCount) > 0 ? '' : 'hidden'}" data-fav-count="${esc(ev.id)}" title="Personnes intéressées">${Number(ev.favCount) || ''}</span>
         ${currentIsAdmin ? `<button class="edit-btn" data-edit="${esc(ev.id)}" aria-label="Modifier cet événement" title="Modifier">✏️</button>` : ``}
       </div>
       <div class="card-body">
@@ -1698,7 +1699,7 @@ async function openEvent(id, opts){
       <div class="action-row">
         <button class="btn btn-primary btn-lg" id="btnInfo">Se renseigner</button>
         <button class="btn btn-ghost btn-lg" id="btnShare">Partager</button>
-        <button class="btn btn-ghost btn-lg fav-btn fav-btn-lg ${favorites.has(ev.id) ? 'active' : ''}" data-fav="${esc(ev.id)}">${favorites.has(ev.id) ? '♥ Enregistré' : '♡ Enregistrer'}</button>
+        <button class="btn btn-ghost btn-lg fav-btn fav-btn-lg ${favorites.has(ev.id) ? 'active' : ''}" data-fav="${esc(ev.id)}">${favorites.has(ev.id) ? '♥ Enregistré' : '♡ Enregistrer'}${favBadge(Number(ev.favCount) || 0)}</button>
 
         <div class="popover" id="popInfo">${contactItems.join('')}</div>
 
@@ -2129,6 +2130,10 @@ async function toggleFav(id){
   if(!currentUser && window.EBOK_AUTH){ openAuth('login'); return; }
   const add = !favorites.has(id);
   if(add) favorites.add(id); else favorites.delete(id);
+  // Le total public bouge tout de suite : attendre la réponse du serveur
+  // donnerait l'impression que le clic n'a pas été pris en compte.
+  const ev = events.find(e=> e.id === id);
+  if(ev) ev.favCount = Math.max(0, (Number(ev.favCount) || 0) + (add ? 1 : -1));
   updateFavButtons(id);
   if(currentUser && window.EBOK_DATA && window.EBOK_DATA.toggleFavorite){
     try{ await window.EBOK_DATA.toggleFavorite(currentUser.uid, id, add); }
@@ -2141,10 +2146,24 @@ async function toggleFav(id){
 
 function updateFavButtons(id){
   const on = favorites.has(id);
+  const ev = events.find(e=> e.id === id);
+  const total = ev ? (Number(ev.favCount) || 0) : 0;
   document.querySelectorAll(`.fav-btn[data-fav="${id}"]`).forEach(b=>{
     b.classList.toggle('active', on);
-    if(b.classList.contains('fav-btn-lg')) b.textContent = on ? '♥ Enregistré' : '♡ Enregistrer';
+    if(b.classList.contains('fav-btn-lg')){
+      b.innerHTML = (on ? '♥ Enregistré' : '♡ Enregistrer') + favBadge(total);
+    }
   });
+  for(const el of document.querySelectorAll(`[data-fav-count="${id}"]`)){
+    el.textContent = total > 0 ? total : '';
+    el.classList.toggle('hidden', total <= 0);
+  }
+}
+
+/* Pastille du total, à côté du libellé du bouton. Masquée à zéro : « 0
+   intéressé » dessert un événement qui vient d'être publié. */
+function favBadge(total){
+  return total > 0 ? ` <span class="fav-count-inline">${total}</span>` : '';
 }
 
 // Délégation en phase de capture : le clic sur ♥ n'ouvre pas l'événement.
