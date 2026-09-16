@@ -2529,6 +2529,39 @@ function syncMenu(){
   if(label) label.textContent = clair ? 'Thème sombre' : 'Thème clair';
 }
 
+/* ------------------------------------------------------------------ *
+ * Pied de page
+ * ------------------------------------------------------------------ */
+
+/* Comptes officiels d'EBOK Event. Laisser vide masque la ligne, et la rubrique
+   entière si aucun compte n'est renseigné : un pied de page qui annonce des
+   réseaux sans lien donne l'impression d'un site inachevé.
+   Pour en ajouter un : colle l'adresse complète du profil. */
+const RESEAUX_EBOK = {
+  instagram: '',
+  tiktok: '',
+  linkedin: '',
+};
+
+function initFooter(){
+  const annee = document.getElementById('footerYear');
+  if(annee) annee.textContent = String(new Date().getFullYear());
+
+  const bloc = document.getElementById('footerSocial');
+  if(!bloc) return;
+  let visibles = 0;
+  for(const li of bloc.querySelectorAll('[data-reseau]')){
+    const url = RESEAUX_EBOK[li.dataset.reseau];
+    if(url){
+      li.querySelector('a').href = url;
+      visibles++;
+    }else{
+      li.remove();
+    }
+  }
+  bloc.classList.toggle('hidden', visibles === 0);
+}
+
 function initMenu(){
   const bouton = document.getElementById('btnMenu');
   if(!bouton) return;
@@ -3874,6 +3907,7 @@ initEditModal();
 initProfileEdit();
 initOnboarding();
 initMenu();
+initFooter();
 initAlertes();
 initAiImport();
 initPostersMaintenance();

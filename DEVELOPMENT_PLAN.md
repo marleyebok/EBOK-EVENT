@@ -226,7 +226,9 @@ dans le code — le reste est à faire.
       cookies de Clerk sont *strictement nécessaires* (pas de consentement
       requis) ; un outil de mesure sans cookie (voir plus bas) évite le bandeau
       de consentement. À trancher avec le point « Mesure d'audience ».
-- [ ] **Lien vers ces pages dans le pied de page**
+- [ ] **Lien vers ces pages dans le pied de page** — la rubrique « Mentions
+      légales » existe déjà : il suffira de remplacer les mentions « bientôt »
+      par les liens le jour où les pages sont écrites.
 
 ### 🔎 Référencement & partage
 
@@ -291,14 +293,19 @@ dans le code — le reste est à faire.
 - [x] ~~Remplacer le logo~~ — fait : `logo.png` et les déclinaisons du favicon
       sont générés depuis les fichiers d'origine (`*-source.png`, conservés
       comme masters dans `public/assets/`).
-- [ ] **Refondre le pied de page** — le pied de page actuel est une reprise
-      minimale, posée pour remplacer celui de la galaxie : trois liens de
-      navigation et une adresse de contact, sans travail graphique. À repenser
-      pour qu'il tienne la comparaison avec le reste du site, et pour accueillir
-      les liens légaux obligatoires (RGPD, CGU, mentions légales).
-- [ ] **Contact** — l'adresse `contact@ebok.fr` est affichée en clair, donc
-      exposée aux robots collecteurs de spam. À remplacer par un formulaire lors
-      de la refonte du pied de page.
+- [x] ~~Refondre le pied de page~~ — fait : quatre rubriques en colonnes
+      (présentation, Le site, Mentions légales, Contact) sur un fond distinct,
+      chaque titre souligné d'un filet orange. Les rubriques légales sont
+      annoncées avec la mention « bientôt » tant que les pages n'existent pas :
+      pas de lien mort. Une cinquième colonne « Suivez-nous » est prête et
+      masquée tant que `RESEAUX_EBOK` (dans `public/js/app.js`) est vide.
+- [ ] **Contact** — l'adresse `contact@ebok.fr` est affichée en clair dans le
+      pied de page, donc exposée aux robots collecteurs de spam. À remplacer par
+      un formulaire, ou au minimum à révéler au clic comme les contacts des
+      fiches événement.
+- [ ] **Renseigner les comptes de réseaux sociaux** — `RESEAUX_EBOK` dans
+      `public/js/app.js` : une adresse de profil par réseau, et la rubrique
+      « Suivez-nous » apparaît dans le pied de page.
 
 > 🚫 **Règle :** aucun lien et aucune mention renvoyant vers `ebok.fr` ou une
 > autre application. EBOK Event se présente comme un produit seul. Les
