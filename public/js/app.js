@@ -3437,7 +3437,10 @@ async function runImport(payload, pending){
     }
     if(!res.ok || !data.ok) throw new Error(data.error || `Import impossible (statut ${res.status}).`);
     prefillCreateFromImport(data.event || {}, data.poster);
-    status.textContent = '✅ Infos récupérées — vérifie et publie ci-dessous.';
+    // Le modèle retenu est affiché : c'est l'information à me transmettre quand
+    // l'extraction se trompe, et elle change d'un import à l'autre.
+    const modele = (data.event && data.event.modele) ? ` (${data.event.modele})` : '';
+    status.textContent = `✅ Infos récupérées${modele} — vérifie et publie ci-dessous.`;
   }catch(err){
     status.textContent = '⚠️ ' + (err.message || 'Import impossible.');
   }finally{
