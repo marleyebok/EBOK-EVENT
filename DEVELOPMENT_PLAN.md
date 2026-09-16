@@ -222,23 +222,37 @@ dans le code — le reste est à faire.
 
 ### ⚖️ Obligations légales *(bloquant — ne pas lancer sans)*
 
-- [ ] **Page « Politique de confidentialité » (RGPD)** — quelles données sont
-      collectées (compte Clerk, profil diffuseur, favoris, compteurs de vues),
-      pourquoi, combien de temps, et comment les supprimer. Citer les
-      sous-traitants : Clerk (comptes), Neon (base), Vercel (hébergement),
-      OpenRouter (assistant IA).
-- [ ] **Page « Conditions générales d'utilisation »** — qui peut publier, règles
-      de modération, responsabilité sur le contenu déposé par les diffuseurs,
-      droit à l'image des affiches.
-- [ ] **Mentions légales** — obligatoires en France : éditeur, hébergeur (Vercel),
-      contact. Souvent oubliées alors qu'elles sont exigées avec les CGU.
+- [x] ~~Page « Politique de confidentialité » (RGPD)~~ — `public/confidentialite.html`,
+      servie sur `/confidentialite`. Décrit les données réellement collectées,
+      les bases légales, les durées de conservation, les sous-traitants (Vercel,
+      Neon, Clerk, Resend, OpenRouter) et les droits RGPD.
+- [x] ~~Page « Conditions générales d'utilisation »~~ — `public/cgu.html`, servie
+      sur `/cgu`. Les **mentions légales** y figurent en article 1.
+- [x] ~~Lien vers ces pages dans le pied de page~~
+- [ ] **⚠️ Compléter les champs `[À COMPLÉTER]`** — 11 au total (9 dans les CGU,
+      2 dans la politique de confidentialité). Tant qu'ils sont là, les pages
+      ne remplissent pas leur office :
+      - identité de l'éditeur : nom ou raison sociale, statut juridique, adresse,
+        SIRET, TVA, directeur de la publication ;
+      - adresses postales exactes des hébergeurs (Vercel, Neon), à recopier
+        depuis leurs sites — ne pas les inventer ;
+      - région de la base Neon (UE ou États-Unis), lisible dans la console Neon ;
+      - médiateur de la consommation : obligatoire **dès la première prestation
+        vendue à un particulier**, pas avant.
+- [ ] **Faire relire par un juriste** avant le lancement public. Les pages sont
+      rédigées à partir de ce que le code fait réellement, ce qui est la partie
+      difficile — mais une relecture professionnelle reste nécessaire, en
+      particulier sur l'accueil des mineurs et les prestations payantes.
+- [ ] **Compléter les CGU à l'ouverture de la vente en ligne** — l'article 7
+      indique aujourd'hui qu'aucun paiement n'est encaissé sur le site. Le jour
+      où les prestations de mise en avant deviennent commandables, il faudra y
+      ajouter prix, durée, droit de rétractation et modalités d'annulation.
 - [ ] **Bandeau cookies** — à calibrer une fois l'outil de mesure choisi. Les
       cookies de Clerk sont *strictement nécessaires* (pas de consentement
       requis) ; un outil de mesure sans cookie (voir plus bas) évite le bandeau
-      de consentement. À trancher avec le point « Mesure d'audience ».
-- [ ] **Lien vers ces pages dans le pied de page** — la rubrique « Mentions
-      légales » existe déjà : il suffira de remplacer les mentions « bientôt »
-      par les liens le jour où les pages sont écrites.
+      de consentement. À trancher avec le point « Mesure d'audience ». En
+      l'état, la politique de confidentialité affirme qu'aucun traceur tiers
+      n'est utilisé : **elle devra être mise à jour en même temps.**
 
 ### 🔎 Référencement & partage
 
