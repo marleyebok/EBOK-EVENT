@@ -151,16 +151,17 @@ adjoindre des statistiques exploitables par un organisateur.
 
 ### 3 ter. Rendre l'assistant IA d'import opérationnel *(admin seulement)*
 
-L'encart « Coller une annonce, l'IA remplit le formulaire » a été **retiré de la
-page « Publier un événement »** : il n'est pas encore assez fiable pour être
-montré, même à l'admin. Le code reste en place et volontairement intact —
-`initAiImport()` dans `public/js/app.js` et la route `api/import-event.js`.
+L'encart est de retour sur « Publier un événement », mais **visible uniquement
+pour l'admin** (`updateAuthUI()` dans `public/js/app.js`) ; la route
+`api/import-event.js` revérifie l'e-mail côté serveur, l'encart masqué n'étant
+qu'un confort d'interface. Il est là pour être éprouvé sur de vraies affiches.
 
-- [ ] Fiabiliser l'extraction (dates, lieu, catégorie, tarifs) et mesurer le
-      taux de champs corrects sur de vraies annonces
-- [ ] Le rebrancher **uniquement dans le tableau de bord admin**, pas sur la
-      page publique de publication
-- [ ] Décider ensuite, au vu des résultats, s'il est ouvert aux diffuseurs
+- [ ] **Mesurer** le taux de champs corrects (titre, dates, lieu, catégorie,
+      tarifs) sur une dizaine d'affiches et d'annonces réelles
+- [ ] Fiabiliser ce qui ressort faux le plus souvent
+- [ ] Décider ensuite, au vu des résultats, s'il est ouvert aux diffuseurs — et
+      si oui, prévoir un garde-fou de coût (l'appel au modèle est payant)
+- [ ] Pré-requis d'exploitation : `OPENROUTER_API_KEY` posée sur Vercel
 
 ### 3 quater. Campagne e-mail ciblée (prestation 50 €)
 

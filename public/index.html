@@ -222,7 +222,7 @@
     <div class="page-head">
       <p class="eyebrow">Recherche avancée</p>
       <h2>Trouve ton prochain événement</h2>
-      <p class="hero-sub">Tous les filtres possibles pour affiner ta recherche : lieu, type, date, statut, public et niveau.</p>
+      <p class="hero-sub">Tous les filtres possibles pour affiner ta recherche : lieu, type, date, public et niveau.</p>
     </div>
 
     <form class="search-form" id="searchForm">
@@ -243,14 +243,6 @@
       <div class="field">
         <label for="f-date-end">Jusqu'au</label>
         <input type="date" id="f-date-end">
-      </div>
-      <div class="field">
-        <label>Statut</label>
-        <div class="status-toggle" id="statusFilterSearch">
-          <button type="button" class="status-btn" data-status="upcoming">À venir</button>
-          <button type="button" class="status-btn" data-status="archived">Archives</button>
-          <button type="button" class="status-btn active" data-status="all">Tout</button>
-        </div>
       </div>
       <div class="field">
         <label for="f-sexe">Public — sexe</label>
@@ -313,6 +305,27 @@
       <p class="eyebrow">Espace diffuseur</p>
       <h2>Publie ton événement</h2>
       <p class="hero-sub">Renseigne les infos, ajoute ton affiche : ton événement apparaît sur la carte et dans la recherche.</p>
+    </div>
+
+    <!-- Assistant IA : réservé à l'admin, affiché par updateAuthUI(). La route
+         /api/import-event revérifie l'e-mail côté serveur — masquer l'encart
+         n'est qu'un confort d'interface, pas une protection. -->
+    <div class="ia-import hidden" id="iaImport">
+      <div class="ia-import-head">
+        <h3>🤖 Assistant IA <span class="ia-admin-tag">Admin</span></h3>
+        <p>Colle le lien de l'événement (site, billetterie…) ou envoie son affiche : l'IA remplit le formulaire ci-dessous. Tu vérifies, tu ajustes, tu publies.</p>
+      </div>
+      <div class="ia-import-row">
+        <input type="url" id="ia-url" placeholder="https://exemple.com/mon-evenement">
+        <button class="btn btn-primary" id="ia-btn">Analyser le lien</button>
+      </div>
+      <div class="ia-or"><span>ou</span></div>
+      <label class="ia-drop" id="ia-drop" for="ia-file">
+        <span class="ia-drop-ic">🖼️</span>
+        <span>Envoie une <b>affiche</b> ou une <b>capture d'écran</b> — l'IA lit les infos dessus</span>
+      </label>
+      <input type="file" id="ia-file" accept="image/*" hidden>
+      <div class="ia-status" id="ia-status"></div>
     </div>
 
     <form class="create-form" id="createForm">
