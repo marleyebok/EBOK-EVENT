@@ -110,7 +110,7 @@ n'est pas configurée, le site fonctionne sur les **données de démo** de
 | `DATABASE_URL` | Chaîne de connexion Neon (base partagée) | 🔒 oui |
 | `CLERK_SECRET_KEY` | Clé serveur Clerk (`sk_live_…`) — vérifie les tokens | 🔒 oui |
 | `OPENROUTER_API_KEY` | Clé OpenRouter (assistant IA, fournisseur par défaut) | 🔒 oui |
-| `OPENROUTER_MODEL` | *(optionnel)* modèle(s) OpenRouter, séparés par des virgules — essayés dans l'ordre (défaut : deux modèles gratuits avec vision) | non |
+| `OPENROUTER_MODEL` | *(optionnel)* modèle(s) OpenRouter, séparés par des virgules — essayés dans l'ordre, avant le repli sur le catalogue gratuit | non |
 | `AI_PROVIDER` | *(optionnel)* `openrouter` (défaut) ou `gemini` | non |
 | `GEMINI_API_KEY` | Clé Google AI Studio — requise seulement si `AI_PROVIDER=gemini` | 🔒 oui |
 | `BLOB_READ_WRITE_TOKEN` | Stockage des affiches — **injectée automatiquement** en connectant un Blob store (Vercel → Storage) | 🔒 oui |
@@ -335,17 +335,32 @@ relit, ajuste et publie — un événement de diffuseur reste en attente de vali
 2. Vercel → **Settings → Environment Variables** → ajoute `OPENROUTER_API_KEY` = ta clé.
 3. Redéploie. Tant que la clé n'est pas définie, l'assistant renvoie un message d'erreur clair et le reste du site fonctionne normalement.
 
-> Le modèle gratuit par défaut peut être retiré du catalogue OpenRouter avec le temps. Si l'assistant renvoie une
-> erreur de configuration, vérifie la liste des modèles gratuits sur `openrouter.ai/models?max_price=0` et
-> ajuste la variable `OPENROUTER_MODEL` en conséquence (aucune modif de code nécessaire).
+> Le catalogue gratuit d'OpenRouter tourne sans prévenir. Quand tous les modèles de `OPENROUTER_MODEL`
+> échouent, l'assistant interroge le catalogue et reprend avec d'autres modèles gratuits du moment —
+> il n'y a donc normalement rien à ajuster. `OPENROUTER_MODEL` ne sert plus qu'à imposer un modèle précis.
+
+### Si la clé est refusée
+
+Le message d'erreur reprend le statut renvoyé par OpenRouter, et les deux cas ne se règlent pas au même endroit :
+
+- **401 — clé refusée.** La valeur lue n'est pas (ou n'est plus) une clé valable. À vérifier dans l'ordre :
+  la variable s'appelle bien `OPENROUTER_API_KEY` ; elle est cochée pour l'environnement **Production**
+  (pas seulement *Preview*) ; **un redéploiement a eu lieu depuis** — une variable ajoutée ne s'applique
+  qu'au déploiement suivant ; la clé existe toujours dans *Keys* sur openrouter.ai. Les guillemets et
+  espaces autour de la valeur sont retirés automatiquement, ce n'est plus une cause possible.
+  Si le message signale que la valeur ne commence pas par `sk-or-`, c'est qu'une autre clé a été collée.
+- **403 — accès bloqué.** La clé est reconnue mais l'appel est refusé. Regarde les réglages de
+  confidentialité du compte OpenRouter : les modèles gratuits exigent d'autoriser l'usage des données
+  (*Settings → Privacy*), sans quoi aucun point d'accès ne correspond.
 
 ### Quotas et modèles de repli
 
 Les modèles `:free` sont **partagés entre tous les utilisateurs d'OpenRouter** : un `429` signifie
 souvent que le fournisseur en amont est momentanément saturé, et **pas** que le quota du compte est
 épuisé. L'assistant essaie donc les modèles de `OPENROUTER_MODEL` **dans l'ordre** jusqu'à ce que
-l'un réponde ; le message d'erreur affiché reprend le motif exact renvoyé par OpenRouter, qui
-permet de distinguer les deux cas.
+l'un réponde, puis, s'ils échouent tous, **les modèles gratuits du catalogue** (et seulement ceux qui
+lisent les images quand une affiche est envoyée). Le message d'erreur affiché reprend le motif exact
+renvoyé par OpenRouter, qui permet de distinguer les deux cas.
 
 Limites de l'offre gratuite OpenRouter : **20 requêtes/minute** et **50 requêtes/jour** (ce plafond
 journalier passe à 1 000 dès 10 $ de crédits achetés une seule fois). Attention, **les requêtes en
