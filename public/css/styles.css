@@ -1555,29 +1555,55 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
    automatiquement la bascule clair / sombre.
    ========================================================= */
 .site-footer{
-  margin-top:64px;padding:34px 24px 30px;
+  margin-top:64px;padding:46px 24px 22px;
   border-top:1px solid var(--line);
-  text-align:center;
+  background:var(--asphalt-2);
 }
-.site-footer-tag{
-  font-family:var(--font-mono);font-size:12.5px;letter-spacing:0.4px;
-  color:var(--chalk-dim);margin:0 0 18px;
+/* Une seule colonne sur mobile, autant que la place le permet au-delà : le
+   pied de page n'a pas de raison d'imposer un nombre de colonnes fixe. */
+.footer-cols{
+  max-width:1180px;margin:0 auto;
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:36px 34px;
 }
-.site-footer-links{
-  display:flex;justify-content:center;flex-wrap:wrap;gap:8px 26px;margin-bottom:22px;
+.footer-brand{grid-column:span 1;}
+.footer-col h4{
+  font-family:var(--font-display);font-size:19px;margin:0 0 10px;color:var(--chalk);
 }
-.site-footer-link{
-  background:none;border:0;padding:0;color:var(--chalk);
-  font-size:14px;font-weight:600;opacity:.75;transition:opacity .15s,color .15s;
+/* Le filet orange sous chaque titre donne son rythme au pied de page. */
+.footer-col h4::after{
+  content:'';display:block;width:56px;height:3px;border-radius:2px;
+  background:var(--orange);margin-top:9px;
 }
-.site-footer-link:hover{opacity:1;color:var(--orange);}
-.site-footer-contact{
-  padding-top:20px;border-top:1px solid var(--line);
-  font-size:13.5px;color:var(--chalk-dim);
+.footer-brand p{
+  margin:0;color:var(--chalk-dim);font-size:14.5px;line-height:1.65;max-width:34ch;
 }
-.site-footer-contact a{color:var(--orange);text-decoration:underline;text-underline-offset:3px;}
-.site-footer-contact a:hover{opacity:.8;}
+.footer-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:11px;}
+.footer-list li{display:flex;align-items:center;gap:12px;}
+.footer-link{
+  display:flex;align-items:center;gap:12px;
+  background:none;border:0;padding:0;text-align:left;text-decoration:none;
+  color:var(--chalk-dim);font-size:14.5px;font-weight:500;font-family:var(--font-body);
+  cursor:pointer;transition:color .15s;
+}
+.footer-link:hover{color:var(--orange);}
+.footer-icon{
+  flex:none;display:inline-flex;width:20px;height:20px;color:var(--orange);
+}
+.footer-icon svg{width:100%;height:100%;}
+/* Rubrique annoncée mais pas encore en ligne (pages légales). */
+.footer-soon{color:var(--chalk-dim);font-size:14.5px;opacity:.72;}
+.footer-soon em{
+  font-style:normal;font-family:var(--font-mono);font-size:11px;
+  text-transform:uppercase;letter-spacing:.5px;opacity:.8;
+}
+.footer-note{margin:12px 0 0;color:var(--chalk-dim);font-size:13px;line-height:1.5;}
+.footer-bottom{
+  max-width:1180px;margin:34px auto 0;padding-top:20px;
+  border-top:1px solid var(--line);
+  text-align:center;color:var(--chalk-dim);font-size:13px;
+}
 @media(max-width:700px){
-  .site-footer{margin-top:44px;padding:26px 16px 24px;}
-  .site-footer-links{gap:8px 18px;}
+  .site-footer{margin-top:44px;padding:34px 20px 20px;}
+  .footer-cols{gap:30px;}
+}
 }
