@@ -341,7 +341,11 @@ relit, ajuste et publie — un événement de diffuseur reste en attente de vali
 
 ### Si la clé est refusée
 
-Le message d'erreur reprend le statut renvoyé par OpenRouter, et les deux cas ne se règlent pas au même endroit :
+⚠️ Un message « refusé » qui **nomme un modèle** ne vient pas de la clé : certains modèles gratuits
+sont réservés à des applications précises (« is only available on agentic harnesses »). L'assistant
+enchaîne alors tout seul sur le suivant — il n'y a rien à faire.
+
+Quand le motif ne nomme aucun modèle, c'est bien la clé, et les deux cas ne se règlent pas au même endroit :
 
 - **401 — clé refusée.** La valeur lue n'est pas (ou n'est plus) une clé valable. À vérifier dans l'ordre :
   la variable s'appelle bien `OPENROUTER_API_KEY` ; elle est cochée pour l'environnement **Production**
