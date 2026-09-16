@@ -250,7 +250,9 @@ dans le code — le reste est à faire.
 
 - [x] ~~Barre du haut sur mobile~~ — refaite : une seule rangée, plus de
       chevauchement, plus de navigation défilante à l'horizontale
-- [ ] **Remplacer le logo** — celui affiché aujourd'hui n'est pas le bon.
+- [x] ~~Remplacer le logo~~ — fait : `logo.png` et les déclinaisons du favicon
+      sont générés depuis les fichiers d'origine (`*-source.png`, conservés
+      comme masters dans `public/assets/`).
 - [ ] **Refondre le pied de page** — le pied de page actuel est une reprise
       minimale, posée pour remplacer celui de la galaxie : trois liens de
       navigation et une adresse de contact, sans travail graphique. À repenser

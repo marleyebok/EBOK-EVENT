@@ -28,7 +28,13 @@ EBOK-EVENT/
 │   │   ├── compte-shell.js   # Coquille de l'espace compte (sidebar, portail)
 │   │   ├── compte-profil.js  # Profil diffuseur
 │   │   └── compte-general.js # Identité & sécurité
-│   └── assets/               # Images
+│   └── assets/               # Images, logo et favicons
+│       ├── logo-source.png      # ⚠️ masters fournis par le client — ne pas
+│       ├── favicon-source.png   #    écraser : tout le reste en dérive
+│       ├── logo.png             # bandeau (généré, 560×108)
+│       ├── favicon.png          # 32 px  ┐ générés depuis favicon-source,
+│       ├── favicon-192.png      # 192 px ┤ fond transparent
+│       └── apple-touch-icon.png # 180 px ┘ sauf iOS : fond blanc imposé
 ├── api/                      # Fonctions serverless Vercel (Neon + Clerk)
 │   ├── _lib.js               # Client Neon, vérif token Clerk, schéma « event »
 │   ├── events.js             # CRUD événements
