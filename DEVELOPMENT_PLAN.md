@@ -303,9 +303,10 @@ dans le code — le reste est à faire.
       pied de page, donc exposée aux robots collecteurs de spam. À remplacer par
       un formulaire, ou au minimum à révéler au clic comme les contacts des
       fiches événement.
-- [ ] **Renseigner les comptes de réseaux sociaux** — `RESEAUX_EBOK` dans
-      `public/js/app.js` : une adresse de profil par réseau, et la rubrique
-      « Suivez-nous » apparaît dans le pied de page.
+- [ ] **Créer les comptes Instagram et LinkedIn**, puis coller les adresses des
+      profils dans `RESEAUX_EBOK` (`public/js/app.js`) : la rubrique
+      « Suivez-nous » du pied de page apparaît alors toute seule. Une adresse
+      laissée vide masque sa ligne, les deux vides masquent la rubrique.
 
 > 🚫 **Règle :** aucun lien et aucune mention renvoyant vers `ebok.fr` ou une
 > autre application. EBOK Event se présente comme un produit seul. Les

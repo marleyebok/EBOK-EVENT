@@ -2539,7 +2539,6 @@ function syncMenu(){
    Pour en ajouter un : colle l'adresse complète du profil. */
 const RESEAUX_EBOK = {
   instagram: '',
-  tiktok: '',
   linkedin: '',
 };
 

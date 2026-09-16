@@ -1563,9 +1563,16 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
    pied de page n'a pas de raison d'imposer un nombre de colonnes fixe. */
 .footer-cols{
   max-width:1180px;margin:0 auto;
-  display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:36px 34px;
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:36px 30px;
 }
-.footer-brand{grid-column:span 1;}
+/* Au-delà de 1150px, on pose les largeurs à la main : la présentation a besoin
+   de place, « Mentions légales » porte les intitulés les plus longs, et les
+   rubriques de liens courts se contentent du reste. La colonne « Suivez-nous »
+   peut être masquée : la dernière piste reste alors vide, sans décaler le
+   reste. */
+@media(min-width:1150px){
+  .footer-cols{grid-template-columns:1.7fr 1fr 1.45fr 0.9fr 1.15fr;}
+}
 .footer-col h4{
   font-family:var(--font-display);font-size:19px;margin:0 0 10px;color:var(--chalk);
 }
@@ -1604,6 +1611,9 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 }
 @media(max-width:700px){
   .site-footer{margin-top:44px;padding:34px 20px 20px;}
-  .footer-cols{gap:30px;}
+  /* Une rubrique par ligne : sur téléphone, deux colonnes étroites cassent la
+     lecture et coupent les intitulés longs. */
+  .footer-cols{grid-template-columns:1fr;gap:28px;}
+  .footer-brand p{max-width:none;}
 }
 }
