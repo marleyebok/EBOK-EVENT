@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>EBOK Event — brag</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=block" rel="stylesheet">
+<!-- Feuille de styles réelle du site : boutons, couleurs, variables -->
+<link rel="stylesheet" href="../../public/css/styles.css">
+<style>
+  html,body{margin:0;overflow:hidden;background:#0f0f11;}
+  body{background-image:none;}
+  #stage{position:absolute;left:0;top:0;overflow:hidden;background:var(--asphalt);}
+  #stage .grain{position:absolute;inset:0;background-image:radial-gradient(circle at 1px 1px, rgba(243,238,226,0.045) 1px, transparent 1px);background-size:22px 22px;}
+  .abs{position:absolute;left:0;top:0;will-change:transform,opacity;}
+  #court{position:absolute;inset:0;transform-origin:50% 50%;}
+  #court svg{width:100%;height:100%;display:block;overflow:visible;}
+  .ln{fill:none;stroke:var(--chalk);stroke-width:0.06;stroke-linecap:butt;stroke-linejoin:miter;}
+  #lights{position:absolute;inset:0;pointer-events:none;}
+  #vign{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%, transparent 45%, rgba(0,0,0,.62) 100%);}
+  .disp{font-family:var(--font-display);text-transform:uppercase;color:var(--chalk);line-height:.98;letter-spacing:.5px;}
+  .mono{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:3px;}
+  .w{display:inline-block;will-change:transform,opacity;}
+  .shadow{text-shadow:0 6px 30px rgba(0,0,0,.85),0 2px 6px rgba(0,0,0,.8);}
+  .img{display:block;border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.55);}
+  .pin{position:absolute;border-radius:50%;border:2px solid var(--asphalt);box-sizing:border-box;transform:translate(-50%,-50%);}
+  .pin::after{content:"";position:absolute;left:50%;top:50%;width:33%;height:33%;border-radius:50%;background:#fff;transform:translate(-50%,-50%);}
+  .ring{position:absolute;border-radius:50%;border:3px solid;transform:translate(-50%,-50%);box-sizing:border-box;}
+  .chip{display:inline-flex;align-items:center;gap:10px;padding:10px 18px;border-radius:999px;background:var(--asphalt-3);border:1px solid var(--line-strong);font-family:var(--font-mono);font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--chalk);white-space:nowrap;}
+  .chip i{width:12px;height:12px;border-radius:50%;display:inline-block;}
+  #cursor{width:46px;height:46px;transform-origin:8% 6%;}
+  .crop{overflow:hidden;border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.55);border:1px solid var(--line);}
+  .crop img{display:block;}
+  #dim{position:absolute;inset:0;background:rgba(10,10,12,.86);}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="grain"></div>
+  <div id="lights"></div>
+  <div id="court"></div>
+
+  <!-- Scène 1 : accroche -->
+  <div id="s1" class="abs disp shadow" style="text-align:center"></div>
+
+  <!-- Scène 2 : révélation -->
+  <div id="s2" class="abs" style="text-align:center">
+    <img id="s2logo" src="assets/logo.png" style="display:block;margin:0 auto">
+    <div id="s2tag" class="disp shadow"></div>
+  </div>
+
+  <!-- Scène 3 : carte -->
+  <div id="s3" class="abs">
+    <div id="s3map" class="abs crop" style="transform-origin:0 0">
+      <img id="s3img" class="abs" src="assets/map.png" style="filter:brightness(1.18) contrast(1.05)">
+      <div id="pins" class="abs" style="width:100%;height:100%"></div>
+    </div>
+    <div id="s3txt" class="abs disp shadow"></div>
+    <div id="s3chips" class="abs"></div>
+  </div>
+
+  <!-- Scène 4 : page événement -->
+  <div id="s4" class="abs">
+    <div id="s4cap" class="abs disp shadow"></div>
+    <div id="s4img" class="abs crop"><img src="assets/event.png"></div>
+    <div id="s4m" class="abs crop"><img src="assets/event-m.png" style="width:100%"></div>
+  </div>
+
+  <!-- Scène 5 : publication -->
+  <div id="s5" class="abs">
+    <div id="s5txt" class="abs disp shadow"></div>
+    <div id="s5form" class="abs crop"></div>
+    <div id="s5btn" class="abs" style="transform-origin:50% 50%;white-space:nowrap"><button type="button" class="btn btn-primary btn-lg">Publier l'événement</button></div>
+    <div id="dim"></div>
+    <img id="s5ok" class="abs img" src="assets/confirm.png">
+  </div>
+
+  <div id="s6bg" class="abs" style="inset:0;width:100%;height:100%;background:radial-gradient(ellipse 46% 40% at 50% 50%, rgba(18,18,21,.94) 0%, rgba(18,18,21,.75) 55%, transparent 100%)"></div>
+  <!-- Scène 6 : final -->
+  <div id="s6" class="abs" style="text-align:center">
+    <div id="s6eye" class="mono shadow" style="color:var(--chalk)"></div>
+    <img id="s6logo" src="assets/logo.png" style="display:block;margin:0 auto">
+    <div id="s6url" class="mono shadow" style="color:var(--orange);font-weight:700">event.ebok.fr</div>
+  </div>
+
+  <div id="vign"></div>
+  <svg id="cursor" class="abs" viewBox="0 0 24 24"><path d="M3 2 L3 19 L7.6 14.9 L10.6 21.6 L13.4 20.4 L10.5 13.8 L16.8 13.8 Z" fill="#fff" stroke="#111" stroke-width="1.4" stroke-linejoin="round"/></svg>
+</div>
+
+<script>
+const Q=new URLSearchParams(location.search);
+const W=+(Q.get('w')||1920), H=+(Q.get('h')||1080), L=W>=H;
+const $=id=>document.getElementById(id);
+const stage=$('stage'); stage.style.width=W+'px'; stage.style.height=H+'px';
+const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+const seg=(t,a,b)=>clamp((t-a)/(b-a));
+const eo=x=>1-Math.pow(1-x,3), ei=x=>x*x*x, eio=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+const back=x=>{const c=1.70158,c3=c+1;return 1+c3*Math.pow(x-1,3)+c*Math.pow(x-1,2)};
+const lerp=(a,b,x)=>a+(b-a)*x;
+const S=L? 1 : 1; // l'échelle typographique est donnée explicitement par format
+let META;
+
+/* ---------------- Terrain FIBA (mètres) ---------------- */
+// Demi-terrain gauche ; le demi-terrain droit est son miroir (x -> 28 - x).
+const X3=1.575+Math.sqrt(6.75*6.75-6.6*6.6); // fin des segments droits du 3 pts (≈ 2,99 m)
+function halfPaths(){
+  return [
+    // [d, groupe d'animation, pointillé ?]
+    ['M0 5.05 H5.8 V9.95 H0', 'lane'],                                  // raquette 5,80 × 4,90
+    ['M5.8 5.7 A1.8 1.8 0 0 1 5.8 9.3', 'ft'],                          // cercle LF, moitié extérieure
+    ['M5.8 5.7 A1.8 1.8 0 0 0 5.8 9.3', 'ftd', true],                   // moitié intérieure, pointillés
+    [`M0 0.9 H${X3} A6.75 6.75 0 0 1 ${X3} 14.1 H0`, 'three'],          // ligne à 3 pts r 6,75
+    ['M1.2 6.6 V8.4', 'hoop'],                                          // planche 1,80 m à 1,20 m
+    ['M1.2 7.5 H1.35', 'hoop'],                                         // support
+    ['M1.575 7.275 A0.225 0.225 0 1 1 1.575 7.725 A0.225 0.225 0 1 1 1.575 7.275', 'hoop'], // cercle Ø 0,45
+    ['M1.2 6.25 H1.575 A1.25 1.25 0 0 1 1.575 8.75 H1.2', 'nc'],        // non-charge r 1,25
+    ['M8.325 15 V15.15', 'tick'],                                       // marque de remise en jeu
+  ];
+}
+function courtSVG(){
+  const P=[];
+  P.push(['M0 0 H28 V15 H0 Z','outline']);
+  P.push(['M14 0 V15','center']);
+  P.push(['M14 5.7 A1.8 1.8 0 1 1 14 9.3 A1.8 1.8 0 1 1 14 5.7','center']);
+  for(const side of [0,1]) for(const [d,g,dash] of halfPaths()) P.push([d,g,dash,side]);
+  const paths=P.map(([d,g,dash,side])=>{
+    const tr= side? ' transform="matrix(-1 0 0 1 28 0)"':'';
+    return dash
+      ? `<path class="ln" data-g="${g}" d="${d}" stroke-dasharray="0.24 0.2"${tr}/>`
+      : `<path class="ln" data-g="${g}" data-draw="1" d="${d}"${tr}/>`;
+  }).join('');
+  const floor=`
+    <rect x="0" y="0" width="28" height="15" fill="#1c1c20"/>
+    <g id="paint" opacity="0">
+      <rect x="0" y="5.05" width="5.8" height="4.9" fill="rgba(255,87,34,.085)"/>
+      <rect x="22.2" y="5.05" width="5.8" height="4.9" fill="rgba(255,87,34,.085)"/>
+      <circle cx="14" cy="7.5" r="1.8" fill="rgba(255,87,34,.085)"/>
+    </g>`;
+  const inner=`${floor}<g id="lines">${paths}</g>`;
+  const g= L ? `<g>${inner}</g>` : `<g transform="translate(15 0) rotate(90)">${inner}</g>`;
+  const vb= L ? '-1.5 -1.5 31 18' : '-1.5 -1.5 18 31';
+  return `<svg viewBox="${vb}" preserveAspectRatio="xMidYMid meet">
+    <defs><filter id="glow" x="-5%" y="-5%" width="110%" height="110%">
+      <feGaussianBlur stdDeviation="0.12" result="b"/>
+      <feFlood flood-color="#FF7A45" flood-opacity="0.9"/><feComposite in2="b" operator="in" result="c"/>
+      <feMerge><feMergeNode in="c"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <g filter="url(#glow)">${g}</g></svg>`;
+}
+$('court').innerHTML=courtSVG();
+const LINES=[...document.querySelectorAll('#lines .ln')];
+for(const p of LINES) if(p.dataset.draw){ const len=p.getTotalLength()*1.02+0.05; p.dataset.len=len; p.setAttribute('stroke-dasharray',`${len} ${len}`); p.setAttribute('stroke-dashoffset',len); }
+// Ordre de tracé (secondes depuis le début du tracé)
+const DRAW={outline:[0.15,0.95],center:[0.55,1.25],lane:[0.85,1.5],three:[1.05,1.9],ft:[1.35,1.95],ftd:[1.6,2.0],nc:[1.7,2.15],hoop:[1.8,2.3],tick:[2.0,2.3]};
+function drawCourt(t0,t,speed){
+  for(const p of LINES){
+    const [a,b]=DRAW[p.dataset.g]; const k=eio(seg(t,t0+a*speed,t0+b*speed));
+    if(p.dataset.draw) p.setAttribute("stroke-dashoffset",(p.dataset.len*(1-k)).toFixed(4));
+    else p.style.opacity=k;
+  }
+}
+
+/* ---------------- Layout par format ---------------- */
+function words(el,txt,cls=''){
+  el.innerHTML=txt.split('\n').map(line=>line.split(' ').map(w=>{
+    const hl=w.startsWith('*'); w=w.replace(/^\*/,'');
+    return `<span class="w${hl?' hl':''}">${w}</span>`;}).join(' ')).join('<br>');
+  return [...el.querySelectorAll('.w')];
+}
+function place(el,x,y,w){el.style.left=x+'px';el.style.top=y+'px';if(w!=null)el.style.width=w+'px';}
+
+const s1W=words($('s1'), L? 'Où on joue\nce week-end ?' : 'Où on joue\nce week-end ?');
+$('s1').style.fontSize=(L?170:150)+'px'; place($('s1'),0,0,W);
+const s2T=words($('s2tag'),"L'agenda collaboratif\ndu basket *français");
+
+const s3W=words($('s3txt'), L? 'Repère\nchaque\névénement\nprès de\n*chez *toi' : 'Repère chaque\névénement près\nde *chez *toi');
+const CHIPS=[['Tournoi','#FF5722'],['Camp','#1F8F6B'],['Circuit 3x3','#4CAF50'],['Détections','#FF9800'],['Clinic Coachs','#2196F3'],['Matchs de Gala','#F44336']];
+$('s3chips').innerHTML=CHIPS.map(([n,c])=>`<span class="chip"><i style="background:${c}"></i>${n}</span>`).join('');
+const chipEls=[...$('s3chips').children];
+
+const s4W=words($('s4cap'), L? 'Dates · Lieu · Niveau · *Infos *pratiques' : 'Dates · Lieu · Niveau\n*Infos *pratiques');
+const s5W=words($('s5txt'), L? 'Publie\nton\n*événement' : 'Publie ton\n*événement');
+const s6E=$('s6eye'); s6E.textContent="L'agenda collaboratif du basket français";
+
+let LY={};
+function layout(){
+  const m=META;
+  if(L){
+    // S2
+    LY.s2={logoW:640, tag:58};
+    // S3 carte à droite
+    LY.C={x0:.1,x1:.86,y0:0,y1:.72}; { const mw=1180, mh=mw*(LY.C.y1-LY.C.y0)*m.map.h/((LY.C.x1-LY.C.x0)*m.map.w); LY.map={x:W-mw-50,y:(H-mh)/2,w:mw,h:mh}; }
+    place($('s3txt'),110,170,560); $('s3txt').style.fontSize='108px';
+    place($('s3chips'),110,800,560);
+    // S4
+    place($('s4cap'),0,70,W); $('s4cap').style.fontSize='74px'; $('s4cap').style.textAlign='center';
+    const ew=1720, eh=ew*1120/2384; LY.ev={x:(W-ew)/2,y:200,w:ew,h:eh,src:2384};
+    // S5
+    place($('s5txt'),120,220,700); $('s5txt').style.fontSize='150px';
+    LY.form={x:980,y:150,w:800,crop:640};
+    LY.btn={x:980,y:150+800*640/838+50,scale:1.6};
+    LY.ok={w:900};
+    // S6
+    LY.s6={logoW:820, eye:30, url:60};
+  }else{
+    LY.s2={logoW:640, tag:58};
+    LY.C={x0:.14,x1:.84,y0:0,y1:.72}; { const mw=W-60, mh=mw*(LY.C.y1-LY.C.y0)*m.map.h/((LY.C.x1-LY.C.x0)*m.map.w); LY.map={x:30,y:860,w:mw,h:mh}; }
+    place($('s3txt'),70,190,W-140); $('s3txt').style.fontSize='118px';
+    place($('s3chips'),70,600,W-140);
+    place($('s4cap'),0,190,W); $('s4cap').style.fontSize='92px'; $('s4cap').style.textAlign='center';
+    LY.ev=null; LY.evm={x:110,y:470,w:W-220,h:1380,scroll:900};
+    place($('s5txt'),70,200,W-140); $('s5txt').style.fontSize='150px';
+    LY.form={x:70,y:600,w:W-140,crop:640};
+    LY.btn={x:70,y:600+(W-140)*640/838+60,scale:1.9};
+    LY.ok={w:W-80};
+    LY.s6={logoW:860, eye:30, url:64};
+  }
+  // S2
+  $('s2logo').style.width=LY.s2.logoW+'px';
+  $('s2tag').style.fontSize=LY.s2.tag+'px'; $('s2tag').style.marginTop='34px';
+  place($('s2'),0,0,W);
+  // S3
+  const M=LY.map, C=LY.C; place($('s3map'),M.x,M.y,M.w); $('s3map').style.height=M.h+'px';
+  M.fw=M.w/(C.x1-C.x0); M.fh=M.h/(C.y1-C.y0); M.ox=-C.x0*M.fw; M.oy=-C.y0*M.fh;
+  $('s3img').style.width=M.fw+'px'; $('s3img').style.height=M.fh+'px'; place($('s3img'),M.ox,M.oy);
+  $('pins').style.left=M.ox+'px'; $('pins').style.top=M.oy+'px'; $('pins').style.width=M.fw+'px'; $('pins').style.height=M.fh+'px';
+  $('s3chips').style.display='flex';$('s3chips').style.flexWrap='wrap';$('s3chips').style.gap='14px';
+  chipEls.forEach(c=>{c.style.fontSize=(L?20:26)+'px'});
+  $('pins').innerHTML=m.map.pins.map(p=>`<div class="ring" data-id="${p.id}"></div><div class="pin" data-id="${p.id}" style="background:${p.color}"></div>`).join('');
+  // S4
+  if(LY.ev){ const E=LY.ev; place($('s4img'),E.x,E.y,E.w); $('s4img').style.height=E.h+'px';
+    $('s4img').firstElementChild.style.width=(E.w*2384/E.src)+'px'; $('s4m').style.display='none'; }
+  else { const E=LY.evm; place($('s4m'),E.x,E.y,E.w); $('s4m').style.height=E.h+'px'; $('s4img').style.display='none'; }
+  // S5
+  const F=LY.form; place($('s5form'),F.x,F.y,F.w); $('s5form').style.height=(F.w*F.crop/838)+'px';
+  formImgs.forEach(im=>im.style.width=F.w+'px');
+  place($('s5btn'),LY.btn.x,LY.btn.y);
+  $('s5ok').style.width=LY.ok.w+'px';
+  // S6
+  $('s6logo').style.width=LY.s6.logoW+'px';
+  s6E.style.fontSize=LY.s6.eye+'px'; s6E.style.marginBottom='34px';
+  $('s6url').style.fontSize=LY.s6.url+'px'; $('s6url').style.marginTop='40px';
+  place($('s6'),0,0,W);
+}
+
+/* ordre d'apparition des pins : du nord au sud */
+let PINORDER=[];
+const FORMS=[...Array(15).keys()].map(i=>`assets/form-${String(i).padStart(2,'0')}.png`);
+$('s5form').innerHTML=FORMS.map(src=>`<img src="${src}" style="display:none">`).join('');
+const formImgs=[...$('s5form').children];
+
+function wordsIn(ws,t,t0,step,dy){ws.forEach((w,i)=>{const k=eo(seg(t,t0+i*step,t0+i*step+.32));w.style.opacity=k;w.style.transform=`translateY(${(1-k)*dy}px)`;});}
+function fadeOut(el,t,a,b,dy=0){const k=seg(t,a,b);el.style.opacity=1-k;return k;}
+
+/* ---------------- render(t) : fonction pure du temps ---------------- */
+function render(t){
+  // --- éclairage du terrain (s'allume, puis reste) ---
+  const lightOn = seg(t,0,0.35);
+  const flick = t<0.35 ? (0.5+0.5*Math.sin(t*90))*lightOn : 1;
+  $('lights').style.background=`radial-gradient(ellipse at 50% ${L?'-10%':'-5%'}, rgba(255,201,140,${0.16*flick}) 0%, transparent 60%), radial-gradient(ellipse at 50% ${L?'110%':'105%'}, rgba(255,140,90,${0.10*flick}) 0%, transparent 60%)`;
+
+  // --- terrain ---
+  const court=$('court');
+  let cs=1, co=1, lineOp=1;
+  if(t<3){ cs=1+0.04*(t/3); drawCourt(0,t,1); }
+  else if(t<6.2){ const k=eio(seg(t,3,4.1)); cs=lerp(1.04,3.3,k); drawCourt(0,9,1); lineOp=lerp(1,.55,k); co=1-seg(t,5.85,6.15); }
+  else if(t<17.9){ co=0; }
+  else { co=eo(seg(t,17.9,18.3))*0.75; cs=lerp(1.18,1.0,eo(seg(t,17.9,21))); drawCourt(17.9,t,0.55); lineOp=1; }
+  court.style.opacity=co; court.style.transform=`scale(${cs})`;
+  $('lines').style.opacity=lineOp;
+  $('paint').setAttribute('opacity', t<6.2 ? (0.9*seg(t,1.0,2.4)) : (0.9*seg(t,18.3,19)));
+
+  // --- S1 accroche ---
+  const s1=$('s1');
+  if(t<3.2){
+    s1.style.display='block';
+    const h=s1.offsetHeight; s1.style.top=((H-h)/2)+'px';
+    wordsIn(s1W,t,0.45,0.12,60);
+    const k=seg(t,2.85,3.1); s1.style.opacity=1-k; s1.style.transform=`translateY(${-80*eo(k)}px) scale(${1+0.25*k})`;
+  } else s1.style.display='none';
+
+  // --- S2 révélation ---
+  const s2=$('s2');
+  if(t>=3.1 && t<6.2){
+    s2.style.display='block';
+    const h=s2.offsetHeight; s2.style.top=((H-h)/2)+'px';
+    const kl=back(seg(t,3.25,3.7)); $('s2logo').style.transform=`scale(${0.6+0.4*kl})`; $('s2logo').style.opacity=seg(t,3.25,3.45);
+    wordsIn(s2T,t,3.55,0.07,40);
+    const k=seg(t,5.85,6.1); s2.style.opacity=1-k; s2.style.transform=`scale(${1+0.06*(t-3.2)/3})`;
+  } else s2.style.display='none';
+
+  // --- S3 carte ---
+  const s3=$('s3');
+  if(t>=5.95 && t<10.45){
+    s3.style.display='block';
+    const M=LY.map;
+    const ki=eo(seg(t,6.0,6.5));
+    // zoom sortant vers le pin de Montpellier
+    const lc=META.map.pins.find(p=>p.id==='ligue-c');
+    const zx=M.ox+lc.x*M.fw, zy=M.oy+lc.y*M.fh;
+    const kz=ei(seg(t,9.85,10.3));
+    const zs=lerp(1,1.03,seg(t,6,9.85))*lerp(1,5,kz);
+    $('s3map').style.transformOrigin=`${zx}px ${zy}px`;
+    $('s3map').style.transform=`translateY(${(1-ki)*80}px) scale(${zs})`;
+    $('s3map').style.opacity=ki*(1-seg(t,10.05,10.35));
+    // pins
+    const pinEls=[...$('pins').querySelectorAll('.pin')], rings=[...$('pins').querySelectorAll('.ring')];
+    META.map.pins.forEach((p,i)=>{
+      const ord=PINORDER.indexOf(p.id), t0=6.5+ord*0.0625; // une triple-croche par pin
+      const k=seg(t,t0,t0+0.3), d=p.d*M.fw*(L?1.55:1.7);
+      const el=pinEls[i]; el.style.left=(p.x*M.fw)+'px'; el.style.top=(p.y*M.fh)+'px';
+      let sc=k>0?back(k):0;
+      if(p.id==='ligue-c'){ sc*=1+0.7*eo(seg(t,9.5,9.7)); }
+      el.style.width=el.style.height=d+'px'; el.style.transform=`translate(-50%,-50%) scale(${sc})`;
+      const r=rings[i]; const kr=seg(t,t0,t0+0.6);
+      let rd=d*(1+2.2*eo(kr)), ro=(kr>0&&kr<1)?(1-kr)*0.8:0, rc=p.color;
+      if(p.id==='ligue-c' && t>=9.5){ const kc=seg(t,9.5,10.1); rd=d*(1+5*eo(kc)); ro=(1-kc); rc='#FF5722'; }
+      r.style.left=el.style.left; r.style.top=el.style.top; r.style.width=r.style.height=rd+'px'; r.style.opacity=ro; r.style.borderColor=rc;
+    });
+    // texte
+    wordsIn(s3W,t,6.25,0.08,50);
+    $('s3txt').style.opacity=1-seg(t,9.85,10.1);
+    chipEls.forEach((c,i)=>{const k=eo(seg(t,7.0+i*0.1,7.35+i*0.1));c.style.opacity=k*(1-seg(t,9.85,10.1));c.style.transform=`translateY(${(1-k)*24}px)`;});
+  } else s3.style.display='none';
+
+  // --- S4 page événement ---
+  const s4=$('s4');
+  if(t>=9.95 && t<13.85){
+    s4.style.display='block';
+    const k=eo(seg(t,10.0,10.45));
+    const E=LY.ev, out=eio(seg(t,13.3,13.65));
+    const kb=lerp(1,1.05,seg(t,10,13.5));
+    const img=LY.ev?$('s4img'):$('s4m');
+    img.style.opacity=k*(1-out);
+    img.style.transform=`translateX(${-out*W*0.25}px) scale(${lerp(0.82,1,k)})`;
+    if(LY.ev){ img.firstElementChild.style.transform=`scale(${kb})`; img.firstElementChild.style.transformOrigin='30% 30%'; }
+    else { const ks=eio(seg(t,10.9,13.0)); img.firstElementChild.style.transform=`translateY(${-ks*LY.evm.scroll*LY.evm.w/402}px)`; }
+    wordsIn(s4W,t,10.35,0.09,40);
+    $('s4cap').style.opacity=1-out;
+  } else s4.style.display='none';
+
+  // --- S5 publication ---
+  const s5=$('s5');
+  if(t>=13.35 && t<18.2){
+    s5.style.display='block';
+    const out=seg(t,17.75,18.05); s5.style.opacity=1-out;
+    wordsIn(s5W,t,13.55,0.1,60);
+    const kf=eo(seg(t,13.6,14.05));
+    $('s5form').style.opacity=kf; $('s5form').style.transform=`translateY(${(1-kf)*70}px)`;
+    const n=t<14.25?0:Math.min(14,Math.floor((t-14.25)/0.0625)+1); // une frappe par triple-croche
+    formImgs.forEach((im,i)=>im.style.display=i===n?'block':'none');
+    const kb=eo(seg(t,13.8,14.2));
+    const press = t>=15.5 && t<15.65 ? 0.94 : 1;
+    $('s5btn').style.opacity=kb;
+    $('s5btn').style.transform=`translateY(${(1-kb)*40}px) scale(${LY.btn.scale*press})`;
+    $('s5btn').style.transformOrigin='0 0';
+    const kd=seg(t,15.7,16.0); $('dim').style.opacity=kd;
+    const ko=seg(t,15.75,16.15);
+    const ok=$('s5ok'); const ow=LY.ok.w, oh=ow*840/1120;
+    ok.style.left=((W-ow)/2)+'px'; ok.style.top=((H-oh)/2)+'px';
+    ok.style.opacity=clamp(ko*2); ok.style.transform=`scale(${ko>0?lerp(0.7,1,back(ko)):0.7})`;
+  } else s5.style.display='none';
+
+  // --- S6 final ---
+  const s6=$('s6'); $('s6bg').style.opacity=seg(t,18.2,18.6);
+  if(t>=18.1){
+    s6.style.display='block';
+    const h=s6.offsetHeight; s6.style.top=((H-h)/2)+'px';
+    const kl=back(seg(t,18.25,18.75));
+    $('s6logo').style.opacity=seg(t,18.25,18.45); $('s6logo').style.transform=`scale(${0.7+0.3*kl})`;
+    const ke=eo(seg(t,18.75,19.15)); s6E.style.opacity=ke; s6E.style.transform=`translateY(${(1-ke)*20}px)`;
+    const ku=eo(seg(t,18.95,19.35)); $('s6url').style.opacity=ku; $('s6url').style.transform=`translateY(${(1-ku)*20}px)`;
+    s6.style.transform=`scale(${1+0.02*seg(t,18.3,21)})`;
+  } else s6.style.display='none';
+
+  // --- curseur ---
+  const cur=$('cursor'); let cx=null, cy=null, press=1, cop=0;
+  const csz=L?46:58; cur.style.width=cur.style.height=csz+'px';
+  if(t>=8.7 && t<10.0){
+    const M=LY.map, lc=META.map.pins.find(p=>p.id==='ligue-c');
+    const tx=M.x+M.ox+lc.x*M.fw, ty=M.y+M.oy+lc.y*M.fh;
+    const k=eio(seg(t,8.8,9.42));
+    cx=lerp(tx+W*0.22,tx,k); cy=lerp(ty+H*0.2,ty,k);
+    cop=seg(t,8.7,8.9)*(1-seg(t,9.8,10.0));
+    if(t>=9.45&&t<9.6) press=0.82;
+  } else if(t>=14.7 && t<15.85){
+    const b=$('s5btn'); const bw=b.offsetWidth*LY.btn.scale, bh=b.offsetHeight*LY.btn.scale;
+    const tx=LY.btn.x+bw*0.55, ty=LY.btn.y+bh*0.55;
+    const k=eio(seg(t,14.8,15.42));
+    cx=lerp(tx+W*0.18,tx,k); cy=lerp(ty-H*0.25,ty,k);
+    cop=seg(t,14.7,14.9)*(1-seg(t,15.65,15.85));
+    if(t>=15.45&&t<15.6) press=0.82;
+  }
+  if(cx!==null){ cur.style.display='block'; cur.style.opacity=cop; cur.style.transform=`translate(${cx-csz*0.12}px,${cy-csz*0.08}px) scale(${press})`; }
+  else cur.style.display='none';
+}
+
+async function init(){
+  META=await (await fetch('assets/meta.json')).json().catch(()=>null);
+  PINORDER=[...META.map.pins].sort((a,b)=>a.y-b.y).map(p=>p.id);
+  layout();
+  await document.fonts.ready;
+  await Promise.all([...document.images].map(i=>i.complete?1:new Promise(r=>{i.onload=i.onerror=r})));
+  render(0);
+  window.READY=true;
+}
+window.render=render;
+init();
+</script>
+</body>
+</html>

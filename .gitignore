@@ -19,3 +19,6 @@ npm-debug.log*
 dist/
 .cache/
 .vercel/
+
+# Vidéo /brag : images et fichiers intermédiaires
+brag-output/work/
