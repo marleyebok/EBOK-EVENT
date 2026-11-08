@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>EBOK Event — brag v2 (tableau du coach)</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=block" rel="stylesheet">
+<link rel="stylesheet" href="../../public/css/styles.css">
+<style>
+  html,body{margin:0;overflow:hidden;background:#0f0f11;}
+  body{background-image:none;}
+  #stage{position:absolute;left:0;top:0;overflow:hidden;background:var(--asphalt);}
+  .grain{position:absolute;inset:0;background-image:radial-gradient(circle at 1px 1px, rgba(243,238,226,0.045) 1px, transparent 1px);background-size:22px 22px;}
+  .abs{position:absolute;left:0;top:0;}
+  #glow{position:absolute;inset:0;pointer-events:none;}
+  #vign{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%, transparent 50%, rgba(0,0,0,.6) 100%);}
+  .disp{font-family:var(--font-display);text-transform:uppercase;color:var(--chalk);line-height:.98;letter-spacing:.5px;}
+  .mono{font-family:var(--font-mono);letter-spacing:2px;}
+  .w{display:inline-block;}
+  .shadow{text-shadow:0 6px 30px rgba(0,0,0,.85),0 2px 6px rgba(0,0,0,.8);}
+  /* tableau */
+  #board{transform-origin:0 0;}
+  #boardBg{position:absolute;inset:0;border-radius:28px;background:radial-gradient(circle at 50% 30%, #222227, #19191c 75%);border:1px solid var(--line-strong);box-shadow:0 30px 80px rgba(0,0,0,.5), inset 0 0 80px rgba(0,0,0,.35);}
+  #board svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;}
+  .ln{fill:none;stroke:var(--chalk);stroke-width:0.06;}
+  .play{fill:none;stroke:var(--orange);stroke-width:0.1;stroke-linecap:round;stroke-linejoin:round;}
+  .head{fill:var(--orange);}
+  .pl circle{fill:#1a1a1e;stroke:var(--chalk);stroke-width:0.08;}
+  .pl text{fill:var(--chalk);font-family:'Space Mono',monospace;font-weight:700;font-size:0.5px;text-anchor:middle;dominant-baseline:central;}
+  .tag circle{fill:var(--orange);}
+  .tag text{fill:#191008;font-family:'Anton',sans-serif;font-size:0.5px;text-anchor:middle;dominant-baseline:central;}
+  #clock{position:absolute;border-radius:12px;background:#0c0c0e;border:2px solid #333;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  #clockV{font-family:'Space Mono',monospace;font-weight:700;color:#FF3B1F;text-shadow:0 0 14px rgba(255,59,31,.75);line-height:1;}
+  #clockL{font-family:'Space Mono',monospace;color:var(--chalk-dim);letter-spacing:2px;}
+  /* libellés des temps de jeu */
+  .lab{position:absolute;}
+  .lab .row{display:flex;align-items:center;gap:22px;}
+  .lab .num{border-radius:50%;background:var(--orange);color:#191008;font-family:'Anton',sans-serif;display:flex;align-items:center;justify-content:center;flex:none;}
+  .lab .sub{font-family:var(--font-mono);color:var(--chalk-dim);margin-top:16px;letter-spacing:1px;}
+  /* téléphone */
+  #phone{border-radius:58px;background:#0a0a0c;box-shadow:0 0 0 2px #3a3a40, 0 40px 90px rgba(0,0,0,.6);}
+  #screen{position:absolute;overflow:hidden;border-radius:46px;background:var(--asphalt);}
+  .pg{position:absolute;left:0;width:100%;overflow:hidden;}
+  .pg .sc{position:absolute;left:0;top:0;width:100%;}
+  .pg img{display:block;width:100%;}
+  #island{position:absolute;background:#000;border-radius:999px;}
+  .mpin{position:absolute;border-radius:50%;border:2px solid var(--asphalt);box-sizing:border-box;}
+  .mpin::after{content:"";position:absolute;left:50%;top:50%;width:33%;height:33%;border-radius:50%;background:#fff;transform:translate(-50%,-50%);}
+  #touch{position:absolute;border-radius:50%;background:rgba(255,255,255,.35);border:2px solid rgba(255,255,255,.8);}
+  #touchR{position:absolute;border-radius:50%;border:3px solid var(--orange);}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="grain"></div>
+  <div id="glow"></div>
+
+  <div id="board" class="abs">
+    <div id="boardBg"></div>
+    <svg id="bsvg"></svg>
+    <div id="clock"><div id="clockV">24</div><div id="clockL">SHOT CLOCK</div></div>
+    <div id="panier" class="abs disp" style="color:var(--orange);text-align:center;width:100%"></div>
+  </div>
+
+  <div id="hook" class="abs" style="text-align:center">
+    <div id="hookEye" class="mono shadow" style="color:var(--orange);text-transform:uppercase"></div>
+    <div id="hookT" class="disp shadow"></div>
+  </div>
+
+  <div id="labs"></div>
+
+  <div id="phone" class="abs">
+    <div id="screen">
+      <div id="pgHome" class="pg"><div class="sc"><img src="assets/home.png"><div id="pins"></div></div></div>
+      <div id="pgEvent" class="pg"><div class="sc"><img src="assets/event.png"></div></div>
+      <div id="pgCreate" class="pg"><div class="sc" id="createSc"></div></div>
+      <div id="pgOk" class="pg"><div class="sc"><img src="assets/confirm.png"></div></div>
+      <img id="topbar" class="abs" src="assets/topbar.png" style="width:100%">
+      <div id="touchR"></div><div id="touch"></div>
+      <div id="island"></div>
+    </div>
+  </div>
+
+  <div id="outroBg" class="abs" style="width:100%;height:100%;background:radial-gradient(ellipse 48% 42% at 50% 50%, rgba(18,18,21,.95) 0%, rgba(18,18,21,.78) 55%, transparent 100%)"></div>
+  <div id="outro" class="abs" style="text-align:center">
+    <div id="oEye" class="mono shadow" style="color:var(--chalk);text-transform:uppercase">L'agenda collaboratif du basket français</div>
+    <img id="oLogo" src="assets/logo.png" style="display:block;margin:0 auto">
+    <div id="oUrl" class="mono shadow" style="color:var(--orange);font-weight:700;text-transform:uppercase">event.ebok.fr</div>
+  </div>
+  <div id="vign"></div>
+</div>
+
+<script>
+const Q=new URLSearchParams(location.search);
+const W=+(Q.get('w')||1920), H=+(Q.get('h')||1080), L=W>=H;
+const $=id=>document.getElementById(id);
+$('stage').style.width=W+'px'; $('stage').style.height=H+'px';
+const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+const seg=(t,a,b)=>clamp((t-a)/(b-a));
+const eo=x=>1-Math.pow(1-x,3), ei=x=>x*x*x, eio=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+const back=x=>{const c=1.70158,c3=c+1;return 1+c3*Math.pow(x-1,3)+c*Math.pow(x-1,2)};
+const lerp=(a,b,x)=>a+(b-a)*x;
+let META;
+
+/* ================= Demi-terrain FIBA (m) — ligne de fond en haut =================
+   X : largeur 0 → 15 m (ligne de touche à ligne de touche) ; Y : 0 (ligne de fond) → 14 m (ligne médiane) */
+const X3=1.575+Math.sqrt(6.75*6.75-6.6*6.6); // ≈ 2,99 m : fin des segments droits du 3 pts
+const COURT=[
+  ['M0 14 V0 H15 V14','out'],                                   // lignes de touche + ligne de fond
+  ['M0 14 H15','out'],                                          // ligne médiane
+  ['M5.7 14 A1.8 1.8 0 0 1 9.3 14','ctr'],                      // demi-cercle central r 1,80
+  ['M5.05 0 V5.8 H9.95 V0','lane'],                             // raquette 4,90 × 5,80
+  ['M5.7 5.8 A1.8 1.8 0 0 0 9.3 5.8','ft'],                     // cercle LF r 1,80, moitié extérieure
+  ['M5.7 5.8 A1.8 1.8 0 0 1 9.3 5.8','ftd',true],               // moitié intérieure, pointillés
+  [`M0.9 0 V${X3} A6.75 6.75 0 0 0 14.1 ${X3} V0`,'three'],     // 3 pts r 6,75, segments à 0,90 m
+  ['M6.6 1.2 H8.4','hoop'],                                     // planche 1,80 m à 1,20 m
+  ['M7.5 1.2 V1.35','hoop'],
+  ['M7.275 1.575 A0.225 0.225 0 1 0 7.725 1.575 A0.225 0.225 0 1 0 7.275 1.575','hoop'], // cercle Ø 0,45
+  ['M6.25 1.2 V1.575 A1.25 1.25 0 0 0 8.75 1.575 V1.2','nc'],   // non-charge r 1,25
+  ['M15 8.325 H15.15','tick'],                                  // marque de remise en jeu (8,325 m)
+];
+const CDRAW={out:[0.1,0.8],ctr:[0.5,1.0],lane:[0.6,1.2],three:[0.8,1.6],ft:[1.0,1.5],ftd:[1.3,1.7],hoop:[1.4,1.9],nc:[1.5,1.9],tick:[1.6,1.9]};
+
+/* ================= Le système (notation coach) ================= */
+const P0={1:[7.5,10.8],2:[12.9,5.2],3:[1.3,1.1],4:[5.2,5.9],5:[3.2,8.6]};
+function shorten(a,b,s0,s1){const dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy);return [[a[0]+dx*s0/l,a[1]+dy*s0/l],[b[0]-dx*s1/l,b[1]-dy*s1/l]];}
+function zigzag(a,b){ // dribble : ligne en zigzag
+  const [p,q]=shorten(a,b,0.5,0.15), dx=q[0]-p[0], dy=q[1]-p[1], l=Math.hypot(dx,dy), nx=-dy/l, ny=dx/l;
+  const n=9, amp=0.22; let d=`M${p[0]} ${p[1]}`;
+  for(let i=1;i<=n;i++){const f=i/(n+1.5), s=(i%2?1:-1)*amp; d+=` L${p[0]+dx*f+nx*s} ${p[1]+dy*f+ny*s}`;}
+  return d+` L${q[0]} ${q[1]}`;
+}
+const O1b=[9.8,8.6], O4b=[4.5,7.55], O5b=[7.0,2.6];
+const PLAY=[
+  // [id, d, type, t0, t1, tag, tagPos]
+  ['a1', zigzag(P0[1],O1b), 'dribble', 3.6, 5.0, 1],
+  ['a2', (()=>{const [p,q]=shorten(O1b,P0[2],0.5,0.55);return `M${p[0]} ${p[1]} L${q[0]} ${q[1]}`})(), 'pass', 7.6, 8.35, 2],
+  ['a3', (()=>{const [p,q]=shorten(P0[4],O4b,0.5,0.05);return `M${p[0]} ${p[1]} L${q[0]} ${q[1]}`})(), 'screen', 11.6, 12.2, 3],
+  ['a4', 'M3.55 8.25 Q5.9 6.3 6.75 3.05', 'cut', 12.25, 13.0, null],
+  ['a5', (()=>{const [p,q]=shorten(P0[2],O5b,0.5,0.55);return `M${p[0]} ${p[1]} L${q[0]} ${q[1]}`})(), 'pass', 15.5, 16.1, 4],
+];
+function boardSVG(){
+  const lines=COURT.map(([d,g,dash])=> dash
+    ? `<path class="ln" data-g="${g}" d="${d}" stroke-dasharray="0.24 0.2"/>`
+    : `<path class="ln draw" data-g="${g}" d="${d}"/>`).join('');
+  const masks=PLAY.map(([id,d,type])=>`<mask id="m${id}" maskUnits="userSpaceOnUse" x="-2" y="-2" width="20" height="20"><path id="mk${id}" d="${d}" fill="none" stroke="#fff" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"/></mask>`).join('');
+  const arrows=PLAY.map(([id,d,type])=>`<g id="g${id}">
+     <path id="p${id}" class="play" d="${d}" mask="url(#m${id})" ${type==='pass'?'stroke-dasharray="0.32 0.24"':''}/>
+     <polygon id="h${id}" class="head" points="0,-0.24 0.42,0 0,0.24" opacity="0"/>
+     ${type==='screen'?`<line id="t${id}" class="play" x1="0" y1="-0.42" x2="0" y2="0.42" opacity="0"/>`:''}
+   </g>`).join('');
+  const tags=PLAY.filter(p=>p[5]).map(([id,,,,,n])=>`<g id="tag${id}" class="tag" opacity="0"><circle r="0.36"/><text y="0.02">${n}</text></g>`).join('');
+  const players=[1,2,3,4,5].map(n=>`<g id="pl${n}" class="pl"><circle r="0.42"/><text y="0.02">${n}</text></g>`).join('');
+  return `<defs>${masks}</defs>
+    <g id="court" opacity="0.62">${lines}</g>
+    <g id="arrows">${arrows}</g>${tags}${players}
+    <g id="ball"><circle r="0.2" fill="#FF7A45" stroke="#191008" stroke-width="0.05"/><path d="M-0.2 0 H0.2 M0 -0.2 V0.2" stroke="#191008" stroke-width="0.035"/></g>`;
+}
+const bsvg=$('bsvg'); bsvg.setAttribute('viewBox','-1 -1 17 16'); bsvg.innerHTML=boardSVG();
+const CL=[...bsvg.querySelectorAll('#court .ln')];
+for(const p of CL) if(p.classList.contains('draw')){const l=p.getTotalLength()*1.02+0.05;p.dataset.len=l;p.style.strokeDasharray=`${l} ${l}`;p.style.strokeDashoffset=l;}
+const AR={};
+for(const [id,d,type,t0,t1,tag] of PLAY){
+  const mk=$('mk'+id), path=$('p'+id), len=path.getTotalLength();
+  mk.style.strokeDasharray=`${len+0.1} ${len+0.1}`;
+  const end=path.getPointAtLength(len), pre=path.getPointAtLength(Math.max(0,len-0.2));
+  const ang=Math.atan2(end.y-pre.y,end.x-pre.x)*180/Math.PI;
+  $('h'+id).setAttribute('transform',`translate(${end.x} ${end.y}) rotate(${ang})`);
+  if(type==='screen'){ $('t'+id).setAttribute('transform',`translate(${end.x} ${end.y}) rotate(${ang})`); $('h'+id).remove(); }
+  const mid=path.getPointAtLength(len*0.5), m2=path.getPointAtLength(len*0.5+0.1);
+  const a=Math.atan2(m2.y-mid.y,m2.x-mid.x);
+  AR[id]={len,path,type,t0,t1,tag,tagPos:[mid.x-Math.sin(a)*0.6, mid.y+Math.cos(a)*0.6]};
+}
+function drawArrow(id,t,k0=1){
+  const A=AR[id], k=eio(seg(t,A.t0,A.t1));
+  $('mk'+id).style.strokeDashoffset=(A.len+0.1)*(1-k);
+  const h=$('h'+id); if(h) h.setAttribute('opacity',k>0.96?1:0);
+  if(A.type==='screen') $('t'+id).setAttribute('opacity',k>0.96?1:0);
+  if(A.tag){const g=$('tag'+id), kt=seg(t,A.t1-0.05,A.t1+0.25); g.setAttribute('opacity',kt>0?1:0);
+    g.setAttribute('transform',`translate(${A.tagPos[0]} ${A.tagPos[1]}) scale(${kt>0?back(kt):0})`);}
+  return k;
+}
+function along(id,k){const A=AR[id], p=A.path.getPointAtLength(A.len*k); return [p.x,p.y];}
+
+/* ================= Libellés ================= */
+const LABS=[
+  [1,'Trouve','Chaque événement près de chez toi, sur la carte',3.5,7.45],
+  [2,'Choisis','Dates · lieu · niveau · infos pratiques',7.5,11.45],
+  [3,'Publie','Ton tournoi, ton camp, ton 3x3',11.5,15.45],
+  [4,'Panier !','Ton événement sur la carte, après validation',15.5,17.85],
+];
+$('labs').innerHTML=LABS.map(([n,v,s])=>`<div class="lab" id="lab${n}"><div class="row"><div class="num">${n}</div><div class="disp shadow v">${v}</div></div><div class="sub">${s}</div></div>`).join('');
+
+function words(el,txt){
+  el.innerHTML=txt.split('\n').map(line=>line.split(' ').map(w=>{const hl=w.startsWith('*');w=w.replace(/^\*/,'');return `<span class="w${hl?' hl':''}">${w}</span>`}).join(' ')).join('<br>');
+  return [...el.querySelectorAll('.w')];
+}
+const hookW=words($('hookT'),'Où jouer\nce *week-end ?');
+$('hookEye').textContent='Le système « week-end »';
+const panW=words($('panier'),'Panier !');
+
+/* ================= Layout ================= */
+let LY={};
+function place(el,x,y,w,h){el.style.left=x+'px';el.style.top=y+'px';if(w!=null)el.style.width=w+'px';if(h!=null)el.style.height=h+'px';}
+function layout(){
+  const R=17/16;
+  if(L){
+    const bh=980, bw=bh*R; LY.board={x:44,y:50,w:bw,h:bh};
+    LY.boardC={x:(W-bw)/2,y:(H-bh)/2,s:1};
+    const colX=bw+44, colW=W-colX;
+    LY.lab={x:colX+46,y:44,w:colW-70,num:70,v:88,sub:25};
+    const sw=388; LY.phone={sw,x:colX+(colW-(sw+24))/2,y:200};
+    LY.hook={size:150,eye:28};
+  }else{
+    const bh=640, bw=bh*R; LY.board={x:(W-bw)/2,y:300,w:bw,h:bh};
+    const s=1000/bw; LY.boardC={x:(W-bw*s)/2,y:(H-bh*s)/2,s};
+    LY.lab={x:70,y:70,w:W-140,num:90,v:110,sub:30};
+    const sw=404; LY.phone={sw,x:(W-(sw+24))/2,y:985};
+    LY.hook={size:150,eye:30};
+  }
+  const B=LY.board; place($('board'),B.x,B.y,B.w,B.h);
+  LY.ppm=B.w/17; // pixels par mètre (base)
+  const m=LY.ppm, cw=2.6*m; place($('clock'),(12.1+1)*m,(11.0+1)*m,cw,cw*0.62); // zone vide du demi-terrain, sans masquer de ligne
+  $('clockV').style.fontSize=(cw*0.36)+'px'; $('clockL').style.fontSize=(cw*0.06)+'px';
+  $('panier').style.fontSize=(B.w*0.16)+'px';
+  // libellés
+  for(const [n] of LABS){const el=$('lab'+n); place(el,LY.lab.x,LY.lab.y,LY.lab.w);
+    const nm=el.querySelector('.num'); nm.style.width=nm.style.height=LY.lab.num+'px'; nm.style.fontSize=(LY.lab.num*0.6)+'px';
+    el.querySelector('.v').style.fontSize=LY.lab.v+'px'; el.querySelector('.sub').style.fontSize=LY.lab.sub+'px';}
+  // crochet
+  $('hookT').style.fontSize=LY.hook.size+'px'; $('hookEye').style.fontSize=LY.hook.eye+'px'; $('hookEye').style.marginBottom='26px';
+  place($('hook'),0,0,W);
+  // téléphone
+  const P=LY.phone, sw=P.sw, sh=sw*932/430, s=sw/430; P.s=s; P.sh=sh;
+  place($('phone'),P.x,P.y,sw+24,sh+24); place($('screen'),12,12,sw,sh);
+  place($('island'),(sw-100*s)/2,8*s,100*s,26*s);
+  const st=40*s; P.st=st; const tb=META.topbar*s; P.tb=st+tb; P.view=932-META.topbar-40;
+  $('topbar').style.top=st+'px';
+  for(const id of ['pgHome','pgEvent','pgCreate','pgOk']){ place($(id),0,P.tb,sw,sh-P.tb); }
+  // pins
+  $('pins').innerHTML=META.home.pins.map(p=>`<div class="mpin" data-id="${p.id}" style="background:${p.color};left:${p.x*s}px;top:${p.y*s}px"></div>`).join('');
+  // formulaire : 15 états de frappe + page complète
+  $('createSc').innerHTML=[...Array(15).keys()].map(i=>`<img src="assets/create-${String(i).padStart(2,'0')}.png" style="display:none">`).join('')+`<img src="assets/create-full.png" style="display:none">`;
+  // final
+  $('oLogo').style.width=(L?820:860)+'px'; $('oEye').style.fontSize='30px'; $('oEye').style.marginBottom='34px';
+  $('oUrl').style.fontSize=(L?60:64)+'px'; $('oUrl').style.marginTop='40px';
+  place($('outro'),0,0,W);
+}
+let PINORD=[];
+
+/* ================= render(t) ================= */
+function render(t){
+  const B=LY.board, P=LY.phone;
+  // éclairage
+  const on=seg(t,0,0.3);
+  $('glow').style.background=`radial-gradient(ellipse at 50% -10%, rgba(255,201,140,${0.14*on}) 0%, transparent 60%)`;
+
+  // ---- tableau : position (centré → gauche/haut → centré) ----
+  const kIn=eio(seg(t,3.0,3.5)), kOut=eio(seg(t,17.9,18.5));
+  const C=LY.boardC; let bx,by,bs;
+  const k=kIn*(1-kOut);
+  bx=lerp(C.x,B.x,k); by=lerp(C.y,B.y,k); bs=lerp(C.s,1,k);
+  const bo=seg(t,0,0.25);
+  $('board').style.opacity=bo; $('board').style.transform=`translate(${bx-B.x}px,${by-B.y}px) scale(${bs})`;
+  // terrain qui se trace
+  for(const p of CL){const [a,b]=CDRAW[p.dataset.g]; const kk=eio(seg(t,a,b));
+    if(p.dataset.len) p.style.strokeDashoffset=p.dataset.len*(1-kk); else p.style.opacity=kk;}
+  $('court').setAttribute('opacity', t<18 ? 0.62 : lerp(0.62,0.4,seg(t,18,18.5)));
+  // joueurs
+  const pos={...P0}; for(const n in pos) pos[n]=[...pos[n]];
+  drawArrow('a1',t); const k1=eio(seg(t,3.6,5.0)); pos[1]=[lerp(P0[1][0],O1b[0],k1),lerp(P0[1][1],O1b[1],k1)];
+  drawArrow('a2',t);
+  drawArrow('a3',t); const k3=eio(seg(t,11.6,12.2)); pos[4]=[lerp(P0[4][0],O4b[0]+0.25,k3),lerp(P0[4][1],O4b[1]-0.3,k3)];
+  const k4=drawArrow('a4',t); const q4=along('a4',k4); if(k4>0) pos[5]=k4<1? [q4[0],q4[1]] : [O5b[0],O5b[1]];
+  if(t>=12.25 && k4>=1) pos[5]=[...O5b];
+  drawArrow('a5',t);
+  [1,2,3,4,5].forEach((n,i)=>{const kp=seg(t,0.9+i*0.125,1.25+i*0.125);
+    const g=$('pl'+n); g.setAttribute('transform',`translate(${pos[n][0]} ${pos[n][1]}) scale(${kp>0?back(kp):0})`);
+    g.setAttribute('opacity', t<18 ? 1 : 1-seg(t,18,18.4));});
+  // le ballon : porteur → passes → tir
+  let ball, bsc=1;
+  const off=(p)=>[p[0]+0.4,p[1]-0.36];
+  if(t<7.6) ball=off(pos[1]);
+  else if(t<8.35){const kk=eio(seg(t,7.6,8.35)); const a=off(O1b), b=off(P0[2]); ball=[lerp(a[0],b[0],kk),lerp(a[1],b[1],kk)];}
+  else if(t<15.5) ball=off(P0[2]);
+  else if(t<16.1){const kk=eio(seg(t,15.5,16.1)); const a=off(P0[2]), b=off(O5b); ball=[lerp(a[0],b[0],kk),lerp(a[1],b[1],kk)];}
+  else if(t<16.25) ball=off(O5b);
+  else { const kk=seg(t,16.25,16.75); const a=off(O5b), b=[7.5,1.575];
+    ball=[lerp(a[0],b[0],kk),lerp(a[1],b[1],kk)]; bsc=1+1.4*Math.sin(Math.PI*kk); // l'arc du tir (vu de dessus)
+    if(t>=16.75){ const kd=seg(t,16.75,17.0); ball=[7.5,1.575]; bsc=lerp(1,0.55,kd); } }
+  const bop=seg(t,1.5,1.8)*(t<16.75?1:1-seg(t,16.85,17.1));
+  $('ball').setAttribute('transform',`translate(${ball[0]} ${ball[1]}) scale(${bsc})`); $('ball').setAttribute('opacity',bop);
+  // panier !
+  const kp=seg(t,16.75,17.05);
+  $('panier').style.display=(t>=16.75&&t<17.95)?'block':'none';
+  $('panier').style.top=(B.h*0.36)+'px';
+  $('panier').style.opacity=1-seg(t,17.7,17.95); $('panier').style.transform=`scale(${kp>0?lerp(0.5,1,back(kp)):0}) rotate(-6deg)`;
+  // shot clock : 24 → décompte à la seconde, s'arrête sur le panier
+  const tc=Math.min(t,16.75); const v=Math.max(0,24-Math.floor(tc));
+  $('clockV').textContent=String(v).padStart(2,'0');
+  $('clock').style.opacity=seg(t,0.2,0.5)*(1-seg(t,17.9,18.3));
+
+  // ---- accroche ----
+  const hk=$('hook');
+  if(t<3.3){ hk.style.display='block'; hk.style.top=((H-hk.offsetHeight)/2)+'px';
+    hookW.forEach((w,i)=>{const kk=eo(seg(t,0.4+i*0.12,0.72+i*0.12)); w.style.opacity=kk; w.style.transform=`translateY(${(1-kk)*60}px)`;});
+    const ke=eo(seg(t,0.3,0.6)); $('hookEye').style.opacity=ke;
+    const ko=seg(t,2.85,3.15); hk.style.opacity=1-ko; hk.style.transform=`translateY(${-60*eo(ko)}px)`;
+  } else hk.style.display='none';
+
+  // ---- libellés ----
+  for(const [n,,,a,b] of LABS){const el=$('lab'+n);
+    if(t>=a-0.05&&t<b+0.3){el.style.display='block'; const ki=eo(seg(t,a,a+0.35)), ko=seg(t,b,b+0.25);
+      el.style.opacity=ki*(1-ko); el.style.transform=`translateX(${(1-ki)*50 - ko*40}px)`;
+      el.querySelector('.num').style.transform=`scale(${ki>0?back(seg(t,a,a+0.35)):0})`;
+      el.querySelector('.sub').style.opacity=eo(seg(t,a+0.2,a+0.55));
+    } else el.style.display='none';}
+
+  // ---- téléphone ----
+  const ph=$('phone');
+  const pin_=eo(seg(t,3.1,3.6)), pout=ei(seg(t,17.6,18.0));
+  ph.style.opacity=pin_*(1-pout); ph.style.transform=`translateY(${(1-pin_)*H*0.5 + pout*H*0.6}px)`;
+  ph.style.display=(t>=3.05&&t<18.05)?'block':'none';
+  const s=P.s, view=P.view;
+  // pages : home → event (push) → create (push) → ok (monte)
+  const kE=eio(seg(t,7.5,7.85)), kC=eio(seg(t,11.5,11.85)), kO=eo(seg(t,14.35,14.7));
+  $('pgHome').style.transform=`translateX(${-kE*P.sw*0.3}px)`; $('pgHome').style.filter=`brightness(${1-0.5*kE})`;
+  $('pgEvent').style.transform=`translateX(${(1-kE)*P.sw - kC*P.sw*0.3}px)`; $('pgEvent').style.filter=`brightness(${1-0.5*kC})`;
+  $('pgCreate').style.transform=`translateX(${(1-kC)*P.sw}px)`; $('pgCreate').style.filter=`brightness(${1-0.5*kO})`;
+  $('pgOk').style.transform=`translateY(${(1-kO)*(P.sh)}px)`;
+  $('pgHome').style.display=t<7.9?'block':'none'; $('pgEvent').style.display=(t>=7.45&&t<11.9)?'block':'none';
+  $('pgCreate').style.display=t>=11.45?'block':'none'; $('pgOk').style.display=t>=14.3?'block':'none';
+  // home : défile jusqu'à la carte, les pins tombent
+  const S1=META.home.mapTop-(view-META.home.mapH)/2;
+  const sH=eio(seg(t,3.9,5.1))*S1;
+  $('pgHome').firstElementChild.style.transform=`translateY(${-sH*s}px)`;
+  const pins=[...$('pins').children];
+  META.home.pins.forEach((p,i)=>{const o=PINORD.indexOf(p.id), t0=5.25+o*0.0625, kk=seg(t,t0,t0+0.28);
+    let sc=kk>0?back(kk):0; if(p.id==='ligue-c') sc*=1+0.6*eo(seg(t,7.0,7.2));
+    const d=p.d*s*1.15; const el=pins[i]; el.style.width=el.style.height=d+'px'; el.style.transform=`translate(-50%,-50%) scale(${sc})`;});
+  // événement : défile jusqu'au titre et aux infos
+  const sE=eio(seg(t,8.5,10.9))*560;
+  $('pgEvent').firstElementChild.style.transform=`translateY(${-sE*s}px)`;
+  // formulaire : frappe (une triple-croche par lettre), puis défile jusqu'au bouton
+  const imgs=[...$('createSc').children];
+  const n=t<12.25?0:Math.min(14,Math.floor((t-12.25)/0.0625)+1);
+  const full=t>=13.25; imgs.forEach((im,i)=>im.style.display=(full? i===15 : i===n)?'block':'none');
+  const S3=META.create.submit.by-view*0.62;
+  const sC=eio(seg(t,13.3,14.0))*S3;
+  $('createSc').style.transform=`translateY(${-sC*s}px)`;
+  // doigt : tap sur le pin de Montpellier (7,0 s) puis sur « Publier l'événement » (14,25 s)
+  let tx=null,ty=null,tp=0,tr=0,press=1;
+  if(t>=6.5&&t<7.5){const p=META.home.pins.find(q=>q.id==='ligue-c'); tx=p.x*s; ty=P.tb+(p.y-S1)*s;
+    tp=seg(t,6.5,6.7)*(1-seg(t,7.25,7.45)); press=(t>=7.0&&t<7.15)?0.8:1; tr=seg(t,7.0,7.45);}
+  if(t>=13.95&&t<14.55){const b=META.create.submit; tx=b.bx*s; ty=P.tb+(b.by-S3)*s;
+    tp=seg(t,13.95,14.1)*(1-seg(t,14.4,14.55)); press=(t>=14.25&&t<14.4)?0.8:1; tr=seg(t,14.25,14.6);}
+  const tch=$('touch'), rr=$('touchR'), d0=44*s*1.6;
+  if(tx!==null){ tch.style.display=rr.style.display='block';
+    place(tch,tx-d0/2,ty-d0/2,d0,d0); tch.style.opacity=tp; tch.style.transform=`scale(${press})`;
+    const dr=d0*(1+2*eo(tr)); place(rr,tx-dr/2,ty-dr/2,dr,dr); rr.style.opacity=(tr>0&&tr<1)?(1-tr):0;
+  } else tch.style.display=rr.style.display='none';
+
+  // ---- final ----
+  const ob=seg(t,18.2,18.6); $('outroBg').style.opacity=ob;
+  const ou=$('outro');
+  if(t>=18.1){ou.style.display='block'; ou.style.top=((H-ou.offsetHeight)/2)+'px';
+    const kl=back(seg(t,18.25,18.75)); $('oLogo').style.opacity=seg(t,18.25,18.45); $('oLogo').style.transform=`scale(${0.7+0.3*kl})`;
+    const ke=eo(seg(t,18.75,19.15)); $('oEye').style.opacity=ke; $('oEye').style.transform=`translateY(${(1-ke)*20}px)`;
+    const ku=eo(seg(t,18.95,19.35)); $('oUrl').style.opacity=ku; $('oUrl').style.transform=`translateY(${(1-ku)*20}px)`;
+  } else ou.style.display='none';
+}
+
+async function init(){
+  META=await (await fetch('assets/meta.json')).json();
+  PINORD=[...META.home.pins].sort((a,b)=>a.y-b.y).map(p=>p.id);
+  layout();
+  await document.fonts.ready;
+  await Promise.all([...document.images].map(i=>i.complete?1:new Promise(r=>{i.onload=i.onerror=r})));
+  render(0); window.READY=true;
+}
+window.render=render; init();
+</script>
+</body>
+</html>
