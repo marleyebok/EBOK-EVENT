@@ -1747,41 +1747,50 @@ async function openEvent(id, opts){
   return true;
 }
 
-/* ---- compteur de spectateurs (partagé si le stockage est dispo, sinon local) ---- */
+/* ---- compteur de « curieux » ----
+   Le chiffre vient UNIQUEMENT du serveur (/api/views), qui ne compte un même
+   visiteur qu'une fois par jour et par événement. Autrefois, si la couche
+   données n'était pas encore chargée (fiche ouverte directement depuis un
+   lien) ou si l'appel échouait, la fiche affichait une valeur inventée
+   (120 + 1, ou une valeur de démonstration) : d'où des chiffres incohérents
+   d'une visite à l'autre. Désormais, sans réponse du serveur, le compteur est
+   simplement masqué. Les valeurs de démonstration ne servent plus qu'au mode
+   démo local, sans base (aucun module de données sur la page). */
+async function attendreDonnees(ms){
+  const t0 = Date.now();
+  while(!window.EBOK_DATA && Date.now() - t0 < ms){
+    await new Promise(r => setTimeout(r, 100));
+  }
+  return window.EBOK_DATA || null;
+}
+
 async function loadAndAnimateViews(id){
-  // Valeur de départ des données de DÉMONSTRATION uniquement : elle rend les
-  // fiches d'exemple crédibles quand aucune base n'est branchée. Elle n'est
-  // jamais envoyée au serveur — un vrai compteur part de zéro et ne reflète
-  // que des visites réelles.
-  const seed = VIEW_SEEDS[id] || 120;
+  const modeDemo = !document.querySelector('script[src$="clerk-init.js"]');
   let count = null;
-  // 1) Source privilégiée : la base (compteur partagé entre tous les visiteurs).
-  if(window.EBOK_DATA && typeof window.EBOK_DATA.incrementViews === 'function'){
-    try{
-      const c = await window.EBOK_DATA.incrementViews(id);
-      if(typeof c === 'number' && !isNaN(c)) count = c;
-    }catch(e){ count = null; }
-  }
-  // 2) Sinon : stockage partagé de la plateforme s'il existe.
-  try{
-    if(count === null && window.storage){
-      let existing = null;
-      try{ existing = await window.storage.get('views:'+id, true); }catch(e){ existing = null; }
-      const current = existing ? parseInt(existing.value, 10) : seed;
-      count = (isNaN(current) ? seed : current) + 1;
-      try{ await window.storage.set('views:'+id, String(count), true); }catch(e){ /* pas grave, on affiche quand même */ }
-    }
-  }catch(e){ count = null; }
-  if(count === null){
-    sessionCounters[id] = (sessionCounters[id] || seed) + 1;
+  if(modeDemo){
+    sessionCounters[id] = (sessionCounters[id] || VIEW_SEEDS[id] || 0) + 1;
     count = sessionCounters[id];
+  }else{
+    // La couche données est un module chargé après app.js : on l'attend un peu.
+    const data = await attendreDonnees(8000);
+    if(data && typeof data.incrementViews === 'function'){
+      try{
+        const c = await data.incrementViews(id);
+        if(typeof c === 'number' && !isNaN(c)) count = c;
+      }catch(e){ console.warn('[EBOK] Compteur de curieux indisponible', e); }
+    }
   }
+  // Pas de chiffre fiable : on masque le compteur plutôt que d'en inventer un.
+  document.querySelectorAll('.viewer-counter, .curieux-counter').forEach(el=>{
+    el.classList.toggle('hidden', count === null);
+  });
+  if(count === null) return;
   animateCount(document.getElementById('vcNum'), count);
   animateCount(document.getElementById('vcNumBottom'), count);
 }
 function animateCount(el, target){
   if(!el) return;
-  const start = Math.max(0, target - 40);
+  const start = Math.max(0, target - Math.min(40, Math.round(target / 2)));
   const duration = 500;
   const t0 = performance.now();
   function step(t){
