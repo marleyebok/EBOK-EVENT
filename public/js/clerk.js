@@ -68,7 +68,7 @@ function themeMode() {
 export function clerkAppearance() {
   return {
     variables: {
-      colorPrimary: "#FF5722",
+      colorPrimary: "#9B1C2C",
       colorDanger: "#E8483A",
       colorSuccess: "#1F8F6B",
       colorWarning: "#FFC93C",
