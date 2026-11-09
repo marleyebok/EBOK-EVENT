@@ -130,6 +130,31 @@ export async function ensureSchema() {
       PRIMARY KEY (user_id, day)
     )`;
 
+  /* Détection automatique (lib/detection.js, api/detection.js).
+     - detection_sources : pages surveillées (agendas de ligues, de comités,
+       calendrier 3x3…), analysées à tour de rôle par la tâche quotidienne ;
+     - detections : empreinte de chaque événement déjà créé par la détection.
+       Elle survit à la suppression de l'événement : un événement refusé par
+       l'admin n'est donc jamais recréé. */
+  await q`
+    CREATE TABLE IF NOT EXISTS event.detection_sources (
+      id          TEXT PRIMARY KEY,
+      url         TEXT NOT NULL UNIQUE,
+      nom         TEXT NOT NULL DEFAULT '',
+      actif       BOOLEAN NOT NULL DEFAULT true,
+      last_run    TIMESTAMPTZ,
+      last_status TEXT NOT NULL DEFAULT '',
+      total_crees INTEGER NOT NULL DEFAULT 0,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`;
+  await q`
+    CREATE TABLE IF NOT EXISTS event.detections (
+      empreinte  TEXT PRIMARY KEY,
+      event_id   TEXT,
+      source_id  TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`;
+
   /* Vue de lecture : chaque fiche porte son nombre de favoris. Les favoris
      vivent dans event.profiles.favorites (un tableau JSONB par membre) ; on
      les déplie ici pour compter par événement. Écrire la jointure une seule

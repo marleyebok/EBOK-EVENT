@@ -372,4 +372,4 @@ export default async function handler(req, res) {
 }
 
 // Exposé pour les tests unitaires (non utilisé par Vercel).
-export { extractPage, isBlockedHost, parseDataUrl, normalizeEvent };
+export { extractPage, isBlockedHost, parseDataUrl, normalizeEvent, fetchUrl, TYPES, AGE_OPTIONS };

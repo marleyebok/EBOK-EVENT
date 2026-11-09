@@ -301,6 +301,11 @@ function positionEvent(ev){
     const j = stableJitter(ev.id);
     ev.x = c[0] + j.dx;
     ev.y = c[1] + j.dy;
+  }else if((typeof ev.x !== 'number' || typeof ev.y !== 'number') && typeof ev.lat === 'number' && typeof ev.lng === 'number'){
+    // Ville absente de la liste locale mais géolocalisée par le serveur
+    // (événement détecté automatiquement) : on la projette sur la carte.
+    const [x, y] = projGeo(ev.lat, ev.lng);
+    ev.x = Math.round(x); ev.y = Math.round(y);
   }else if(typeof ev.x !== 'number' || typeof ev.y !== 'number'){
     ev.x = MAP_W/2; ev.y = MAP_H/2;
   }
@@ -954,7 +959,7 @@ function renderRegionMap(regionName, results){
   inView.sort((a, b)=> (a.dateStart || '').localeCompare(b.dateStart || ''));
 
   const pins = inView.map(ev=>{
-    const c = TYPE_COLORS[ev.type] || '#FF5722';
+    const c = TYPE_COLORS[ev.type] || '#607D8B';
     return `<g class="rmap-pin" data-id="${esc(ev.id)}" tabindex="0" role="button" aria-label="${esc(ev.title)}">
       <circle class="rmap-halo" cx="${ev.x}" cy="${ev.y}" r="9" fill="${c}"></circle>
       <circle class="rmap-core" cx="${ev.x}" cy="${ev.y}" r="4.6" fill="${c}"></circle>
@@ -1000,7 +1005,7 @@ function regionDefaultPanel(list){
 
 /* Grande fiche affichée au survol d'un point. */
 function regionPreviewCard(ev){
-  const c = TYPE_COLORS[ev.type] || '#FF5722';
+  const c = TYPE_COLORS[ev.type] || '#607D8B';
   const poster = safeImg(ev.poster)
     ? `<img src="${esc(safeImg(ev.poster))}" alt="Affiche ${esc(ev.title)}">`
     : `<div class="rpv-ph" style="background:linear-gradient(160deg, ${c}55, var(--asphalt-3));color:${c}">${esc(ev.type || '')}</div>`;
@@ -1015,7 +1020,7 @@ function regionPreviewCard(ev){
 
 /* Petite carte de la liste par défaut. */
 function regionMiniCard(ev){
-  const c = TYPE_COLORS[ev.type] || '#FF5722';
+  const c = TYPE_COLORS[ev.type] || '#607D8B';
   const thumb = safeImg(ev.poster)
     ? `<img src="${esc(safeImg(ev.poster))}" alt="">`
     : `<div class="rmini-ph" style="background:${c}22;color:${c}">${esc((ev.type || '?').slice(0, 2))}</div>`;
@@ -1116,7 +1121,7 @@ function initCreatePage(){
       label.style.display = 'none';
     }catch(err){ console.warn('[EBOK] Compression affiche échouée', err); }
   });
-  ['dragover'].forEach(evt=> dz.addEventListener(evt, e=>{ e.preventDefault(); dz.style.borderColor='var(--orange)'; }));
+  ['dragover'].forEach(evt=> dz.addEventListener(evt, e=>{ e.preventDefault(); dz.style.borderColor='var(--accent)'; }));
   dz.addEventListener('drop', e=>{
     e.preventDefault();
     if(e.dataTransfer.files.length){ input.files = e.dataTransfer.files; input.dispatchEvent(new Event('change')); }
@@ -1597,7 +1602,7 @@ function attachCityAutocomplete(inputId, listId, onPick){
 function miniMapHtml(ev){
   if(ev.x == null || ev.y == null || typeof FRANCE_REGIONS === 'undefined') return '';
   const shapes = FRANCE_REGIONS.map(r=> `<path d="${r.d}"/>`).join('');
-  const c = TYPE_COLORS[ev.type] || '#FF5722';
+  const c = TYPE_COLORS[ev.type] || '#607D8B';
   return `<div class="event-mini-map">
     <div class="mini-map-title">📍 ${esc(ev.city || ev.region || 'France')}</div>
     <svg class="mini-france" viewBox="192 122 396 512" role="img" aria-label="Localisation de l'événement sur la carte de France">
@@ -1688,7 +1693,7 @@ async function openEvent(id, opts){
         </div>
       </div>
       <h2>${esc(ev.title)}</h2>
-      <p class="event-org">Organisé par <b>${esc(ev.org.name)}</b>
+      <p class="event-org">${ev.org && ev.org.name ? `Organisé par <b>${esc(ev.org.name)}</b>` : ''}
         ${currentIsAdmin ? `<button class="edit-inline" data-edit="${esc(ev.id)}" title="Modifier cet événement">✏️ Modifier</button>` : ``}
       </p>
 
@@ -1989,7 +1994,7 @@ function renderFeatured(){
   // Slides — bannière immersive : affiche floutée en fond + affiche nette à
   // gauche + texte clair sur voile sombre (rendu premium, jamais "blanc").
   track.innerHTML = featured.map(ev=>{
-    const c = TYPE_COLORS[ev.type] || '#FF5722';
+    const c = TYPE_COLORS[ev.type] || '#607D8B';
     const bg = safeImg(ev.poster)
       ? `background-image:url("${encodeURI(safeImg(ev.poster))}")`
       : `background:radial-gradient(120% 120% at 20% 0%, ${c}, #101014 70%)`;
@@ -3179,7 +3184,10 @@ async function renderProfile(){
   renderMyEvents();
   const adminSection = document.getElementById('adminSection');
   adminSection.classList.toggle('hidden', !currentIsAdmin);
-  if(currentIsAdmin){ renderAdminEvents(); renderAdminMembers(); }
+  if(currentIsAdmin){
+    renderAdminEvents(); renderAdminMembers();
+    if(typeof renderAdminDetection === 'function') renderAdminDetection();
+  }
 }
 
 /* Récapitulatif du profil membre ("À propos de moi"). */
@@ -3373,6 +3381,7 @@ function adminRowHtml(ev){
         <b>${esc(ev.title)}</b>
       </div>
       <div class="admin-item-meta">${metaFull}</div>
+      ${ev.detection && ev.detection.auto ? `<div class="admin-item-det">🤖 Détecté${ev.detection.sourceNom ? ' sur ' + esc(ev.detection.sourceNom) : ''} · <a href="${esc(safeUrl(ev.detection.lien || ev.detection.sourceUrl))}" target="_blank" rel="noopener">vérifier à la source ↗</a></div>` : ''}
     </div>
     <div class="admin-item-actions">
       <button class="btn btn-ghost btn-xs" data-open="${esc(ev.id)}">Voir</button>

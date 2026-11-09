@@ -12,6 +12,9 @@
     },
     "api/import-event.js": {
       "maxDuration": 60
+    },
+    "api/detection.js": {
+      "maxDuration": 60
     }
   },
   "redirects": [
@@ -53,9 +56,15 @@
         },
         {
           "key": "Content-Security-Policy-Report-Only",
-          "value": "default-src 'self'; script-src 'self' https://clerk.ebok.fr https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://clerk.ebok.fr https://api-adresse.data.gouv.fr; frame-src https://challenges.cloudflare.com; worker-src 'self' blob:; form-action 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'"
+          "value": "default-src 'self'; script-src 'self' https://clerk.ebok.fr https://cdn.protect.clerk.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://clerk.ebok.fr https://cdn.protect.clerk.com https://api-adresse.data.gouv.fr; frame-src https://challenges.cloudflare.com; worker-src 'self' blob:; form-action 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'"
         }
       ]
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/detection?tache=cron",
+      "schedule": "17 5 * * *"
     }
   ]
 }

@@ -180,6 +180,31 @@ adjoindre des statistiques exploitables par un organisateur.
 - [x] Après un import IA, direction le récapitulatif : tout se relit et se
       corrige d'un clic sur « Modifier ».
 
+### 3 sexies. Détection automatique d'événements ✅ (premier jet)
+
+Chaque jour, une page surveillée (agenda de ligue, de comité, calendrier 3x3,
+page d'organisateur…) est lue par l'IA ; les événements de basket qu'elle
+annonce sont créés **en attente**, avec le badge « 🤖 Détecté » et un lien
+vers la source. Rien n'est publié sans validation.
+
+- [x] Moteur `lib/detection.js` : extraction de plusieurs événements par page,
+      filtres (titre, ville, date, à venir), empreinte anti-doublon (titre +
+      date + ville), géocodage (Base Adresse Nationale), affiche jamais
+      recopiée, 25 événements max par analyse. Tests : `npm run test:detection`.
+- [x] Route `api/detection.js` + tâche Vercel quotidienne (`vercel.json` →
+      `crons`) : une source par jour, à tour de rôle.
+- [x] Espace admin : ajouter / mettre en pause / retirer une page, « Analyser
+      maintenant », dernier résultat de chaque page.
+- [x] Un événement détecté puis supprimé (= refusé) ne revient jamais
+      (table `event.detections`).
+- [ ] **Constituer la liste des pages à surveiller** — les meilleures sont des
+      pages d'agenda en HTML classique. Les pages construites en JavaScript
+      (beaucoup de sites modernes, HelloAsso) sont lues vides : l'admin le voit
+      dans le résultat (« page sans contenu exploitable »).
+- [ ] **Poser `CRON_SECRET`** sur Vercel (voir README).
+- [ ] Plus tard : recherche web automatique (API de recherche, payante au-delà
+      d'un quota) pour découvrir de nouvelles pages sans les saisir à la main.
+
 ### 4. Ajouter à mon agenda *(petit effort)*
 
 - [ ] Génération d'un fichier `.ics` (Google / Apple Agenda), côté navigateur
