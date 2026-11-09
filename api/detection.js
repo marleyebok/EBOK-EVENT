@@ -49,7 +49,7 @@ function dependances(today) {
   return {
     today,
     maintenant: new Date().toISOString(),
-    lirePage: (url) => fetchUrl(url, 15000, false),
+    lirePage: (url) => fetchUrl(url, 12000, false),
     extraire: (prompt) => ai.extractEvent({ parts: [], prompt }),
     geocoder,
     async dejaVu(empreintes) {
@@ -80,6 +80,13 @@ function dependances(today) {
 
 async function analyser(source) {
   const today = new Date().toISOString().slice(0, 10);
+  // Marquée AVANT l'analyse : si la fonction est coupée par la limite de
+  // durée de Vercel, la source passe quand même son tour (sinon elle serait
+  // reprise, et coupée, chaque jour) et l'admin voit pourquoi.
+  await sql()`
+    UPDATE event.detection_sources
+    SET last_run = now(), last_status = ${"⚠️ Analyse interrompue : la page ou l'IA a mis plus d'une minute. Essaie une page plus précise (page « agenda » ou « stages »)."}
+    WHERE id = ${source.id}`;
   let bilan;
   try {
     bilan = await analyserSource(source, dependances(today));
