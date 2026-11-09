@@ -104,10 +104,8 @@ Streetball/urbain : asphalte, terrains éclairés la nuit, énergie jeune. Pas d
   - Col 2 : Infos pratiques (horaires, buvette, réservation) + Upload galerie photos (multi-fichier, drag&drop)
   - Col 3 : Affiche (drag&drop, préview) + Contact organisateur (nom, insta, site, tel, email)
 
-- **Options de visibilité (tarification) :**
-  - Standard : 0€ (listing seul)
-  - Mise en avant : 29€ (carrousel homepage 7j)
-  - Mise en avant + Mailing : 59€ (carrousel + envoi région)
+- **Visibilité :** publication gratuite pour tous. La mise « à la une » est un
+  choix éditorial de l'admin (voir « Monétisation » ci-dessous).
 
 - **Soumission :** Confirmation puis API vers backend (à implémenter)
 
@@ -252,22 +250,16 @@ function isPast(ev) { return ev.dateEnd < TODAY; }
 
 ---
 
-## 💰 Monétisation (Implémentée en UI, pas backend)
+## 💰 Monétisation (Implémentée en UI, pas b## 💰 Monétisation — *en pause*
 
-**Espace diffuseurs — Trois formules :**
-- **Standard (gratuit)** : listing seul
-- **Mise en avant (29€)** : carrousel 7j
-- **Mise en avant + Mailing (59€)** : carrousel + envoi communauté région
+**Décision du 9/11/2026 :** EBOK Event démarre **sans statut professionnel**,
+édité par un particulier, **100 % gratuit**. Aucune offre payante n'est
+affichée ni vendue (CGU, article 7) : les anciennes formules (mise en avant
+29 €, mise en avant + mailing 59 €, posts Instagram) ont été retirées du site.
 
-**UI :** Radio buttons de mode visibilité au formulaire création. Message de succès adapté si option payante choisie.
-
-**À faire :** Brancher Stripe / PayPal quand backend existe.
-
----
-
-## 📈 Données Actuelles
-
-- **22 événements** en base
+Priorité : construire la communauté. Les pistes de revenus (mise en avant,
+publicité, visibilité sur les réseaux) attendent la création d'une structure —
+voir `DEVELOPMENT_PLAN.md`, « 7. Offres payantes ».ments** en base
 - **5 featured** : La Ligue C, Clinic Tony Parker, 3x3 Open Paris, Camp ASVEL, Voyage Corse
 - **Compteurs curieux** pré-remplis (VIEW_SEEDS) pour vraisemblance
 - **Répartition géo** : 11 villes (Paris, Montpellier, Lyon, Nice, Toulouse, Nantes, Strasbourg, Bordeaux, Limoges, Bastia, Villeurbanne, Cholet)

@@ -1151,7 +1151,6 @@ function initCreatePage(){
     const pays = val('c-pays') || DEFAULT_COUNTRY;
     const {x, y}    = coords;
     const posterSrc = (preview && !preview.classList.contains('hidden')) ? preview.src : null;
-    const visibility = document.querySelector('input[name="visibility"]:checked')?.value || 'standard';
 
     // L'admin (ou le mode démo local) publie directement ; un diffuseur passe
     // en validation. On CRÉE toujours l'événement en "pending" côté serveur :
@@ -1188,8 +1187,9 @@ function initCreatePage(){
       gallery: await hostGallery(galleryFiles),
       placesTotal: val('c-places') ? parseInt(val('c-places'), 10) : null,
       dispo: val('c-dispo') || '',
-      featured: visibility !== 'standard',
-      visibility,
+      // La mise « à la une » est un choix éditorial de l'admin, jamais une option vendue.
+      featured: false,
+      visibility: 'standard',
       status,
       userId: currentUser ? currentUser.uid : null,
       org: {
