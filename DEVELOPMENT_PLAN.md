@@ -156,28 +156,29 @@ adjoindre des statistiques exploitables par un organisateur.
 - [ ] **Reste à faire par toi :** créer le compte Resend, configurer SPF/DKIM sur
       le domaine, et poser `RESEND_API_KEY` sur Vercel (voir README)
 
-### 3 ter. Rendre l'assistant IA d'import opérationnel *(admin seulement)*
+### 3 ter. Assistant IA d'import — ouvert aux organisateurs ✅
 
-L'encart est de retour sur « Publier un événement », mais **visible uniquement
-pour l'admin** (`updateAuthUI()` dans `public/js/app.js`) ; la route
-`api/import-event.js` revérifie l'e-mail côté serveur, l'encart masqué n'étant
-qu'un confort d'interface. Il est là pour être éprouvé sur de vraies affiches.
+- [x] Testé sur de vraies affiches par l'admin : résultats jugés très bons.
+- [x] **Ouvert à tout membre connecté** (9/11/2026), avec un quota de
+      **5 imports par jour et par organisateur** (`AI_IMPORTS_PAR_JOUR`,
+      table `event.ai_imports`) ; un import raté ne consomme pas le quota,
+      l'admin n'a pas de limite.
+- [x] Survivre à la saturation des modèles gratuits — repli automatique sur
+      d'autres modèles gratuits du catalogue OpenRouter.
+- [ ] **Si la saturation devient gênante** — créditer le compte OpenRouter de
+      quelques euros (modèles payants, environ un centime par affiche). Décision
+      à prendre au vu de l'usage réel.
 
-- [ ] **Mesurer** le taux de champs corrects (titre, dates, lieu, catégorie,
-      tarifs) sur une dizaine d'affiches et d'annonces réelles
-- [ ] Fiabiliser ce qui ressort faux le plus souvent
-- [ ] Décider ensuite, au vu des résultats, s'il est ouvert aux diffuseurs — et
-      si oui, prévoir un garde-fou de coût (l'appel au modèle est payant)
-- [ ] Pré-requis d'exploitation : `OPENROUTER_API_KEY` posée sur Vercel
-- [x] ~~Survivre à la saturation des modèles gratuits~~ — quand toute la liste
-      `OPENROUTER_MODEL` échoue, le catalogue OpenRouter est interrogé pour
-      prendre le relais avec d'autres modèles gratuits (et, si une affiche est
-      envoyée, seulement ceux qui lisent les images).
-- [ ] **Si la saturation persiste** — les modèles gratuits sont partagés entre
-      tous les utilisateurs d'OpenRouter et lâchent aux heures pleines. Créditer
-      le compte de quelques euros donne accès aux modèles payants, à un coût de
-      l'ordre du centime par affiche analysée. À trancher une fois la fiabilité
-      mesurée.
+### 3 quinquies. Publication en étapes ✅
+
+- [x] Le formulaire de 30 champs est devenu un **parcours en cartes**
+      (`public/js/create-wizard.js`) : départ (IA ou saisie), l'essentiel,
+      voyage (si ce type), lieu, public, affiche, infos pratiques (facultatif),
+      contact, récapitulatif. Barre de progression, contrôle à chaque étape
+      (champs obligatoires, dates incohérentes, e-mail), **aperçu de la fiche
+      en direct** sur ordinateur, et dans le récapitulatif sur mobile.
+- [x] Après un import IA, direction le récapitulatif : tout se relit et se
+      corrige d'un clic sur « Modifier ».
 
 ### 4. Ajouter à mon agenda *(petit effort)*
 
@@ -325,9 +326,9 @@ dans le code — le reste est à faire.
 - [x] ~~**Page 404 personnalisée**~~ — `public/404.html`, aux couleurs du site.
 - [ ] **Liens cassés** — à passer au crible avant lancement, y compris les liens
       externes des diffuseurs (site, Instagram).
-- [ ] **Validation des formulaires** — le HTML a des champs `required`, mais il
-      manque des messages d'erreur clairs et une vérification des formats
-      (URL, e-mail, dates cohérentes : fin après début).
+- [x] ~~**Validation des formulaires**~~ — le parcours de publication vérifie
+      chaque étape avec des messages clairs (obligatoires, e-mail, dates).
+      Reste le formulaire de modification d'un événement (fenêtre admin).
 - [ ] **Anti-spam** — ⚠️ rien aujourd'hui. La publication exige un compte et
       passe en modération, ce qui limite déjà beaucoup les dégâts. À renforcer
       si besoin : limitation du nombre de publications par compte et par jour.

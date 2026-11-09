@@ -2434,10 +2434,9 @@ function updateAuthUI(){
     document.getElementById('accountName').innerHTML =
       `<b>${displayName()}</b>${currentIsAdmin ? '<span class="account-badge-admin">Admin</span>' : ''}`;
   }
-  // L'assistant IA d'import n'est montré qu'à l'admin. La route serveur
-  // revérifie l'e-mail : masquer l'encart n'est qu'un confort d'interface.
-  const iaImport = document.getElementById('iaImport');
-  if(iaImport) iaImport.classList.toggle('hidden', !currentIsAdmin);
+  // L'assistant IA d'import est ouvert à tout membre connecté ; c'est le
+  // parcours de publication (js/create-wizard.js) qui l'affiche à la demande.
+  // La route serveur revérifie la session et applique le quota quotidien.
 }
 
 function initAuth(){
@@ -3429,8 +3428,8 @@ function initAiImport(){
 async function runImport(payload, pending){
   const status = document.getElementById('ia-status');
   const btn = document.getElementById('ia-btn');
-  // L'assistant est réservé à l'administrateur (jeton Clerk + email admin).
-  if(!currentIsAdmin){ status.textContent = 'Assistant IA réservé à l’administrateur.'; return; }
+  // L'assistant demande un compte (jeton Clerk) ; le quota est géré par le serveur.
+  if(!currentUser){ status.textContent = 'Connecte-toi pour utiliser l’assistant IA.'; return; }
   status.textContent = pending;
   btn.disabled = true;
   try{
@@ -3459,7 +3458,9 @@ async function runImport(payload, pending){
     // Le modèle retenu est affiché : c'est l'information à me transmettre quand
     // l'extraction se trompe, et elle change d'un import à l'autre.
     const modele = (data.event && data.event.modele) ? ` (${data.event.modele})` : '';
-    status.textContent = `✅ Infos récupérées${modele} — vérifie et publie ci-dessous.`;
+    status.textContent = `✅ Infos récupérées${modele} — vérifie et publie.`;
+    // Parcours en étapes : direction le récapitulatif pour tout relire.
+    if(typeof window.wizardApresImport === 'function') window.wizardApresImport();
   }catch(err){
     status.textContent = '⚠️ ' + (err.message || 'Import impossible.');
   }finally{
