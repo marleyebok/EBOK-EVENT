@@ -7,9 +7,55 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "functions": {
-    "api/evenement.js": { "includeFiles": "public/index.html" },
-    "api/import-event.js": { "maxDuration": 60 }
+    "api/evenement.js": {
+      "includeFiles": "public/index.html"
+    },
+    "api/import-event.js": {
+      "maxDuration": 60
+    }
   },
-  "redirects": [{ "source": "/compte", "destination": "/compte/profil", "permanent": false }],
-  "rewrites": [{ "source": "/evenement/:id", "destination": "/api/evenement?id=:id" }]
+  "redirects": [
+    {
+      "source": "/compte",
+      "destination": "/compte/profil",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/evenement/:id",
+      "destination": "/api/evenement?id=:id"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=(self), payment=(), usb=()"
+        },
+        {
+          "key": "Content-Security-Policy-Report-Only",
+          "value": "default-src 'self'; script-src 'self' https://clerk.ebok.fr https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://clerk.ebok.fr https://api-adresse.data.gouv.fr; frame-src https://challenges.cloudflare.com; worker-src 'self' blob:; form-action 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'"
+        }
+      ]
+    }
+  ]
 }

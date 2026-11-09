@@ -2534,6 +2534,8 @@ function initFooter(){
   const annee = document.getElementById('footerYear');
   if(annee) annee.textContent = String(new Date().getFullYear());
 
+  initContactFooter();
+
   const bloc = document.getElementById('footerSocial');
   if(!bloc) return;
   let visibles = 0;
@@ -2547,6 +2549,23 @@ function initFooter(){
     }
   }
   bloc.classList.toggle('hidden', visibles === 0);
+}
+
+/* L'adresse de contact n'est jamais écrite dans le HTML : les robots qui
+   aspirent les pages pour récolter des e-mails ne la trouvent pas. Elle est
+   reconstituée au premier clic, affichée, puis la messagerie s'ouvre. */
+function initContactFooter(){
+  const lien = document.getElementById('footerContact');
+  if(!lien) return;
+  lien.addEventListener('click', (e)=>{
+    const adresse = `${lien.dataset.u}@${lien.dataset.d}`;
+    if(lien.getAttribute('href') === `mailto:${adresse}`) return; // déjà révélée
+    e.preventDefault();
+    lien.href = `mailto:${adresse}`;
+    const texte = lien.querySelector('.footer-contact-text');
+    if(texte) texte.textContent = adresse;
+    window.location.href = lien.href;
+  });
 }
 
 function initMenu(){
