@@ -62,26 +62,31 @@ partagé, plus de lecture du profil du site mère. Seul reste le point ci-dessou
 
 ---
 
-## 🎯 Chantier en cours : instance Clerk dédiée
+## 🎯 Chantier en cours : passer Clerk en production
 
-Côté code, **tout est prêt** : la connexion repose entièrement sur le widget
-Clerk (plus de formulaire maison), le widget est habillé aux couleurs du site,
-une panne du service est signalée à l'utilisateur, et la bascule d'instance ne
-demande qu'**une seule ligne**. Il reste l'étape qui se fait sur le tableau de
-bord Clerk : **créer l'instance dédiée** — marche à suivre détaillée dans le
-README (« Basculer vers une instance Clerk dédiée »).
+- [x] ~~Instance Clerk dédiée~~ — créée le 15/09/2026
+      (`normal-shiner-4060.clerk.accounts.dev`). EBOK Event ne partage plus
+      l'instance d'ebok.fr.
+- [ ] **Passer cette instance en production** sur le domaine `event.ebok.fr`
+      (clés `pk_live_…` / `sk_live_…`). Tant qu'elle reste en développement,
+      Clerk affiche un bandeau « development mode » et limite le nombre de
+      comptes : **impossible d'ouvrir le site au public dans cet état.**
 
-**⚠️ Conséquence à assumer :** les comptes ne se transfèrent pas d'une instance
-Clerk à l'autre. Tous les membres devront **se réinscrire**, et les événements
-déjà publiés perdront le lien avec leur diffuseur (leur `user_id` pointera vers
-un compte qui n'existe plus). L'admin étant reconnu par **e-mail** et non par
-identifiant, les droits d'administration, eux, se retrouvent automatiquement.
+**⚠️ Même conséquence qu'un changement d'instance :** chez Clerk, l'instance de
+production est **distincte** de celle de développement. Les comptes créés en
+développement **ne passent pas** en production : leurs titulaires devront se
+réinscrire, et leurs événements perdront le lien avec leur diffuseur. Les
+droits admin se retrouvent seuls (reconnus par e-mail).
 
 > 👉 **Tant qu'il n'y a aucun diffuseur inscrit, l'opération est gratuite.**
-> Plus on attend, plus la réinscription coûte cher. La marche à suivre complète
-> (réglages Clerk, clés, passage en production, liste de vérification) est dans
-> le README — elle n'est pas recopiée ici pour éviter que les deux versions
-> divergent.
+> Plus on attend, plus la réinscription coûte cher. Marche à suivre : README,
+> « Passer en production » puis « Changer d'instance ».
+>
+> ⚠️ **Google en production :** l'instance de développement utilise des
+> identifiants Google fournis par Clerk ; en production, il faut créer les
+> siens (Google Cloud Console → client OAuth « Application Web ») et les coller
+> dans Clerk → SSO connections → Google. Sans eux, le bouton Google ne
+> fonctionne pas.
 
 ---
 

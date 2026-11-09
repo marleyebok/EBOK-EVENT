@@ -59,7 +59,7 @@ Le code était initialement dans **un seul fichier HTML monolithique** ; il a é
 
 > **EBOK Event est un produit autonome.** Il ne dépend d'aucune autre application
 > et n'en mentionne aucune. Seuls les comptes tournent encore sur une instance
-> Clerk partagée — voir « Basculer vers une instance Clerk dédiée » plus bas.
+> Clerk dédiée — voir « L'instance Clerk » plus bas.
 
 ---
 
@@ -99,9 +99,8 @@ n'est pas configurée, le site fonctionne sur les **données de démo** de
 `data.js` (aucune casse).
 
 > Le schéma `event` est **entièrement isolé** : la base peut être partagée avec
-> d'autres projets sans aucune conséquence pour EBOK Event. Les comptes, eux,
-> tournent encore sur une instance Clerk partagée — voir « Basculer vers une
-> instance Clerk dédiée ».
+> d'autres projets sans aucune conséquence pour EBOK Event. Les comptes ont
+> leur propre instance Clerk — voir « L'instance Clerk ».
 
 ### Variables d'environnement (Vercel → Settings → Environment Variables)
 
@@ -279,8 +278,17 @@ Une instance de développement fonctionne tout de suite, mais affiche un bandeau
 1. Dans Clerk → **Domains**, ajouter `event.ebok.fr`.
 2. Ajouter chez ton hébergeur DNS les enregistrements CNAME que Clerk indique
    (il vérifie automatiquement).
-3. Reprendre la procédure « Changer d'instance » ci-dessus avec les clés
+3. Dans Clerk → **SSO connections → Google**, activer « Use custom
+   credentials » et coller l'ID client et le secret d'un client OAuth créé dans
+   Google Cloud Console (type « Application Web », URI de redirection fournie
+   par Clerk). L'instance de développement s'en passe, la production non :
+   sans eux, la connexion Google échoue.
+4. Reprendre la procédure « Changer d'instance » ci-dessus avec les clés
    `pk_live_…` / `sk_live_…`.
+
+> ⚠️ Les comptes de l'instance de développement **ne sont pas repris** en
+> production : c'est un changement d'instance comme un autre (voir
+> l'avertissement plus haut).
 
 #### Vérifier
 
