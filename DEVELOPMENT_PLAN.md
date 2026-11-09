@@ -179,17 +179,6 @@ qu'un confort d'interface. Il est là pour être éprouvé sur de vraies affiche
       l'ordre du centime par affiche analysée. À trancher une fois la fiabilité
       mesurée.
 
-### 3 quater. Campagne e-mail ciblée (prestation 50 €)
-
-Affichée dans « Booster ta visibilité » en **« Bientôt disponible »**, non
-cliquable : l'option existe pour tester l'intérêt avant d'être développée.
-
-- [ ] Page de commande avec un court questionnaire sur le public visé
-      (région, catégorie, niveau, type de pratique)
-- [ ] Sélection des destinataires : membres correspondant au ciblage, en
-      réutilisant la mécanique de correspondance des alertes (`lib/alertes.js`)
-- [ ] Encaissement et suivi de la campagne
-
 ### 4. Ajouter à mon agenda *(petit effort)*
 
 - [ ] Génération d'un fichier `.ics` (Google / Apple Agenda), côté navigateur
@@ -218,7 +207,32 @@ communautaire, mais dépend de la géolocalisation.
       plateforme servirait à spammer des tiers.
 - [ ] **Avis / discussion** — questions à l'organisateur, retours sur les
       éditions passées (demande de la modération)
-- [ ] **Billetterie / inscriptions** — avec commission
+- [ ] **Agent réseaux sociaux** *(idée validée, à construire)* — chaque
+      semaine, préparer à partir des événements validés des posts Instagram
+      (carrousel « les événements du week-end » par région, stories) et
+      LinkedIn (ton plus pro, pour clubs et partenaires), dans le ton de la
+      marque. D'abord des brouillons à valider ; publication automatique
+      ensuite, une fois les accès API Instagram (Meta) et LinkedIn obtenus.
+      Pré-requis : comptes Instagram et LinkedIn d'EBOK Event créés.
+
+### 7. Offres payantes — *seulement avec un statut professionnel*
+
+> 🧭 **Décision du 9/11/2026 : démarrage sans statut professionnel.** EBOK Event
+> est édité par un particulier, à titre non professionnel et **entièrement
+> gratuit** (CGU, article 7). Toute mention de vente a été retirée du site.
+> Rien de ce qui suit ne doit être remis en ligne avant d'avoir créé une
+> structure (micro-entreprise envisagée) **et** mis à jour les CGU :
+> identité de l'éditeur, SIRET, prix, droit de rétractation, médiateur de la
+> consommation.
+
+Idées mises de côté, déjà esquissées dans le code par le passé :
+
+- [ ] Mise en avant payante sur le site (bandeau « à la une »)
+- [ ] Story ou publication Instagram sponsorisée
+- [ ] Campagne e-mail ciblée — sélection des destinataires en réutilisant la
+      mécanique de correspondance des alertes (`lib/alertes.js`)
+- [ ] Vente d'espaces publicitaires
+- [ ] Billetterie / inscriptions — avec commission
 
 ---
 
@@ -236,24 +250,23 @@ dans le code — le reste est à faire.
 - [x] ~~Page « Conditions générales d'utilisation »~~ — `public/cgu.html`, servie
       sur `/cgu`. Les **mentions légales** y figurent en article 1.
 - [x] ~~Lien vers ces pages dans le pied de page~~
-- [ ] **⚠️ Compléter les champs `[À COMPLÉTER]`** — 11 au total (9 dans les CGU,
-      2 dans la politique de confidentialité). Tant qu'ils sont là, les pages
-      ne remplissent pas leur office :
-      - identité de l'éditeur : nom ou raison sociale, statut juridique, adresse,
-        SIRET, TVA, directeur de la publication ;
-      - adresses postales exactes des hébergeurs (Vercel, Neon), à recopier
-        depuis leurs sites — ne pas les inventer ;
-      - région de la base Neon (UE ou États-Unis), lisible dans la console Neon ;
-      - médiateur de la consommation : obligatoire **dès la première prestation
-        vendue à un particulier**, pas avant.
+- [x] ~~Mentions légales adaptées à un éditeur **particulier non
+      professionnel**~~ (9/11/2026) — l'éditeur garde l'anonymat permis par la
+      LCEN, son identité étant communiquée à l'hébergeur. Plus de SIRET, de TVA
+      ni de médiateur : ils ne s'imposent qu'avec une activité commerciale.
+- [x] ~~Région de la base Neon~~ — Londres (`aws-eu-west-2`), couverte par la
+      décision d'adéquation UE du Royaume-Uni.
+- [x] ~~Adresses des hébergeurs~~ (9/11/2026) — recopiées des pages
+      officielles : `vercel.com/legal/terms` (Vercel Inc., qui ne publie pas
+      de téléphone : renvoi vers son support) et `databricks.com/legal/mcsa`
+      (Neon, LLC appartient à Databricks, Inc.). Plus aucun `[À COMPLÉTER]`.
 - [ ] **Faire relire par un juriste** avant le lancement public. Les pages sont
       rédigées à partir de ce que le code fait réellement, ce qui est la partie
       difficile — mais une relecture professionnelle reste nécessaire, en
-      particulier sur l'accueil des mineurs et les prestations payantes.
-- [ ] **Compléter les CGU à l'ouverture de la vente en ligne** — l'article 7
-      indique aujourd'hui qu'aucun paiement n'est encaissé sur le site. Le jour
-      où les prestations de mise en avant deviennent commandables, il faudra y
-      ajouter prix, durée, droit de rétractation et modalités d'annulation.
+      particulier sur l'accueil des mineurs et l'anonymat de l'éditeur.
+- [ ] **Le jour d'une première offre payante** — créer d'abord le statut,
+      puis réécrire les CGU (identité de l'éditeur, SIRET, prix, rétractation,
+      médiateur). Voir « 7. Offres payantes ».
 - [ ] **Bandeau cookies** — à calibrer une fois l'outil de mesure choisi. Les
       cookies de Clerk sont *strictement nécessaires* (pas de consentement
       requis) ; un outil de mesure sans cookie (voir plus bas) évite le bandeau
