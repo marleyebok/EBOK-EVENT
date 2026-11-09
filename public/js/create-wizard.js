@@ -315,6 +315,8 @@
       blocIa.classList.add('hidden');
       $('wzChoiceIa').classList.remove('selected');
       $('ia-status').textContent = '';
+      // Le contact mémorisé revient pour l'événement suivant.
+      if(typeof prefillOrgFromProfile === 'function') prefillOrgFromProfile();
       afficher('depart');
     }, 0);
   });

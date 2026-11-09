@@ -1730,3 +1730,5 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
   .wz-nav .btn-primary{flex:1;}
   .wz-recap-row{flex-direction:column;gap:0;}
 }
+.wz-check{display:flex;align-items:center;gap:10px;font-size:14px;margin-top:4px;cursor:pointer;}
+.wz-check input{width:18px;height:18px;accent-color:var(--orange);flex-shrink:0;}
