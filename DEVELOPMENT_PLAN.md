@@ -67,7 +67,9 @@ partagé, plus de lecture du profil du site mère. Seul reste le point ci-dessou
 - [x] ~~Instance Clerk dédiée~~ — créée le 15/09/2026
       (`normal-shiner-4060.clerk.accounts.dev`). EBOK Event ne partage plus
       l'instance d'ebok.fr.
-- [ ] **Passer cette instance en production** sur le domaine `event.ebok.fr`
+- [ ] **Passer cette instance en production** sur le domaine `event.ebok.fr` —
+      clé `pk_live_…` posée dans le code (domaine technique `clerk.ebok.fr`) ;
+      reste : DNS vérifiés dans Clerk, `sk_live_…` sur Vercel, mise en ligne
       (clés `pk_live_…` / `sk_live_…`). Tant qu'elle reste en développement,
       Clerk affiche un bandeau « development mode » et limite le nombre de
       comptes : **impossible d'ouvrir le site au public dans cet état.**

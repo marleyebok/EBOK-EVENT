@@ -240,9 +240,11 @@ l'instance est décodé de la clé, il n'y a pas de seconde valeur à garder
 synchronisée). Le serveur utilise la clé secrète correspondante, dans la
 variable d'environnement `CLERK_SECRET_KEY` sur Vercel.
 
-L'instance est pour l'instant en **mode développement** (clé `pk_test_…`) : elle
-fonctionne, mais limite le nombre de comptes et affiche un bandeau Clerk. Voir
-« Passer en production » ci-dessous.
+L'instance est en **production** (clé `pk_live_…`) depuis novembre 2026. Son
+domaine technique est `clerk.ebok.fr` : Clerk installe ses services sur le
+domaine racine même quand le site tourne sur `event.ebok.fr`. Les clés de
+production ne fonctionnent que sur `event.ebok.fr` — pas sur les adresses de
+test en `…vercel.app`.
 
 #### Changer d'instance
 
