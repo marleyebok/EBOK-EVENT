@@ -58,8 +58,8 @@ EBOK-EVENT/
 Le code était initialement dans **un seul fichier HTML monolithique** ; il a été découpé en modules HTML / CSS / JS pour être maintenable, sans changer le comportement.
 
 > **EBOK Event est un produit autonome.** Il ne dépend d'aucune autre application
-> et n'en mentionne aucune. Seuls les comptes tournent encore sur une instance
-> Clerk dédiée — voir « L'instance Clerk » plus bas.
+> et n'en mentionne aucune. Les comptes ont leur propre instance Clerk — voir
+> « L'instance Clerk » plus bas.
 
 ---
 
