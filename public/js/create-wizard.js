@@ -41,6 +41,13 @@
   }
   const etape = cle => etapes.find(e => e.dataset.step === cle);
 
+  /* Une étape sans aucun champ obligatoire peut être passée : le bouton
+     « Passer » le dit clairement, pour qu'un organisateur ne croie pas devoir
+     tout remplir. Seuls le nom, le type, la date de début et la ville sont
+     exigés (sans eux, pas de fiche ni de place sur la carte). */
+  const facultative = el => el.dataset.step !== 'depart' && el.dataset.step !== 'recap'
+    && !el.querySelector('[required]');
+
   function afficher(cle){
     const actives = etapesActives();
     if(!actives.some(e => e.dataset.step === cle)) cle = 'depart';
@@ -59,7 +66,7 @@
     const depart = cle === 'depart';
     const recap = cle === 'recap';
     btnRetour.classList.toggle('invisible', depart);
-    btnPasser.classList.toggle('hidden', !el.dataset.optional);
+    btnPasser.classList.toggle('hidden', !facultative(el));
     btnSuivant.classList.toggle('hidden', depart || recap);
     btnPublier.classList.toggle('hidden', !recap);
     form.classList.toggle('wz-is-recap', recap);
