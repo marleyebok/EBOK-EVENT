@@ -115,7 +115,7 @@ n'est pas configurée, le site fonctionne sur les **données de démo** de
 | `BLOB_READ_WRITE_TOKEN` | Stockage des affiches — **injectée automatiquement** en connectant un Blob store (Vercel → Storage) | 🔒 oui |
 | `ADMIN_EMAILS` | *(optionnel)* emails admin additionnels, séparés par virgules | non |
 | `RESEND_API_KEY` | Envoi des alertes e-mail (resend.com) — sans elle, aucune alerte n'est envoyée et le reste du site fonctionne | 🔒 oui |
-| `ALERTS_FROM` | *(optionnel)* expéditeur des alertes (défaut : `EBOK Event <alertes@ebok.fr>`) | non |
+| `ALERTS_FROM` | *(optionnel)* expéditeur des alertes (défaut : `EBOK Event <alertes@event.ebok.fr>`) | non |
 
 > La clé Clerk **publishable** (`pk_live_…`) est **publique** et vit en dur dans
 > `public/js/clerk.js` — c'est normal. Ne mets **jamais** `sk_…` ni `DATABASE_URL`
