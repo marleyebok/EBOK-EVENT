@@ -1041,18 +1041,44 @@ function org(key){
    profil diffuseur. On ne touche QU'AUX champs laissés vides : une saisie en
    cours n'est jamais écrasée. */
 function prefillOrgFromProfile(){
-  if(!currentProfile) return;
-  const map = {
-    'c-orgname': 'orgname',
-    'c-insta':   'orginsta',
-    'c-site':    'orgsite',
-    'c-tel':     'orgtel',
-    'c-email':   'orgemail',
+  const p = currentProfile || {};
+  const socials = p.socials || {};
+  // Pour chaque champ : la valeur du profil diffuseur, sinon ce qu'on sait
+  // déjà ailleurs (Instagram du questionnaire, e-mail du compte).
+  const valeurs = {
+    'c-orgname': p.orgname,
+    'c-insta':   p.orginsta || socials.instagram,
+    'c-site':    p.orgsite,
+    'c-tel':     p.orgtel,
+    'c-email':   p.orgemail || (currentUser && currentUser.email),
   };
-  for(const [id, key] of Object.entries(map)){
+  for(const [id, v] of Object.entries(valeurs)){
     const el = document.getElementById(id);
-    if(el && !el.value && currentProfile[key]) el.value = currentProfile[key];
+    if(el && !el.value && v) el.value = id === 'c-insta' ? String(v).replace(/^@/, '') : String(v);
   }
+}
+
+/* Enregistre le contact saisi dans le profil diffuseur, pour qu'il soit
+   pré-rempli au prochain événement (case « Enregistrer ces coordonnées »,
+   cochée par défaut). Les champs laissés vides n'effacent rien. */
+async function memoriserContact(){
+  const coche = document.getElementById('c-save-contact');
+  if(!coche || !coche.checked || !currentUser) return;
+  if(!window.EBOK_DATA || typeof window.EBOK_DATA.updateUserProfile !== 'function') return;
+  const val = id => (document.getElementById(id)?.value || '').trim();
+  const contact = {
+    orgname: val('c-orgname'),
+    orginsta: val('c-insta').replace(/^@/, ''),
+    orgsite: val('c-site'),
+    orgtel: val('c-tel'),
+    orgemail: val('c-email'),
+  };
+  for(const k of Object.keys(contact)) if(!contact[k]) delete contact[k];
+  if(!Object.keys(contact).length) return;
+  try{
+    await window.EBOK_DATA.updateUserProfile(currentUser.uid, contact);
+    currentProfile = Object.assign({}, currentProfile || {}, contact);
+  }catch(e){ console.warn('[EBOK] Contact non mémorisé dans le profil', e); }
 }
 
 function initCreatePage(){
@@ -1240,6 +1266,10 @@ function initCreatePage(){
       newEvent.status = 'approved';
       published = true;
     }
+
+    // Le contact saisi est retenu pour les prochains événements (avant de
+    // vider le formulaire, qui l'effacerait).
+    await memoriserContact();
 
     // Réinitialise le formulaire pour une éventuelle nouvelle publication.
     form.reset();
