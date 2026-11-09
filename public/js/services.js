@@ -134,6 +134,18 @@ export async function getSession() {
 }
 
 /** Tous les membres inscrits (réservé à l'admin). */
+/* ---------- Détection automatique (admin) ---------- */
+
+/** Sources surveillées, nombre d'événements détectés en attente. */
+export async function getDetection() {
+  return api("/api/detection");
+}
+
+/** Action sur les sources : ajouter, retirer, activer, analyser. */
+export async function detectionAction(body) {
+  return api("/api/detection", { method: "POST", body });
+}
+
 export async function getAllUsers() {
   return (await api("/api/account?users=1")).users || [];
 }

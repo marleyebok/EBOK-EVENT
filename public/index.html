@@ -724,6 +724,26 @@
       <div id="adminGrid"></div>
 
       <div class="profile-section-head admin-subhead">
+        <h3>🤖 Détection automatique</h3>
+      </div>
+      <!-- Rendu par js/admin-detection.js -->
+      <div class="maint-card det-card" id="adminDetection">
+        <p class="maint-desc">
+          Chaque jour, une page surveillée est lue par l'IA : les événements de
+          basket qu'elle annonce arrivent ici <b>en attente</b>, avec le badge
+          « 🤖 Détecté ». Rien n'est publié sans ta validation. Un événement que
+          tu supprimes ne revient jamais.
+        </p>
+        <form class="det-add" id="detAddForm">
+          <input type="url" id="detUrl" placeholder="https://… page qui liste des événements (agenda de ligue, de comité, calendrier 3x3…)" required>
+          <input type="text" id="detNom" placeholder="Nom (ex. Comité de l'Hérault)">
+          <button class="btn btn-primary" type="submit">Surveiller</button>
+        </form>
+        <div class="maint-status" id="detStatus"></div>
+        <div id="detSources"></div>
+      </div>
+
+      <div class="profile-section-head admin-subhead">
         <h3>🖼 Hébergement des affiches</h3>
       </div>
       <div class="maint-card">
@@ -1187,6 +1207,7 @@
 <script src="/js/data.js"></script>
 <script src="/js/app.js"></script>
 <script src="/js/create-wizard.js"></script>
+<script src="/js/admin-detection.js"></script>
 
 <!-- Base Neon (/api) + comptes Clerk. Voir js/clerk-init.js. -->
 <script type="module" src="/js/clerk-init.js"></script>

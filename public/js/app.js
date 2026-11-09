@@ -301,6 +301,11 @@ function positionEvent(ev){
     const j = stableJitter(ev.id);
     ev.x = c[0] + j.dx;
     ev.y = c[1] + j.dy;
+  }else if((typeof ev.x !== 'number' || typeof ev.y !== 'number') && typeof ev.lat === 'number' && typeof ev.lng === 'number'){
+    // Ville absente de la liste locale mais géolocalisée par le serveur
+    // (événement détecté automatiquement) : on la projette sur la carte.
+    const [x, y] = projGeo(ev.lat, ev.lng);
+    ev.x = Math.round(x); ev.y = Math.round(y);
   }else if(typeof ev.x !== 'number' || typeof ev.y !== 'number'){
     ev.x = MAP_W/2; ev.y = MAP_H/2;
   }
@@ -1688,7 +1693,7 @@ async function openEvent(id, opts){
         </div>
       </div>
       <h2>${esc(ev.title)}</h2>
-      <p class="event-org">Organisé par <b>${esc(ev.org.name)}</b>
+      <p class="event-org">${ev.org && ev.org.name ? `Organisé par <b>${esc(ev.org.name)}</b>` : ''}
         ${currentIsAdmin ? `<button class="edit-inline" data-edit="${esc(ev.id)}" title="Modifier cet événement">✏️ Modifier</button>` : ``}
       </p>
 
@@ -3179,7 +3184,10 @@ async function renderProfile(){
   renderMyEvents();
   const adminSection = document.getElementById('adminSection');
   adminSection.classList.toggle('hidden', !currentIsAdmin);
-  if(currentIsAdmin){ renderAdminEvents(); renderAdminMembers(); }
+  if(currentIsAdmin){
+    renderAdminEvents(); renderAdminMembers();
+    if(typeof renderAdminDetection === 'function') renderAdminDetection();
+  }
 }
 
 /* Récapitulatif du profil membre ("À propos de moi"). */
@@ -3373,6 +3381,7 @@ function adminRowHtml(ev){
         <b>${esc(ev.title)}</b>
       </div>
       <div class="admin-item-meta">${metaFull}</div>
+      ${ev.detection && ev.detection.auto ? `<div class="admin-item-det">🤖 Détecté${ev.detection.sourceNom ? ' sur ' + esc(ev.detection.sourceNom) : ''} · <a href="${esc(safeUrl(ev.detection.lien || ev.detection.sourceUrl))}" target="_blank" rel="noopener">vérifier à la source ↗</a></div>` : ''}
     </div>
     <div class="admin-item-actions">
       <button class="btn btn-ghost btn-xs" data-open="${esc(ev.id)}">Voir</button>

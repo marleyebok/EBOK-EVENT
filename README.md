@@ -115,6 +115,7 @@ n'est pas configurée, le site fonctionne sur les **données de démo** de
 | `BLOB_READ_WRITE_TOKEN` | Stockage des affiches — **injectée automatiquement** en connectant un Blob store (Vercel → Storage) | 🔒 oui |
 | `ADMIN_EMAILS` | *(optionnel)* emails admin additionnels, séparés par virgules | non |
 | `AI_IMPORTS_PAR_JOUR` | *(optionnel)* imports IA autorisés par organisateur et par jour (défaut 5 ; l'admin n'a pas de limite) | non |
+| `CRON_SECRET` | *(recommandé)* protège la tâche quotidienne de détection : Vercel l'envoie lui-même à `/api/detection?tache=cron`. Une longue chaîne aléatoire suffit | 🔒 oui |
 | `RESEND_API_KEY` | Envoi des alertes e-mail (resend.com) — sans elle, aucune alerte n'est envoyée et le reste du site fonctionne | 🔒 oui |
 | `ALERTS_FROM` | *(optionnel)* expéditeur des alertes (défaut : `EBOK Event <alertes@event.ebok.fr>`) | non |
 
