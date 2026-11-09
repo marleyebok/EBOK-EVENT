@@ -108,9 +108,9 @@ function metaBlock(ev, id, req) {
   // Les affiches sont hébergées comme fichiers (Vercel Blob, voir api/upload.js).
   // On ne retient donc que les vraies URLs : les fiches créées AVANT cette
   // bascule portent encore un data-URI, inutilisable comme image d'aperçu — on
-  // retombe alors sur l'icône du site.
+  // retombe alors sur l'image de partage du site (1200 × 630).
   const poster = typeof ev.poster === "string" && /^https?:\/\//i.test(ev.poster) ? ev.poster : null;
-  const image = poster || `${base}/assets/favicon-192.png`;
+  const image = poster || `${base}/assets/og-image.jpg`;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -145,7 +145,7 @@ function metaBlock(ev, id, req) {
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:url" content="${esc(url)}">
 <meta property="og:image" content="${esc(image)}">
-<meta name="twitter:card" content="${poster ? "summary_large_image" : "summary"}">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${esc(title)}">
 <meta name="twitter:description" content="${esc(description)}">
 <link rel="canonical" href="${esc(url)}">

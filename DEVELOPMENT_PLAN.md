@@ -280,14 +280,17 @@ dans le code — le reste est à faire.
       (`api/evenement.js` injecte titre, description, Open Graph et
       schema.org/Event)
 - [x] **Favicon** — SVG + PNG + icône Apple, en place
-- [ ] **Image de partage réseaux sociaux** — ⚠️ aujourd'hui `og:image` pointe
-      vers `favicon-192.png` : une icône de 192 px, que WhatsApp, LinkedIn et
-      Facebook affichent en minuscule ou ignorent. Il faut une vraie image
-      **1200 × 630**. Passer aussi `twitter:card` de `summary` à
-      `summary_large_image`.
-- [ ] **`robots.txt`** — absent
-- [ ] **`sitemap.xml`** — absent. À générer dynamiquement depuis les événements
-      validés (une fonction `/api/sitemap`), sinon il sera périmé en permanence.
+- [x] ~~**Image de partage réseaux sociaux**~~ — `assets/og-image.jpg`
+      (1200 × 630), utilisée par l'accueil et, en repli, par les fiches sans
+      affiche ; `twitter:card` passe à `summary_large_image`.
+- [x] ~~**`robots.txt`**~~ — `public/robots.txt`, exclut `/compte/` et `/api/`.
+- [x] ~~**`sitemap.xml`**~~ — généré à la demande par `api/sitemap.js` depuis
+      les événements validés. **Reste à faire par toi :** le déclarer dans
+      Google Search Console (voir ci-dessous).
+- [ ] **Google Search Console** — ajouter `event.ebok.fr` (vérification par
+      enregistrement DNS TXT chez OVH), puis y déclarer
+      `https://event.ebok.fr/sitemap.xml`. Sans ça, Google découvre les fiches
+      beaucoup plus lentement.
 
 ### ⚡ Performance & accessibilité
 
@@ -311,12 +314,15 @@ dans le code — le reste est à faire.
 - [x] **API hors du front** — déjà le cas : aucune clé secrète dans le
       navigateur, tout passe par les fonctions `/api`. Seule la clé Clerk
       *publishable* est exposée, et c'est son usage prévu.
-- [ ] **Forcer le HTTPS** — Vercel le fait déjà automatiquement (redirection +
-      certificat). Reste à **ajouter les en-têtes de sécurité** dans
-      `vercel.json` : `Strict-Transport-Security`, `X-Content-Type-Options`,
-      `Referrer-Policy`, et une `Content-Security-Policy`.
-- [ ] **Page 404 personnalisée** — absente : un lien mort affiche la page par
-      défaut de Vercel, qui ne ressemble pas au site.
+- [x] ~~**En-têtes de sécurité**~~ — HTTPS et HSTS assurés par Vercel ;
+      `vercel.json` ajoute `X-Content-Type-Options`, `Referrer-Policy`,
+      `X-Frame-Options`, `Permissions-Policy`.
+- [ ] **Passer la Content-Security-Policy en mode bloquant** — elle est posée en
+      `Content-Security-Policy-Report-Only` : le navigateur signale les
+      écarts dans sa console sans rien bloquer. Après une semaine sans
+      signalement (connexion, Google, publication avec affiche, autocomplétion
+      de ville), renommer l'en-tête en `Content-Security-Policy`.
+- [x] ~~**Page 404 personnalisée**~~ — `public/404.html`, aux couleurs du site.
 - [ ] **Liens cassés** — à passer au crible avant lancement, y compris les liens
       externes des diffuseurs (site, Instagram).
 - [ ] **Validation des formulaires** — le HTML a des champs `required`, mais il
@@ -343,10 +349,10 @@ dans le code — le reste est à faire.
       annoncées avec la mention « bientôt » tant que les pages n'existent pas :
       pas de lien mort. Une cinquième colonne « Suivez-nous » est prête et
       masquée tant que `RESEAUX_EBOK` (dans `public/js/app.js`) est vide.
-- [ ] **Contact** — l'adresse `contact@ebok.fr` est affichée en clair dans le
-      pied de page, donc exposée aux robots collecteurs de spam. À remplacer par
-      un formulaire, ou au minimum à révéler au clic comme les contacts des
-      fiches événement.
+- [x] ~~**Contact**~~ — l'adresse n'est plus écrite dans le HTML de
+      l'accueil : elle est reconstituée au clic (`initContactFooter`). Elle
+      reste en clair dans les CGU et la politique de confidentialité, où la loi
+      demande un contact joignable.
 - [ ] **Créer les comptes Instagram et LinkedIn**, puis coller les adresses des
       profils dans `RESEAUX_EBOK` (`public/js/app.js`) : la rubrique
       « Suivez-nous » du pied de page apparaît alors toute seule. Une adresse
