@@ -256,9 +256,10 @@ dans le code — le reste est à faire.
       ni de médiateur : ils ne s'imposent qu'avec une activité commerciale.
 - [x] ~~Région de la base Neon~~ — Londres (`aws-eu-west-2`), couverte par la
       décision d'adéquation UE du Royaume-Uni.
-- [ ] **⚠️ Adresses postales et téléphones des hébergeurs** (Vercel, Neon) —
-      les 2 derniers `[À COMPLÉTER]` des CGU. À recopier depuis leurs
-      conditions d'utilisation officielles — ne pas les inventer.
+- [x] ~~Adresses des hébergeurs~~ (9/11/2026) — recopiées des pages
+      officielles : `vercel.com/legal/terms` (Vercel Inc., qui ne publie pas
+      de téléphone : renvoi vers son support) et `databricks.com/legal/mcsa`
+      (Neon, LLC appartient à Databricks, Inc.). Plus aucun `[À COMPLÉTER]`.
 - [ ] **Faire relire par un juriste** avant le lancement public. Les pages sont
       rédigées à partir de ce que le code fait réellement, ce qui est la partie
       difficile — mais une relecture professionnelle reste nécessaire, en
