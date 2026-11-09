@@ -119,6 +119,17 @@ export async function ensureSchema() {
       PRIMARY KEY (alert_id, event_id)
     )`;
 
+  /* Compteur d'imports IA par membre et par jour : l'appel au modèle peut
+     être payant, un organisateur a donc un quota quotidien (l'admin non).
+     Les jours passés ne servent plus à rien et peuvent être purgés. */
+  await q`
+    CREATE TABLE IF NOT EXISTS event.ai_imports (
+      user_id TEXT NOT NULL,
+      day     DATE NOT NULL,
+      count   INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (user_id, day)
+    )`;
+
   /* Vue de lecture : chaque fiche porte son nombre de favoris. Les favoris
      vivent dans event.profiles.favorites (un tableau JSONB par membre) ; on
      les déplie ici pour compter par événement. Écrire la jointure une seule

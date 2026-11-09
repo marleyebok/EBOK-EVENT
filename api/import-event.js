@@ -5,7 +5,10 @@
    récupère le contenu, puis demande à un modèle IA de structurer les
    infos de l'événement. Le formulaire de publication est pré-rempli.
 
-   Réservé à l'administrateur (marley.ebok@gmail.com).
+   Ouvert à tout membre connecté. L'appel au modèle pouvant être payant, un
+   organisateur dispose d'un quota quotidien (AI_IMPORTS_PAR_JOUR, 5 par
+   défaut) ; l'administrateur n'en a pas. Un import qui échoue ne consomme
+   pas le quota.
 
    Auth : jeton de session CLERK (envoyé par le front dans le corps `idToken`
    ou l'en-tête Authorization). L'e-mail est lu en direct depuis Clerk et
@@ -23,9 +26,10 @@
      ⚠️ l'offre gratuite Gemini est bloquée pour les comptes UE / UK / Suisse.
    - CLERK_SECRET_KEY (obligatoire)  pour valider le jeton de session Clerk
    - ADMIN_EMAILS     (optionnel)    emails admin additionnels, séparés par des virgules
+   - AI_IMPORTS_PAR_JOUR (optionnel) quota quotidien d'un organisateur (défaut 5)
    ========================================================= */
 import { verifyToken } from "@clerk/backend";
-import { clerkUser, isAdminEmail } from "./_lib.js";
+import { clerkUser, isAdminEmail, hasDb, sql, ensureSchema } from "./_lib.js";
 import { AIService } from "../lib/services/AIService.js";
 
 const TYPES = [
@@ -55,15 +59,50 @@ function isBlockedHost(host) {
     || /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(h);
 }
 
-/* Vérifie que l'appelant est admin (jeton de session Clerk valide + email admin). */
-async function verifyAdmin(token) {
-  if (!token) return false;
+/* Identifie l'appelant : membre connecté (jeton de session Clerk valide), et
+   admin ou non. Renvoie null sans session valide. */
+async function identifier(token) {
+  if (!token) return null;
   try {
     const payload = await verifyToken(token, { secretKey: process.env.CLERK_SECRET_KEY });
-    if (!payload || typeof payload.sub !== "string") return false;
+    if (!payload || typeof payload.sub !== "string") return null;
     const { email } = await clerkUser(payload.sub);
-    return isAdminEmail(email);
-  } catch (e) { return false; }
+    return { uid: payload.sub, admin: isAdminEmail(email) };
+  } catch (e) { return null; }
+}
+
+/* Quota quotidien d'un organisateur. */
+function quotaJour() {
+  const n = parseInt(process.env.AI_IMPORTS_PAR_JOUR || "", 10);
+  return Number.isFinite(n) && n > 0 ? n : 5;
+}
+
+/* Réserve un import dans le quota du jour. Renvoie false si le quota est
+   atteint. La réservation est atomique : deux imports lancés en même temps
+   ne peuvent pas dépasser la limite. Sans base, pas de quota possible : on
+   laisse passer plutôt que de bloquer tout le monde. */
+async function reserverImport(uid) {
+  if (!hasDb()) return true;
+  await ensureSchema();
+  const rows = await sql()`
+    INSERT INTO event.ai_imports (user_id, day, count)
+    VALUES (${uid}, CURRENT_DATE, 1)
+    ON CONFLICT (user_id, day) DO UPDATE
+      SET count = event.ai_imports.count + 1
+      WHERE event.ai_imports.count < ${quotaJour()}
+    RETURNING count`;
+  return rows.length > 0;
+}
+
+/* Rend l'import réservé quand il a échoué : on ne fait pas payer un essai
+   raté (page illisible, modèle saturé…). */
+async function rendreImport(uid) {
+  if (!hasDb()) return;
+  try {
+    await sql()`
+      UPDATE event.ai_imports SET count = GREATEST(count - 1, 0)
+      WHERE user_id = ${uid} AND day = CURRENT_DATE`;
+  } catch (e) { /* sans gravité : au pire un import compté en trop */ }
 }
 
 /* Récupère le contenu d'une URL avec un délai maximal. */
@@ -236,10 +275,25 @@ export default async function handler(req, res) {
   const authHeader = req.headers.authorization || req.headers.Authorization || "";
   const token = (body && body.idToken) || (authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "");
 
-  if (!(await verifyAdmin(token))) {
-    res.status(403).json({ ok: false, error: "Accès réservé à l'administrateur." });
+  const appelant = await identifier(token);
+  if (!appelant) {
+    res.status(401).json({ ok: false, error: "Connecte-toi pour utiliser l'assistant IA." });
     return;
   }
+  // Le quota ne concerne que les organisateurs ; il est réservé avant l'appel
+  // au modèle et rendu si l'import échoue (voir plus bas).
+  const avecQuota = !appelant.admin;
+  if (avecQuota) {
+    let ok = false;
+    try { ok = await reserverImport(appelant.uid); } catch (e) { ok = true; /* base en panne : on ne bloque pas */ }
+    if (!ok) {
+      res.status(429).json({ ok: false, error: `Tu as utilisé tes ${quotaJour()} imports IA du jour. Tu peux remplir le formulaire à la main, ou réessayer demain.` });
+      return;
+    }
+  }
+  // Toute réponse autre qu'un succès rend l'import au quota.
+  const echec = async () => { if (avecQuota) await rendreImport(appelant.uid); };
+  let reussi = false;
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -257,6 +311,7 @@ export default async function handler(req, res) {
       ];
       const event = await runAI(parts, imagePrompt(today));
       if (!event.site) event.site = "";
+      reussi = true;
       res.status(200).json({ ok: true, event, poster: image });
       return;
     }
@@ -280,6 +335,7 @@ export default async function handler(req, res) {
     const event = await runAI([], urlPrompt(today, url, page));
     if (!event.site) event.site = url;
     const poster = await fetchPoster(page.image);
+    reussi = true;
     res.status(200).json({ ok: true, event, poster, sourceUrl: url });
   } catch (err) {
     const responses = {
@@ -310,6 +366,8 @@ export default async function handler(req, res) {
       ? err.message
       : fallback;
     res.status(status).json({ ok: false, code: err?.code || "IMPORT_ANALYSIS_FAILED", error: detailed });
+  } finally {
+    if (!reussi) await echec();
   }
 }
 
