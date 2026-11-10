@@ -302,6 +302,10 @@ communautaire, mais dépend de la géolocalisation.
       ensuite, une fois les accès API Instagram (Meta) et LinkedIn obtenus.
       Pré-requis : comptes Instagram et LinkedIn d'EBOK Event créés.
 
+- [ ] **Vidéos tutos** *(idée notée le 10/11/2026)* — deux courtes vidéos
+      pas à pas, au format vertical : « chercher un événement » et « créer un
+      événement ». À faire avec la même méthode que la vidéo de présentation
+      (captures réelles du site, plugin video-shotcraft), rythme lent.
 - [ ] **Annuaire de coachs** *(idée mise de côté le 10/11/2026)* — un
       répertoire de coachs personnels, préparateurs physiques, etc., pour
       faire le lien entre joueurs et coachs : fiche par coach (spécialité,
