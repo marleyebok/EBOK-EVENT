@@ -34,6 +34,9 @@ const INTERVALLE_HEURES = 20;
 /* Coordonnées de la ville (Base Adresse Nationale, gratuite et sans clé) :
    sans elles, l'événement tomberait au centre de la carte. */
 async function geocoder(ev) {
+  // La Base Adresse Nationale ne couvre que la France : ailleurs, pas de
+  // coordonnées (l'événement est placé par son pays, sur la carte du monde).
+  if (ev.pays && ev.pays !== "France") return null;
   const q = [ev.address, ev.city].filter(Boolean).join(", ");
   try {
     const r = await fetch(`https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(q)}&limit=1`);

@@ -102,14 +102,21 @@ function countryNames(){
   return countryNamesCache;
 }
 
-/* Remplit un <select> avec la liste des pays, France en tête. */
+/* Pays francophones visés en priorité : affichés juste sous la France. Le
+   Québec est au Canada (la province va dans le champ « région »). */
+const PAYS_FRANCOPHONES = ['Belgique', 'Suisse', 'Canada', 'Luxembourg'];
+
+/* Remplit un <select> avec la liste des pays : France, puis les pays
+   francophones visés, puis tous les autres. */
 function renderCountrySelect(id, selected){
   const el = document.getElementById(id);
   if(!el) return;
   const current = selected || DEFAULT_COUNTRY;
-  el.innerHTML = [DEFAULT_COUNTRY, ...countryNames()]
-    .map(n => `<option value="${esc(n)}"${n === current ? ' selected' : ''}>${esc(n)}</option>`)
-    .join('');
+  const autres = countryNames().filter(n => !PAYS_FRANCOPHONES.includes(n));
+  const opt = n => `<option value="${esc(n)}"${n === current ? ' selected' : ''}>${esc(n)}</option>`;
+  el.innerHTML = opt(DEFAULT_COUNTRY)
+    + `<optgroup label="Francophonie">${PAYS_FRANCOPHONES.map(opt).join('')}</optgroup>`
+    + `<optgroup label="Autres pays">${autres.map(opt).join('')}</optgroup>`;
 }
 
 /* Les détails de voyage (départ, destination, logement) ne concernent que les
@@ -1314,11 +1321,11 @@ function showConfirm(mode){
   if(mode === 'approved'){
     if(title) title.textContent = 'Ton événement est publié ! 🎉';
     if(text)  text.innerHTML = 'Il est déjà visible sur la carte et dans la recherche.';
-    if(sub)   sub.textContent = 'Merci de faire vivre le basket français 🏀';
+    if(sub)   sub.textContent = 'Merci de faire vivre le basket francophone 🏀';
   }else{
     if(title) title.textContent = 'Ton événement a bien été créé !';
     if(text)  text.innerHTML = 'Il va être étudié par notre équipe, puis accepté avant publication <b>sous 24h</b>. Tu le retrouveras ensuite sur la carte et dans la recherche, ainsi que dans « Mes événements ».';
-    if(sub)   sub.textContent = 'Merci de faire vivre le basket français 🏀';
+    if(sub)   sub.textContent = 'Merci de faire vivre le basket francophone 🏀';
   }
   showPage('confirm');
 }
@@ -3548,6 +3555,9 @@ function prefillCreateFromImport(ev, poster){
   set('c-type', ev.type);
   set('c-ville', ev.city);
   set('c-region', ev.region);
+  // Pays : seulement s'il existe dans la liste (sinon le choix reste France).
+  const paysEl = document.getElementById('c-pays');
+  if(paysEl && ev.pays && Array.from(paysEl.options).some(o=> o.value === ev.pays)) paysEl.value = ev.pays;
   set('c-adresse', ev.address);
   set('c-date-debut', ev.dateStart);
   set('c-date-fin', ev.dateEnd);
