@@ -6,7 +6,7 @@
  *   node scripts/tester-detection.mjs
  */
 import assert from "node:assert/strict";
-import { analyserSource, empreinte, raisonRejet, resumeBilan, simplifier } from "../lib/detection.js";
+import { analyserSource, empreinte, raisonRejet, resumeBilan, simplifier, memeEvenement } from "../lib/detection.js";
 
 const today = "2026-11-10";
 const page = `<html><head><title>Agenda du comité</title></head><body>
@@ -84,5 +84,17 @@ console.log("IA KO       :", resumeBilan(b4));
 assert.equal(raisonRejet({ title: "x", city: "y", dateStart: "2026-11-01", dateEnd: "2026-11-15" }, today), "", "en cours = gardé");
 assert.equal(empreinte({ title: "Tournoi  de NOËL", dateStart: "2026-12-20", city: "montpellier" }),
              empreinte({ title: "tournoi de noel", dateStart: "2026-12-20", city: "Montpellier" }), "empreinte insensible à la casse et aux accents");
+
+// Même événement sous deux titres (deux sources différentes).
+assert.equal(memeEvenement(
+  { title: "Belgian Cats vs Suède", city: "Charleroi", dateStart: "2026-11-12" },
+  { title: "Les Belgian Cats au Dôme de Charleroi", city: "Charleroi", dateStart: "2026-11-12" }), true);
+// Deux étapes 3x3 distinctes le même jour dans la même ville.
+assert.equal(memeEvenement(
+  { title: "Superleague Open Plus Toulouse", city: "Toulouse", dateStart: "2027-06-01" },
+  { title: "Juniorleague Open Plus Toulouse", city: "Toulouse", dateStart: "2027-06-01" }), false);
+assert.equal(memeEvenement(
+  { title: "Open 3x3 de Lyon", city: "Lyon", dateStart: "2027-05-01" },
+  { title: "Camp U15 Lyon Est", city: "Lyon", dateStart: "2027-05-01" }), false);
 
 console.log("\n✅ Tous les tests de détection passent.");
