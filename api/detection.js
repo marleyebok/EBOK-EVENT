@@ -23,7 +23,7 @@
 import { ensureSchema, hasDb, sql, json, readBody, newId, sessionUid, isAdminUid } from "./_lib.js";
 import { isBlockedHost, fetchUrl } from "./import-event.js";
 import { AIService } from "../lib/services/AIService.js";
-import { analyserSource, resumeBilan, simplifier } from "../lib/detection.js";
+import { analyserSource, resumeBilan, memeEvenement } from "../lib/detection.js";
 
 const INTERVALLE_HEURES = 20;
 
@@ -39,7 +39,7 @@ async function geocoder(ev) {
   if (ev.pays && ev.pays !== "France") return null;
   const q = [ev.address, ev.city].filter(Boolean).join(", ");
   try {
-    const r = await fetch(`https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(q)}&limit=1`);
+    const r = await fetch(`https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(q)}&limit=1`, { signal: AbortSignal.timeout(4000) });
     if (!r.ok) return null;
     const d = await r.json();
     const f = d.features && d.features[0];
@@ -51,26 +51,48 @@ async function geocoder(ev) {
   } catch { return null; }
 }
 
-function dependances(today) {
+/* Durée totale qu'on s'autorise pour une analyse, sous la limite de 60 s de
+   Vercel : il faut garder de quoi géocoder, écrire en base et répondre. */
+const BUDGET_ANALYSE_MS = 50000;
+const MIN_IA_MS = 15000;
+
+function dependances(today, mesures) {
   const ai = new AIService();
+  const debut = Date.now();
   return {
     today,
     maintenant: new Date().toISOString(),
-    lirePage: (url) => fetchUrl(url, 12000, false),
-    extraire: (prompt) => ai.extractEvent({ parts: [], prompt }),
+    async lirePage(url) {
+      const t = Date.now();
+      try { return await fetchUrl(url, 12000, false); }
+      finally { mesures.pageMs = Date.now() - t; }
+    },
+    async extraire(prompt) {
+      const t = Date.now();
+      mesures.texte = prompt.length;
+      try {
+        const r = await ai.extractEvent({
+          parts: [], prompt,
+          budgetMs: Math.max(MIN_IA_MS, BUDGET_ANALYSE_MS - (Date.now() - debut)),
+        });
+        mesures.modele = r && r.__modele;
+        return r;
+      } finally { mesures.iaMs = Date.now() - t; }
+    },
     geocoder,
     async dejaVu(empreintes) {
       if (!empreintes.length) return new Set();
       const rows = await sql()`SELECT empreinte FROM event.detections WHERE empreinte = ANY(${empreintes})`;
       return new Set(rows.map(r => r.empreinte));
     },
-    // Un événement saisi à la main (ou par un organisateur) avec le même
-    // titre, la même date et la même ville compte comme doublon.
+    // Un événement déjà en base (saisi à la main, par un organisateur ou
+    // détecté sur une autre source) à la même date, dans la même ville et au
+    // titre proche compte comme doublon.
     async doublonSaisi(ev) {
       const rows = await sql()`
         SELECT data->>'title' AS t, data->>'city' AS c FROM event.events
         WHERE data->>'dateStart' = ${ev.dateStart}`;
-      return rows.some(r => simplifier(r.t) === simplifier(ev.title) && simplifier(r.c) === simplifier(ev.city));
+      return rows.some(r => memeEvenement({ title: r.t, city: r.c, dateStart: ev.dateStart }, ev));
     },
     async creer(fiche, empreinte) {
       const id = newId();
@@ -95,12 +117,16 @@ async function analyser(source) {
     SET last_run = now(), last_status = ${"⚠️ Analyse interrompue : la page ou l'IA a mis plus d'une minute. Essaie une page plus précise (page « agenda » ou « stages »)."}
     WHERE id = ${source.id}`;
   let bilan;
+  const mesures = {};
+  const t0 = Date.now();
   try {
-    bilan = await analyserSource(source, dependances(today));
+    bilan = await analyserSource(source, dependances(today, mesures));
   } catch (e) {
     console.error("detection:", e);
     bilan = { trouves: 0, crees: 0, doublons: 0, rejetes: 0, raisons: {}, erreur: "Erreur interne pendant l'analyse." };
   }
+  // Une ligne par analyse dans les journaux Vercel : où passe le temps.
+  console.log("detection-mesures", JSON.stringify({ url: source.url, totalMs: Date.now() - t0, ...mesures, crees: bilan.crees, erreur: bilan.erreur || "" }));
   const resume = resumeBilan(bilan);
   await sql()`
     UPDATE event.detection_sources
