@@ -79,9 +79,8 @@ La marque devient **EBOK** (« L'agenda du basket ») et le site passe de
       consentement « EBOK ».
 - [x] En ligne le 10/11/2026 ; `event.ebok.fr` (accueil compris) et
       `www.ebok.fr` redirigent vers `ebok.fr` (308).
-- [ ] Tests de connexion par le propriétaire (e-mail, Google, badge admin).
-- [ ] Clerk → Paths : l'« URL d'accueil » indique encore `event.ebok.fr`
-      (sans effet visible : la redirection et le code ramènent sur ebok.fr).
+- [x] Tests de connexion par le propriétaire (e-mail, Google, badge admin) : OK.
+- [x] Clerk → Paths : URL d'accueil passée à `ebok.fr`.
 
 ## 🎯 Chantier en cours : passer Clerk en production
 
