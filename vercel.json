@@ -64,7 +64,7 @@
   "crons": [
     {
       "path": "/api/detection?tache=cron",
-      "schedule": "17 5 * * *"
+      "schedule": "0 9 * * 1"
     }
   ]
 }
