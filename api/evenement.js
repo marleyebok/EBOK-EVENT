@@ -20,7 +20,7 @@ import { hasDb, sql } from "./_lib.js";
 
 const OG_START = "<!-- og:start";
 const OG_END = "<!-- og:end -->";
-const SITE = "EBOK Event";
+const SITE = "EBOK";
 
 /** Échappe pour une valeur d'attribut HTML. */
 function esc(v) {
@@ -41,7 +41,7 @@ function clamp(text, max) {
 }
 
 function origin(req) {
-  const host = req.headers["x-forwarded-host"] || req.headers.host || "event.ebok.fr";
+  const host = req.headers["x-forwarded-host"] || req.headers.host || "ebok.fr";
   const proto = req.headers["x-forwarded-proto"] || "https";
   return `${proto}://${host}`;
 }

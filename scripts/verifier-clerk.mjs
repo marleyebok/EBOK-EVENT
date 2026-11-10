@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Vérifie qu'une instance Clerk est prête pour EBOK Event.
+ * Vérifie qu'une instance Clerk est prête pour EBOK.
  *
  *   npm run clerk:check                 → vérifie la clé actuellement dans le code
  *   npm run clerk:check -- pk_test_xxx  → vérifie une clé avant de la coller
@@ -70,7 +70,7 @@ try {
 }
 
 console.log(`\n${"═".repeat(58)}`);
-console.log("  Vérification de l'instance Clerk — EBOK Event");
+console.log("  Vérification de l'instance Clerk — EBOK");
 console.log(`${"═".repeat(58)}\n`);
 console.log(`  Clé   ${gris(cle.slice(0, 16) + "…")}`);
 console.log(`  Source ${gris(argument ? "argument de la commande" : "public/js/clerk.js")}\n`);
@@ -161,7 +161,7 @@ if (env) {
   } else if (typeInstance === "development") {
     attention(
       "Instance de développement.",
-      "Elle fonctionne, mais limite le nombre de comptes et affiche un bandeau.\n      Pour le vrai lancement : ajouter le domaine event.ebok.fr dans\n      Clerk → Domains, puis repasser avec les clés pk_live_… / sk_live_…"
+      "Elle fonctionne, mais limite le nombre de comptes et affiche un bandeau.\n      Pour le vrai lancement : ajouter le domaine ebok.fr dans\n      Clerk → Domains, puis repasser avec les clés pk_live_… / sk_live_…"
     );
   } else {
     attention("Type d'instance inconnu.", `Valeur reçue : ${typeInstance ?? "(absente)"}`);

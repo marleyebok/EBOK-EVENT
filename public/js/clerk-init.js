@@ -1,5 +1,5 @@
 /* =========================================================
-   EBOK Event — ACTIVATION NEON + CLERK
+   EBOK — ACTIVATION NEON + CLERK
    ---------------------------------------------------------
    Branche la couche données (/api Neon) et l'identité (Clerk) sur l'app.
    Activé via

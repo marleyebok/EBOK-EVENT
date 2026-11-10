@@ -1,7 +1,7 @@
 # 🗄️ Anciens sites EBOK — mis hors ligne
 
 > Mémo pour se souvenir de ce qui a été fait, et comment revenir en arrière.
-> **Décision du 9 novembre 2026 :** seul **EBOK Event** (`event.ebok.fr`) est
+> **Décision du 9 novembre 2026 :** seul **EBOK Event** (devenu **EBOK** sur `ebok.fr` le 10/11/2026) est
 > développé et maintenu. Tous les autres sites EBOK sont mis hors ligne, **sans
 > être supprimés**.
 
@@ -24,13 +24,15 @@
 3. Si le site avait besoin de **connexion** : son application Clerk n'existe
    plus. Il faudra en créer une nouvelle — et, si elle doit utiliser un domaine
    en `ebok.fr`, la déclarer en *Secondary application*, car `ebok.fr` est
-   désormais pris par EBOK Event.
-4. Si une **protection** (Settings → Deployment Protection) a été activée, la
+   désormais pris par EBOK.
+4. ⚠️ Le domaine racine `ebok.fr` sert désormais EBOK (l'agenda) : un ancien
+   site ne peut revenir que sur un sous-domaine (`forum.ebok.fr`…).
+5. Si une **protection** (Settings → Deployment Protection) a été activée, la
    désactiver.
 
 ## Ne jamais faire
 
 - **Résilier le domaine `ebok.fr`** ou supprimer sa zone DNS chez OVH :
-  `event.ebok.fr` et la boîte `contact@ebok.fr` en dépendent.
+  le site `ebok.fr` et la boîte `contact@ebok.fr` en dépendent.
 - Supprimer chez OVH les enregistrements **MX / SPF / TXT** de l'e-mail, ni
   l'enregistrement **`event`**.

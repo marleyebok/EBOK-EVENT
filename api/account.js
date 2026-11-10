@@ -1,5 +1,5 @@
 /**
- * Compte EBOK Event : session, profil diffuseur et favoris.
+ * Compte EBOK : session, profil diffuseur et favoris.
  *
  *   GET  /api/account            → session courante : identité Clerk (email,
  *                                  nom, isAdmin) + profil Event + favoris

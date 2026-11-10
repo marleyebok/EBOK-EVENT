@@ -1,5 +1,5 @@
 /* =========================================================
-   EBOK Event — PARCOURS DE PUBLICATION EN ÉTAPES
+   EBOK — PARCOURS DE PUBLICATION EN ÉTAPES
    ---------------------------------------------------------
    Le formulaire de publication présentait une trentaine de champs d'un coup :
    de quoi décourager un organisateur bénévole. Il est découpé en cartes

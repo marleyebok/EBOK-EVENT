@@ -1,5 +1,5 @@
 /* =========================================================
-   EBOK Event — LOGIQUE APPLICATIVE
+   EBOK — LOGIQUE APPLICATIVE
    Navigation, filtres, carte, calendrier, recherche, détail
    événement, carrousel. S'appuie sur les données de data.js.
    ========================================================= */
@@ -2564,7 +2564,7 @@ function syncMenu(){
  * Pied de page
  * ------------------------------------------------------------------ */
 
-/* Comptes officiels d'EBOK Event. Laisser vide masque la ligne, et la rubrique
+/* Comptes officiels d'EBOK. Laisser vide masque la ligne, et la rubrique
    entière si aucun compte n'est renseigné : un pied de page qui annonce des
    réseaux sans lien donne l'impression d'un site inachevé.
    Pour en ajouter un : colle l'adresse complète du profil. */

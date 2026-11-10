@@ -1,8 +1,8 @@
-# EBOK Event — l'agenda collaboratif du basket français
+# EBOK — l'agenda collaboratif du basket français
 User-agent: *
 Allow: /
 # Espace membre et fonctions internes : rien à indexer.
 Disallow: /compte/
 Disallow: /api/
 
-Sitemap: https://event.ebok.fr/sitemap.xml
+Sitemap: https://ebok.fr/sitemap.xml

@@ -1,4 +1,4 @@
-# 🏀 EBOK Event
+# 🏀 EBOK (anciennement EBOK Event)
 
 **L'agenda collaboratif du basket français.** Tournois, camps, 3x3, détections, clinics, matchs de gala… repérés sur une carte de France interactive.
 
@@ -119,7 +119,7 @@ n'est pas configurée, le site fonctionne sur les **données de démo** de
 | `AI_IMPORTS_PAR_JOUR` | *(optionnel)* imports IA autorisés par organisateur et par jour (défaut 5 ; l'admin n'a pas de limite) | non |
 | `CRON_SECRET` | *(recommandé)* protège la tâche quotidienne de détection : Vercel l'envoie lui-même à `/api/detection?tache=cron`. Une longue chaîne aléatoire suffit | 🔒 oui |
 | `RESEND_API_KEY` | Envoi des alertes e-mail (resend.com) — sans elle, aucune alerte n'est envoyée et le reste du site fonctionne | 🔒 oui |
-| `ALERTS_FROM` | *(optionnel)* expéditeur des alertes (défaut : `EBOK Event <alertes@event.ebok.fr>`) | non |
+| `ALERTS_FROM` | *(optionnel)* expéditeur des alertes (défaut : `EBOK <alertes@ebok.fr>`) | non |
 
 > La clé Clerk **publishable** (`pk_live_…`) est **publique** et vit en dur dans
 > `public/js/clerk.js` — c'est normal. Ne mets **jamais** `sk_…` ni `DATABASE_URL`
@@ -158,9 +158,9 @@ et pourra être rejoué.
 **Mettre en service :**
 
 1. Créer un compte sur [resend.com](https://resend.com) (3 000 e-mails/mois gratuits)
-2. Y ajouter **`event.ebok.fr`** comme domaine d'envoi (le sous-domaine, pas
-   `ebok.fr`) : l'expéditeur reste cohérent avec le site, et la réputation
-   d'envoi se construit à part du domaine principal
+2. Y ajouter **`ebok.fr`** comme domaine d'envoi. Resend envoie depuis son
+   propre sous-domaine technique : la boîte `contact@ebok.fr` n'est pas touchée,
+   et la réputation d'envoi se construit à part
 3. Créer chez OVH les enregistrements **SPF, DKIM et DMARC** affichés par Resend,
    tels quels — sans eux, les alertes partent en indésirables, et une réputation
    d'expéditeur abîmée est longue à réparer. Resend affiche « Verified » une fois
@@ -169,7 +169,7 @@ et pourra être rejoué.
    Vercel (Settings → Environment Variables, les trois environnements), puis
    redéployer
 
-L'expéditeur par défaut est `EBOK Event <alertes@event.ebok.fr>` ; la variable
+L'expéditeur par défaut est `EBOK <alertes@ebok.fr>` ; la variable
 `ALERTS_FROM` permet d'en changer sans toucher au code.
 
 Tant que la clé est absente, l'application le note dans les journaux et continue
@@ -246,8 +246,8 @@ variable d'environnement `CLERK_SECRET_KEY` sur Vercel.
 
 L'instance est en **production** (clé `pk_live_…`) depuis novembre 2026. Son
 domaine technique est `clerk.ebok.fr` : Clerk installe ses services sur le
-domaine racine même quand le site tourne sur `event.ebok.fr`. Les clés de
-production ne fonctionnent que sur `event.ebok.fr` — pas sur les adresses de
+domaine racine. Le domaine de l'application est `ebok.fr` (anciennement
+`event.ebok.fr`). Les clés de production ne fonctionnent que sur ce domaine — pas sur les adresses de
 test en `…vercel.app`.
 
 #### Changer d'instance
@@ -281,7 +281,7 @@ Puis, **dans cet ordre** (une seule mise en ligne, pas de coupure) :
 Une instance de développement fonctionne tout de suite, mais affiche un bandeau
 « development mode » et limite le nombre de comptes. Pour passer en production :
 
-1. Dans Clerk → **Domains**, ajouter `event.ebok.fr`.
+1. Dans Clerk → **Domains**, ajouter le domaine du site (`ebok.fr`).
 2. Ajouter chez ton hébergeur DNS les enregistrements CNAME que Clerk indique
    (il vérifie automatiquement).
 3. Dans Clerk → **SSO connections → Google**, activer « Use custom
@@ -403,7 +403,7 @@ vit dans **`DEVELOPMENT_PLAN.md`** — c'est la seule source de vérité.
 
 ### Déploiement
 
-Déployé sur **Vercel** (site statique `public/` + fonctions `/api`). Cible : `event.ebok.fr`.
+Déployé sur **Vercel** (site statique `public/` + fonctions `/api`), sur `ebok.fr` ; `www.ebok.fr` et `event.ebok.fr` redirigent vers `ebok.fr`.
 
 ---
 
