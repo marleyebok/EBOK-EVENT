@@ -302,6 +302,15 @@ communautaire, mais dépend de la géolocalisation.
       ensuite, une fois les accès API Instagram (Meta) et LinkedIn obtenus.
       Pré-requis : comptes Instagram et LinkedIn d'EBOK Event créés.
 
+- [ ] **Annuaire de coachs** *(idée mise de côté le 10/11/2026)* — un
+      répertoire de coachs personnels, préparateurs physiques, etc., pour
+      faire le lien entre joueurs et coachs : fiche par coach (spécialité,
+      zone, public, contact), recherche par ville ou région, sur le modèle de
+      la carte des événements. À cadrer avant de construire : qui peut
+      s'inscrire, vérification des diplômes / cartes professionnelles,
+      modération, et rester gratuit tant qu'il n'y a pas de statut
+      professionnel (voir section 7).
+
 ### 7. Offres payantes — *seulement avec un statut professionnel*
 
 > 🧭 **Décision du 9/11/2026 : démarrage sans statut professionnel.** EBOK Event
