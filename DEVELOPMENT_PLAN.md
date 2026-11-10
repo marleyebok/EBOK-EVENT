@@ -73,9 +73,14 @@ La marque devient **EBOK** (« L'agenda du basket ») et le site passe de
 - [x] Code : « EBOK Event » → « EBOK », `event.ebok.fr` → `ebok.fr`
       (textes, pages légales, sitemap, robots, partage, alertes) ;
       redirection permanente `event.ebok.fr` → `ebok.fr` dans `vercel.json`.
-- [ ] Clerk : domaine de l'application → `ebok.fr`.
-- [ ] Google Cloud : origine `https://ebok.fr` autorisée.
-- [ ] Fusion de la PR de bascule, puis tests.
+- [x] Clerk : application renommée « EBOK », domaine → `ebok.fr` (vérifié :
+      les requêtes venant de `https://ebok.fr` sont acceptées).
+- [x] Google Cloud : origine `https://ebok.fr` autorisée, écran de
+      consentement « EBOK ».
+- [x] En ligne le 10/11/2026 ; `event.ebok.fr` (accueil compris) et
+      `www.ebok.fr` redirigent vers `ebok.fr` (308).
+- [x] Tests de connexion par le propriétaire (e-mail, Google, badge admin) : OK.
+- [x] Clerk → Paths : URL d'accueil passée à `ebok.fr`.
 
 ## 🎯 Chantier en cours : passer Clerk en production
 
