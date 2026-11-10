@@ -250,6 +250,10 @@ Québec). Fait :
   **À vérifier** après le premier passage : certaines pages peuvent être
   illisibles (JavaScript) ou trop générales.
 
+- Accueil : compteur « 🏀 N events à venir » au-dessus du titre, qui
+  **s'affiche tout seul à partir de 50 événements à venir** (seuil
+  `COMPTEUR_SEUIL` dans `public/js/app.js`).
+
 Reste à faire :
 - [ ] Cartes dédiées Belgique / Suisse / Québec (pour l'instant ces événements
       vont sur la carte du monde) + filtres par pays.
