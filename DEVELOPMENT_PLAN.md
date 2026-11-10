@@ -182,8 +182,9 @@ adjoindre des statistiques exploitables par un organisateur.
 
 ### 3 sexies. Détection automatique d'événements ✅ (premier jet)
 
-Chaque jour, une page surveillée (agenda de ligue, de comité, calendrier 3x3,
-page d'organisateur…) est lue par l'IA ; les événements de basket qu'elle
+Chaque lundi à 9 h UTC (10 h à Paris l'hiver, 11 h l'été), toutes les pages
+surveillées (agenda de ligue, calendrier 3x3, page d'organisateur…) sont lues
+par l'IA, en parallèle ; les événements de basket qu'elle
 annonce sont créés **en attente**, avec le badge « 🤖 Détecté » et un lien
 vers la source. Rien n'est publié sans validation.
 
@@ -191,8 +192,18 @@ vers la source. Rien n'est publié sans validation.
       filtres (titre, ville, date, à venir), empreinte anti-doublon (titre +
       date + ville), géocodage (Base Adresse Nationale), affiche jamais
       recopiée, 25 événements max par analyse. Tests : `npm run test:detection`.
-- [x] Route `api/detection.js` + tâche Vercel quotidienne (`vercel.json` →
-      `crons`) : une source par jour, à tour de rôle.
+- [x] Route `api/detection.js` + tâche Vercel hebdomadaire (`vercel.json` →
+      `crons`, lundi 9 h UTC) : une analyse par source, lancées en parallèle,
+      chacune dans son propre appel (limite d'une minute par appel).
+- [x] **Sources ciblées** (10/11/2026) : circuit 3x3 FFBB (calendriers
+      Superleague et Juniorleague, Opens de France), ligues Occitanie,
+      Auvergne-Rhône-Alpes (Lyon), Île-de-France (Paris), Pays de la Loire
+      (Nantes).
+- [ ] **Play FIBA 3x3** — c'est là que sont inscrits tous les tournois
+      « Open Start » ; le site est construit en JavaScript, il faudra passer
+      par ses données plutôt que par la page.
+- [ ] Comités départementaux du Rhône, de Paris et de Loire-Atlantique :
+      sites à identifier.
 - [x] Espace admin : ajouter / mettre en pause / retirer une page, « Analyser
       maintenant », dernier résultat de chaque page.
 - [x] Un événement détecté puis supprimé (= refusé) ne revient jamais

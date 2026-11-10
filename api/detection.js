@@ -3,9 +3,13 @@
  * quotidienne. Le moteur est dans lib/detection.js.
  *
  *   GET  /api/detection                    (admin) → sources + derniers détectés
- *   GET  /api/detection?tache=cron         (tâche planifiée Vercel) → analyse
- *        la source la plus anciennement visitée, si elle ne l'a pas été depuis
- *        20 h. Sans effet sinon : un appel répété ne coûte rien.
+ *   GET  /api/detection?tache=cron         (tâche planifiée Vercel, chaque lundi
+ *        matin) → lance en parallèle l'analyse de TOUTES les sources actives,
+ *        chacune dans son propre appel (?tache=source&id=…) : une analyse peut
+ *        prendre près d'une minute, la limite d'un appel chez Vercel.
+ *   GET  /api/detection?tache=source&id=X  → analyse une source, si elle ne
+ *        l'a pas été depuis 20 h. Sans effet sinon : un appel répété ne coûte
+ *        rien.
  *   POST /api/detection  {action:"ajouter", url, nom}      (admin)
  *   POST /api/detection  {action:"retirer", id}            (admin)
  *   POST /api/detection  {action:"activer", id, actif}     (admin)
@@ -49,7 +53,7 @@ function dependances(today) {
   return {
     today,
     maintenant: new Date().toISOString(),
-    lirePage: (url) => fetchUrl(url, 15000, false),
+    lirePage: (url) => fetchUrl(url, 12000, false),
     extraire: (prompt) => ai.extractEvent({ parts: [], prompt }),
     geocoder,
     async dejaVu(empreintes) {
@@ -80,6 +84,13 @@ function dependances(today) {
 
 async function analyser(source) {
   const today = new Date().toISOString().slice(0, 10);
+  // Marquée AVANT l'analyse : si la fonction est coupée par la limite de
+  // durée de Vercel, la source passe quand même son tour (sinon elle serait
+  // reprise, et coupée, chaque jour) et l'admin voit pourquoi.
+  await sql()`
+    UPDATE event.detection_sources
+    SET last_run = now(), last_status = ${"⚠️ Analyse interrompue : la page ou l'IA a mis plus d'une minute. Essaie une page plus précise (page « agenda » ou « stages »)."}
+    WHERE id = ${source.id}`;
   let bilan;
   try {
     bilan = await analyserSource(source, dependances(today));
@@ -107,20 +118,48 @@ export default async function handler(req, res) {
 
   try {
     // --- Tâche planifiée --------------------------------------------------
-    if (req.method === "GET" && tache === "cron") {
+    if (req.method === "GET" && (tache === "cron" || tache === "source")) {
       const secret = process.env.CRON_SECRET;
       if (secret && (req.headers.authorization || "") !== `Bearer ${secret}`) {
         return json(res, 401, { error: "cron" });
       }
+
+      // Une source : analysée seulement si elle ne l'a pas été depuis 20 h.
+      if (tache === "source") {
+        const sid = String((req.query || {}).id || "");
+        const rows = await sql()`
+          SELECT * FROM event.detection_sources
+          WHERE id = ${sid} AND actif = true
+            AND (last_run IS NULL OR last_run < now() - make_interval(hours => ${INTERVALLE_HEURES}))`;
+        if (!rows.length) return json(res, 200, { ok: true, analyse: null });
+        const { resume } = await analyser(rows[0]);
+        return json(res, 200, { ok: true, analyse: rows[0].url, resume });
+      }
+
+      // Toutes les sources dues, en parallèle : un appel par source.
       const rows = await sql()`
-        SELECT * FROM event.detection_sources
+        SELECT id, url FROM event.detection_sources
         WHERE actif = true
-          AND (last_run IS NULL OR last_run < now() - make_interval(hours => ${INTERVALLE_HEURES}))
-        ORDER BY last_run ASC NULLS FIRST
-        LIMIT 1`;
-      if (!rows.length) return json(res, 200, { ok: true, analyse: null });
-      const { resume } = await analyser(rows[0]);
-      return json(res, 200, { ok: true, analyse: rows[0].url, resume });
+          AND (last_run IS NULL OR last_run < now() - make_interval(hours => ${INTERVALLE_HEURES}))`;
+      const base = `https://${req.headers["x-forwarded-host"] || req.headers.host}`;
+      const entetes = secret ? { Authorization: `Bearer ${secret}` } : {};
+      const appels = rows.map((s, i) => new Promise(r => setTimeout(r, i * 400)).then(async () => {
+        // Chaque analyse vit dans son propre appel : on attend sa réponse
+        // tant que cet appel-ci le permet, mais elle se poursuit de toute
+        // façon côté serveur si on doit rendre la main avant.
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 52000);
+        try {
+          const r = await fetch(`${base}/api/detection?tache=source&id=${encodeURIComponent(s.id)}`, { headers: entetes, signal: ctrl.signal });
+          return await r.json();
+        } finally { clearTimeout(t); }
+      }));
+      const res2 = await Promise.allSettled(appels);
+      return json(res, 200, {
+        ok: true,
+        lancees: rows.length,
+        resultats: res2.map((r, i) => ({ url: rows[i].url, resume: r.status === "fulfilled" ? r.value.resume : "en cours ou interrompue" })),
+      });
     }
 
     // --- Administration ----------------------------------------------------
