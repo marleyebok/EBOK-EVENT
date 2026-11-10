@@ -236,6 +236,32 @@ vers la source. Rien n'est publié sans validation.
 - [ ] Plus tard : recherche web automatique (API de recherche, payante au-delà
       d'un quota) pour découvrir de nouvelles pages sans les saisir à la main.
 
+### 3 septies. Ouverture francophone 🇫🇷🇧🇪🇨🇭🇨🇦 *(lancée le 10/11/2026)*
+
+Positionnement : **l'agenda du basket francophone** (France, Belgique, Suisse,
+Québec). Fait :
+- Textes du site, CGU et image de partage passés en « basket francophone ».
+- Liste des pays : France, puis groupe « Francophonie » (Belgique, Suisse,
+  Canada, Luxembourg), puis les autres pays.
+- L'IA (import et détection) renseigne le **pays** et la région au sens local
+  (province belge, canton suisse, province canadienne).
+- Détection : 5 sources ajoutées — Basketball Belgium, AWBB, 3x3 Masters de
+  Bruxelles, Swiss Basketball (Swiss Tour 3x3), Basketball Québec.
+  **À vérifier** après le premier passage : certaines pages peuvent être
+  illisibles (JavaScript) ou trop générales.
+
+Reste à faire :
+- [ ] Cartes dédiées Belgique / Suisse / Québec (pour l'instant ces événements
+      vont sur la carte du monde) + filtres par pays.
+- [ ] Géocodage hors France (la Base Adresse Nationale ne couvre que la France).
+- [ ] Provinces / cantons dans les filtres et les alertes e-mail.
+- [ ] Play FIBA 3x3 (play.fiba3x3.com) : tous les tournois Open Start y sont,
+      mais le site est construit en JavaScript → intégration spécifique.
+- [ ] Sources plus fines : comités provinciaux belges, associations cantonales
+      suisses, régions de Basketball Québec.
+- [ ] Juridique : vérifier avec un juriste la loi suisse (nLPD) et la loi 25 du
+      Québec avant de communiquer activement dans ces pays.
+
 ### 4. Ajouter à mon agenda *(petit effort)*
 
 - [ ] Génération d'un fichier `.ics` (Google / Apple Agenda), côté navigateur

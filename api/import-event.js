@@ -36,7 +36,7 @@ const TYPES = [
   "Tournoi", "Camp", "Voyage", "All-Star Game", "Show", "Détections",
   "Clinic Coachs", "Circuit 3x3", "Handibasket", "Matchs de Gala", "Divers"
 ];
-const FIELDS = ["title", "type", "city", "region", "address", "dateStart", "dateEnd",
+const FIELDS = ["title", "type", "city", "region", "pays", "address", "dateStart", "dateEnd",
   "sexe", "niveau", "description", "orgName", "insta", "site", "tarif"];
 
 // Un événement peut viser plusieurs catégories : `age` est une liste.
@@ -182,6 +182,21 @@ function parseDataUrl(s) {
 }
 
 /* Complète et nettoie l'objet renvoyé par l'IA. */
+/* Pays en français, tel que le formulaire le propose. Les formes courantes
+   (anglais, province, abréviation) sont ramenées au nom du pays. */
+const PAYS_ALIAS = {
+  "france": "France", "belgique": "Belgique", "belgium": "Belgique", "belgie": "Belgique",
+  "suisse": "Suisse", "switzerland": "Suisse", "schweiz": "Suisse",
+  "canada": "Canada", "quebec": "Canada", "québec": "Canada",
+  "luxembourg": "Luxembourg",
+};
+function normaliserPays(p) {
+  const brut = String(p || "").trim();
+  if (!brut) return "France";
+  const cle = brut.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return PAYS_ALIAS[cle] || PAYS_ALIAS[brut.toLowerCase()] || brut;
+}
+
 function normalizeEvent(e) {
   e = e || {};
   const out = {};
@@ -189,6 +204,7 @@ function normalizeEvent(e) {
   if (out.type && !TYPES.includes(out.type)) out.type = "Divers";
   if (!["Masculin", "Féminin", "Mixte"].includes(out.sexe)) out.sexe = "";
   out.insta = out.insta.replace(/^@/, "");
+  out.pays = normaliserPays(out.pays);
 
   // `age` : liste, en ne gardant que les catégories connues. Le modèle renvoie
   // parfois une chaîne unique ou "U13, U15" — les deux sont acceptés.
@@ -212,13 +228,14 @@ function normalizeEvent(e) {
 }
 
 const RULES =
-`Réponds avec un OBJET JSON aux clés EXACTES : title, type, city, region, address, dateStart, dateEnd, sexe, age, niveau, description, orgName, insta, site, tarif, voyage.
+`Réponds avec un OBJET JSON aux clés EXACTES : title, type, city, region, pays, address, dateStart, dateEnd, sexe, age, niveau, description, orgName, insta, site, tarif, voyage.
 Règles :
 - "type" : une seule valeur parmi [${TYPES.join(", ")}] (par défaut "Divers").
 - "dateStart" / "dateEnd" : format AAAA-MM-JJ. S'il n'y a qu'une date, mets-la dans les deux. Si une date manque, mets "". N'INVENTE JAMAIS de date.
 - "sexe" : "Masculin", "Féminin", "Mixte" ou "".
 - "age" : TABLEAU de catégories parmi [${AGE_OPTIONS.join(", ")}]. Les mentions "U13", "moins de 13 ans", "benjamins" donnent "U13", etc. Si l'événement est ouvert à tous, mets ["Tout public"]. Si rien n'est indiqué, mets [].
-- "region" : la région administrative française (ex. "Île-de-France", "Occitanie") déduite de la ville si possible, sinon "".
+- "pays" : le pays de l'événement, en français ("France", "Belgique", "Suisse", "Canada"…). Le Québec est au Canada. Par défaut "France".
+- "region" : la région déduite de la ville si possible, sinon "" — France : région administrative (ex. "Occitanie") ; Belgique : province (ex. "Liège") ; Suisse : canton (ex. "Vaud") ; Canada : province (ex. "Québec").
 - "description" : 2 à 4 phrases synthétiques en français.
 - "insta" : identifiant Instagram sans le @, sinon "".
 - "tarif" : le ou les prix indiqués, tels quels (ex. "15 € par joueur, gratuit -12 ans"), sinon "".
@@ -372,4 +389,4 @@ export default async function handler(req, res) {
 }
 
 // Exposé pour les tests unitaires (non utilisé par Vercel).
-export { extractPage, isBlockedHost, parseDataUrl, normalizeEvent, fetchUrl, TYPES, AGE_OPTIONS };
+export { extractPage, isBlockedHost, parseDataUrl, normalizeEvent, fetchUrl, TYPES, AGE_OPTIONS, normaliserPays };
