@@ -11,3 +11,4 @@ L'agenda collaboratif du basket français, en ligne sur `ebok.fr` (depuis le 10/
 
 Pile : HTML/CSS/JS pur sans build (`public/`), fonctions Vercel (`api/`), Neon, Clerk, Vercel Blob.
 Seul EBOK est développé : ne pas réintroduire de lien ou de dépendance vers un autre site EBOK.
+Événement sans lieu précis (national, « partout en France ») : on l'épingle sur Paris et on le précise dans le lieu et la description.
