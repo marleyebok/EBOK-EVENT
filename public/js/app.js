@@ -3906,7 +3906,20 @@ function initEditModal(){
    Appelé au démarrage, quand un événement est publié, et quand une
    source externe (clerk-init.js) renvoie les données. Ne rebranche PAS les
    écouteurs des filtres (faits une seule fois via initHomeFilters). */
+/* Compteur « 🏀 N events à venir » au-dessus du titre de l'accueil.
+   Caché tant qu'il y a moins de COMPTEUR_SEUIL événements à venir : un petit
+   chiffre ferait l'effet inverse de celui recherché. */
+const COMPTEUR_SEUIL = 50;
+function renderCompteur(){
+  const el = document.getElementById('heroCompteur');
+  if(!el) return;
+  const n = events.filter(ev => ev && ev.dateEnd && !isPast(ev)).length;
+  el.hidden = n < COMPTEUR_SEUIL;
+  el.textContent = `🏀 ${n} events à venir`;
+}
+
 function renderAll(){
+  renderCompteur();
   buildMap();
   renderFeatured();
   applyMapFilters();
