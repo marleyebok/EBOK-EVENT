@@ -1,5 +1,5 @@
 /* =========================================================
-   EBOK Event — ADMIN : DÉTECTION AUTOMATIQUE
+   EBOK — ADMIN : DÉTECTION AUTOMATIQUE
    ---------------------------------------------------------
    Gère les pages surveillées par la détection (api/detection.js) : ajout,
    retrait, pause, analyse immédiate, et dernier résultat de chacune.

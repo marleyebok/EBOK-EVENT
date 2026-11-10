@@ -1,5 +1,5 @@
 /* =========================================================
-   EBOK Event — CHARGEUR CLERK (identité / comptes)
+   EBOK — CHARGEUR CLERK (identité / comptes)
    ---------------------------------------------------------
    ⚙️  CONFIGURATION — UNE SEULE LIGNE À CHANGER (voir ci-dessous).
 

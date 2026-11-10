@@ -1,4 +1,4 @@
-# 🚀 EBOK Event — Plan de développement
+# 🚀 EBOK — Plan de développement
 
 > Feuille de route unique du projet. Le `README.md` décrit **comment ça marche**
 > (architecture, variables d'environnement, déploiement) ; ce fichier décrit
@@ -61,6 +61,21 @@ partagé, plus de lecture du profil du site mère. Seul reste le point ci-dessou
 - [x] Échappement des données d'événement dans les rendus HTML (XSS stocké)
 
 ---
+
+## 🔁 Bascule vers ebok.fr (10/11/2026)
+
+La marque devient **EBOK** (« L'agenda du basket ») et le site passe de
+`event.ebok.fr` à **`ebok.fr`**. Marche à suivre complète :
+`BASCULE_EBOK_FR.md`.
+
+- [x] `ebok.fr` et `www.ebok.fr` branchés sur le projet Vercel (DNS déjà
+      correct chez OVH) ; `www` redirige vers `ebok.fr`.
+- [x] Code : « EBOK Event » → « EBOK », `event.ebok.fr` → `ebok.fr`
+      (textes, pages légales, sitemap, robots, partage, alertes) ;
+      redirection permanente `event.ebok.fr` → `ebok.fr` dans `vercel.json`.
+- [ ] Clerk : domaine de l'application → `ebok.fr`.
+- [ ] Google Cloud : origine `https://ebok.fr` autorisée.
+- [ ] Fusion de la PR de bascule, puis tests.
 
 ## 🎯 Chantier en cours : passer Clerk en production
 
@@ -324,9 +339,9 @@ dans le code — le reste est à faire.
 - [x] ~~**`sitemap.xml`**~~ — généré à la demande par `api/sitemap.js` depuis
       les événements validés. **Reste à faire par toi :** le déclarer dans
       Google Search Console (voir ci-dessous).
-- [ ] **Google Search Console** — ajouter `event.ebok.fr` (vérification par
+- [ ] **Google Search Console** — ajouter `ebok.fr` (vérification par
       enregistrement DNS TXT chez OVH), puis y déclarer
-      `https://event.ebok.fr/sitemap.xml`. Sans ça, Google découvre les fiches
+      `https://ebok.fr/sitemap.xml`. Sans ça, Google découvre les fiches
       beaucoup plus lentement.
 
 ### ⚡ Performance & accessibilité
@@ -395,15 +410,12 @@ dans le code — le reste est à faire.
       « Suivez-nous » du pied de page apparaît alors toute seule. Une adresse
       laissée vide masque sa ligne, les deux vides masquent la rubrique.
 
-> 🚫 **Règle :** aucun lien et aucune mention renvoyant vers `ebok.fr` ou une
-> autre application. EBOK Event se présente comme un produit seul. Les
-> redirections après connexion sont verrouillées côté code
-> (`redirectionOptions()` dans `public/js/clerk.js`) pour qu'un réglage du
-> tableau de bord Clerk ne puisse pas envoyer un visiteur ailleurs.
->
-> Seule exception, assumée : l'adresse de contact du pied de page reste
-> `contact@ebok.fr`. C'est un `mailto:`, il n'envoie donc personne vers le
-> site — c'est simplement la boîte mail qui existe.
+> 🚫 **Règle :** aucun lien ni aucune mention renvoyant vers les anciennes
+> applications EBOK (forum, mercato, playbook…). EBOK se présente comme un
+> produit seul, sur `ebok.fr` (depuis le 10/11/2026). Les redirections après
+> connexion sont verrouillées côté code (`redirectionOptions()` dans
+> `public/js/clerk.js`) pour qu'un réglage du tableau de bord Clerk ne puisse
+> pas envoyer un visiteur ailleurs.
 
 ### 🎯 Conversion
 

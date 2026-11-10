@@ -59,14 +59,14 @@ export default async function handler(req, res) {
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     return res.end(`<!doctype html><html lang="fr"><head><meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
-      <title>Désinscription — EBOK Event</title></head>
+      <title>Désinscription — EBOK</title></head>
       <body style="margin:0;background:#f4f0e7;color:#211f1b;font-family:system-ui,sans-serif;
                    display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px">
         <div style="text-align:center;max-width:380px">
           <h1 style="font-size:22px;margin:0 0 10px">C'est fait</h1>
           <p style="color:#6e675b;line-height:1.5;margin:0 0 22px">${page}</p>
           <a href="/" style="display:inline-block;background:#ff5722;color:#191008;text-decoration:none;
-             font-weight:700;padding:12px 22px;border-radius:10px">Retour à EBOK Event</a>
+             font-weight:700;padding:12px 22px;border-radius:10px">Retour à EBOK</a>
         </div></body></html>`);
   }
 

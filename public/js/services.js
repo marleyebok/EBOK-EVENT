@@ -1,5 +1,5 @@
 /* =========================================================
-   EBOK Event — COUCHE API (Neon via /api + Clerk)
+   EBOK — COUCHE API (Neon via /api + Clerk)
    ---------------------------------------------------------
    Les données passent par les fonctions serverless /api/* (base Neon,
    schéma « event ») ; l'identité passe par Clerk (voir clerk.js).

@@ -1,5 +1,5 @@
 /* =========================================================
-   EBOK Event — CARTE DES RÉGIONS (+ outre-mer)
+   EBOK — CARTE DES RÉGIONS (+ outre-mer)
    Généré à partir des frontières officielles (france-geojson,
    version simplifiée), projeté dans un repère SVG. Chargé avant data.js.
    ========================================================= */

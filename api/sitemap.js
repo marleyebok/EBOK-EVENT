@@ -12,7 +12,7 @@
  */
 import { hasDb, sql } from "./_lib.js";
 
-const ORIGINE = "https://event.ebok.fr";
+const ORIGINE = "https://ebok.fr";
 
 /** Pages fixes du site, hors espace compte (réservé aux membres connectés). */
 const PAGES_FIXES = [

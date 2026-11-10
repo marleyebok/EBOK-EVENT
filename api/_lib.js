@@ -1,5 +1,5 @@
 /**
- * Bibliothèque commune des fonctions serverless EBOK Event (Neon + Clerk).
+ * Bibliothèque commune des fonctions serverless EBOK (Neon + Clerk).
  *
  * Identité : gérée par CLERK.
  * Les fonctions ci-dessous valident le token de session Clerk envoyé par le

@@ -1,5 +1,5 @@
 /* =========================================================
-   EBOK Event — DONNÉES
+   EBOK — DONNÉES
    Constantes de données pures : posters, événements, couleurs,
    silhouette de la carte. Chargé AVANT app.js.
    ========================================================= */

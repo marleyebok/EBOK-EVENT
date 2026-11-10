@@ -19,6 +19,17 @@
   },
   "redirects": [
     {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "event.ebok.fr"
+        }
+      ],
+      "destination": "https://ebok.fr/:path*",
+      "permanent": true
+    },
+    {
       "source": "/compte",
       "destination": "/compte/profil",
       "permanent": false

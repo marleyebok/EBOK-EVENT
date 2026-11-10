@@ -1,5 +1,5 @@
 /* =========================================================
-   EBOK Event — ASSISTANT IA D'IMPORT (fonction serverless Vercel)
+   EBOK — ASSISTANT IA D'IMPORT (fonction serverless Vercel)
    ---------------------------------------------------------
    Reçoit un lien (site, billetterie…) OU une image (affiche, capture),
    récupère le contenu, puis demande à un modèle IA de structurer les

@@ -1,5 +1,5 @@
 /**
- * /compte/profil — profil DIFFUSEUR, propre à EBOK Event.
+ * /compte/profil — profil DIFFUSEUR, propre à EBOK.
  *
  * Ces champs pré-remplissent le bloc « organisateur » du formulaire de
  * publication (voir `org` dans initCreatePage, js/app.js) et s'affichent sur

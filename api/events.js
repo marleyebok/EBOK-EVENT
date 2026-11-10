@@ -1,5 +1,5 @@
 /**
- * Événements EBOK Event.
+ * Événements EBOK.
  *
  *   GET    /api/events            → événements publics (status = approved)
  *   GET    /api/events?id=X       → un événement (public s'il est approuvé,
@@ -56,7 +56,7 @@ async function notifierAlertes(ev, req) {
   const alertes = await sql()`SELECT * FROM event.alerts WHERE actif = true`;
   if (!alertes.length) return;
 
-  const hote = req.headers["x-forwarded-host"] || req.headers.host || "event.ebok.fr";
+  const hote = req.headers["x-forwarded-host"] || req.headers.host || "ebok.fr";
   const site = `https://${hote}`;
 
   for (const a of alertes) {
