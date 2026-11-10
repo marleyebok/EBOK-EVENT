@@ -29,10 +29,10 @@ EBOK-EVENT/
 │   │   ├── compte-profil.js  # Profil diffuseur
 │   │   └── compte-general.js # Identité & sécurité
 │   └── assets/               # Images, logo et favicons
-│       ├── logo-ebok-agenda-source.png # ⚠️ masters de la marque EBOK (nov. 2026) —
+│       ├── logo-ebok-agenda-source.png # ⚠️ masters de la marque EBOK, en bordeaux (nov. 2026) —
 │       ├── logo-ebok-source.png        #    ne pas écraser : logo.png en dérive
 │       ├── logo-source.png      # ancien logo « EBOK | EVENT » (master d'origine, conservé)
-│       ├── favicon-source.png   # ⚠️ master du « E » : les favicons en dérivent
+│       ├── favicon-source.png   # ⚠️ master du « E » (rouge d'origine) : les favicons en dérivent, recolorés en bordeaux
 │       ├── logo.png             # bandeau « EBOK | L'agenda du basket » (généré, 827×216)
 │       ├── favicon.png          # 32 px  ┐ générés depuis favicon-source,
 │       ├── favicon-192.png      # 192 px ┤ fond transparent
