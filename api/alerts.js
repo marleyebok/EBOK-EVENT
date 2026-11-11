@@ -1,8 +1,9 @@
 /**
  * Alertes e-mail des membres.
  *
- *   GET    /api/alerts                    → mes alertes — auth
+ *   GET    /api/alerts                    → mes alertes + événements repérés — auth
  *   POST   /api/alerts {nom, criteres}    → en créer une — auth
+ *   POST   /api/alerts?lues=1             → marquer les notifications comme vues — auth
  *   PATCH  /api/alerts?id=X {…}           → modifier / (dés)activer — auth
  *   DELETE /api/alerts?id=X               → supprimer — auth
  *   GET    /api/alerts?desinscrire=JETON  → désinscription SANS compte
@@ -77,7 +78,30 @@ export default async function handler(req, res) {
     if (req.method === "GET") {
       const rows = await sql()`
         SELECT * FROM event.alerts WHERE user_id = ${uid} ORDER BY created_at DESC`;
-      return json(res, 200, { alerts: rows.map(versAlerte) });
+      // Événements repérés par ces alertes, du plus récent au plus ancien. Le
+      // navigateur a déjà les fiches : on ne renvoie que les identifiants.
+      const reperes = await sql()`
+        SELECT s.event_id, s.alert_id, s.vu, s.sent_at
+        FROM event.alert_sends s
+        JOIN event.alerts a ON a.id = s.alert_id
+        JOIN event.events e ON e.id = s.event_id AND e.status = 'approved'
+        WHERE a.user_id = ${uid}
+        ORDER BY s.sent_at DESC LIMIT 60`;
+      return json(res, 200, {
+        alerts: rows.map(versAlerte),
+        notifications: reperes.map((r) => ({
+          eventId: r.event_id, alertId: r.alert_id, vu: r.vu, at: r.sent_at,
+        })),
+      });
+    }
+
+    /* « J'ai vu » : le membre a ouvert sa page d'alertes. */
+    if (req.method === "POST" && q.lues) {
+      await sql()`
+        UPDATE event.alert_sends s SET vu = true
+        FROM event.alerts a
+        WHERE a.id = s.alert_id AND a.user_id = ${uid} AND s.vu = false`;
+      return json(res, 200, { ok: true });
     }
 
     if (req.method === "POST") {

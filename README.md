@@ -150,10 +150,20 @@ déclenchement est bien à la validation et non à la création : un événement
 diffuseur part « en attente », et alerter plus tôt annoncerait des événements
 qu'on va peut-être refuser.
 
+Un événement publié directement par l'admin (déjà validé à sa création)
+déclenche les alertes de la même façon.
+
 Un critère laissé vide ne filtre pas : une alerte sans région couvre toute la
-France. Chaque envoi est tracé (`event.alert_sends`), donc revalider un
-événement ne renvoie pas un second message. Un envoi qui échoue efface sa trace
-et pourra être rejoué.
+France. Chaque correspondance est tracée (`event.alert_sends`), donc revalider
+un événement ne renvoie pas un second message. Cette trace sert aussi de
+**notification sur le site** : la page « Mes alertes » liste les événements
+repérés (« Repérés pour toi ») et le menu porte une pastille tant qu'ils n'ont
+pas été vus — même si l'e-mail n'a pas pu partir. Un e-mail qui échoue laisse
+`mailed = false` et sera retenté à la prochaine validation.
+
+« Mes favoris » et « Mes alertes » sont des pages à part entière, accessibles
+depuis la barre du haut et le volet mobile ; un bouton « Créer une alerte »
+figure aussi sur l'accueil et sous la recherche avancée.
 
 **Mettre en service :**
 

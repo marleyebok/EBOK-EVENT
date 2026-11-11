@@ -173,6 +173,12 @@ adjoindre des statistiques exploitables par un organisateur.
 - [x] Déclenchement à la **validation** d'un événement, pas à sa création
 - [x] Envoi par Resend, désinscription par jeton sans connexion
 - [x] Trace des envois : revalider n'envoie pas deux fois ; un envoi raté est rejouable
+- [x] « Mes favoris » et « Mes alertes » sorties de « Mon profil » : pages à part
+      entière dans la barre du haut et le volet mobile ; bouton « Créer une
+      alerte » sur l'accueil et la recherche (11/2026)
+- [x] Notification sur le site : « Repérés pour toi » + pastille dans le menu,
+      indépendante de l'e-mail ; les publications directes de l'admin
+      déclenchent aussi les alertes (11/2026)
 - [ ] **Reste à faire par toi :** créer le compte Resend, configurer SPF/DKIM sur
       le domaine, et poser `RESEND_API_KEY` sur Vercel (voir README)
 

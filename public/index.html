@@ -42,6 +42,8 @@
     <button class="navlink active" data-nav="home">Accueil</button>
     <button class="navlink" data-nav="search"><span class="nav-long">Recherche avancée</span><span class="nav-short">Recherche</span></button>
     <button class="navlink" data-nav="create"><span class="nav-long">Publier un événement</span><span class="nav-short">Publier</span></button>
+    <button class="navlink" data-nav="favoris">♥ Mes favoris</button>
+    <button class="navlink" data-nav="alertes">🔔 Alertes<span class="nav-badge hidden" data-alert-badge></span></button>
     <button class="navlink hidden" data-nav="profile" id="navProfile">Mon profil</button>
   </div>
   <!-- Actions rapides du mobile : la recherche et la publication restent à
@@ -55,6 +57,7 @@
     </button>
     <button class="icon-btn" id="btnMenu" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="sideMenu">
       <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+      <span class="nav-badge nav-badge-dot hidden" data-alert-badge="dot"></span>
     </button>
   </div>
 
@@ -88,7 +91,7 @@
 
   <!-- Déconnecté -->
   <div class="side-menu-account" id="menuOut">
-    <p class="side-menu-hint">Crée un compte pour enregistrer tes favoris et publier tes événements.</p>
+    <p class="side-menu-hint">Crée un compte pour enregistrer tes favoris, créer des alertes et publier tes événements.</p>
     <button class="btn btn-primary" id="menuSignup">S'inscrire</button>
     <button class="btn btn-ghost" id="menuLogin">Se connecter</button>
   </div>
@@ -108,7 +111,8 @@
     <button class="side-menu-link" data-nav="home"><span>🏠</span> Accueil</button>
     <button class="side-menu-link" data-nav="search"><span>🔍</span> Recherche avancée</button>
     <button class="side-menu-link" data-nav="create"><span>➕</span> Publier un événement</button>
-    <button class="side-menu-link menu-auth hidden" data-menu-section="section-favoris"><span>♥</span> Mes favoris</button>
+    <button class="side-menu-link" data-nav="favoris"><span>♥</span> Mes favoris</button>
+    <button class="side-menu-link" data-nav="alertes"><span>🔔</span> Mes alertes<span class="nav-badge hidden" data-alert-badge></span></button>
     <button class="side-menu-link menu-auth hidden" data-menu-section="section-mes-evenements"><span>📋</span> Mes événements</button>
     <button class="side-menu-link menu-auth hidden" data-nav="profile"><span>👤</span> Mon profil</button>
   </nav>
@@ -142,6 +146,7 @@
 
     <div class="content-header">
       <span class="content-count" id="homeCount"></span>
+      <button class="btn btn-ghost btn-alert" data-new-alert="home">🔔 Créer une alerte</button>
       <div class="view-toggle">
         <button class="toggle-btn active" data-view="map" id="viewBtnMap">🗺️ Carte</button>
         <button class="toggle-btn" data-view="list" id="viewBtnList">☰ Liste</button>
@@ -297,7 +302,7 @@
 
     <div class="results-head">
       <span id="resultsCount">— résultats</span>
-      <span>Trié par date</span>
+      <button class="btn btn-ghost btn-alert" data-new-alert="search">🔔 M'alerter des nouveautés</button>
     </div>
     <div class="results-grid" id="resultsGrid"></div>
   </section>
@@ -645,6 +650,41 @@
     <div class="event-detail" id="eventDetail"></div>
   </section>
 
+  <!-- ===================== MES FAVORIS ===================== -->
+  <section id="page-favoris" class="page">
+    <div class="page-head">
+      <p class="eyebrow">Espace membre</p>
+      <h2>♥ Mes favoris</h2>
+      <p class="hero-sub">Les événements que tu as mis de côté avec le ♥, du plus proche au plus lointain.</p>
+    </div>
+    <div class="results-grid" id="favoritesGrid"></div>
+  </section>
+
+  <!-- ===================== MES ALERTES ===================== -->
+  <section id="page-alertes" class="page">
+    <div class="page-head">
+      <p class="eyebrow">Espace membre</p>
+      <h2>🔔 Mes alertes</h2>
+      <p class="hero-sub">Choisis une région et un type d'événement : on te prévient par e-mail, et ici même, dès qu'un événement correspondant est publié.</p>
+    </div>
+
+    <div class="profile-section" id="section-alertes">
+      <div class="profile-section-head">
+        <h3>Mes critères</h3>
+        <button class="btn btn-primary" id="btnNewAlert">+ Créer une alerte</button>
+      </div>
+      <div id="alertsList"></div>
+    </div>
+
+    <div class="profile-section hidden" id="section-reperes">
+      <div class="profile-section-head">
+        <h3>Repérés pour toi</h3>
+      </div>
+      <p class="section-hint">Les événements publiés depuis la création de tes alertes et qui leur correspondent.</p>
+      <div class="results-grid" id="reperesGrid"></div>
+    </div>
+  </section>
+
   <!-- ===================== MON PROFIL ===================== -->
   <section id="page-profile" class="page">
     <div class="profile-head">
@@ -672,25 +712,6 @@
         <button class="btn btn-ghost" id="btnEditProfile">Modifier mon profil</button>
       </div>
       <div class="about-grid" id="profileAbout"></div>
-    </div>
-
-    <div class="profile-section" id="section-favoris">
-      <div class="profile-section-head">
-        <h3>♥ Mes favoris</h3>
-      </div>
-      <div class="results-grid" id="favoritesGrid"></div>
-    </div>
-
-    <div class="profile-section" id="section-alertes">
-      <div class="profile-section-head">
-        <h3>🔔 Mes alertes</h3>
-        <button class="btn btn-primary" id="btnNewAlert">+ Créer une alerte</button>
-      </div>
-      <p class="section-hint">
-        Décris ce qui t'intéresse : on te prévient par e-mail dès qu'un événement
-        correspondant est publié.
-      </p>
-      <div id="alertsList"></div>
     </div>
 
     <div class="profile-section" id="section-mes-evenements">

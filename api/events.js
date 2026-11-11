@@ -48,9 +48,14 @@ function dataBlob(obj) {
 /**
  * Prévient les membres dont une alerte correspond à cet événement.
  *
+ * Chaque correspondance laisse une ligne dans event.alert_sends : c'est la
+ * notification affichée sur le site, et la trace qui évite d'écrire deux fois
+ * à la même personne. L'e-mail vient en plus ; s'il ne part pas (clé Resend
+ * absente, panne), la notification reste et `mailed` reste faux, si bien
+ * qu'une revalidation retentera l'envoi.
+ *
  * Les e-mails ne sont pas lus en base : « zéro miroir », l'adresse vient de
- * Clerk à la volée. Chaque envoi est tracé dans event.alert_sends, sans quoi
- * une revalidation renverrait le même message aux mêmes personnes.
+ * Clerk à la volée.
  */
 async function notifierAlertes(ev, req) {
   const alertes = await sql()`SELECT * FROM event.alerts WHERE actif = true`;
@@ -62,23 +67,28 @@ async function notifierAlertes(ev, req) {
   for (const a of alertes) {
     if (!correspond(ev, a.criteres)) continue;
 
-    // Déjà prévenu pour cet événement ? `ON CONFLICT DO NOTHING` rend la
-    // vérification atomique : deux validations simultanées n'enverront pas deux
-    // e-mails.
+    // `ON CONFLICT DO NOTHING` rend la vérification atomique : deux
+    // validations simultanées n'enverront pas deux e-mails.
     const pris = await sql()`
-      INSERT INTO event.alert_sends (alert_id, event_id) VALUES (${a.id}, ${ev.id})
+      INSERT INTO event.alert_sends (alert_id, event_id, mailed)
+      VALUES (${a.id}, ${ev.id}, false)
       ON CONFLICT DO NOTHING RETURNING alert_id`;
-    if (!pris.length) continue;
+    if (!pris.length) {
+      const deja = await sql()`
+        SELECT mailed FROM event.alert_sends
+        WHERE alert_id = ${a.id} AND event_id = ${ev.id}`;
+      if (!deja.length || deja[0].mailed) continue;
+    }
 
     const { email } = await clerkUser(a.user_id);
     if (!email) continue;
 
     const { sujet, texte, html } = message(ev, a, site);
     const ok = await envoyer({ destinataire: email, sujet, texte, html });
-    // Envoi raté : on retire la trace pour pouvoir réessayer plus tard.
-    if (!ok) {
+    if (ok) {
       await sql()`
-        DELETE FROM event.alert_sends WHERE alert_id = ${a.id} AND event_id = ${ev.id}`;
+        UPDATE event.alert_sends SET mailed = true
+        WHERE alert_id = ${a.id} AND event_id = ${ev.id}`;
     }
   }
 }
@@ -135,7 +145,13 @@ export default async function handler(req, res) {
         INSERT INTO event.events (id, status, user_id, featured, data)
         VALUES (${eid}, ${status}, ${uid}, ${featured}, ${JSON.stringify(data)}::jsonb)`;
       const rows = await sql()`SELECT * FROM event.events_lecture WHERE id = ${eid}`;
-      return json(res, 200, { id: eid, event: toEvent(rows[0]) });
+      const creee = toEvent(rows[0]);
+      // Publié directement par l'admin : l'événement est visible tout de suite,
+      // les alertes partent donc ici (il ne passera jamais par la validation).
+      if (status === "approved") {
+        notifierAlertes(creee, req).catch((e) => console.error("alertes:", e));
+      }
+      return json(res, 200, { id: eid, event: creee });
     }
 
     if (req.method === "PATCH" || req.method === "PUT") {
