@@ -20,6 +20,8 @@ EBOK-EVENT/
 │   ├── js/
 │   │   ├── data.js           # Données de démo : événements, couleurs, carte
 │   │   ├── app.js            # Logique : nav, filtres, carte, recherche…
+│   │   ├── animations.js     # Animations décoratives (Motion) — retirables sans rien casser
+│   │   ├── vendor/motion.js  # Bibliothèque Motion 14.12.0 (motion.dev, MIT), hébergée ici
 │   │   ├── france-map.js     # Tracés SVG des régions
 │   │   ├── cities-fr.js      # Villes de France (autocomplétion hors ligne)
 │   │   ├── services.js       # Couche API (Neon via /api + Clerk)
