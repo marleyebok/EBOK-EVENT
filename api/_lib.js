@@ -118,6 +118,11 @@ export async function ensureSchema() {
       sent_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
       PRIMARY KEY (alert_id, event_id)
     )`;
+  /* Une ligne = une notification. Elle s'affiche sur le site (« Repérés pour
+     toi ») même quand l'e-mail n'a pas pu partir : `mailed` dit si l'e-mail est
+     parti, `vu` si le membre a déjà ouvert sa page d'alertes depuis. */
+  await q`ALTER TABLE event.alert_sends ADD COLUMN IF NOT EXISTS mailed BOOLEAN NOT NULL DEFAULT true`;
+  await q`ALTER TABLE event.alert_sends ADD COLUMN IF NOT EXISTS vu BOOLEAN NOT NULL DEFAULT false`;
 
   /* Compteur d'imports IA par membre et par jour : l'appel au modèle peut
      être payant, un organisateur a donc un quota quotidien (l'admin non).

@@ -2123,7 +2123,9 @@ function showPage(name){
   if(name === 'create' && !currentUser && window.EBOK_AUTH){ openAuth('login'); }
   // Précharge la base des villes dès qu'on arrive sur la page de publication.
   if(name === 'create'){ ensureCitiesLoaded(); prefillOrgFromProfile(); }
-  if(name === 'profile'){ renderProfile(); renderOnboardingNudge(); renderAlertes(); }
+  if(name === 'profile'){ renderProfile(); renderOnboardingNudge(); }
+  if(name === 'favoris') renderFavorites();
+  if(name === 'alertes') ouvrirPageAlertes();
   // Quitter une fiche événement : on revient à l'URL racine.
   if(!syncingFromUrl && name !== 'event' && eventIdFromUrl()) setUrl('/');
   syncMenuActif(name);
@@ -2177,7 +2179,7 @@ async function toggleFav(id){
   }else{
     localStorage.setItem('ebok-favs', JSON.stringify([...favorites]));
   }
-  if(document.getElementById('page-profile').classList.contains('active')) renderProfile();
+  if(document.getElementById('page-favoris').classList.contains('active')) renderFavorites();
 }
 
 function updateFavButtons(id){
@@ -2218,7 +2220,9 @@ document.addEventListener('click', (e)=>{
 async function renderFavorites(){
   const grid = document.getElementById('favoritesGrid');
   if(!currentUser && window.EBOK_AUTH){
-    grid.innerHTML = `<div class="empty-state"><h4>Connecte-toi</h4><p>Crée un compte pour enregistrer tes événements favoris.</p></div>`;
+    grid.innerHTML = `<div class="empty-state"><h4>Retrouve tes événements en un clic</h4>
+      <p>Connecte-toi, puis clique sur le ♥ d'un événement pour le mettre de côté.</p>
+      <button class="btn btn-primary" data-auth="login">Se connecter</button></div>`;
     return;
   }
   const ids = [...favorites];
@@ -2239,12 +2243,20 @@ async function renderFavorites(){
     grid.innerHTML = `<div class="empty-state"><h4>Aucun favori</h4><p>Clique sur le ♥ d'un événement pour le mettre de côté.</p></div>`;
     return;
   }
-  list.sort(parDateRecente);
+  // À venir d'abord (le plus proche en tête), terminés ensuite.
+  const debut = e=> String(e.dateStart || '');
+  list.sort((a,b)=> (isPast(a) - isPast(b)) || (isPast(a) ? debut(b).localeCompare(debut(a)) : debut(a).localeCompare(debut(b))));
   grid.innerHTML = list.map(eventCardHtml).join('');
   grid.querySelectorAll('.event-card').forEach(card=>{
     card.addEventListener('click', ()=> openEvent(card.dataset.id));
   });
 }
+
+// Boutons « Se connecter » des états vides (favoris, alertes).
+document.addEventListener('click', e=>{
+  const b = e.target.closest && e.target.closest('[data-auth]');
+  if(b) openAuth(b.dataset.auth);
+});
 
 /* ---------- Connexion (déléguée à Clerk) ---------- */
 /* Il n'y a pas de formulaire de connexion maison : e-mail, mot de passe,
@@ -2973,6 +2985,7 @@ function initOnboarding(){
    alerte sans région couvre toute la France.
    ========================================================= */
 let mesAlertes = [];
+let mesReperes = [];               // événements repérés : {eventId, alertId, vu, at}
 let alerteEnCours = null;          // id de l'alerte modifiée, null si création
 
 /* Régions proposées : celles de la base de villes, pour que les valeurs
@@ -2986,16 +2999,84 @@ function regionsDisponibles(){
 }
 
 async function chargerAlertes(){
-  if(!currentUser || !window.EBOK_DATA || !window.EBOK_DATA.getAlerts){ mesAlertes = []; return; }
-  try{ mesAlertes = await window.EBOK_DATA.getAlerts(); }
-  catch(e){ mesAlertes = []; }
+  mesAlertes = []; mesReperes = [];
+  if(currentUser && window.EBOK_DATA && window.EBOK_DATA.getAlertsEtReperes){
+    try{
+      const r = await window.EBOK_DATA.getAlertsEtReperes();
+      mesAlertes = r.alerts; mesReperes = r.notifications;
+    }catch(e){ /* alertes indisponibles : la page l'affichera vide */ }
+  }
+  majPastilleAlertes();
+}
+
+/* Pastille du menu : nombre d'événements repérés pas encore vus. Deux alertes
+   peuvent repérer le même événement : il ne compte qu'une fois. */
+function majPastilleAlertes(){
+  const n = new Set(mesReperes.filter(r=> !r.vu).map(r=> r.eventId)).size;
+  for(const el of document.querySelectorAll('[data-alert-badge]')){
+    el.classList.toggle('hidden', n === 0);
+    el.textContent = el.dataset.alertBadge === 'dot' ? '' : (n > 9 ? '9+' : String(n));
+  }
+}
+
+/* Page « Mes alertes » : la liste, puis les événements repérés. Les ouvrir
+   suffit à les considérer comme vus — la pastille s'éteint, les étiquettes
+   « Nouveau » restent le temps de cette visite. */
+async function ouvrirPageAlertes(){
+  renderAlertes();
+  await renderReperes();
+  if(mesReperes.some(r=> !r.vu) && window.EBOK_DATA && window.EBOK_DATA.markAlertsSeen){
+    try{
+      await window.EBOK_DATA.markAlertsSeen();
+      mesReperes.forEach(r=>{ r.vu = true; });
+      majPastilleAlertes();
+    }catch(e){ /* on retentera à la prochaine visite */ }
+  }
+}
+
+async function renderReperes(){
+  const section = document.getElementById('section-reperes');
+  const grid = document.getElementById('reperesGrid');
+  if(!section || !grid) return;
+  // Un événement repéré par plusieurs alertes n'apparaît qu'une fois ; il est
+  // « nouveau » si au moins l'une d'elles ne l'a pas encore montré.
+  const parEvent = new Map();
+  for(const r of mesReperes){
+    const deja = parEvent.get(r.eventId);
+    if(deja) deja.nouveau = deja.nouveau || !r.vu;
+    else parEvent.set(r.eventId, { nouveau: !r.vu });
+  }
+  const cartes = [];
+  for(const [id, info] of parEvent){
+    let ev = events.find(e=> e.id === id);
+    if(!ev && window.EBOK_DATA && window.EBOK_DATA.getEvent){
+      try{ ev = await window.EBOK_DATA.getEvent(id); }catch(e){ ev = null; }
+    }
+    if(ev && !isPast(ev)) cartes.push({ ev, nouveau: info.nouveau });
+  }
+  section.classList.toggle('hidden', !currentUser || !mesAlertes.length);
+  if(!cartes.length){
+    grid.innerHTML = `<div class="empty-state"><h4>Rien pour l'instant</h4>
+      <p>Dès qu'un événement correspondant à tes alertes est publié, il apparaît ici.</p></div>`;
+    return;
+  }
+  grid.innerHTML = cartes.map(c=> eventCardHtml(c.ev)).join('');
+  [...grid.querySelectorAll('.event-card')].forEach((card, i)=>{
+    if(cartes[i].nouveau){
+      card.classList.add('is-new');
+      card.querySelector('.card-media')?.insertAdjacentHTML('beforeend', '<span class="new-flag">Nouveau</span>');
+    }
+    card.addEventListener('click', ()=> openEvent(card.dataset.id));
+  });
 }
 
 function renderAlertes(){
   const box = document.getElementById('alertsList');
   if(!box) return;
   if(!currentUser){
-    box.innerHTML = `<div class="empty-state"><p>Connecte-toi pour créer des alertes.</p></div>`;
+    box.innerHTML = `<div class="empty-state"><h4>Ne rate plus aucun événement</h4>
+      <p>Connecte-toi pour créer une alerte : une région, un type d'événement, et on te prévient.</p>
+      <button class="btn btn-primary" data-auth="login">Se connecter</button></div>`;
     return;
   }
   if(!mesAlertes.length){
@@ -3071,12 +3152,14 @@ function remplirMenuAlerte(id, valeurs, choisies, vide, pluriel){
   resumeMenuAlerte(id, vide, pluriel);
 }
 
-function openAlertModal(id){
+/* `depart` : critères proposés pour une nouvelle alerte (ceux de la recherche
+   en cours), que le membre peut encore corriger avant d'enregistrer. */
+function openAlertModal(id, depart){
   const m = document.getElementById('alertModal');
   if(!m || !currentUser) return;
   alerteEnCours = id || null;
   const a = id ? mesAlertes.find(x=> x.id === id) : null;
-  const c = (a && a.criteres) || {};
+  const c = (a && a.criteres) || depart || {};
 
   document.getElementById('alertTitle').textContent = a ? "Modifier l'alerte" : 'Nouvelle alerte';
   document.getElementById('al-nom').value = a ? (a.nom || '') : '';
@@ -3098,6 +3181,26 @@ function initAlertes(){
     if(!currentUser && window.EBOK_AUTH){ openAuth('login'); return; }
     openAlertModal(null);
   });
+  // Raccourcis « Créer une alerte » de l'accueil et de la recherche : ils
+  // reprennent la région ou le type déjà choisis.
+  for(const b of document.querySelectorAll('[data-new-alert]')){
+    b.addEventListener('click', ()=>{
+      if(!currentUser && window.EBOK_AUTH){ openAuth('login'); return; }
+      const dispo = regionsDisponibles();
+      const depart = { regions: [], types: [] };
+      if(b.dataset.newAlert === 'home'){
+        if(dispo.includes(selectedRegion)) depart.regions = [selectedRegion];
+      }else{
+        const type = document.getElementById('f-type').value;
+        if(TYPE_COLORS[type]) depart.types = [type];
+        const lieu = document.getElementById('f-lieu').value.trim().toLowerCase();
+        const region = dispo.find(r=> r.toLowerCase() === lieu);
+        if(region) depart.regions = [region];
+      }
+      showPage('alertes');
+      openAlertModal(null, depart);
+    });
+  }
   document.getElementById('alertClose').addEventListener('click', closeAlertModal);
   document.getElementById('alertCancel').addEventListener('click', closeAlertModal);
   bindBackdropClose(m, closeAlertModal);
@@ -3124,7 +3227,9 @@ function initAlertes(){
       if(!confirm('Supprimer cette alerte ?')) return;
       if(window.EBOK_DATA.deleteAlert) await window.EBOK_DATA.deleteAlert(btn.dataset.alertDel);
       mesAlertes = mesAlertes.filter(x=> x.id !== btn.dataset.alertDel);
+      mesReperes = mesReperes.filter(r=> r.alertId !== btn.dataset.alertDel);
       renderAlertes();
+      renderReperes();
     }
   });
 
@@ -3161,6 +3266,7 @@ function initAlertes(){
     }
     closeAlertModal();
     renderAlertes();
+    renderReperes();
   });
 }
 
@@ -3187,7 +3293,6 @@ async function renderProfile(){
   }
 
   renderProfileAbout();
-  renderFavorites();
   renderMyEvents();
   const adminSection = document.getElementById('adminSection');
   adminSection.classList.toggle('hidden', !currentIsAdmin);
@@ -3948,6 +4053,8 @@ window.EBOK = {
     syncMenu();                  // le volet reflète l'état de connexion
     await chargerAlertes();
     renderAlertes();
+    if(document.getElementById('page-alertes').classList.contains('active')) ouvrirPageAlertes();
+    if(document.getElementById('page-favoris').classList.contains('active')) renderFavorites();
     maybeOpenOnboarding();       // première connexion : on pose les 4 questions
     if(document.getElementById('page-profile').classList.contains('active')) renderProfile();
   }

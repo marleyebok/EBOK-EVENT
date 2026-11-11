@@ -173,6 +173,17 @@ export async function getAlerts() {
   return (await api("/api/alerts")).alerts || [];
 }
 
+/** Alertes ET événements repérés par elles ({eventId, alertId, vu, at}). */
+export async function getAlertsEtReperes() {
+  const r = await api("/api/alerts");
+  return { alerts: r.alerts || [], notifications: r.notifications || [] };
+}
+
+/** Marque les événements repérés comme vus. */
+export async function markAlertsSeen() {
+  await api("/api/alerts?lues=1", { method: "POST" });
+}
+
 /** Crée une alerte et renvoie l'alerte créée. */
 export async function createAlert(donnees) {
   return (await api("/api/alerts", { method: "POST", body: donnees })).alert;
