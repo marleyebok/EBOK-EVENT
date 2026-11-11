@@ -185,6 +185,34 @@ function eventCardHtml(ev){
 
 let selectedRegion = '';
 
+/* Les régions se choisissent dans une liste, jamais au clavier : mêmes noms
+   que sur la carte et dans la base de villes, donc aucune faute de frappe
+   possible. Métropole par ordre alphabétique, puis outre-mer. */
+function listeRegions(){
+  const tri = (a, b)=> a.localeCompare(b, 'fr');
+  const metro = FRANCE_REGIONS.map(r=> r.name).sort(tri);
+  const outreMer = (typeof FRANCE_INSETS !== 'undefined' ? FRANCE_INSETS.map(r=> r.name) : []).sort(tri);
+  return { metro, outreMer };
+}
+function fillRegionSelect(id, libelleVide){
+  const sel = document.getElementById(id);
+  if(!sel) return;
+  const { metro, outreMer } = listeRegions();
+  const opts = l=> l.map(n=> `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+  sel.innerHTML = `<option value="">${esc(libelleVide)}</option>
+    <optgroup label="Métropole">${opts(metro)}</optgroup>
+    ${outreMer.length ? `<optgroup label="Outre-mer">${opts(outreMer)}</optgroup>` : ''}`;
+}
+/* Sélectionne une région. Une valeur hors liste (région d'un autre pays sur
+   une fiche existante) est ajoutée plutôt que perdue. */
+function setRegionValue(id, value){
+  const sel = document.getElementById(id);
+  if(!sel) return;
+  const v = value || '';
+  if(v && !Array.from(sel.options).some(o=> o.value === v)) sel.add(new Option(v, v));
+  sel.value = v;
+}
+
 function buildMap(){
   const svg = document.getElementById('franceMap');
   svg.setAttribute('viewBox', MAP_VIEWBOX);
@@ -196,22 +224,6 @@ function buildMap(){
   const tops = FRANCE_REGIONS.map(r=>
     `<path class="region" data-region="${r.name}" tabindex="0" role="button" aria-label="Région ${r.name}" d="${r.d}"><title>${r.name}</title></path>`
   ).join('');
-
-  const labels = Object.entries(CITY_LABELS).map(([name,[x,y]])=>
-    `<circle class="city-dot-halo" cx="${x}" cy="${y}" r="6"></circle>
-     <circle class="city-dot" cx="${x}" cy="${y}" r="3"></circle>
-     <text class="city-name" x="${x+8}" y="${y+3.5}">${name}</text>`
-  ).join('');
-
-  // Les événements à l'étranger n'ont pas de place sur la carte des régions :
-  // ils sont repris par la vignette mondiale.
-  const pins = events.filter(ev=> !isAbroad(ev)).map(ev=>{
-    const c = TYPE_COLORS[ev.type];
-    return `<g class="pin" data-id="${esc(ev.id)}" data-type="${esc(ev.type)}">
-      <circle class="core" cx="${ev.x}" cy="${ev.y}" r="8" fill="${c}"></circle>
-      <circle cx="${ev.x}" cy="${ev.y}" r="2.6" fill="#fff"></circle>
-    </g>`;
-  }).join('');
 
   // Encart « reste du monde » : même principe qu'un territoire d'outre-mer,
   // une vignette cliquable qui ouvre la recherche des événements hors France.
@@ -259,14 +271,20 @@ function buildMap(){
       <circle class="geo-user" cx="${ux}" cy="${uy}" r="4.5"/>`;
   }
 
+  // Le fond (régions, encarts) est dans un groupe qui se zoome ; les noms de
+  // villes et les épingles sont dessinés par-dessus, à taille constante, et
+  // recalculés à chaque changement de vue (renderMapOverlay).
   svg.innerHTML = `
-    <g class="region-base-layer">${base}</g>
-    <g class="region-layer" id="regionLayer">${tops}</g>
-    <g class="city-layer">${labels}</g>
-    ${overseas}
-    ${worldInset}
-    <g class="geo-layer">${geoMarker}</g>
-    <g class="pin-layer">${pins}</g>`;
+    <g id="mapZoom">
+      <g class="region-base-layer">${base}</g>
+      <g class="region-layer" id="regionLayer">${tops}</g>
+      ${overseas}
+      ${worldInset}
+      <g class="geo-layer">${geoMarker}</g>
+    </g>
+    <g class="city-layer" id="cityLayer"></g>
+    <g class="pin-layer" id="pinLayer"></g>`;
+  applyMapView();
 
   // Interactions régions : le relief au survol/focus est géré en CSS pur
   // (:hover / :focus) — pas de manipulation du DOM, donc plus d'effet
@@ -287,12 +305,265 @@ function buildMap(){
     });
   }
 
-  svg.querySelectorAll('.pin').forEach(pin=>{
-    pin.addEventListener('mouseenter', ()=> showTooltip(pin));
-    pin.addEventListener('mouseleave', hideTooltip);
-    pin.addEventListener('click', (e)=>{ e.stopPropagation(); openEvent(pin.dataset.id); });
+  // Épingles et bulles : elles sont redessinées à chaque zoom, on écoute donc
+  // leur calque plutôt que chacune.
+  const pinLayer = svg.querySelector('#pinLayer');
+  const activer = pin=>{
+    if(pin.dataset.cluster != null) zoomOnCluster(Number(pin.dataset.cluster));
+    else openEvent(pin.dataset.id);
+  };
+  pinLayer.addEventListener('mouseover', e=>{ const pin = e.target.closest('.pin'); if(pin) showTooltip(pin); });
+  pinLayer.addEventListener('mouseout', e=>{ if(e.target.closest('.pin')) hideTooltip(); });
+  pinLayer.addEventListener('click', e=>{
+    const pin = e.target.closest('.pin');
+    if(pin){ e.stopPropagation(); activer(pin); }
+  });
+  pinLayer.addEventListener('keydown', e=>{
+    const pin = e.target.closest('.pin');
+    if(pin && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); activer(pin); }
+  });
+}
+
+/* =========================================================
+   CARTE : ZOOM ET REGROUPEMENT DES ÉPINGLES
+   ---------------------------------------------------------
+   Plusieurs événements proches à l'écran sont fondus en une bulle qui porte
+   leur nombre. En zoomant, la bulle se défait en bulles plus petites, puis en
+   épingles. Le calcul se fait en distance à l'écran : c'est donc le zoom qui
+   décide de ce qui est regroupé, pas la ville.
+   ========================================================= */
+const MAP_MAX_ZOOM = 8;
+const CLUSTER_DIST = 27;                 // en unités de la carte, à l'écran
+const mapView = { k: 1, x: 0, y: 0 };    // échelle et décalage du fond
+let mapVisibleIds = null;                // événements retenus par les filtres (null = tous)
+let mapClusters = [];
+let mapTween = null;
+/* Sur téléphone la carte est affichée deux fois plus petite : épingles et
+   bulles sont agrandies d'autant (jusqu'à ×1,7) pour rester visibles et
+   touchables du doigt. */
+let mapUnit = 1;
+function updateMapUnit(){
+  const svg = document.getElementById('franceMap');
+  const w = svg ? svg.getBoundingClientRect().width : 0;
+  mapUnit = w ? Math.min(1.7, Math.max(1, MAP_W / w)) : 1;
+}
+
+function mapPt(x, y){ return [x * mapView.k + mapView.x, y * mapView.k + mapView.y]; }
+
+function clusterEvents(list){
+  const groups = [];
+  // Ordre stable : le même zoom donne toujours les mêmes bulles.
+  const sorted = list.slice().sort((a, b)=> String(a.id).localeCompare(String(b.id)));
+  for(const ev of sorted){
+    const [px, py] = mapPt(ev.x, ev.y);
+    const g = groups.find(g=> Math.hypot(g.x - px, g.y - py) < CLUSTER_DIST * mapUnit);
+    if(g){
+      g.items.push(ev);
+      g.x += (px - g.x) / g.items.length;
+      g.y += (py - g.y) / g.items.length;
+    }else{
+      groups.push({ x: px, y: py, items: [ev] });
+    }
+  }
+  return groups;
+}
+
+function pinSvg(ev, x, y){
+  const c = TYPE_COLORS[ev.type] || '#607D8B';
+  return `<g class="pin" data-id="${esc(ev.id)}" data-type="${esc(ev.type)}" data-sx="${x.toFixed(1)}" data-sy="${y.toFixed(1)}"
+      tabindex="0" role="button" aria-label="${esc(ev.title)}">
+    <circle class="core" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(8 * mapUnit).toFixed(1)}" fill="${c}"></circle>
+    <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(2.6 * mapUnit).toFixed(1)}" fill="#fff"></circle>
+  </g>`;
+}
+
+function renderMapOverlay(){
+  const pinLayer = document.getElementById('pinLayer');
+  const cityLayer = document.getElementById('cityLayer');
+  if(!pinLayer || !cityLayer) return;
+  updateMapUnit();
+  const visible = (x, y)=> x > -60 && x < MAP_W + 60 && y > -60 && y < MAP_H + 60;
+
+  cityLayer.innerHTML = Object.entries(CITY_LABELS).map(([name, [cx, cy]])=>{
+    const [x, y] = mapPt(cx, cy);
+    if(!visible(x, y)) return '';
+    return `<circle class="city-dot-halo" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="6"></circle>
+     <circle class="city-dot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3"></circle>
+     <text class="city-name" x="${(x + 8).toFixed(1)}" y="${(y + 3.5).toFixed(1)}">${name}</text>`;
+  }).join('');
+
+  // Les événements à l'étranger n'ont pas de place sur la carte des régions :
+  // ils sont repris par la vignette mondiale.
+  const shown = events.filter(ev=> !isAbroad(ev) && (!mapVisibleIds || mapVisibleIds.has(ev.id)));
+  mapClusters = clusterEvents(shown);
+  const auMax = mapView.k >= MAP_MAX_ZOOM - 0.01;
+
+  pinLayer.innerHTML = mapClusters.map((g, i)=>{
+    if(!visible(g.x, g.y)) return '';
+    const n = g.items.length;
+    if(n === 1) return pinSvg(g.items[0], g.x, g.y);
+    if(auMax){
+      // Zoom maximal et toujours au même endroit (même salle, même ville) :
+      // on écarte les épingles en couronne pour que chacune reste cliquable.
+      const rayon = Math.max(15, n * 19 / (2 * Math.PI)) * mapUnit;
+      return g.items.map((ev, j)=>{
+        const a = (j / n) * 2 * Math.PI - Math.PI / 2;
+        return pinSvg(ev, g.x + rayon * Math.cos(a), g.y + rayon * Math.sin(a));
+      }).join('');
+    }
+    const r = Math.min(12 + 3 * Math.sqrt(n), 30) * mapUnit;
+    return `<g class="pin pin-cluster" data-cluster="${i}" data-sx="${g.x.toFixed(1)}" data-sy="${g.y.toFixed(1)}"
+        tabindex="0" role="button" aria-label="${n} événements ici — zoomer">
+      <circle class="cluster-halo" cx="${g.x.toFixed(1)}" cy="${g.y.toFixed(1)}" r="${(r + 6 * mapUnit).toFixed(1)}"></circle>
+      <circle class="cluster-core" cx="${g.x.toFixed(1)}" cy="${g.y.toFixed(1)}" r="${r.toFixed(1)}"></circle>
+      <text class="cluster-count" x="${g.x.toFixed(1)}" y="${(g.y + 4.6 * mapUnit).toFixed(1)}" font-size="${(13.5 * mapUnit).toFixed(1)}">${n}</text>
+    </g>`;
+  }).join('');
+}
+
+/* Applique la vue courante : déplace le fond, redessine épingles et libellés. */
+function applyMapView(){
+  const zoom = document.getElementById('mapZoom');
+  if(zoom) zoom.setAttribute('transform', `translate(${mapView.x.toFixed(2)} ${mapView.y.toFixed(2)}) scale(${mapView.k.toFixed(4)})`);
+  // Le relief du socle (7 px sous la carte) garde son épaisseur à l'écran.
+  const socle = document.querySelector('#mapZoom .region-base-layer');
+  if(socle) socle.style.transform = `translateY(${(7 / mapView.k).toFixed(3)}px)`;
+  const wrap = document.getElementById('homeMapView');
+  const zoomed = mapView.k > 1.001;
+  if(wrap) wrap.classList.toggle('zoomed', zoomed);
+  const out = document.getElementById('mapZoomOut'), inn = document.getElementById('mapZoomIn'), reset = document.getElementById('mapZoomReset');
+  if(out) out.disabled = !zoomed;
+  if(inn) inn.disabled = mapView.k >= MAP_MAX_ZOOM - 0.01;
+  if(reset) reset.hidden = !zoomed;
+  hideTooltip();
+  renderMapOverlay();
+}
+
+/* Borne la vue : le fond ne peut pas sortir de son cadre. */
+function clampMapView(k, x, y){
+  k = Math.min(MAP_MAX_ZOOM, Math.max(1, k));
+  x = Math.min(0, Math.max(MAP_W * (1 - k), x));
+  y = Math.min(0, Math.max(MAP_H * (1 - k), y));
+  return { k, x, y };
+}
+function setMapView(k, x, y, animate){
+  const cible = clampMapView(k, x, y);
+  if(mapTween){ cancelAnimationFrame(mapTween); mapTween = null; }
+  const calme = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!animate || calme){ Object.assign(mapView, cible); applyMapView(); return; }
+  const depart = { ...mapView }, t0 = performance.now(), duree = 320;
+  const pas = now=>{
+    const t = Math.min(1, (now - t0) / duree), e = 1 - Math.pow(1 - t, 3);
+    mapView.k = depart.k + (cible.k - depart.k) * e;
+    mapView.x = depart.x + (cible.x - depart.x) * e;
+    mapView.y = depart.y + (cible.y - depart.y) * e;
+    applyMapView();
+    mapTween = t < 1 ? requestAnimationFrame(pas) : null;
+  };
+  mapTween = requestAnimationFrame(pas);
+}
+/* Zoome en gardant sous le doigt (ou le curseur) le point (sx, sy) de l'écran.
+   (tx, ty) : où ce point doit se retrouver ; par défaut, là où il est. */
+function zoomMapAt(k, sx, sy, animate, tx, ty){
+  k = Math.min(MAP_MAX_ZOOM, Math.max(1, k));
+  const mx = (sx - mapView.x) / mapView.k, my = (sy - mapView.y) / mapView.k;
+  setMapView(k, (tx == null ? sx : tx) - mx * k, (ty == null ? sy : ty) - my * k, animate);
+}
+/* Clic sur une bulle : on zoome juste assez pour qu'elle se défasse, en la
+   ramenant vers le centre. */
+function zoomOnCluster(i){
+  const g = mapClusters[i];
+  if(!g) return;
+  let ecart = 0;
+  for(const a of g.items) for(const b of g.items) ecart = Math.max(ecart, Math.hypot(a.x - b.x, a.y - b.y));
+  const pourSeparer = ecart > 0 ? (CLUSTER_DIST * mapUnit * 1.7) / ecart : MAP_MAX_ZOOM;
+  const k = Math.min(MAP_MAX_ZOOM, Math.max(mapView.k * 1.8, pourSeparer));
+  zoomMapAt(k, g.x, g.y, true, (g.x + MAP_W / 2) / 2, (g.y + 300) / 2);
+}
+
+/* Gestes : pincement à deux doigts, glisser quand on a zoomé, Ctrl + molette
+   (ou pincement au pavé tactile), double-clic, boutons + / −. La molette
+   seule continue de faire défiler la page. */
+function initMapZoom(){
+  const wrap = document.getElementById('homeMapView');
+  const svg = document.getElementById('franceMap');
+  if(!wrap || !svg) return;
+  // Position d'un point de la fenêtre dans le repère de la carte à l'écran.
+  const pos = (cx, cy)=>{
+    const r = svg.getBoundingClientRect();
+    const f = MAP_W / (r.width || MAP_W);
+    return [(cx - r.left) * f, (cy - r.top) * f, f];
+  };
+  const doigts = new Map();
+  let pince = null, glisse = null, aBouge = false;
+
+  wrap.addEventListener('pointerdown', e=>{
+    if(e.pointerType === 'mouse' && e.button !== 0) return;
+    doigts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    aBouge = false;
+    if(doigts.size === 2){
+      const [a, b] = [...doigts.values()];
+      pince = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, k: mapView.k };
+      glisse = null;
+    }else if(doigts.size === 1){
+      glisse = { x: e.clientX, y: e.clientY, vx: mapView.x, vy: mapView.y };
+    }
+  });
+  wrap.addEventListener('pointermove', e=>{
+    if(!doigts.has(e.pointerId)) return;
+    doigts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if(pince && doigts.size >= 2){
+      const [a, b] = [...doigts.values()];
+      const d = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+      const [sx, sy] = pos((a.x + b.x) / 2, (a.y + b.y) / 2);
+      aBouge = true;
+      zoomMapAt(pince.k * d / pince.d, sx, sy, false);
+    }else if(glisse && mapView.k > 1.001){
+      const dx = e.clientX - glisse.x, dy = e.clientY - glisse.y;
+      if(!aBouge && Math.hypot(dx, dy) < 6) return;
+      if(!aBouge){ aBouge = true; try{ wrap.setPointerCapture(e.pointerId); }catch(_){} wrap.classList.add('dragging'); }
+      const f = pos(0, 0)[2];
+      setMapView(mapView.k, glisse.vx + dx * f, glisse.vy + dy * f, false);
+    }
+  });
+  const fin = e=>{
+    doigts.delete(e.pointerId);
+    if(doigts.size < 2) pince = null;
+    if(doigts.size === 0){ glisse = null; wrap.classList.remove('dragging'); }
+    else if(doigts.size === 1){
+      // Un doigt reste après un pincement : il reprend le glisser d'ici.
+      const p = [...doigts.values()][0];
+      glisse = { x: p.x, y: p.y, vx: mapView.x, vy: mapView.y };
+    }
+  };
+  wrap.addEventListener('pointerup', fin);
+  wrap.addEventListener('pointercancel', fin);
+  // Un glisser ne doit pas finir en clic sur la région ou l'épingle relâchée.
+  wrap.addEventListener('click', e=>{
+    if(aBouge){ e.stopPropagation(); e.preventDefault(); aBouge = false; }
+  }, true);
+
+  wrap.addEventListener('wheel', e=>{
+    if(!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    const [sx, sy] = pos(e.clientX, e.clientY);
+    zoomMapAt(mapView.k * Math.exp(-e.deltaY * 0.012), sx, sy, false);
+  }, { passive: false });
+
+  wrap.addEventListener('dblclick', e=>{
+    if(e.target.closest('.pin, .map-zoom-ctl')) return;
+    e.preventDefault();
+    const [sx, sy] = pos(e.clientX, e.clientY);
+    zoomMapAt(mapView.k * 2, sx, sy, true);
   });
 
+  const centre = ()=> [MAP_W / 2, 300];
+  const bouton = (id, action)=>{ const b = document.getElementById(id); if(b) b.addEventListener('click', e=>{ e.stopPropagation(); action(); }); };
+  bouton('mapZoomIn',  ()=> zoomMapAt(mapView.k * 1.8, ...centre(), true));
+  bouton('mapZoomOut', ()=> zoomMapAt(mapView.k / 1.8, ...centre(), true));
+  bouton('mapZoomReset', ()=> setMapView(1, 0, 0, true));
+  // La taille des épingles dépend de la largeur affichée de la carte.
+  window.addEventListener('resize', renderMapOverlay);
 }
 
 
@@ -332,8 +603,7 @@ function openRegionSearch(name){
   const form = document.getElementById('searchForm');
   if(form) form.reset();
   searchAbroad = false;
-  const lieu = document.getElementById('f-lieu');
-  if(lieu) lieu.value = name;
+  setRegionValue('f-region', name);
   showPage('search');
   renderResults();
 }
@@ -354,28 +624,36 @@ function applySelectedRegionStyle(){
 /* Aligne le surlignage de région sur le filtre ville/région courant
    (ex. recherche d'une ville → plus aucune région surlignée). */
 function syncRegionSelection(){
-  selectedRegion = FRANCE_REGIONS.some(r=> r.name === homeCity) ? homeCity : '';
+  selectedRegion = homeRegion;
   applySelectedRegionStyle();
 }
 
 function showTooltip(pin){
-  const ev = events.find(e=>e.id===pin.dataset.id);
   const tt = document.getElementById('mapTooltip');
   const wrap = document.querySelector('.map-wrap');
   const svg = document.getElementById('franceMap');
   const svgRect = svg.getBoundingClientRect();
   const wrapRect = wrap.getBoundingClientRect();
   const scale = svgRect.width/MAP_W;
-  const left = (svgRect.left - wrapRect.left) + ev.x*scale;
-  const top = (svgRect.top - wrapRect.top) + ev.y*scale;
-  tt.style.left = left+"px";
-  tt.style.top = top+"px";
+  tt.style.left = ((svgRect.left - wrapRect.left) + Number(pin.dataset.sx)*scale)+"px";
+  tt.style.top = ((svgRect.top - wrapRect.top) + Number(pin.dataset.sy)*scale)+"px";
+  if(pin.dataset.cluster != null){
+    const g = mapClusters[Number(pin.dataset.cluster)];
+    if(!g) return;
+    const villes = [...new Set(g.items.map(e=> e.city).filter(Boolean))];
+    tt.innerHTML = `<div class="tt-title">${g.items.length} événements</div>
+      <div class="tt-meta">${esc(villes.slice(0, 3).join(', '))}${villes.length > 3 ? '…' : ''}<br>Clique pour zoomer</div>`;
+    tt.classList.add('show');
+    return;
+  }
+  const ev = events.find(e=>e.id===pin.dataset.id);
+  if(!ev) return;
   tt.innerHTML = `<div class="tt-type" style="color:${typeColor(ev.type)}">${esc(ev.type)}</div>
     <div class="tt-title">${esc(ev.title)}</div>
     <div class="tt-meta">${esc(ev.lieu)}<br>${fmtDateRange(ev.dateStart,ev.dateEnd)}<br>${esc(ev.sexe)} · ${esc(ageLabel(ev.age))} · ${esc(ev.niveau)}</div>`;
   tt.classList.add('show');
 }
-function hideTooltip(){ document.getElementById('mapTooltip').classList.remove('show'); }
+function hideTooltip(){ const tt = document.getElementById('mapTooltip'); if(tt) tt.classList.remove('show'); }
 
 /* =========================================================
    FILTERS — home map
@@ -384,7 +662,15 @@ function hideTooltip(){ document.getElementById('mapTooltip').classList.remove('
 function initHomeFilters(){
 
   // Barre de recherche ville/région avec autocomplétion
-  const cities = [...new Set(events.flatMap(e=>[e.city, e.region]))].sort();
+  // Suggestions : les villes seulement. La région se choisit dans sa liste.
+  const cities = [...new Set(events.map(e=> e.city).filter(Boolean))].sort();
+  fillRegionSelect('regionSelect', 'Toutes les régions');
+  const regionSelect = document.getElementById('regionSelect');
+  if(regionSelect) regionSelect.addEventListener('change', ()=>{
+    homeRegion = regionSelect.value;
+    syncRegionSelection();
+    applyMapFilters();
+  });
   const citySearch = document.getElementById('citySearch');
   const citySuggestions = document.getElementById('citySuggestions');
   
@@ -671,6 +957,7 @@ function updateTypeLabel(){
 
 let homeView = 'map';
 let homeCity = '';
+let homeRegion = '';       // région choisie dans la liste de la recherche rapide
 let homeRadius = 200;
 
 // Variables du calendrier de période
@@ -809,10 +1096,10 @@ function computeHomeFilteredEvents(){
     if(homeCity){
       const q = homeCity.toLowerCase();
       const inCity = (ev.city || '').toLowerCase().includes(q);
-      const inRegion = (ev.region || '').toLowerCase().includes(q);
       const inLieu = (ev.lieu || '').toLowerCase().includes(q);
-      if(!inCity && !inRegion && !inLieu) return false;
+      if(!inCity && !inLieu) return false;
     }
+    if(homeRegion && ev.region !== homeRegion) return false;
     // "Partout" (curseur au max, >= 200) = aucune limite de distance.
     if(homeRadius < 200 && getEventDistance(ev) > homeRadius) return false;
     return true;
@@ -822,9 +1109,10 @@ function computeHomeFilteredEvents(){
 function applyMapFilters(){
   const filtered = computeHomeFilteredEvents();
   const filteredIds = filtered.map(e=>e.id);
-  document.querySelectorAll('.pin').forEach(pin=>{
-    pin.classList.toggle('dimmed', !filteredIds.includes(pin.dataset.id));
-  });
+  // La carte ne montre que les événements retenus : les bulles comptent
+  // donc ce qui correspond aux filtres.
+  mapVisibleIds = new Set(filteredIds);
+  renderMapOverlay();
   document.getElementById('homeCount').textContent = `${filtered.length} événement${filtered.length>1?'s':''}`;
   if(homeView === 'list') renderHomeList(filtered);
 }
@@ -863,6 +1151,8 @@ function initSearchPage(){
     const opt = document.createElement('option'); opt.value=t; opt.textContent=t;
     typeSel.appendChild(opt);
   });
+  fillRegionSelect('f-region', 'Toutes les régions');
+  document.getElementById('f-region').addEventListener('change', renderResults);
   document.getElementById('searchForm').addEventListener('submit',(e)=>{ e.preventDefault(); renderResults(); });
   document.getElementById('resetSearch').addEventListener('click', ()=>{
     document.getElementById('searchForm').reset();
@@ -874,6 +1164,7 @@ function initSearchPage(){
 
 function renderResults(){
   const lieu = document.getElementById('f-lieu').value.trim().toLowerCase();
+  const regionChoisie = document.getElementById('f-region').value;
   const type = document.getElementById('f-type').value;
   const dStart = document.getElementById('f-date-start').value;
   const dEnd = document.getElementById('f-date-end').value;
@@ -884,8 +1175,9 @@ function renderResults(){
 
   let results = events.filter(ev=>{
     if(searchAbroad && !isAbroad(ev)) return false;
-    if(lieu && !(ev.city.toLowerCase().includes(lieu) || ev.region.toLowerCase().includes(lieu)
-      || ev.lieu.toLowerCase().includes(lieu) || eventCountry(ev).toLowerCase().includes(lieu))) return false;
+    if(regionChoisie && ev.region !== regionChoisie) return false;
+    if(lieu && !(String(ev.city || '').toLowerCase().includes(lieu)
+      || String(ev.lieu || '').toLowerCase().includes(lieu) || eventCountry(ev).toLowerCase().includes(lieu))) return false;
     if(type !== 'all' && ev.type !== type) return false;
     if(dStart && ev.dateEnd < dStart) return false;
     if(dEnd && ev.dateStart > dEnd) return false;
@@ -896,10 +1188,9 @@ function renderResults(){
     return true;
   }).sort(parDateRecente);
 
-  // Carte régionale si le filtre lieu vise une seule région.
-  const lieuRaw = document.getElementById('f-lieu').value.trim();
+  // Carte régionale quand une région est choisie.
   const region = (typeof FRANCE_REGIONS !== 'undefined')
-    ? FRANCE_REGIONS.find(r=> r.name.toLowerCase() === lieuRaw.toLowerCase()) : null;
+    ? FRANCE_REGIONS.find(r=> r.name === regionChoisie) : null;
   if(region) renderRegionMap(region.name, results); else hideRegionMap();
 
   document.getElementById('resultsCount').textContent = `${results.length} résultat${results.length>1?'s':''}`;
@@ -1113,8 +1404,7 @@ function initCreatePage(){
   // Autocomplétion de ville (fixe la localisation + la région).
   attachCityAutocomplete('c-ville', 'c-ville-ac', pick=>{
     createPickedLocation = pick;
-    const regionEl = document.getElementById('c-region');
-    if(regionEl) regionEl.value = pick.region || '';
+    setRegionValue('c-region', pick.region);
     const hint = document.getElementById('c-ville-hint');
     if(hint){ hint.textContent = '📍 ' + pick.city + (pick.region ? ' · ' + pick.region : '') + ' — localisé sur la carte.'; hint.style.color = 'var(--green)'; }
   });
@@ -2016,7 +2306,7 @@ function renderFeatured(){
       <div class="fx-bg ${safeImg(ev.poster) ? 'blur' : ''}" style="${bg}"></div>
       <div class="fx-scrim"></div>
       <div class="fx-content">
-        <div class="fx-poster">${poster}</div>
+        <div class="fx-poster" data-open="${esc(ev.id)}" role="button" tabindex="0" aria-label="Voir l'événement ${esc(ev.title)}">${poster}</div>
         <div class="fx-text">
           <span class="featured-tag">★ À la une</span>
           <span class="featured-cat"><span class="dot" style="background:${c}"></span>${esc(ev.type || 'Événement')}</span>
@@ -2055,11 +2345,50 @@ function renderFeatured(){
   if(next) next.onclick = ()=>{ goToSlide(currentSlide + 1); startAuto(); };
   dotsContainer.querySelectorAll('.carousel-dot').forEach(dot=>
     dot.onclick = ()=>{ goToSlide(parseInt(dot.dataset.slide, 10)); startAuto(); });
-  track.querySelectorAll('[data-open]').forEach(b=> b.addEventListener('click', ()=> openEvent(b.dataset.open)));
+  track.querySelectorAll('[data-open]').forEach(b=>{
+    b.addEventListener('click', ()=> openEvent(b.dataset.open));
+    // L'affiche n'est pas un vrai bouton : Entrée doit l'ouvrir aussi.
+    if(b.tagName !== 'BUTTON') b.addEventListener('keydown', e=>{ if(e.key === 'Enter'){ e.preventDefault(); openEvent(b.dataset.open); } });
+  });
 
   // Pause au survol pour laisser le temps de lire.
   const wrapper = slot.querySelector('.carousel-wrapper');
   if(wrapper){ wrapper.onmouseenter = stopAuto; wrapper.onmouseleave = startAuto; }
+
+  // Balayage au doigt : la piste suit le doigt, puis passe à la diapositive
+  // voisine si le geste est assez franc, sinon revient. Un geste vertical
+  // laisse la page défiler. (Propriétés on… : la fonction est rappelée à
+  // chaque mise à jour des événements, un écouteur s'empilerait.)
+  if(wrapper){
+    let x0 = 0, y0 = 0, dx = 0, sens = null;   // sens : null = indécis, true = horizontal
+    wrapper.ontouchstart = e=>{
+      if(single || e.touches.length !== 1){ sens = false; return; }
+      x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = 0; sens = null;
+      stopAuto();
+    };
+    wrapper.ontouchmove = e=>{
+      if(sens === false || e.touches.length !== 1) return;
+      const mx = e.touches[0].clientX - x0, my = e.touches[0].clientY - y0;
+      if(sens === null){
+        if(Math.abs(mx) < 8 && Math.abs(my) < 8) return;
+        sens = Math.abs(mx) > Math.abs(my);
+        if(!sens) return;
+        track.style.transition = 'none';
+      }
+      dx = mx;
+      if(e.cancelable) e.preventDefault();
+      track.style.transform = `translateX(calc(-${currentSlide * 100}% + ${dx}px))`;
+    };
+    wrapper.ontouchend = wrapper.ontouchcancel = ()=>{
+      if(sens === true){
+        track.style.transition = '';
+        const seuil = Math.min(70, wrapper.clientWidth * 0.18);
+        goToSlide(Math.abs(dx) > seuil ? currentSlide + (dx < 0 ? 1 : -1) : currentSlide);
+      }
+      sens = null;
+      startAuto();
+    };
+  }
 
   goToSlide(0);
   startAuto();
@@ -3196,8 +3525,8 @@ function initAlertes(){
       }else{
         const type = document.getElementById('f-type').value;
         if(TYPE_COLORS[type]) depart.types = [type];
-        const lieu = document.getElementById('f-lieu').value.trim().toLowerCase();
-        const region = dispo.find(r=> r.toLowerCase() === lieu);
+        const choisie = document.getElementById('f-region').value;
+        const region = dispo.find(r=> r === choisie);
         if(region) depart.regions = [region];
       }
       showPage('alertes');
@@ -3662,7 +3991,7 @@ function prefillCreateFromImport(ev, poster){
   set('c-nom', ev.title);
   set('c-type', ev.type);
   set('c-ville', ev.city);
-  set('c-region', ev.region);
+  if(ev.region) setRegionValue('c-region', ev.region);
   // Pays : seulement s'il existe dans la liste (sinon le choix reste France).
   const paysEl = document.getElementById('c-pays');
   if(paysEl && ev.pays && Array.from(paysEl.options).some(o=> o.value === ev.pays)) paysEl.value = ev.pays;
@@ -3876,7 +4205,7 @@ function openEditModal(id){
   setFieldVal('e-type', ev.type || 'Divers');
   setFieldVal('e-niveau', ev.niveau || 'Loisir');
   setFieldVal('e-city', ev.city);
-  setFieldVal('e-region', ev.region);
+  setRegionValue('e-region', ev.region);
   setFieldVal('e-address', (ev.infos && ev.infos.adresse) || ev.lieu || '');
   setFieldVal('e-date-start', ev.dateStart);
   setFieldVal('e-date-end', ev.dateEnd);
@@ -3917,8 +4246,7 @@ function initEditModal(){
   // Autocomplétion de ville dans l'édition → corrige position + région.
   attachCityAutocomplete('e-city', 'e-city-ac', pick=>{
     editPickedLocation = pick;
-    const r = document.getElementById('e-region');
-    if(r) r.value = pick.region || '';
+    setRegionValue('e-region', pick.region);
   });
 
   const fileInput = document.getElementById('e-poster-file');
@@ -4088,6 +4416,9 @@ initTheme();           // applique le thème mémorisé avant le rendu
 initGeoloc();          // restaure une éventuelle position avant le 1er dessin
 loadFavorites();       // favoris locaux (mode démo) avant le 1er dessin
 buildMap();
+initMapZoom();
+fillRegionSelect('c-region', 'Choisis une région');
+fillRegionSelect('e-region', 'Choisis une région');
 renderFeatured();
 initHomeFilters();
 initSearchPage();

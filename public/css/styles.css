@@ -1987,3 +1987,58 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
   .btn-primary::after{display:none;}
   .hero-court svg,.fx-poster,.event-card,.card-media img{transition:none;}
 }
+
+/* =========================================================
+   CARTE : ZOOM, BULLES DE REGROUPEMENT — LISTES DE RÉGIONS — CARROUSEL TACTILE
+   ========================================================= */
+/* Au repos, un doigt fait défiler la page et deux doigts zooment la carte ;
+   une fois zoomée, la carte se déplace au doigt. */
+.map-wrap{touch-action:pan-y;}
+.map-wrap.zoomed{touch-action:none;cursor:grab;}
+.map-wrap.dragging{cursor:grabbing;user-select:none;}
+.region{vector-effect:non-scaling-stroke;}
+/* Zoomée, une région qui se soulève au survol ferait un bond : on la teinte
+   seulement. */
+.map-wrap.zoomed .region:hover,.map-wrap.zoomed .region:focus{transform:none;filter:none;}
+
+.pin:focus{outline:none;}
+.pin:focus-visible .core,.pin:focus-visible .cluster-core{stroke:var(--chalk);stroke-width:3;}
+.pin-cluster:hover{transform:scale(1.1);}
+.cluster-halo{fill:rgba(var(--accent-rgb), .22);}
+.cluster-core{fill:var(--accent);stroke:var(--asphalt-2);stroke-width:2.5;}
+.cluster-count{
+  font-family:var(--font-body);font-weight:800;fill:#fff;
+  text-anchor:middle;pointer-events:none;
+}
+
+.map-zoom-ctl{
+  position:absolute;right:14px;top:14px;z-index:15;
+  display:flex;flex-direction:column;align-items:flex-end;gap:6px;
+}
+.map-zoom-ctl button{
+  width:40px;height:40px;border-radius:12px;border:1px solid var(--line-strong);
+  background:var(--asphalt-2);color:var(--chalk);font-size:22px;font-weight:600;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 16px -8px rgba(0,0,0,.4);transition:border-color .15s, opacity .15s, transform .1s;
+}
+.map-zoom-ctl button:hover:not(:disabled){border-color:var(--accent);}
+.map-zoom-ctl button:active:not(:disabled){transform:scale(.94);}
+.map-zoom-ctl button:disabled{opacity:.4;cursor:default;}
+.map-zoom-ctl .map-zoom-reset{width:auto;padding:0 12px;font-size:13px;font-weight:700;}
+.map-zoom-ctl .map-zoom-reset[hidden]{display:none;}
+
+/* Liste des régions de la recherche rapide : même allure que le champ ville. */
+.region-select{
+  width:100%;background:var(--asphalt-3);border:1px solid var(--line-strong);color:var(--chalk);
+  border-radius:8px;padding:9px 12px;font-size:13px;font-weight:600;cursor:pointer;
+}
+.region-select:focus{outline:none;border-color:var(--accent);}
+@media(min-width:981px){
+  .fg-region{flex:0 1 230px;}
+}
+
+/* À la une : l'affiche ouvre l'événement ; un geste horizontal change de
+   diapositive, un geste vertical fait défiler la page. */
+.fx-poster[data-open]{cursor:pointer;}
+.fx-poster[data-open]:focus-visible{outline:2px solid #fff;outline-offset:3px;}
+.carousel-wrapper{touch-action:pan-y;}

@@ -204,11 +204,17 @@
         </div>
 
         <div class="filter-group fg-city">
-          <label for="citySearch">Lieu (ville / région)</label>
+          <label for="citySearch">Ville</label>
           <div class="search-input-wrap">
-            <input type="text" id="citySearch" placeholder="Cherche une ville ou région...">
+            <input type="text" id="citySearch" placeholder="Cherche une ville...">
             <div class="city-suggestions hidden" id="citySuggestions"></div>
           </div>
+        </div>
+
+        <!-- La région se choisit dans une liste (remplie par js/app.js). -->
+        <div class="filter-group fg-region">
+          <label for="regionSelect">Région</label>
+          <select id="regionSelect" class="region-select"><option value="">Toutes les régions</option></select>
         </div>
 
         <div class="filter-group fg-period">
@@ -246,6 +252,12 @@
       <div class="map-wrap" id="homeMapView">
         <svg id="franceMap" viewBox="0 0 560 560" xmlns="http://www.w3.org/2000/svg"></svg>
         <div class="map-tooltip" id="mapTooltip"></div>
+        <!-- Zoom de la carte (js/app.js, initMapZoom). Au doigt : pincer. -->
+        <div class="map-zoom-ctl">
+          <button type="button" id="mapZoomIn" aria-label="Zoomer" title="Zoomer">+</button>
+          <button type="button" id="mapZoomOut" aria-label="Dézoomer" title="Dézoomer" disabled>−</button>
+          <button type="button" id="mapZoomReset" class="map-zoom-reset" aria-label="Revenir à la France entière" title="France entière" hidden>France entière</button>
+        </div>
 
       </div>
 
@@ -264,8 +276,12 @@
 
     <form class="search-form" id="searchForm">
       <div class="field">
-        <label for="f-lieu">Lieu</label>
-        <input type="text" id="f-lieu" placeholder="Ville ou région">
+        <label for="f-lieu">Ville</label>
+        <input type="text" id="f-lieu" placeholder="Ville, salle ou pays">
+      </div>
+      <div class="field">
+        <label for="f-region">Région</label>
+        <select id="f-region"><option value="">Toutes les régions</option></select>
       </div>
       <div class="field">
         <label for="f-type">Type d'événement</label>
@@ -484,7 +500,7 @@
             <div class="form-row">
               <div class="field">
                 <label for="c-region">Région</label>
-                <input type="text" id="c-region" placeholder="Se remplit automatiquement" readonly>
+                <select id="c-region"><option value="">Choisis une région</option></select>
               </div>
               <div class="field">
                 <label for="c-pays">Pays</label>
@@ -1047,7 +1063,7 @@
         </div>
         <div class="field">
           <label for="e-region">Région</label>
-          <input type="text" id="e-region">
+          <select id="e-region"><option value="">Choisis une région</option></select>
         </div>
       </div>
       <div class="field">
