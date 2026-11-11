@@ -106,6 +106,34 @@
     if(coeur) jouer(coeur, { scale: [1, 1.4, 0.92, 1] }, { duration: 0.45, ease: 'easeOut' }, ['transform']);
   }, true);
 
+  /* ---------- 6. La pastille de l'onglet actif glisse d'un onglet à l'autre ---------- */
+  const nav = document.querySelector('.nav-links');
+  if(nav){
+    const pastille = document.createElement('span');
+    pastille.className = 'nav-pill';
+    nav.insertBefore(pastille, nav.firstChild);
+    nav.classList.add('pill-on');
+    let sansGlisser = true;      // premier placement, ou après un redimensionnement
+    const placer = ()=>{
+      const actif = nav.querySelector('.navlink.active');
+      // Aucun onglet actif (fiche événement) ou barre masquée (mobile).
+      if(!actif || !actif.offsetWidth){ pastille.style.opacity = '0'; sansGlisser = true; return; }
+      const x = actif.offsetLeft, largeur = actif.offsetWidth;
+      if(sansGlisser){
+        pastille.style.transform = 'translateX(' + x + 'px)';
+        pastille.style.width = largeur + 'px';
+      }else{
+        M.animate(pastille, { x: x, width: largeur }, { type: 'spring', stiffness: 420, damping: 34 });
+      }
+      pastille.style.opacity = '1';
+      sansGlisser = false;
+    };
+    new MutationObserver(placer).observe(nav, { subtree: true, attributes: true, attributeFilter: ['class'] });
+    window.addEventListener('resize', ()=>{ sansGlisser = true; placer(); });
+    if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ sansGlisser = true; placer(); });
+    placer();
+  }
+
   /* ---------- Premier affichage ---------- */
   const active = document.querySelector('.page.active');
   if(active) animerPage(active);
