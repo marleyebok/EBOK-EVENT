@@ -479,6 +479,41 @@ dans le code — le reste est à faire.
 
 ---
 
+## 🛡️ Audit de sécurité (11/11/2026)
+
+Corrigé :
+
+- [x] **Injection de script par la galerie photo** — la visionneuse affichait
+      l'adresse et la légende d'une photo sans les échapper : un diffuseur
+      pouvait faire exécuter du code chez quiconque ouvrait la photo, admin
+      compris.
+- [x] Nom du membre échappé dans la barre du haut et la page profil.
+- [x] Import IA et détection : chaque redirection est revérifiée, les adresses
+      internes sont jugées sur l'adresse résolue (plus sur le nom), et une page
+      de plus de 5 Mo est abandonnée.
+- [x] Titre d'événement contenant « $ » : ne peut plus casser sa page de partage.
+- [x] `undici` mis à jour (failles connues).
+
+Reste à faire :
+
+- [ ] **Poser `CRON_SECRET`** sur Vercel : sans elle, n'importe qui peut
+      déclencher la détection hebdomadaire (au plus une fois par 20 h et par
+      source, rien n'est publié, mais chaque analyse consomme l'IA).
+- [ ] **Rendre la CSP bloquante** (`Content-Security-Policy` au lieu de
+      `-Report-Only` dans `vercel.json`) après un test complet de connexion
+      Clerk : c'est le filet qui aurait neutralisé la faille de la galerie.
+- [ ] Limiter côté serveur la taille d'une fiche événement et d'un profil, et
+      le nombre de fichiers déposés par membre (aucun plafond aujourd'hui).
+- [ ] Limitation de débit sur `/api` (pare-feu Vercel).
+- [ ] Compteur de vues : l'empreinte inclut le navigateur déclaré, on peut donc
+      le gonfler en changeant cette valeur.
+- [ ] Activer « Secret scanning » et « Push protection » sur le dépôt GitHub
+      (public) ; `zod` vulnérable via `@vercel/blob`, à mettre à jour dès qu'une
+      version corrigée existe.
+- [ ] Ancienne clé web Firebase visible dans l'historique Git (script de
+      migration supprimé) : vérifier que l'ancien projet Firebase est fermé ou
+      que ses règles interdisent tout accès anonyme.
+
 ## 🧹 Dette technique connue
 
 | Sujet | Détail | Urgence |

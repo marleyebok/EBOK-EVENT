@@ -167,11 +167,13 @@ export function inject(html, ev, id, req) {
   let out =
     html.slice(0, start) + metaBlock(ev, id, req) + html.slice(end + OG_END.length);
 
-  out = out.replace(/<title>[\s\S]*?<\/title>/i, `<title>${esc(pageTitle)}</title>`);
+  // Remplacement par fonction : dans une chaîne, « $& » ou « $' » venus du
+  // titre d'un événement seraient interprétés et recopieraient la page.
+  out = out.replace(/<title>[\s\S]*?<\/title>/i, () => `<title>${esc(pageTitle)}</title>`);
   if (description) {
     out = out.replace(
       /<meta name="description" content="[^"]*">/i,
-      `<meta name="description" content="${esc(description)}">`
+      () => `<meta name="description" content="${esc(description)}">`
     );
   }
   return out;
