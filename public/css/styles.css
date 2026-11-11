@@ -1801,3 +1801,32 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 @media(max-width:1250px){
   #navProfile{display:none;}
 }
+
+/* =========================================================
+   BARRE DU HAUT FLOTTANTE
+   ---------------------------------------------------------
+   Détachée du bord, arrondie, sur un fond légèrement translucide. La
+   pastille de l'onglet actif (.nav-pill) est posée par js/animations.js et
+   glisse d'un onglet à l'autre ; sans elle, l'onglet actif garde son fond.
+   ========================================================= */
+:root .topbar{
+  top:12px;margin:12px 16px 0;padding:10px 12px 10px 20px;
+  border:1px solid var(--line);border-radius:22px;
+  background:color-mix(in srgb, var(--asphalt-2) 84%, transparent);
+  backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);
+  box-shadow:0 1px 2px rgba(0,0,0,.06), 0 12px 32px -12px rgba(0,0,0,.22);
+}
+.nav-links{position:relative;}
+.nav-links .navlink{position:relative;z-index:1;}
+.nav-pill{
+  position:absolute;top:0;left:0;height:100%;border-radius:999px;
+  background:var(--accent);z-index:0;pointer-events:none;
+}
+.nav-links.pill-on .navlink.active,
+.nav-links.pill-on .navlink.active:hover{background:none;color:#FFFFFF;}
+@media(max-width:950px){
+  :root .topbar{top:8px;margin:8px 10px 0;padding:8px 8px 8px 14px;border-radius:18px;}
+}
+@media(max-width:360px){
+  :root .topbar{margin:6px 6px 0;padding:6px 6px 6px 10px;}
+}
