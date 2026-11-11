@@ -1,0 +1,186 @@
+/* =========================================================
+   EBOK — PROPOSITION DE DESIGN « V2 »
+   ---------------------------------------------------------
+   Tout est rangé sous html[data-ui="v2"] : tant que cet attribut n'est pas
+   posé (js/v2-switch.js, lien ?apercu=v2), cette feuille n'a AUCUN effet et
+   le site reste celui de styles.css.
+
+   Idée directrice : le terrain. Un fond net, l'encre et le bordeaux du logo,
+   et un seul motif — les lignes d'un demi-terrain — qui se trace à l'arrivée.
+   Le reste se tait : formes plus rondes, plus d'air, moins d'étiquettes.
+   ========================================================= */
+
+/* ---------- Jetons ---------- */
+html[data-ui="v2"]{
+  --radius:20px;
+  --v2-ombre:0 1px 2px rgba(22,21,26,.06), 0 12px 32px -12px rgba(22,21,26,.18);
+  --v2-ombre-haute:0 2px 4px rgba(22,21,26,.06), 0 28px 56px -18px rgba(22,21,26,.32);
+  --v2-ease:cubic-bezier(.22,1,.36,1);
+}
+html[data-ui="v2"][data-theme="light"]{
+  --asphalt:#F6F5F1;
+  --asphalt-2:#FFFFFF;
+  --asphalt-3:#ECEAE3;
+  --chalk:#16151A;
+  --chalk-dim:#66626B;
+  --line:rgba(22,21,26,.09);
+  --line-strong:rgba(22,21,26,.2);
+}
+html[data-ui="v2"]:not([data-theme="light"]){
+  --asphalt:#121116;
+  --asphalt-2:#1B1A20;
+  --asphalt-3:#26252C;
+  --v2-ombre:0 1px 2px rgba(0,0,0,.4), 0 12px 32px -12px rgba(0,0,0,.6);
+  --v2-ombre-haute:0 2px 4px rgba(0,0,0,.4), 0 28px 56px -18px rgba(0,0,0,.8);
+}
+html[data-ui="v2"] body{background-image:none;}
+html[data-ui="v2"] :focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
+
+/* ---------- Barre du haut : flottante, détachée du bord ---------- */
+html[data-ui="v2"] .topbar{
+  top:12px;margin:12px 16px 0;padding:10px 12px 10px 20px;
+  border:1px solid var(--line);border-radius:22px;
+  background:color-mix(in srgb, var(--asphalt-2) 82%, transparent);
+  backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);
+  box-shadow:var(--v2-ombre);
+  transition:padding .3s var(--v2-ease), box-shadow .3s var(--v2-ease);
+}
+html[data-ui="v2"] .topbar.v2-serree{padding-top:6px;padding-bottom:6px;box-shadow:var(--v2-ombre-haute);}
+html[data-ui="v2"] .nav-links{position:relative;gap:2px;}
+html[data-ui="v2"] .navlink{position:relative;z-index:1;padding:9px 15px;transition:color .2s;}
+html[data-ui="v2"] .navlink:hover{background:none;color:var(--chalk);}
+html[data-ui="v2"] .navlink.active,
+html[data-ui="v2"] .navlink.active:hover{color:#FFFFFF;}
+/* La pastille de l'onglet actif est un élément à part (js/v2.js) qui glisse
+   d'un onglet à l'autre ; sans elle, on garde le fond d'origine. */
+html[data-ui="v2"] .nav-links.v2-pill-on .navlink.active{background:none;}
+html[data-ui="v2"] .v2-nav-pill{
+  position:absolute;top:0;left:0;height:100%;border-radius:999px;
+  background:var(--accent);z-index:0;pointer-events:none;
+}
+html[data-ui="v2"] .btn{border-radius:999px;transition:transform .18s var(--v2-ease), background .15s, border-color .15s, box-shadow .2s;}
+html[data-ui="v2"] .btn:active,
+html[data-ui="v2"] .navlink:active,
+html[data-ui="v2"] .toggle-btn:active,
+html[data-ui="v2"] .icon-btn:active{transform:scale(.96);}
+html[data-ui="v2"] .btn-primary{box-shadow:0 6px 16px -6px rgba(var(--accent-rgb),.7);}
+html[data-ui="v2"] .btn-primary:hover{transform:translateY(-1px);box-shadow:0 10px 22px -8px rgba(var(--accent-rgb),.8);}
+html[data-ui="v2"] .btn-ghost{background:transparent;border-color:var(--line-strong);}
+html[data-ui="v2"] .btn-ghost:hover{background:var(--asphalt-3);}
+html[data-ui="v2"] .theme-toggle,
+html[data-ui="v2"] .icon-btn{border-radius:14px;}
+
+/* ---------- Accueil : le titre et le terrain ---------- */
+html[data-ui="v2"] .hero{
+  position:relative;max-width:none;padding:72px 0 44px;min-height:340px;
+  display:flex;flex-direction:column;justify-content:center;
+}
+html[data-ui="v2"] .hero h1{
+  font-size:clamp(40px, 6.1vw, 80px);line-height:.96;letter-spacing:0;
+  max-width:11.5em;position:relative;z-index:1;
+}
+html[data-ui="v2"] .hero .hl{color:inherit;}
+html[data-ui="v2"] .v2-ligne{display:block;overflow:hidden;padding-top:.06em;}
+html[data-ui="v2"] .v2-ligne > span{display:block;}
+html[data-ui="v2"] .v2-ligne:first-child > span{color:var(--accent-text);}
+html[data-ui="v2"] .hero-sub{
+  position:relative;z-index:1;margin-top:22px;font-size:18px;max-width:30em;line-height:1.55;
+}
+/* Le demi-terrain, vu du dessus, panier à droite. */
+html[data-ui="v2"] .v2-terrain{
+  position:absolute;right:-32px;top:50%;transform:translateY(-50%);
+  width:min(38%, 480px);height:auto;z-index:0;pointer-events:none;overflow:visible;
+}
+html[data-ui="v2"] .v2-terrain path,
+html[data-ui="v2"] .v2-terrain circle.v2-trait{
+  fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round;opacity:.5;
+}
+html[data-ui="v2"] .v2-terrain .v2-cercle{stroke-width:3.5;opacity:.95;}
+html[data-ui="v2"] .v2-terrain .v2-ballon{fill:var(--accent);}
+
+/* ---------- À la une ---------- */
+html[data-ui="v2"] .carousel-wrapper{border-radius:28px;border:none;box-shadow:var(--v2-ombre-haute);}
+html[data-ui="v2"] .carousel-nav{background:rgba(255,255,255,.14);backdrop-filter:blur(10px);}
+html[data-ui="v2"] .carousel-nav:hover{background:rgba(255,255,255,.26);}
+
+/* ---------- En-tête de liste et filtres ---------- */
+html[data-ui="v2"] .content-header{margin:8px 0 18px;}
+html[data-ui="v2"] .content-count{font-family:var(--font-body);font-size:15px;font-weight:600;color:var(--chalk);}
+html[data-ui="v2"] .view-toggle{background:var(--asphalt-3);border:none;padding:4px;}
+html[data-ui="v2"] .toggle-btn.active{background:var(--asphalt-2);color:var(--chalk);box-shadow:var(--v2-ombre);}
+html[data-ui="v2"] .filter-panel{border:none;box-shadow:var(--v2-ombre);padding:24px 26px;}
+html[data-ui="v2"] .panel-head{
+  font-family:var(--font-body);font-size:15px;font-weight:700;letter-spacing:0;text-transform:none;
+  color:var(--chalk);border-bottom:none;padding-bottom:0;margin-bottom:16px;
+}
+html[data-ui="v2"] .panel-head .tag-dot{display:none;}
+html[data-ui="v2"] .map-wrap{border-radius:var(--radius);border:none;box-shadow:var(--v2-ombre);}
+
+/* ---------- Cartes d'événements ---------- */
+html[data-ui="v2"] .results-grid{gap:26px;}
+html[data-ui="v2"] .event-card{
+  border:none;border-radius:var(--radius);box-shadow:var(--v2-ombre);
+  transition:transform .35s var(--v2-ease), box-shadow .35s var(--v2-ease);
+}
+html[data-ui="v2"] .event-card:hover{transform:translateY(-6px);box-shadow:var(--v2-ombre-haute);}
+html[data-ui="v2"] .card-media{height:190px;}
+html[data-ui="v2"] .card-media img{transition:transform .6s var(--v2-ease);}
+html[data-ui="v2"] .event-card:hover .card-media img{transform:scale(1.06);}
+html[data-ui="v2"] .card-type-badge{
+  font-family:var(--font-body);font-size:11.5px;font-weight:700;letter-spacing:.2px;text-transform:none;
+  padding:5px 11px;border-radius:999px;color:#16151A;
+}
+/* « Terminé » passait sous le ♥ : il descend en bas de la vignette. */
+html[data-ui="v2"] .card-past-badge{
+  top:auto;right:auto;bottom:10px;left:10px;
+  font-family:var(--font-body);font-size:11.5px;font-weight:700;letter-spacing:.2px;text-transform:none;
+  background:rgba(22,21,26,.78);color:#fff;border-radius:999px;padding:5px 11px;opacity:1;
+}
+html[data-ui="v2"] .fav-btn{background:rgba(255,255,255,.92);color:#16151A;box-shadow:0 2px 8px rgba(0,0,0,.18);}
+html[data-ui="v2"] .fav-btn:hover{background:#fff;}
+html[data-ui="v2"] .fav-btn.active{color:var(--accent);}
+html[data-ui="v2"] .card-body{padding:18px 20px 20px;}
+html[data-ui="v2"] .card-body h4{font-size:21px;line-height:1.12;margin-bottom:8px;}
+html[data-ui="v2"] .card-meta{font-size:13.5px;}
+
+/* ---------- Pages intérieures, fenêtres ---------- */
+html[data-ui="v2"] .page-head h2{font-size:clamp(34px, 5vw, 60px);line-height:.98;}
+html[data-ui="v2"] .eyebrow{font-family:var(--font-body);letter-spacing:.3px;text-transform:none;font-weight:600;font-size:14px;}
+html[data-ui="v2"] .alert-card,
+html[data-ui="v2"] .search-form{border:none;box-shadow:var(--v2-ombre);border-radius:var(--radius);}
+html[data-ui="v2"] .edit-box{border:none;border-radius:26px;box-shadow:var(--v2-ombre-haute);}
+html[data-ui="v2"] .edit-modal{background:rgba(22,21,26,.5);backdrop-filter:blur(10px);}
+html[data-ui="v2"] .empty-state{border-radius:var(--radius);}
+
+/* ---------- Bandeau d'aperçu ---------- */
+.v2-bandeau{
+  position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:300;
+  display:flex;align-items:center;gap:12px;padding:8px 8px 8px 16px;border-radius:999px;
+  background:#16151A;color:#fff;font:600 13px/1.2 'Work Sans',sans-serif;
+  box-shadow:0 10px 30px rgba(0,0,0,.35);white-space:nowrap;
+}
+.v2-bandeau button{
+  border:none;border-radius:999px;padding:7px 13px;cursor:pointer;
+  background:#fff;color:#16151A;font:700 12.5px/1 'Work Sans',sans-serif;
+}
+
+/* ---------- Petits écrans ---------- */
+@media(max-width:950px){
+  html[data-ui="v2"] .topbar{top:8px;margin:8px 10px 0;padding:8px 8px 8px 14px;border-radius:18px;}
+  /* Le terrain déborde volontairement à droite : on le coupe au bord du titre
+     pour ne pas créer de défilement horizontal. */
+  html[data-ui="v2"] .hero{padding:44px 0 30px;min-height:0;overflow:hidden;overflow:clip;margin-right:-14px;padding-right:14px;}
+  html[data-ui="v2"] .v2-terrain{width:78%;right:-30%;opacity:.55;}
+}
+@media(max-width:640px){
+  html[data-ui="v2"] .hero-sub{font-size:16px;}
+  html[data-ui="v2"] .card-media{height:170px;}
+  html[data-ui="v2"] .results-grid{gap:18px;}
+}
+@media(prefers-reduced-motion: reduce){
+  html[data-ui="v2"] .event-card,
+  html[data-ui="v2"] .card-media img,
+  html[data-ui="v2"] .btn,
+  html[data-ui="v2"] .topbar{transition:none;}
+  html[data-ui="v2"] .v2-terrain .v2-ballon{display:none;}
+}

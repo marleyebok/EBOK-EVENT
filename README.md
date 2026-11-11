@@ -22,6 +22,8 @@ EBOK-EVENT/
 │   │   ├── app.js            # Logique : nav, filtres, carte, recherche…
 │   │   ├── animations.js     # Animations décoratives (Motion) — retirables sans rien casser
 │   │   ├── vendor/motion.js  # Bibliothèque Motion 14.12.0 (motion.dev, MIT), hébergée ici
+│   │   ├── v2-switch.js      # Active la proposition de design « v2 » (ebok.fr/?apercu=v2, ?apercu=off)
+│   │   ├── v2.js             # v2 : terrain animé, pastille d'onglet, bandeau d'aperçu
 │   │   ├── france-map.js     # Tracés SVG des régions
 │   │   ├── cities-fr.js      # Villes de France (autocomplétion hors ligne)
 │   │   ├── services.js       # Couche API (Neon via /api + Clerk)
