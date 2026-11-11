@@ -65,9 +65,7 @@
 
   /* ---------- 4. Pages : le titre et son texte entrent l'un après l'autre ---------- */
   function animerPage(page){
-    // En « v2 », l'accueil a sa propre séquence d'arrivée (js/v2.js).
-    const v2 = document.documentElement.getAttribute('data-ui') === 'v2';
-    const blocs = page.querySelectorAll(v2 ? '.hero-sub, .page-head > *, .profile-head' : '.hero > *, .page-head > *, .profile-head');
+    const blocs = page.querySelectorAll('.hero > *, .page-head > *, .profile-head');
     blocs.forEach((bloc, i)=>{
       jouer(bloc, { opacity: [0, 1], y: [14, 0] },
         { duration: 0.5, delay: 0.05 + i * 0.07, ease: [0.22, 1, 0.36, 1] });
