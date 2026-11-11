@@ -16,12 +16,15 @@ EBOK-EVENT/
 │   │   ├── profil.html       # Profil diffuseur
 │   │   └── general.html      # Identité & sécurité (composant Clerk)
 │   ├── css/
-│   │   └── styles.css        # Toute la mise en forme
+│   │   ├── styles.css        # Toute la mise en forme
+│   │   └── intro.css         # Habillage de l'intro (voile, bouton « Passer », carton de fin)
 │   ├── js/
 │   │   ├── data.js           # Données de démo : événements, couleurs, carte
 │   │   ├── app.js            # Logique : nav, filtres, carte, recherche…
 │   │   ├── animations.js     # Animations décoratives (Motion) — retirables sans rien casser
 │   │   ├── vendor/motion.js  # Bibliothèque Motion 14.12.0 (motion.dev, MIT), hébergée ici
+│   │   ├── intro-boot.js     # Intro : décide si elle se joue (chargé dans le <head>)
+│   │   ├── intro.js          # Intro : le plan-séquence, dessiné dans un <canvas>
 │   │   ├── france-map.js     # Tracés SVG des régions
 │   │   ├── cities-fr.js      # Villes de France (autocomplétion hors ligne)
 │   │   ├── services.js       # Couche API (Neon via /api + Clerk)
@@ -416,6 +419,27 @@ vit dans **`DEVELOPMENT_PLAN.md`** — c'est la seule source de vérité.
 ### Déploiement
 
 Déployé sur **Vercel** (site statique `public/` + fonctions `/api`), sur `ebok.fr` ; `www.ebok.fr` et `event.ebok.fr` redirigent vers `ebok.fr`.
+
+---
+
+## 🎬 Intro (plan-séquence d'ouverture)
+
+À la première visite de l'accueil, une animation d'une dizaine de secondes se joue
+par-dessus le site : un tir en reculant du n°34 sur un playground de Montpellier, la
+caméra suit le ballon, monte à la verticale, et le terrain devient un point sur la
+carte de France, dont les régions et les villes apparaissent. On arrive sur la carte :
+un clic (ou « Entrer sur le site ») ouvre le site ; un clic sur une région l'ouvre
+filtré sur cette région.
+
+- **Tout est dessiné par le code** (`js/intro.js`, dans un `<canvas>`) : ni vidéo ni image.
+  Terrain aux cotes FIBA, carte reprise de `js/france-map.js`.
+- **Quand elle se joue** (`js/intro-boot.js`) : accueil seulement, première visite
+  seulement (mémorisé dans le navigateur, clé `ebok-intro`), jamais si le visiteur a
+  demandé à son système de réduire les animations. Bouton **Passer** et touche Échap.
+- **La revoir** : lien « Revoir l'intro » du pied de page, ou `/?intro=1`.
+- **Régler une image précise** : `/?intro=1&t=3.2` fige l'intro à 3,2 s.
+- **La couper** : retirer d'`index.html` les balises `intro.css`, `intro-boot.js` et
+  `intro.js` — le site fonctionne à l'identique.
 
 ---
 
