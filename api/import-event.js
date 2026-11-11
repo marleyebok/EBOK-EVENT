@@ -28,6 +28,8 @@
    - ADMIN_EMAILS     (optionnel)    emails admin additionnels, séparés par des virgules
    - AI_IMPORTS_PAR_JOUR (optionnel) quota quotidien d'un organisateur (défaut 5)
    ========================================================= */
+import { lookup } from "node:dns/promises";
+import { BlockList, isIP } from "node:net";
 import { verifyToken } from "@clerk/backend";
 import { clerkUser, isAdminEmail, hasDb, sql, ensureSchema } from "./_lib.js";
 import { AIService } from "../lib/services/AIService.js";
@@ -105,19 +107,89 @@ async function rendreImport(uid) {
   } catch (e) { /* sans gravité : au pire un import compté en trop */ }
 }
 
-/* Récupère le contenu d'une URL avec un délai maximal. */
+/* Adresses que le serveur ne doit jamais aller lire pour le compte d'un
+   membre : boucle locale, réseaux privés, lien local, plages réservées. */
+const RESEAUX_INTERDITS = new BlockList();
+for (const [net, bits] of [
+  ["0.0.0.0", 8], ["10.0.0.0", 8], ["100.64.0.0", 10], ["127.0.0.0", 8],
+  ["169.254.0.0", 16], ["172.16.0.0", 12], ["192.0.0.0", 24], ["192.168.0.0", 16],
+  ["198.18.0.0", 15], ["224.0.0.0", 4], ["240.0.0.0", 4],
+]) RESEAUX_INTERDITS.addSubnet(net, bits, "ipv4");
+for (const [net, bits] of [["::", 127], ["fc00::", 7], ["fe80::", 10], ["ff00::", 8]]) {
+  RESEAUX_INTERDITS.addSubnet(net, bits, "ipv6");
+}
+
+function adresseInterdite(ip) {
+  // « ::ffff:127.0.0.1 » est du 127.0.0.1 écrit en IPv6.
+  const v4 = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i.exec(ip);
+  if (v4) ip = v4[1];
+  const famille = isIP(ip);
+  if (!famille) return true;
+  if (famille === 6 && /^::ffff:/i.test(ip)) return true;
+  return RESEAUX_INTERDITS.check(ip, famille === 4 ? "ipv4" : "ipv6");
+}
+
+/* Le nom d'hôte est-il lisible ? La liste de noms (isBlockedHost) ne suffit
+   pas : un nom public peut pointer vers une adresse interne, et une adresse
+   peut s'écrire de dix façons. On juge donc sur les adresses RÉSOLUES. */
+async function hoteAutorise(hostname) {
+  const h = String(hostname || "").replace(/^\[|\]$/g, "");
+  if (isBlockedHost(h)) return false;
+  if (isIP(h)) return !adresseInterdite(h);
+  try {
+    const adresses = await lookup(h, { all: true });
+    return adresses.length > 0 && adresses.every((a) => !adresseInterdite(a.address));
+  } catch (e) { return false; }
+}
+
+const MAX_REDIRECTIONS = 5;
+const MAX_OCTETS = 5 * 1024 * 1024;
+
+/* Lit le corps sans dépasser MAX_OCTETS : une page géante ne doit pas
+   remplir la mémoire de la fonction. */
+async function lireCorps(res) {
+  const annonce = Number(res.headers.get("content-length") || 0);
+  if (annonce > MAX_OCTETS) return null;
+  if (!res.body) return Buffer.alloc(0);
+  const morceaux = [];
+  let total = 0;
+  for await (const m of res.body) {
+    total += m.length;
+    if (total > MAX_OCTETS) return null;
+    morceaux.push(m);
+  }
+  return Buffer.concat(morceaux);
+}
+
+/* Récupère le contenu d'une URL avec un délai maximal. Les redirections sont
+   suivies à la main : chaque étape est revérifiée, sinon une page publique
+   pourrait renvoyer le serveur vers une adresse interne. */
 async function fetchUrl(url, ms, asBuffer) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), ms);
   try {
-    const res = await fetch(url, {
-      signal: ctrl.signal,
-      redirect: "follow",
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; EBOK-Event/1.0; +https://ebok-event.vercel.app)" }
-    });
-    if (!res.ok) return null;
-    if (asBuffer) return { buf: Buffer.from(await res.arrayBuffer()), type: res.headers.get("content-type") || "" };
-    return await res.text();
+    let courante = String(url);
+    for (let saut = 0; saut <= MAX_REDIRECTIONS; saut++) {
+      const u = new URL(courante);
+      if (!/^https?:$/.test(u.protocol) || !(await hoteAutorise(u.hostname))) return null;
+      const res = await fetch(u, {
+        signal: ctrl.signal,
+        redirect: "manual",
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; EBOK/1.0; +https://ebok.fr)" }
+      });
+      if (res.status >= 300 && res.status < 400) {
+        const suite = res.headers.get("location");
+        if (!suite) return null;
+        courante = new URL(suite, u).href;
+        continue;
+      }
+      if (!res.ok) return null;
+      const buf = await lireCorps(res);
+      if (!buf) return null;
+      if (asBuffer) return { buf, type: res.headers.get("content-type") || "" };
+      return buf.toString("utf8");
+    }
+    return null;
   } catch (e) { return null; }
   finally { clearTimeout(t); }
 }
@@ -389,4 +461,4 @@ export default async function handler(req, res) {
 }
 
 // Exposé pour les tests unitaires (non utilisé par Vercel).
-export { extractPage, isBlockedHost, parseDataUrl, normalizeEvent, fetchUrl, TYPES, AGE_OPTIONS, normaliserPays };
+export { extractPage, isBlockedHost, hoteAutorise, parseDataUrl, normalizeEvent, fetchUrl, TYPES, AGE_OPTIONS, normaliserPays };

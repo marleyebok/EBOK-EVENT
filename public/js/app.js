@@ -1892,10 +1892,13 @@ function fmtDateRange(s,e){
 
 function openLightbox(item){
   const content = document.getElementById('lightboxContent');
-  if(item.img){
-    content.innerHTML = `<img src="${item.img}" alt="${item.caption||'Photo'}">`;
+  // `item` vient de la fiche d'un événement, donc d'un membre : tout est
+  // échappé, et l'image ne peut être qu'une vraie adresse d'image.
+  const img = safeImg(item.img);
+  if(img){
+    content.innerHTML = `<img src="${esc(img)}" alt="${esc(item.caption || 'Photo')}">`;
   }else{
-    content.innerHTML = `<div class="lightbox-placeholder" style="background:${item.color||'#28282D'}">${item.caption||''}</div>`;
+    content.innerHTML = `<div class="lightbox-placeholder" style="background:${safeColor(item.color || '#28282D')}">${esc(item.caption || '')}</div>`;
   }
   document.getElementById('lightbox').classList.add('open');
 }
@@ -2495,7 +2498,7 @@ function updateAuthUI(){
   document.getElementById('navProfile').classList.toggle('hidden', loggedOut);
   if(currentUser){
     document.getElementById('accountName').innerHTML =
-      `<b>${displayName()}</b>${currentIsAdmin ? '<span class="account-badge-admin">Admin</span>' : ''}`;
+      `<b>${esc(displayName())}</b>${currentIsAdmin ? '<span class="account-badge-admin">Admin</span>' : ''}`;
   }
   // L'assistant IA d'import est ouvert à tout membre connecté ; c'est le
   // parcours de publication (js/create-wizard.js) qui l'affiche à la demande.
@@ -3276,7 +3279,7 @@ async function renderProfile(){
   // En-tête
   const name = displayName();
   document.getElementById('profileName').innerHTML =
-    `${name}${currentIsAdmin ? '<span class="account-badge-admin">Admin</span>' : ''}`;
+    `${esc(name)}${currentIsAdmin ? '<span class="account-badge-admin">Admin</span>' : ''}`;
   document.getElementById('profileEmail').textContent = currentUser.email || '';
   const initials = (name || '?').trim().slice(0,2).toUpperCase();
   const avatarEl = document.getElementById('profileAvatar');
