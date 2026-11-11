@@ -65,7 +65,8 @@
 
   /* ---------- 4. Pages : le titre et son texte entrent l'un après l'autre ---------- */
   function animerPage(page){
-    const blocs = page.querySelectorAll('.hero > *, .page-head > *, .profile-head');
+    // Le hero de l'accueil a sa propre entrée, en CSS (titre masqué, terrain tracé).
+    const blocs = page.querySelectorAll('.hero:not(.hero-home) > *, .page-head > *, .profile-head');
     blocs.forEach((bloc, i)=>{
       jouer(bloc, { opacity: [0, 1], y: [14, 0] },
         { duration: 0.5, delay: 0.05 + i * 0.07, ease: [0.22, 1, 0.36, 1] });
@@ -132,6 +133,76 @@
     window.addEventListener('resize', ()=>{ sansGlisser = true; placer(); });
     if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ sansGlisser = true; placer(); });
     placer();
+  }
+
+  /* ---------- 7. Cartes : un reflet suit le pointeur ---------- */
+  /* On ne fait que poser la position dans deux variables CSS ; le dessin du
+     reflet est dans la feuille de style (.event-card::after). */
+  const survol = window.matchMedia('(hover: hover)').matches;
+  if(survol){
+    document.addEventListener('pointermove', e=>{
+      const carte = e.target.closest && e.target.closest('.event-card');
+      if(carte){
+        const r = carte.getBoundingClientRect();
+        carte.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+        carte.style.setProperty('--my', (e.clientY - r.top) + 'px');
+      }
+      // À la une : l'affiche s'incline vers le pointeur.
+      const une = e.target.closest && e.target.closest('.carousel-item');
+      const affiche = une && une.querySelector('.fx-poster');
+      if(affiche){
+        const r = une.getBoundingClientRect();
+        const dx = (e.clientX - r.left) / r.width - 0.5, dy = (e.clientY - r.top) / r.height - 0.5;
+        affiche.style.setProperty('--ry', (dx * 14).toFixed(2) + 'deg');
+        affiche.style.setProperty('--rx', (-dy * 10).toFixed(2) + 'deg');
+      }
+    }, { passive: true });
+    document.addEventListener('pointerout', e=>{
+      const une = e.target.closest && e.target.closest('.carousel-item');
+      if(!une || une.contains(e.relatedTarget)) return;
+      const affiche = une.querySelector('.fx-poster');
+      if(affiche){ affiche.style.removeProperty('--rx'); affiche.style.removeProperty('--ry'); }
+    });
+  }
+
+  /* ---------- 8. À la une : le texte de la diapositive entre en cascade ---------- */
+  const points = document.getElementById('carouselDots');
+  const piste = document.getElementById('carouselTrack');
+  if(points && piste){
+    let derniere = 0;
+    new MutationObserver(()=>{
+      const i = [...points.children].findIndex(p => p.classList.contains('active'));
+      if(i < 0 || i === derniere) return;
+      derniere = i;
+      const diapo = piste.children[i];
+      if(!diapo) return;
+      diapo.querySelectorAll('.fx-text > *').forEach((bloc, n)=>{
+        jouer(bloc, { opacity: [0, 1], x: [26, 0] },
+          { duration: 0.5, delay: 0.18 + n * 0.06, ease: [0.22, 1, 0.36, 1] });
+      });
+    }).observe(points, { subtree: true, attributes: true, attributeFilter: ['class'] });
+  }
+
+  /* ---------- 9. Carte : les épingles tombent à son arrivée à l'écran ---------- */
+  /* Une seule fois : la carte est redessinée à chaque filtre, et des épingles
+     qui retombent à chaque clic lasseraient vite. */
+  const carteFr = document.getElementById('franceMap');
+  if(carteFr && typeof M.inView === 'function'){
+    const stop = M.inView(carteFr, ()=>{
+      carteFr.classList.add('pins-intro');
+      setTimeout(()=> carteFr.classList.remove('pins-intro'), 1300);
+      if(typeof stop === 'function') stop();
+    }, { amount: 0.25 });
+  }
+
+  /* ---------- 10. Terrain du hero : un clic rejoue l'action ---------- */
+  const terrain = document.getElementById('heroCourt');
+  if(terrain){
+    terrain.addEventListener('click', ()=>{
+      const svg = terrain.querySelector('svg');
+      const copie = svg.cloneNode(true);   // un élément neuf relance ses animations CSS
+      svg.replaceWith(copie);
+    });
   }
 
   /* ---------- Premier affichage ---------- */
