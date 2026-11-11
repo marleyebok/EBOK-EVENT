@@ -1830,3 +1830,215 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 @media(max-width:360px){
   :root .topbar{margin:6px 6px 0;padding:6px 6px 6px 10px;}
 }
+
+/* =========================================================
+   ACCUEIL ANIMÉ — hero « tableau de coach », carrousel, cartes, épingles
+   ---------------------------------------------------------
+   Tout ce bloc est une surcouche : le retirer rend le site à son aspect
+   précédent. Les mouvements qui suivent le pointeur (reflet des cartes,
+   affiche qui s'incline) sont pilotés par js/animations.js via des
+   variables CSS ; sans lui, rien ne bouge et rien ne casse.
+   ========================================================= */
+
+/* ---------- Hero : titre à gauche, demi-terrain à droite ---------- */
+.hero-home{
+  max-width:none;display:grid;grid-template-columns:minmax(0,1fr) 400px;
+  align-items:center;gap:24px;padding:44px 0 26px;
+}
+.hero-home h1{font-size:clamp(31px, 5.6vw, 76px);line-height:1;letter-spacing:.2px;}
+.hero-home .hero-sub{font-size:clamp(16px, 1.35vw, 18.5px);max-width:540px;margin-top:20px;}
+.h-line{display:block;overflow:hidden;padding-top:.06em;}
+.h-line > span{display:block;}
+
+.hero-court{position:relative;height:270px;perspective:1100px;}
+.hero-court svg{
+  position:absolute;left:44%;top:50%;width:340px;height:auto;overflow:visible;
+  transform:translate(-50%,-50%) rotateX(52deg) rotateZ(-24deg);
+  filter:drop-shadow(0 26px 22px rgba(0,0,0,.16));
+  transition:transform .6s cubic-bezier(.22,1,.36,1);
+}
+.hero-court:hover svg{transform:translate(-50%,-50%) rotateX(44deg) rotateZ(-18deg);}
+.court-lines path{fill:none;stroke:var(--chalk);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;opacity:.5;}
+.court-lines path:first-child{fill:var(--asphalt-2);opacity:1;stroke:color-mix(in srgb, var(--chalk) 50%, transparent);}
+.court-hoop{fill:none;stroke:var(--accent);stroke-width:2.5;transform-box:fill-box;transform-origin:center;}
+.court-pass,.court-shot{fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round;}
+.court-pass{stroke-dasharray:.045 .04;}
+.court-player circle{fill:var(--asphalt-2);stroke:var(--chalk);stroke-width:1.8;}
+.court-player text{font-family:var(--font-mono);font-size:12px;font-weight:700;fill:var(--chalk);text-anchor:middle;}
+.court-player{transform-box:fill-box;transform-origin:center;}
+.court-ball{fill:var(--accent);display:none;}
+
+@media(max-width:1180px){
+  .hero-home{grid-template-columns:minmax(0,1fr) 320px;}
+  .hero-home h1{font-size:clamp(31px, 5vw, 76px);}
+  .hero-court svg{width:290px;}
+}
+@media(max-width:900px){
+  .hero-home{display:block;padding:34px 0 20px;}
+  .hero-court{display:none;}
+}
+@media(max-width:640px){
+  .hero-home{padding:26px 0 16px;}
+  .hero-home .hero-sub{margin-top:14px;}
+}
+
+/* ---------- Boutons : réponse au doigt, reflet sur le bouton principal ---------- */
+.btn:active,.toggle-btn:active,.icon-btn:active{transform:scale(.96);}
+.btn-primary{
+  position:relative;overflow:hidden;
+  box-shadow:0 1px 0 rgba(255,255,255,.18) inset, 0 8px 18px -10px rgba(var(--accent-rgb),.9);
+}
+.btn-primary::after{
+  content:"";position:absolute;top:0;bottom:0;left:-60%;width:40%;pointer-events:none;
+  background:linear-gradient(100deg, transparent, rgba(255,255,255,.28), transparent);
+  transform:skewX(-18deg);
+}
+.btn-primary:hover::after{left:130%;transition:left .65s ease;}
+
+/* ---------- Carrousel : le point actif se remplit le temps de la diapositive ---------- */
+.carousel-wrapper{border-radius:24px;}
+.carousel-dot.active{width:40px;height:6px;border-radius:999px;position:relative;overflow:hidden;
+  background:color-mix(in srgb, var(--accent) 28%, var(--asphalt-3));border-color:transparent;}
+.carousel-dot.active::after{content:"";position:absolute;inset:0;background:var(--accent);border-radius:inherit;}
+/* L'affiche suit le pointeur (--rx / --ry posés par js/animations.js). */
+.carousel-item{perspective:900px;}
+.fx-poster{
+  transform:rotateY(var(--ry, 0deg)) rotateX(var(--rx, 0deg));
+  transition:transform .35s cubic-bezier(.22,1,.36,1);will-change:transform;
+}
+
+/* ---------- Cartes d'événements : reflet sous le pointeur, affiche qui respire ---------- */
+.event-card{
+  position:relative;border-radius:18px;
+  transition:border-color .2s, transform .35s cubic-bezier(.22,1,.36,1), box-shadow .35s;
+}
+.event-card::after{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .3s;
+  background:radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), rgba(var(--accent-rgb), .16), transparent 70%);
+}
+.event-card:hover{
+  transform:translateY(-5px);
+  border-color:color-mix(in srgb, var(--accent) 45%, var(--line-strong));
+  box-shadow:0 22px 40px -22px rgba(0,0,0,.45);
+}
+.event-card:hover::after{opacity:1;}
+.card-media img{transition:transform .6s cubic-bezier(.22,1,.36,1);}
+.event-card:hover .card-media img{transform:scale(1.06);}
+
+/* ---------- Panneaux : coins et ombres accordés à la barre du haut ---------- */
+.filter-panel,.map-wrap{border-radius:20px;}
+[data-theme="light"] .filter-panel,
+[data-theme="light"] .event-card{box-shadow:0 1px 2px rgba(33,31,27,.05), 0 14px 30px -24px rgba(33,31,27,.35);}
+
+/* ---------- Mouvement (rien de tout cela si le visiteur l'a réduit) ---------- */
+@media(prefers-reduced-motion: no-preference){
+  /* Titre : chaque ligne monte derrière son cache. */
+  .h-line > span{animation:h-rise .9s cubic-bezier(.22,1,.36,1) both;}
+  .h-line + .h-line > span{animation-delay:.1s;}
+  .hero-home .hero-sub{animation:h-fade .7s .35s ease both;}
+  @keyframes h-rise{from{transform:translateY(108%);}to{transform:none;}}
+  @keyframes h-fade{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+
+  /* Terrain : les lignes se tracent, les joueurs se posent, puis l'action. */
+  .court-lines path{stroke-dasharray:1;stroke-dashoffset:1;animation:c-draw 1s cubic-bezier(.65,0,.35,1) var(--d, 0s) forwards;}
+  .court-lines path:first-child{animation-name:c-draw, c-fill;animation-duration:1s, .8s;}
+  @keyframes c-draw{to{stroke-dashoffset:0;}}
+  @keyframes c-fill{from{fill-opacity:0;}to{fill-opacity:1;}}
+  .court-player{animation:c-pop .45s cubic-bezier(.34,1.56,.64,1) var(--d, 0s) both;}
+  @keyframes c-pop{from{opacity:0;transform:scale(.3);}to{opacity:1;transform:none;}}
+  /* La passe est en pointillés : on la découvre par un masque de tracé. */
+  .court-pass{clip-path:inset(0 0 0 0);animation:c-reveal .5s ease-out 1.5s both;}
+  @keyframes c-reveal{from{opacity:0;}to{opacity:1;}}
+  .court-shot{stroke-dasharray:1;stroke-dashoffset:1;animation:c-draw .7s ease-in-out 2.5s forwards;}
+  .court-hoop{animation:c-swish .6s ease-out 3.2s both;}
+  @keyframes c-swish{0%{transform:scale(1);}40%{transform:scale(1.7);stroke-width:1.5;}100%{transform:scale(1);}}
+
+  /* Le ballon suit la passe puis le tir. */
+  @supports (offset-path: path("M0 0")){
+    .court-ball{
+      display:block;offset-rotate:0deg;
+      offset-path:path("M150 222C190 205 228 170 248 136");
+      animation:c-pass .55s ease-in-out 1.5s both, c-tir .7s ease-in 2.5s forwards;
+    }
+    @keyframes c-pass{from{offset-distance:0%;opacity:0;}15%{opacity:1;}to{offset-distance:100%;opacity:1;}}
+    @keyframes c-tir{
+      from{offset-path:path("M252 118C236 70 196 40 156 33");offset-distance:0%;}
+      85%{opacity:1;}
+      to{offset-path:path("M252 118C236 70 196 40 156 33");offset-distance:100%;opacity:0;}
+    }
+  }
+
+  /* Carrousel : remplissage sur 5 s, la durée du défilement (app.js). En
+     pause au survol, comme lui. */
+  .carousel-dot.active::after{transform-origin:left;animation:dot-fill 5s linear both;}
+  .featured-carousel:has(.carousel-wrapper:hover) .carousel-dot.active::after{animation:none;}
+  @keyframes dot-fill{from{transform:scaleX(0);}to{transform:scaleX(1);}}
+
+  /* Épingles : elles tombent sur la carte en cascade (classe posée une seule
+     fois par js/animations.js, à l'arrivée de la carte à l'écran). */
+  .pins-intro .pin{animation:pin-drop .5s cubic-bezier(.34,1.56,.64,1) both;}
+  .pins-intro .pin:nth-child(3n+1){animation-delay:.08s;}
+  .pins-intro .pin:nth-child(3n+2){animation-delay:.2s;}
+  .pins-intro .pin:nth-child(3n){animation-delay:.32s;}
+  .pins-intro .pin:nth-child(4n){animation-delay:.44s;}
+  @keyframes pin-drop{from{opacity:0;transform:translateY(-14px) scale(.2);}to{opacity:1;transform:none;}}
+}
+@media(prefers-reduced-motion: reduce){
+  .btn-primary::after{display:none;}
+  .hero-court svg,.fx-poster,.event-card,.card-media img{transition:none;}
+}
+
+/* =========================================================
+   CARTE : ZOOM, BULLES DE REGROUPEMENT — LISTES DE RÉGIONS — CARROUSEL TACTILE
+   ========================================================= */
+/* Au repos, un doigt fait défiler la page et deux doigts zooment la carte ;
+   une fois zoomée, la carte se déplace au doigt. */
+.map-wrap{touch-action:pan-y;}
+.map-wrap.zoomed{touch-action:none;cursor:grab;}
+.map-wrap.dragging{cursor:grabbing;user-select:none;}
+.region{vector-effect:non-scaling-stroke;}
+/* Zoomée, une région qui se soulève au survol ferait un bond : on la teinte
+   seulement. */
+.map-wrap.zoomed .region:hover,.map-wrap.zoomed .region:focus{transform:none;filter:none;}
+
+.pin:focus{outline:none;}
+.pin:focus-visible .core,.pin:focus-visible .cluster-core{stroke:var(--chalk);stroke-width:3;}
+.pin-cluster:hover{transform:scale(1.1);}
+.cluster-halo{fill:rgba(var(--accent-rgb), .22);}
+.cluster-core{fill:var(--accent);stroke:var(--asphalt-2);stroke-width:2.5;}
+.cluster-count{
+  font-family:var(--font-body);font-weight:800;fill:#fff;
+  text-anchor:middle;pointer-events:none;
+}
+
+.map-zoom-ctl{
+  position:absolute;right:14px;top:14px;z-index:15;
+  display:flex;flex-direction:column;align-items:flex-end;gap:6px;
+}
+.map-zoom-ctl button{
+  width:40px;height:40px;border-radius:12px;border:1px solid var(--line-strong);
+  background:var(--asphalt-2);color:var(--chalk);font-size:22px;font-weight:600;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 16px -8px rgba(0,0,0,.4);transition:border-color .15s, opacity .15s, transform .1s;
+}
+.map-zoom-ctl button:hover:not(:disabled){border-color:var(--accent);}
+.map-zoom-ctl button:active:not(:disabled){transform:scale(.94);}
+.map-zoom-ctl button:disabled{opacity:.4;cursor:default;}
+.map-zoom-ctl .map-zoom-reset{width:auto;padding:0 12px;font-size:13px;font-weight:700;}
+.map-zoom-ctl .map-zoom-reset[hidden]{display:none;}
+
+/* Liste des régions de la recherche rapide : même allure que le champ ville. */
+.region-select{
+  width:100%;background:var(--asphalt-3);border:1px solid var(--line-strong);color:var(--chalk);
+  border-radius:8px;padding:9px 12px;font-size:13px;font-weight:600;cursor:pointer;
+}
+.region-select:focus{outline:none;border-color:var(--accent);}
+@media(min-width:981px){
+  .fg-region{flex:0 1 230px;}
+}
+
+/* À la une : l'affiche ouvre l'événement ; un geste horizontal change de
+   diapositive, un geste vertical fait défiler la page. */
+.fx-poster[data-open]{cursor:pointer;}
+.fx-poster[data-open]:focus-visible{outline:2px solid #fff;outline-offset:3px;}
+.carousel-wrapper{touch-action:pan-y;}

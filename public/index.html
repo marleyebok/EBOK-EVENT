@@ -127,10 +127,39 @@
 
   <!-- ===================== HOME / MAP ===================== -->
   <section id="page-home" class="page active">
-    <div class="hero">
-      <p class="eyebrow" id="heroCompteur" hidden></p>
-      <h1><span class="hl">L'agenda collaboratif</span><br>du Basket Francophone</h1>
-      <p class="hero-sub">Tournois, camps, détections, circuit 3x3… Trouve les events près de chez toi et partage les tiens avec la communauté.</p>
+    <div class="hero hero-home">
+      <div class="hero-text">
+        <p class="eyebrow" id="heroCompteur" hidden></p>
+        <!-- Chaque ligne du titre monte derrière un cache (.h-line) au chargement. -->
+        <h1><span class="h-line"><span class="hl">L'agenda collaboratif</span></span><span class="h-line"><span>du Basket Francophone</span></span></h1>
+        <p class="hero-sub">Tournois, camps, détections, circuit 3x3… Trouve les events près de chez toi et partage les tiens avec la communauté.</p>
+      </div>
+      <!-- Tableau de coach : un demi-terrain FIBA tracé à la craie, puis une
+           action (passe, tir). Décoratif, masqué sous 900 px. Les longueurs
+           sont à l'échelle : 20 unités = 1 mètre. -->
+      <div class="hero-court" id="heroCourt" aria-hidden="true">
+        <svg viewBox="-6 -6 312 292" xmlns="http://www.w3.org/2000/svg">
+          <g class="court-lines">
+            <path pathLength="1" style="--d:0s" d="M0 0H300V280H0Z"/>
+            <path pathLength="1" style="--d:.15s" d="M18 0V59.8A135 135 0 0 0 282 59.8V0"/>
+            <path pathLength="1" style="--d:.35s" d="M101 0V116H199V0"/>
+            <path pathLength="1" style="--d:.5s" d="M114 116A36 36 0 0 0 186 116"/>
+            <path pathLength="1" style="--d:.55s" d="M125 31.5A25 25 0 0 0 175 31.5"/>
+            <path pathLength="1" style="--d:.6s" d="M114 280A36 36 0 0 1 186 280"/>
+            <path pathLength="1" style="--d:.7s" d="M132 24H168"/>
+          </g>
+          <circle class="court-hoop" cx="150" cy="31.5" r="6"/>
+          <g class="court-play">
+            <path class="court-pass" pathLength="1" d="M150 222C190 205 228 170 248 136"/>
+            <path class="court-shot" pathLength="1" d="M252 118C236 70 196 40 156 33"/>
+            <g class="court-player" style="--d:.9s"><circle cx="150" cy="232" r="11"/><text x="150" y="236.5">1</text></g>
+            <g class="court-player" style="--d:1s"><circle cx="255" cy="128" r="11"/><text x="255" y="132.5">2</text></g>
+            <g class="court-player" style="--d:1.1s"><circle cx="66" cy="150" r="11"/><text x="66" y="154.5">3</text></g>
+            <g class="court-player" style="--d:1.2s"><circle cx="212" cy="62" r="11"/><text x="212" y="66.5">5</text></g>
+          </g>
+          <circle class="court-ball" r="5.5"/>
+        </svg>
+      </div>
     </div>
 
     <div id="featuredSlot">
@@ -175,11 +204,17 @@
         </div>
 
         <div class="filter-group fg-city">
-          <label for="citySearch">Lieu (ville / région)</label>
+          <label for="citySearch">Ville</label>
           <div class="search-input-wrap">
-            <input type="text" id="citySearch" placeholder="Cherche une ville ou région...">
+            <input type="text" id="citySearch" placeholder="Cherche une ville...">
             <div class="city-suggestions hidden" id="citySuggestions"></div>
           </div>
+        </div>
+
+        <!-- La région se choisit dans une liste (remplie par js/app.js). -->
+        <div class="filter-group fg-region">
+          <label for="regionSelect">Région</label>
+          <select id="regionSelect" class="region-select"><option value="">Toutes les régions</option></select>
         </div>
 
         <div class="filter-group fg-period">
@@ -217,6 +252,12 @@
       <div class="map-wrap" id="homeMapView">
         <svg id="franceMap" viewBox="0 0 560 560" xmlns="http://www.w3.org/2000/svg"></svg>
         <div class="map-tooltip" id="mapTooltip"></div>
+        <!-- Zoom de la carte (js/app.js, initMapZoom). Au doigt : pincer. -->
+        <div class="map-zoom-ctl">
+          <button type="button" id="mapZoomIn" aria-label="Zoomer" title="Zoomer">+</button>
+          <button type="button" id="mapZoomOut" aria-label="Dézoomer" title="Dézoomer" disabled>−</button>
+          <button type="button" id="mapZoomReset" class="map-zoom-reset" aria-label="Revenir à la France entière" title="France entière" hidden>France entière</button>
+        </div>
 
       </div>
 
@@ -235,8 +276,12 @@
 
     <form class="search-form" id="searchForm">
       <div class="field">
-        <label for="f-lieu">Lieu</label>
-        <input type="text" id="f-lieu" placeholder="Ville ou région">
+        <label for="f-lieu">Ville</label>
+        <input type="text" id="f-lieu" placeholder="Ville, salle ou pays">
+      </div>
+      <div class="field">
+        <label for="f-region">Région</label>
+        <select id="f-region"><option value="">Toutes les régions</option></select>
       </div>
       <div class="field">
         <label for="f-type">Type d'événement</label>
@@ -455,7 +500,7 @@
             <div class="form-row">
               <div class="field">
                 <label for="c-region">Région</label>
-                <input type="text" id="c-region" placeholder="Se remplit automatiquement" readonly>
+                <select id="c-region"><option value="">Choisis une région</option></select>
               </div>
               <div class="field">
                 <label for="c-pays">Pays</label>
@@ -1018,7 +1063,7 @@
         </div>
         <div class="field">
           <label for="e-region">Région</label>
-          <input type="text" id="e-region">
+          <select id="e-region"><option value="">Choisis une région</option></select>
         </div>
       </div>
       <div class="field">
