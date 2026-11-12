@@ -1961,29 +1961,126 @@ function lienPropre(u){
   return '';
 }
 
-/* Signalement : pas de formulaire ni de table en plus, le courrier part vers
-   l'adresse de contact du site (celle du pied de page, jamais écrite en clair
-   dans le HTML). Le message arrive déjà rédigé : événement, lien, motif. */
-function lienSignalement(ev, motif){
-  const a = document.getElementById('footerContact');
-  const adresse = a && a.dataset.u && a.dataset.d ? `${a.dataset.u}@${a.dataset.d}` : '';
-  if(!adresse) return '';
-  const corps = `Bonjour,\n\nJe signale un problème sur cet événement.\n\nÉvénement : ${ev.title}\nLien : ${location.origin}/evenement/${ev.id}\nMotif : ${motif}\n\nPrécisions :\n`;
-  return `mailto:${adresse}?subject=${encodeURIComponent('Signalement : ' + ev.title)}&body=${encodeURIComponent(corps)}`;
+/* ---------- Signalement d'un événement ----------
+   Interne : le signalement est enregistré par /api/signalement et lu par
+   l'admin dans son espace (js/admin-signalements.js). Aucun e-mail. */
+const MOTIFS_SIGNALEMENT = [
+  ['infos', 'Informations erronées', 'Date, lieu, tarif, lien…'],
+  ['annule', 'Événement annulé ou déjà passé', ''],
+  ['doublon', "Doublon d'un autre événement", ''],
+  ['abus', 'Contenu inapproprié ou trompeur', ''],
+  ['autre', 'Autre', 'Explique en quelques mots'],
+];
+function libelleMotif(code){
+  const m = MOTIFS_SIGNALEMENT.find(x=> x[0] === code);
+  return m ? m[1] : String(code || '');
+}
+let signalementOpener = null;
+let signalementEventId = null;
+
+function erreurSignalement(msg){
+  const el = document.getElementById('reportError');
+  if(!el) return;
+  el.textContent = msg || '';
+  el.classList.toggle('hidden', !msg);
+}
+/* « Autre » exige quelques mots ; les autres motifs se passent de précisions. */
+function majPrecisionsSignalement(){
+  const choisi = document.querySelector('#reportForm input[name="motif"]:checked');
+  const opt = document.getElementById('reportOpt');
+  if(opt) opt.textContent = choisi && choisi.value === 'autre' ? '(obligatoire)' : '(facultatif)';
+}
+function openReportModal(ev, opener){
+  const modal = document.getElementById('reportModal');
+  if(!modal) return;
+  signalementEventId = ev.id;
+  signalementOpener = opener || null;
+  const form = document.getElementById('reportForm');
+  form.reset();
+  form.classList.remove('hidden');
+  document.getElementById('reportDone').classList.add('hidden');
+  document.getElementById('reportEvent').textContent = ev.title || '';
+  erreurSignalement('');
+  majPrecisionsSignalement();
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+  const premier = form.querySelector('input[name="motif"]');
+  if(premier) premier.focus();
+}
+function closeReportModal(){
+  const modal = document.getElementById('reportModal');
+  if(!modal || !modal.classList.contains('open')) return;
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+  if(signalementOpener && document.contains(signalementOpener)) signalementOpener.focus();
+  signalementOpener = null;
+  signalementEventId = null;
+}
+function initReport(){
+  const modal = document.getElementById('reportModal');
+  if(!modal) return;
+  const form = document.getElementById('reportForm');
+  document.getElementById('reportMotifs').innerHTML = MOTIFS_SIGNALEMENT.map(([code, titre, aide])=>
+    `<label class="report-motif"><input type="radio" name="motif" value="${esc(code)}"><span><b>${esc(titre)}</b>${aide ? `<small>${esc(aide)}</small>` : ''}</span></label>`).join('');
+
+  form.addEventListener('change', e=>{
+    if(e.target && e.target.name === 'motif'){ majPrecisionsSignalement(); erreurSignalement(''); }
+  });
+  for(const id of ['reportClose', 'reportCancel', 'reportDoneClose']){
+    document.getElementById(id).addEventListener('click', closeReportModal);
+  }
+  bindBackdropClose(modal, closeReportModal);
+  modal.addEventListener('keydown', e=>{
+    if(e.key === 'Escape'){ closeReportModal(); return; }
+    if(e.key !== 'Tab') return;
+    // Le focus reste dans la fenêtre tant qu'elle est ouverte.
+    const f = Array.from(modal.querySelectorAll('input, textarea, button')).filter(x=> !x.disabled && x.offsetParent !== null);
+    if(!f.length) return;
+    const premier = f[0], dernier = f[f.length - 1];
+    if(e.shiftKey && document.activeElement === premier){ e.preventDefault(); dernier.focus(); }
+    else if(!e.shiftKey && document.activeElement === dernier){ e.preventDefault(); premier.focus(); }
+  });
+
+  form.addEventListener('submit', async e=>{
+    e.preventDefault();
+    const choisi = form.querySelector('input[name="motif"]:checked');
+    const message = document.getElementById('reportMessage').value.trim();
+    if(!choisi){ erreurSignalement('Choisis ce qui ne va pas.'); return; }
+    if(choisi.value === 'autre' && message.length < 5){ erreurSignalement('Ajoute quelques mots pour expliquer le problème.'); return; }
+    erreurSignalement('');
+    const envoi = document.getElementById('reportSend');
+    envoi.disabled = true;
+    envoi.textContent = 'Envoi…';
+    try{
+      if(!window.EBOK_DATA || typeof window.EBOK_DATA.signalerEvenement !== 'function'){
+        const err = new Error('indispo'); err.code = 'indispo'; throw err;
+      }
+      await window.EBOK_DATA.signalerEvenement(signalementEventId, choisi.value, message);
+      form.classList.add('hidden');
+      document.getElementById('reportDone').classList.remove('hidden');
+      document.getElementById('reportDoneClose').focus();
+    }catch(err){
+      const code = err && err.code;
+      erreurSignalement(
+        code === 'trop' ? "Tu as déjà envoyé plusieurs signalements aujourd'hui. Réessaie demain."
+        : code === 'precisez' ? 'Ajoute quelques mots pour expliquer le problème.'
+        : code === 'introuvable' ? "Cet événement n'est plus en ligne."
+        : code === 'indispo' ? "Le signalement n'est pas disponible dans la version de démonstration."
+        : 'Envoi impossible pour le moment. Réessaie dans un instant.');
+    }finally{
+      envoi.disabled = false;
+      envoi.textContent = 'Envoyer le signalement';
+    }
+  });
 }
 
-/* Menus de la fiche (Partager, Signaler) : un seul ouvert à la fois, fermés
-   par un clic ailleurs ou Échap. */
+/* Menu Partager de la fiche : fermé par un clic ailleurs ou Échap. */
 let menusFicheBranches = false;
 function fermerMenusFiche(){
-  for(const id of ['popShare', 'popReport']){
-    const m = document.getElementById(id);
-    if(m) m.classList.remove('open');
-  }
-  for(const id of ['btnShare', 'btnReport']){
-    const b = document.getElementById(id);
-    if(b) b.setAttribute('aria-expanded', 'false');
-  }
+  const m = document.getElementById('popShare');
+  if(m) m.classList.remove('open');
+  const b = document.getElementById('btnShare');
+  if(b) b.setAttribute('aria-expanded', 'false');
 }
 
 /* Contenu du bouton « Enregistrer » de la fiche (étoile + libellé + total). */
@@ -2094,7 +2191,7 @@ async function openEvent(id, opts){
         <div class="ev-bar" role="group" aria-label="Actions sur l'événement">
           <button type="button" class="ev-bar-btn fav-btn fav-btn-lg ${favOn ? 'active' : ''}" data-fav="${esc(ev.id)}" aria-pressed="${favOn}">${favLgHtml(favOn, Number(ev.favCount) || 0)}</button>
           <button type="button" class="ev-bar-btn" id="btnShare" aria-haspopup="true" aria-expanded="false">${ico('share')}<span>Partager</span></button>
-          <button type="button" class="ev-bar-btn ev-bar-quiet" id="btnReport" aria-haspopup="true" aria-expanded="false">${ico('flag')}<span>Signaler</span></button>
+          <button type="button" class="ev-bar-btn ev-bar-quiet" id="btnReport" aria-haspopup="dialog">${ico('flag')}<span>Signaler</span></button>
         </div>
 
         <div class="popover" id="popShare">
@@ -2103,14 +2200,6 @@ async function openEvent(id, opts){
           <a class="popover-item" href="mailto:?subject=${encodeURIComponent(ev.title)}&body=${shareText}%20${encodeURIComponent(shareUrl)}"><span class="ic">${ico('mail')}</span>E-mail</a>
           <button type="button" class="popover-item" id="btnCopyLink"><span class="ic">${ico('link')}</span>Copier le lien</button>
           <div class="share-copied" id="shareCopied" role="status">Lien copié ✓</div>
-        </div>
-        <div class="popover" id="popReport">
-          <p class="pop-title">Que veux-tu signaler ?</p>
-          <button type="button" class="popover-item" data-motif="Informations erronées">Informations erronées</button>
-          <button type="button" class="popover-item" data-motif="Événement annulé ou déjà passé">Événement annulé ou déjà passé</button>
-          <button type="button" class="popover-item" data-motif="Doublon d'un autre événement">Doublon d'un autre événement</button>
-          <button type="button" class="popover-item" data-motif="Contenu inapproprié ou trompeur">Contenu inapproprié ou trompeur</button>
-          <p class="pop-note">Ton application e-mail s'ouvre avec le message prêt à envoyer.</p>
         </div>
       </div>
       ${miniMapHtml(ev)}
@@ -2201,7 +2290,8 @@ async function openEvent(id, opts){
   });
   document.getElementById('btnReport').addEventListener('click', (e)=>{
     e.stopPropagation();
-    basculerMenu('popReport', 'btnReport');
+    fermerMenusFiche();
+    openReportModal(ev, e.currentTarget);
   });
   document.getElementById('btnCopyLink').addEventListener('click', (e)=>{
     e.stopPropagation();
@@ -2211,12 +2301,6 @@ async function openEvent(id, opts){
     };
     if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(shareUrl).then(copie, ()=> window.prompt('Copie ce lien :', shareUrl));
     else window.prompt('Copie ce lien :', shareUrl);
-  });
-  el.querySelectorAll('#popReport [data-motif]').forEach(b=>{
-    b.addEventListener('click', ()=>{
-      const href = lienSignalement(ev, b.dataset.motif);
-      if(href) window.location.href = href;
-    });
   });
   const btnContact = document.getElementById('btnContact');
   if(btnContact){
@@ -3806,6 +3890,7 @@ async function renderProfile(){
   adminSection.classList.toggle('hidden', !currentIsAdmin);
   if(currentIsAdmin){
     renderAdminEvents(); renderAdminMembers();
+    if(typeof renderAdminSignalements === 'function') renderAdminSignalements();
     if(typeof renderAdminDetection === 'function') renderAdminDetection();
   }
 }
@@ -4570,6 +4655,8 @@ window.EBOK = {
     if(document.getElementById('page-favoris').classList.contains('active')) renderFavorites();
     maybeOpenOnboarding();       // première connexion : on pose les 4 questions
     if(document.getElementById('page-profile').classList.contains('active')) renderProfile();
+    // Pastille « signalements à traiter » sur Mon profil (admin seulement).
+    if(typeof majPastilleSignalements === 'function') majPastilleSignalements(currentIsAdmin);
   }
 };
 
@@ -4607,6 +4694,7 @@ initSearchPage();
 initCreatePage();
 initAuth();
 initEditModal();
+initReport();
 initProfileEdit();
 initOnboarding();
 initMenu();
