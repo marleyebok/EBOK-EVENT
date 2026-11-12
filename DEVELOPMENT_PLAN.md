@@ -353,6 +353,8 @@ dans le code — le reste est à faire.
       servie sur `/confidentialite`. Décrit les données réellement collectées,
       les bases légales, les durées de conservation, les sous-traitants (Vercel,
       Neon, Clerk, Resend, OpenRouter) et les droits RGPD.
+- [x] Signalements d'erreur sur les fiches (12/11/2026) : décrits dans la politique
+      de confidentialité (collecte, base légale, durées). **Texte à faire relire.**
 - [x] ~~Page « Conditions générales d'utilisation »~~ — `public/cgu.html`, servie
       sur `/cgu`. Les **mentions légales** y figurent en article 1.
 - [x] ~~Lien vers ces pages dans le pied de page~~

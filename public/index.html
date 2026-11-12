@@ -73,7 +73,7 @@
     <button class="navlink" data-nav="create"><span class="nav-long">Publier un événement</span><span class="nav-short">Publier</span></button>
     <button class="navlink" data-nav="favoris">♥ Mes favoris</button>
     <button class="navlink" data-nav="alertes">🔔 Alertes<span class="nav-badge hidden" data-alert-badge></span></button>
-    <button class="navlink hidden" data-nav="profile" id="navProfile">Mon profil</button>
+    <button class="navlink hidden" data-nav="profile" id="navProfile">Mon profil<span class="nav-badge hidden" data-report-badge title="Signalements à traiter"></span></button>
   </div>
   <!-- Actions rapides du mobile : la recherche et la publication restent à
        portée de pouce, le reste passe dans le volet. -->
@@ -143,7 +143,7 @@
     <button class="side-menu-link" data-nav="favoris"><span>♥</span> Mes favoris</button>
     <button class="side-menu-link" data-nav="alertes"><span>🔔</span> Mes alertes<span class="nav-badge hidden" data-alert-badge></span></button>
     <button class="side-menu-link menu-auth hidden" data-menu-section="section-mes-evenements"><span>📋</span> Mes événements</button>
-    <button class="side-menu-link menu-auth hidden" data-nav="profile"><span>👤</span> Mon profil</button>
+    <button class="side-menu-link menu-auth hidden" data-nav="profile"><span>👤</span> Mon profil<span class="nav-badge hidden" data-report-badge title="Signalements à traiter"></span></button>
   </nav>
 
   <div class="side-menu-foot">
@@ -585,19 +585,25 @@
             </div>
             <div class="field">
               <label for="c-reservation">Réservation</label>
-              <input type="text" id="c-reservation" placeholder="Ex. Entrée libre / Lien billetterie">
+              <input type="text" id="c-reservation" placeholder="Ex. Entrée libre, sur réservation, places limitées">
             </div>
-            <!-- Deux liens facultatifs : chacun devient un bouton sur la fiche
-                 (« S'inscrire », « Site officiel ») s'il est rempli. -->
+            <!-- Trois liens facultatifs : chacun active un bouton sur la fiche.
+                 Sans lien, le bouton « S'inscrire » ou « Billetterie » reste
+                 visible mais grisé. -->
             <div class="field">
               <label for="c-inscription">Lien d'inscription <span class="wz-opt">(facultatif)</span></label>
-              <input type="text" id="c-inscription" inputmode="url" placeholder="https://… formulaire, billetterie ou page d'inscription">
-              <p class="field-hint">Affiche un bouton « S'inscrire » sur la fiche de l'événement.</p>
+              <input type="text" id="c-inscription" inputmode="url" placeholder="https://… formulaire ou page d'inscription">
+              <p class="field-hint">Active le bouton « S'inscrire » sur la fiche. Vide, le bouton reste grisé.</p>
+            </div>
+            <div class="field">
+              <label for="c-billetterie">Lien de billetterie <span class="wz-opt">(facultatif)</span></label>
+              <input type="text" id="c-billetterie" inputmode="url" placeholder="https://… vente de billets">
+              <p class="field-hint">Active le bouton « Billetterie ». Vide, le bouton reste grisé.</p>
             </div>
             <div class="field">
               <label for="c-site-officiel">Site officiel de l'événement <span class="wz-opt">(facultatif)</span></label>
               <input type="text" id="c-site-officiel" inputmode="url" placeholder="https://…">
-              <p class="field-hint">Affiche un bouton « Site officiel ». Vide, il reprend le site web de ton contact.</p>
+              <p class="field-hint">Affiche un lien « Site officiel » dans le bloc organisateur. Vide, il reprend le site web de ton contact.</p>
             </div>
             <div class="form-row">
               <div class="field">
@@ -803,6 +809,20 @@
         </div>
       </div>
       <div id="adminGrid"></div>
+
+      <div class="profile-section-head admin-subhead">
+        <h3>🚩 Signalements</h3>
+      </div>
+      <!-- Rendu par js/admin-signalements.js -->
+      <div class="maint-card" id="adminReports">
+        <p class="maint-desc">
+          Les erreurs signalées par les visiteurs depuis la fiche d'un événement :
+          informations fausses, événement annulé, doublon… Corrige la fiche, puis
+          marque le signalement comme traité. Les traités sont supprimés au bout de 90 jours.
+        </p>
+        <div class="maint-status" id="reportStatus"></div>
+        <div id="reportList"></div>
+      </div>
 
       <div class="profile-section-head admin-subhead">
         <h3>🤖 Détection automatique</h3>
@@ -1029,6 +1049,35 @@
   </div>
 </div>
 
+<!-- ===================== MODALE SIGNALEMENT ===================== -->
+<div class="edit-modal" id="reportModal" role="dialog" aria-modal="true" aria-labelledby="reportTitle" aria-hidden="true">
+  <div class="edit-box report-box">
+    <button class="edit-close" id="reportClose" type="button" aria-label="Fermer">&times;</button>
+    <form id="reportForm" novalidate>
+      <h3 id="reportTitle">Signaler cet événement</h3>
+      <p class="edit-sub report-event" id="reportEvent"></p>
+      <fieldset class="report-motifs">
+        <legend>Qu'est-ce qui ne va pas&nbsp;?</legend>
+        <div id="reportMotifs"></div>
+      </fieldset>
+      <div class="field">
+        <label for="reportMessage">Précisions <span class="wz-opt" id="reportOpt">(facultatif)</span></label>
+        <textarea id="reportMessage" class="report-text" rows="3" maxlength="500" placeholder="Ex. la date indiquée n'est plus la bonne"></textarea>
+      </div>
+      <p class="report-error hidden" id="reportError" role="alert"></p>
+      <div class="report-actions">
+        <button type="button" class="btn btn-ghost" id="reportCancel">Annuler</button>
+        <button type="submit" class="btn btn-primary" id="reportSend">Envoyer le signalement</button>
+      </div>
+    </form>
+    <div class="report-done hidden" id="reportDone" role="status">
+      <h3>Merci, c'est transmis</h3>
+      <p>L'équipe EBOK va vérifier cet événement.</p>
+      <button type="button" class="btn btn-primary" id="reportDoneClose">Fermer</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===================== MODALE ÉDITION (ADMIN) ===================== -->
 <div class="edit-modal" id="editModal" aria-hidden="true">
   <div class="edit-box">
@@ -1119,9 +1168,13 @@
           <input type="text" id="e-inscription" inputmode="url" placeholder="https://…">
         </div>
         <div class="field">
-          <label for="e-site-officiel">Site officiel</label>
-          <input type="text" id="e-site-officiel" inputmode="url" placeholder="https://…">
+          <label for="e-billetterie">Lien de billetterie</label>
+          <input type="text" id="e-billetterie" inputmode="url" placeholder="https://…">
         </div>
+      </div>
+      <div class="field">
+        <label for="e-site-officiel">Site officiel</label>
+        <input type="text" id="e-site-officiel" inputmode="url" placeholder="https://…">
       </div>
       <div class="field">
         <label>Public — âge <span style="color:var(--chalk-dim);font-weight:400;">(plusieurs choix possibles)</span></label>
@@ -1301,6 +1354,7 @@
 <script src="/js/app.js"></script>
 <script src="/js/create-wizard.js"></script>
 <script src="/js/admin-detection.js"></script>
+<script src="/js/admin-signalements.js"></script>
 <!-- Animations (Motion, motion.dev) : décoratives, chargées après le reste.
      Retirer ces deux lignes suffit à les couper. -->
 <script defer src="/js/vendor/motion.js"></script>

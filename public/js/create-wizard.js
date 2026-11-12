@@ -224,7 +224,8 @@
       ['pratique', 'Infos pratiques', [
         ['Horaires', val('c-horaires')], ['Buvette', val('c-buvette')],
         ['Réservation', val('c-reservation')], ['Places', val('c-places')],
-        ['Lien d\'inscription', val('c-inscription')], ['Site officiel', val('c-site-officiel')],
+        ['Lien d\'inscription', val('c-inscription')], ['Billetterie', val('c-billetterie')],
+        ['Site officiel', val('c-site-officiel')],
       ]],
       ['contact', 'Contact', [
         ['Diffuseur', val('c-orgname')], ['Instagram', val('c-insta')], ['Site', val('c-site')],

@@ -1504,6 +1504,7 @@ function initCreatePage(){
       niveau: val('c-niveau') || 'Loisir',
       tarif: val('c-tarif'),
       lienInscription: lienPropre(val('c-inscription')),
+      lienBilletterie: lienPropre(val('c-billetterie')),
       siteOfficiel: lienPropre(val('c-site-officiel')),
       voyage: readVoyage('c', type),
       poster: await hostPoster(posterSrc),
@@ -1939,6 +1940,10 @@ const ICONES = {
   card: '<rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>',
   send: '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>',
   home: '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+  clipboard: '<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="m9 14 2 2 4-4"/>',
+  ticket: '<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>',
+  flag: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>',
+  chevron: '<polyline points="6 9 12 15 18 9"/>',
 };
 function ico(nom){
   return `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${ICONES[nom] || ''}</svg>`;
@@ -1954,6 +1959,128 @@ function lienPropre(u){
   if(/^https?:\/\/[^/]+\.[^/]+/i.test(s)) return s;
   if(/^[a-z0-9-]+(\.[a-z0-9-]+)+([/?#].*)?$/i.test(s)) return 'https://' + s;
   return '';
+}
+
+/* ---------- Signalement d'un événement ----------
+   Interne : le signalement est enregistré par /api/signalement et lu par
+   l'admin dans son espace (js/admin-signalements.js). Aucun e-mail. */
+const MOTIFS_SIGNALEMENT = [
+  ['infos', 'Informations erronées', 'Date, lieu, tarif, lien…'],
+  ['annule', 'Événement annulé ou déjà passé', ''],
+  ['doublon', "Doublon d'un autre événement", ''],
+  ['abus', 'Contenu inapproprié ou trompeur', ''],
+  ['autre', 'Autre', 'Explique en quelques mots'],
+];
+function libelleMotif(code){
+  const m = MOTIFS_SIGNALEMENT.find(x=> x[0] === code);
+  return m ? m[1] : String(code || '');
+}
+let signalementOpener = null;
+let signalementEventId = null;
+
+function erreurSignalement(msg){
+  const el = document.getElementById('reportError');
+  if(!el) return;
+  el.textContent = msg || '';
+  el.classList.toggle('hidden', !msg);
+}
+/* « Autre » exige quelques mots ; les autres motifs se passent de précisions. */
+function majPrecisionsSignalement(){
+  const choisi = document.querySelector('#reportForm input[name="motif"]:checked');
+  const opt = document.getElementById('reportOpt');
+  if(opt) opt.textContent = choisi && choisi.value === 'autre' ? '(obligatoire)' : '(facultatif)';
+}
+function openReportModal(ev, opener){
+  const modal = document.getElementById('reportModal');
+  if(!modal) return;
+  signalementEventId = ev.id;
+  signalementOpener = opener || null;
+  const form = document.getElementById('reportForm');
+  form.reset();
+  form.classList.remove('hidden');
+  document.getElementById('reportDone').classList.add('hidden');
+  document.getElementById('reportEvent').textContent = ev.title || '';
+  erreurSignalement('');
+  majPrecisionsSignalement();
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+  const premier = form.querySelector('input[name="motif"]');
+  if(premier) premier.focus();
+}
+function closeReportModal(){
+  const modal = document.getElementById('reportModal');
+  if(!modal || !modal.classList.contains('open')) return;
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+  if(signalementOpener && document.contains(signalementOpener)) signalementOpener.focus();
+  signalementOpener = null;
+  signalementEventId = null;
+}
+function initReport(){
+  const modal = document.getElementById('reportModal');
+  if(!modal) return;
+  const form = document.getElementById('reportForm');
+  document.getElementById('reportMotifs').innerHTML = MOTIFS_SIGNALEMENT.map(([code, titre, aide])=>
+    `<label class="report-motif"><input type="radio" name="motif" value="${esc(code)}"><span><b>${esc(titre)}</b>${aide ? `<small>${esc(aide)}</small>` : ''}</span></label>`).join('');
+
+  form.addEventListener('change', e=>{
+    if(e.target && e.target.name === 'motif'){ majPrecisionsSignalement(); erreurSignalement(''); }
+  });
+  for(const id of ['reportClose', 'reportCancel', 'reportDoneClose']){
+    document.getElementById(id).addEventListener('click', closeReportModal);
+  }
+  bindBackdropClose(modal, closeReportModal);
+  modal.addEventListener('keydown', e=>{
+    if(e.key === 'Escape'){ closeReportModal(); return; }
+    if(e.key !== 'Tab') return;
+    // Le focus reste dans la fenêtre tant qu'elle est ouverte.
+    const f = Array.from(modal.querySelectorAll('input, textarea, button')).filter(x=> !x.disabled && x.offsetParent !== null);
+    if(!f.length) return;
+    const premier = f[0], dernier = f[f.length - 1];
+    if(e.shiftKey && document.activeElement === premier){ e.preventDefault(); dernier.focus(); }
+    else if(!e.shiftKey && document.activeElement === dernier){ e.preventDefault(); premier.focus(); }
+  });
+
+  form.addEventListener('submit', async e=>{
+    e.preventDefault();
+    const choisi = form.querySelector('input[name="motif"]:checked');
+    const message = document.getElementById('reportMessage').value.trim();
+    if(!choisi){ erreurSignalement('Choisis ce qui ne va pas.'); return; }
+    if(choisi.value === 'autre' && message.length < 5){ erreurSignalement('Ajoute quelques mots pour expliquer le problème.'); return; }
+    erreurSignalement('');
+    const envoi = document.getElementById('reportSend');
+    envoi.disabled = true;
+    envoi.textContent = 'Envoi…';
+    try{
+      if(!window.EBOK_DATA || typeof window.EBOK_DATA.signalerEvenement !== 'function'){
+        const err = new Error('indispo'); err.code = 'indispo'; throw err;
+      }
+      await window.EBOK_DATA.signalerEvenement(signalementEventId, choisi.value, message);
+      form.classList.add('hidden');
+      document.getElementById('reportDone').classList.remove('hidden');
+      document.getElementById('reportDoneClose').focus();
+    }catch(err){
+      const code = err && err.code;
+      erreurSignalement(
+        code === 'trop' ? "Tu as déjà envoyé plusieurs signalements aujourd'hui. Réessaie demain."
+        : code === 'precisez' ? 'Ajoute quelques mots pour expliquer le problème.'
+        : code === 'introuvable' ? "Cet événement n'est plus en ligne."
+        : code === 'indispo' ? "Le signalement n'est pas disponible dans la version de démonstration."
+        : 'Envoi impossible pour le moment. Réessaie dans un instant.');
+    }finally{
+      envoi.disabled = false;
+      envoi.textContent = 'Envoyer le signalement';
+    }
+  });
+}
+
+/* Menu Partager de la fiche : fermé par un clic ailleurs ou Échap. */
+let menusFicheBranches = false;
+function fermerMenusFiche(){
+  const m = document.getElementById('popShare');
+  if(m) m.classList.remove('open');
+  const b = document.getElementById('btnShare');
+  if(b) b.setAttribute('aria-expanded', 'false');
 }
 
 /* Contenu du bouton « Enregistrer » de la fiche (étoile + libellé + total). */
@@ -1980,50 +2107,70 @@ async function openEvent(id, opts){
     : `<div style="aspect-ratio:3/4;background:linear-gradient(160deg, ${typeColor(ev.type)}44, var(--asphalt-3));display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--font-display);color:${typeColor(ev.type)};font-size:22px;text-align:center;padding:20px;">${esc(String(ev.type || '').toUpperCase())}<br><span style="font-size:13px;color:var(--chalk-dim);font-family:var(--font-body);margin-top:8px;">Affiche à venir</span></div>`;
 
   const org = ev.org || {};
-  const contactItems = [];
-  if(org.insta) contactItems.push(`<a class="popover-item" href="https://instagram.com/${encodeURIComponent(org.insta)}" target="_blank" rel="noopener noreferrer"><span class="ic">${ico('instagram')}</span>Instagram — @${esc(org.insta)}</a>`);
+  const infos = ev.infos || {};
+  const voyage = ev.voyage || {};
+  const termine = isPast(ev);
+  const favOn = favorites.has(ev.id);
   const orgSite = safeUrl(org.site);
-  if(orgSite) contactItems.push(`<a class="popover-item" href="${esc(orgSite)}" target="_blank" rel="noopener noreferrer"><span class="ic">${ico('link')}</span>Site web</a>`);
-  if(org.tel) contactItems.push(`<a class="popover-item" href="tel:${encodeURIComponent(String(org.tel).replace(/\s/g,''))}"><span class="ic">${ico('phone')}</span>${esc(org.tel)}</a>`);
-  if(org.email) contactItems.push(`<a class="popover-item" href="mailto:${encodeURIComponent(org.email)}"><span class="ic">${ico('mail')}</span>${esc(org.email)}</a>`);
-  if(contactItems.length===0) contactItems.push(`<div class="popover-item popover-empty">Aucun contact renseigné</div>`);
-
-  // Boutons « S'inscrire » et « Site officiel » : affichés seulement si
-  // l'organisateur a renseigné le lien. Le site officiel reprend, à défaut,
-  // le site web donné dans le contact. Pas d'inscription à un événement passé.
-  const lienInscription = isPast(ev) ? '' : lienPropre(ev.lienInscription);
-  const lienSite = lienPropre(ev.siteOfficiel) || (/^https?:/i.test(orgSite) ? orgSite : '');
-  const ctaHtml = (lienInscription || lienSite) ? `
-        <div class="ev-cta">
-          ${lienInscription ? `<a class="btn btn-primary btn-lg ev-btn" href="${esc(lienInscription)}" target="_blank" rel="noopener noreferrer">S'inscrire${ico('external')}</a>` : ''}
-          ${lienSite ? `<a class="btn btn-outline btn-lg ev-btn" href="${esc(lienSite)}" target="_blank" rel="noopener noreferrer">${ico('globe')}Site officiel</a>` : ''}
-        </div>` : '';
-
   const shareUrl = `${location.origin}/evenement/${ev.id}`;
   const shareText = encodeURIComponent(`${ev.title} — ${fmtDateRange(ev.dateStart,ev.dateEnd)} à ${ev.city}. Plus d'infos :`);
 
-  const infos = ev.infos || {};
+  /* ---- Bloc 2 : l'organisateur (s'inscrire, billetterie, contacter) ----
+     Un lien absent ne fait pas disparaître le bouton : il reste en place,
+     grisé, et une phrase dit pourquoi. Sur un événement terminé, il n'y a
+     plus rien à réserver. */
+  const lienInscription = termine ? '' : lienPropre(ev.lienInscription);
+  const lienBilletterie = termine ? '' : lienPropre(ev.lienBilletterie);
+  const lienSite = lienPropre(ev.siteOfficiel) || (/^https?:/i.test(orgSite) ? orgSite : '');
+  const aDesCoordonnees = Boolean(org.tel || org.email || org.insta);
+  const bouton = (libelle, lien, icone, raison)=> lien
+    ? `<a class="ev-act" href="${esc(lien)}" target="_blank" rel="noopener noreferrer">${ico(icone)}<span>${libelle}</span></a>`
+    : `<button type="button" class="ev-act is-off" aria-disabled="true" aria-describedby="evAide" title="${esc(raison)}">${ico(icone)}<span>${libelle}</span></button>`;
+  const manques = [];
+  if(!lienInscription) manques.push("d'inscription");
+  if(!lienBilletterie) manques.push('de billetterie');
+  const aide = [];
+  if(termine) aide.push('Cet événement est terminé.');
+  else if(manques.length) aide.push(`L'organisateur n'a pas encore ajouté de lien ${manques.join(' ni ')}.`);
+  if(!aDesCoordonnees) aide.push('Aucune coordonnée renseignée.');
+  const contactBtn = aDesCoordonnees
+    ? `<button type="button" class="ev-act ev-act-line" id="btnContact" aria-expanded="false" aria-controls="evCoord">${ico('message')}<span>Contacter</span>${ico('chevron')}</button>`
+    : `<button type="button" class="ev-act ev-act-line is-off" aria-disabled="true" aria-describedby="evAide" title="Aucune coordonnée renseignée">${ico('message')}<span>Contacter</span></button>`;
+  // Les coordonnées ne sont écrites dans la page qu'au clic sur « Contacter ».
+  const coordonneesHtml = ()=>{
+    const l = [];
+    if(org.tel){
+      const t = String(org.tel).replace(/\s/g,'');
+      l.push(`<a class="ev-coord-row" href="tel:${encodeURIComponent(t)}">${ico('phone')}<span>${esc(org.tel)}</span><em>Appeler</em></a>`);
+    }
+    if(org.email) l.push(`<a class="ev-coord-row" href="mailto:${encodeURIComponent(org.email)}">${ico('mail')}<span>${esc(org.email)}</span><em>Écrire</em></a>`);
+    if(org.insta) l.push(`<a class="ev-coord-row" href="https://instagram.com/${encodeURIComponent(org.insta)}" target="_blank" rel="noopener noreferrer">${ico('instagram')}<span>@${esc(org.insta)}</span><em>Ouvrir</em></a>`);
+    return `<div class="ev-coord-list">${l.join('')}</div>`;
+  };
+
+  /* ---- Bloc 3 : les infos pratiques, en feuille de match ---- */
   const placesValue = [
     ev.placesTotal ? `${ev.placesTotal} places` : null,
     ev.dispo && DISPO_META[ev.dispo] ? DISPO_META[ev.dispo].label : null
-  ].filter(Boolean).join(' · ');
-  const voyage = ev.voyage || {};
-  const practicalRows = [
-    infos.adresse ? {ic:"pin", k:"Adresse", v:infos.adresse} : null,
-    infos.horaires ? {ic:"clock", k:"Horaires", v:infos.horaires} : null,
-    infos.buvette ? {ic:"coffee", k:"Buvette", v:infos.buvette} : null,
-    infos.reservation ? {ic:"tag", k:"Réservation", v:infos.reservation} : null,
-    ev.tarif ? {ic:"card", k:"Tarifs", v:ev.tarif} : null,
-    placesValue ? {ic:"users", k:"Places", v:placesValue} : null,
-    voyage.destination ? {ic:"globe", k:"Destination", v:voyage.destination} : null,
-    (voyage.dateDepart || voyage.lieuxDepart) ? {ic:"send", k:"Départ", v:fmtVoyageLeg(voyage.dateDepart, voyage.lieuxDepart)} : null,
-    (voyage.dateRetour || voyage.lieuRetour) ? {ic:"send", k:"Retour", v:fmtVoyageLeg(voyage.dateRetour, voyage.lieuRetour)} : null,
-    voyage.logement ? {ic:"home", k:"Logement", v:voyage.logement} : null,
-  ].filter(Boolean);
-  const practicalHtml = practicalRows.length
-    ? `<div class="practical-grid">${practicalRows.map(r=>`
-        <div class="practical-item"><span class="ic">${ico(r.ic)}</span><div><div class="k">${esc(r.k)}</div><div class="v">${esc(r.v)}</div></div></div>`).join('')}</div>`
-    : `<p class="practical-empty">Infos pratiques à venir — contacte l'organisateur pour en savoir plus.</p>`;
+  ].filter(Boolean).join(', ');
+  const lieuSous = [ev.region, isAbroad(ev) ? eventCountry(ev) : ''].filter(Boolean).join(', ');
+  const lignes = [
+    ['Dates', fmtDateRange(ev.dateStart, ev.dateEnd)],
+    ['Horaires', infos.horaires],
+    ['Lieu', infos.adresse || ev.lieu || ev.city, lieuSous],
+    ['Public', [ev.sexe, ageLabel(ev.age)].filter(Boolean).join(', ')],
+    ['Niveau', ev.niveau],
+    ['Tarif', ev.tarif],
+    ['Places', placesValue],
+    ['Buvette', infos.buvette],
+    ['Réservation', infos.reservation],
+    ['Destination', voyage.destination],
+    ['Départ', (voyage.dateDepart || voyage.lieuxDepart) ? fmtVoyageLeg(voyage.dateDepart, voyage.lieuxDepart) : ''],
+    ['Retour', (voyage.dateRetour || voyage.lieuRetour) ? fmtVoyageLeg(voyage.dateRetour, voyage.lieuRetour) : ''],
+    ['Logement', voyage.logement],
+  ].filter(r=> r[1]);
+  const feuilleHtml = lignes.map(([k, v, sous])=>
+    `<div class="ev-row"><dt>${esc(k)}</dt><dd>${esc(v)}${sous ? `<small>${esc(sous)}</small>` : ''}</dd></div>`).join('');
 
   const gallery = ev.gallery || [];
   const galleryHtml = gallery.length
@@ -2031,52 +2178,21 @@ async function openEvent(id, opts){
         <div class="photo-card" data-photo="${i}"><div class="ph" style="background:${safeColor(g.color)}">${esc(g.caption)}</div><div class="cap">${esc(g.caption)}</div></div>`).join('')}</div>`
     : `<div class="gallery-empty">Aucune photo d'édition précédente pour le moment.</div>`;
 
-  const favOn = favorites.has(ev.id);
-  const publicLigne = [ev.sexe, ageLabel(ev.age)].filter(Boolean).join(' · ');
-  const lieuSous = [ev.region, isAbroad(ev) ? eventCountry(ev) : ''].filter(Boolean).join(' · ');
-
   el.innerHTML = `
     <div class="event-side">
-      <div class="event-poster">
-        ${posterHtml}
-        <button type="button" class="fav-btn fav-star ${favOn ? 'active' : ''}" data-fav="${esc(ev.id)}"
-          aria-pressed="${favOn}" aria-label="Mettre de côté" title="Mettre de côté">${ico('star')}</button>
-      </div>
-      ${miniMapHtml(ev)}
-    </div>
-    <div class="event-main">
-      <div class="badges">
-        <div class="badges-left">
-          <span class="badge solid" style="background:${typeColor(ev.type)}">${esc(ev.type)}</span>
-          ${isPast(ev) ? `<span class="badge">Terminé</span>` : ''}
-          ${!isPast(ev) && ev.dispo && DISPO_META[ev.dispo] ? `<span class="badge badge-dispo ${DISPO_META[ev.dispo].cls}">${DISPO_META[ev.dispo].label}</span>` : ''}
-        </div>
-        <div class="viewer-counter">
-          <span class="vc-icon">${ico('eye')}</span>
-          <span class="vc-num" id="vcNum">···</span>
-          <span class="vc-label">curieux</span>
-        </div>
-      </div>
-      <h2>${esc(ev.title)}</h2>
-      <p class="event-org">${org.name ? `Organisé par <b>${esc(org.name)}</b>` : ''}
-        ${currentIsAdmin ? `<button class="edit-inline" data-edit="${esc(ev.id)}" title="Modifier cet événement">✏️ Modifier</button>` : ``}
-      </p>
-
-      <div class="ev-facts">
-        <div class="ev-fact">${ico('calendar')}<div><div class="k">Dates</div><div class="v">${fmtDateRange(ev.dateStart, ev.dateEnd)}</div></div></div>
-        <div class="ev-fact">${ico('pin')}<div><div class="k">Lieu</div><div class="v">${esc(ev.lieu || ev.city || '')}</div>${lieuSous ? `<div class="s">${esc(lieuSous)}</div>` : ''}</div></div>
-        <div class="ev-fact">${ico('users')}<div><div class="k">Public</div><div class="v">${esc(publicLigne)}</div>${ev.niveau ? `<div class="s">${esc(ev.niveau)}</div>` : ''}</div></div>
-      </div>
-
-      <div class="ev-actions action-row">
-        ${ctaHtml}
-        <div class="ev-tools">
-          <button type="button" class="ev-tool fav-btn fav-btn-lg ${favOn ? 'active' : ''}" data-fav="${esc(ev.id)}" aria-pressed="${favOn}">${favLgHtml(favOn, Number(ev.favCount) || 0)}</button>
-          <button type="button" class="ev-tool" id="btnShare" aria-haspopup="true">${ico('share')}<span>Partager</span></button>
-          <button type="button" class="ev-tool" id="btnInfo" aria-haspopup="true">${ico('message')}<span>Contacter</span></button>
+      <div class="ev-poster-card">
+        <div class="event-poster">
+          ${posterHtml}
+          <button type="button" class="fav-btn fav-star ${favOn ? 'active' : ''}" data-fav="${esc(ev.id)}"
+            aria-pressed="${favOn}" aria-label="Mettre de côté" title="Mettre de côté">${ico('star')}</button>
         </div>
 
-        <div class="popover" id="popInfo">${contactItems.join('')}</div>
+        <!-- Bloc 1 : ce qu'on fait de l'événement sur EBOK -->
+        <div class="ev-bar" role="group" aria-label="Actions sur l'événement">
+          <button type="button" class="ev-bar-btn fav-btn fav-btn-lg ${favOn ? 'active' : ''}" data-fav="${esc(ev.id)}" aria-pressed="${favOn}">${favLgHtml(favOn, Number(ev.favCount) || 0)}</button>
+          <button type="button" class="ev-bar-btn" id="btnShare" aria-haspopup="true" aria-expanded="false">${ico('share')}<span>Partager</span></button>
+          <button type="button" class="ev-bar-btn ev-bar-quiet" id="btnReport" aria-haspopup="dialog">${ico('flag')}<span>Signaler</span></button>
+        </div>
 
         <div class="popover" id="popShare">
           <a class="popover-item" target="_blank" rel="noopener noreferrer" href="https://wa.me/?text=${shareText}%20${encodeURIComponent(shareUrl)}"><span class="ic">${ico('message')}</span>WhatsApp</a>
@@ -2086,16 +2202,57 @@ async function openEvent(id, opts){
           <div class="share-copied" id="shareCopied" role="status">Lien copié ✓</div>
         </div>
       </div>
+      ${miniMapHtml(ev)}
+    </div>
+
+    <div class="event-main">
+      <div class="badges">
+        <div class="badges-left">
+          <span class="badge solid" style="background:${typeColor(ev.type)}">${esc(ev.type)}</span>
+          ${termine ? `<span class="badge">Terminé</span>` : ''}
+          ${!termine && ev.dispo && DISPO_META[ev.dispo] ? `<span class="badge badge-dispo ${DISPO_META[ev.dispo].cls}">${DISPO_META[ev.dispo].label}</span>` : ''}
+        </div>
+        <div class="viewer-counter">
+          <span class="vc-icon">${ico('eye')}</span>
+          <span class="vc-num" id="vcNum">···</span>
+          <span class="vc-label">curieux</span>
+        </div>
+      </div>
+      <h2>${esc(ev.title)}</h2>
+      <p class="ev-when">
+        <strong>${fmtDateRange(ev.dateStart, ev.dateEnd)}</strong>
+        <span>${esc([ev.city, ev.region].filter(Boolean).join(', '))}</span>
+        ${currentIsAdmin ? `<button class="edit-inline" data-edit="${esc(ev.id)}" title="Modifier cet événement">✏️ Modifier</button>` : ``}
+      </p>
+
+      <!-- Bloc 2 : ce qu'on fait avec l'organisateur -->
+      <section class="ev-ticket" aria-label="Organisateur">
+        <div class="ev-ticket-top">
+          <p class="ev-ticket-kicker">${org.name ? 'Organisé par' : 'Organisateur'}</p>
+          ${org.name ? `<h3 class="ev-ticket-name">${esc(org.name)}</h3>` : ''}
+          ${lienSite ? `<a class="ev-ticket-site" href="${esc(lienSite)}" target="_blank" rel="noopener noreferrer">${ico('globe')}<span>Site officiel</span>${ico('external')}</a>` : ''}
+        </div>
+        <div class="ev-ticket-bottom">
+          <div class="ev-acts">
+            ${bouton("S'inscrire", lienInscription, 'clipboard', termine ? 'Événement terminé' : "Pas de lien d'inscription pour le moment")}
+            ${bouton('Billetterie', lienBilletterie, 'ticket', termine ? 'Événement terminé' : 'Pas de billetterie pour le moment')}
+          </div>
+          ${contactBtn}
+          <div class="ev-coord" id="evCoord"><div class="ev-coord-in" id="evCoordIn"></div></div>
+          ${aide.length ? `<p class="ev-aide" id="evAide">${esc(aide.join(' '))}</p>` : ''}
+        </div>
+      </section>
 
       ${ev.description ? `<p class="event-desc">${esc(ev.description)}</p>` : ''}
 
-      <div class="practical-block">
-        <div class="practical-title">Infos pratiques</div>
-        ${practicalHtml}
-      </div>
+      <!-- Bloc 3 : les infos pratiques -->
+      <section class="ev-sheet" aria-labelledby="evSheetTitle">
+        <h3 class="ev-h" id="evSheetTitle">Infos pratiques</h3>
+        <dl class="ev-rows">${feuilleHtml}</dl>
+      </section>
 
       <div class="gallery-block">
-        <div class="gallery-title">Photos d'éditions précédentes</div>
+        <h3 class="ev-h">Photos d'éditions précédentes</h3>
         ${galleryHtml}
       </div>
 
@@ -2109,29 +2266,54 @@ async function openEvent(id, opts){
       </div>
     </div>`;
 
-  document.getElementById('btnInfo').addEventListener('click', (e)=>{
-    e.stopPropagation();
-    document.getElementById('popShare').classList.remove('open');
-    document.getElementById('popInfo').classList.toggle('open');
-  });
+  // Menus Partager / Signaler : un seul à la fois.
+  const basculerMenu = (menuId, boutonId)=>{
+    const menu = document.getElementById(menuId);
+    const ouvrir = !menu.classList.contains('open');
+    fermerMenusFiche();
+    if(ouvrir){
+      menu.classList.add('open');
+      document.getElementById(boutonId).setAttribute('aria-expanded', 'true');
+    }
+  };
   document.getElementById('btnShare').addEventListener('click', (e)=>{
     e.stopPropagation();
     // Sur téléphone : la feuille de partage du système (toutes les applis de
-    // la personne). Ailleurs, ou si elle la referme, notre petit menu.
+    // la personne). Ailleurs, notre petit menu.
     const tactile = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
     if(tactile && navigator.share){
+      fermerMenusFiche();
       navigator.share({ title: ev.title, text: decodeURIComponent(shareText), url: shareUrl }).catch(()=>{});
       return;
     }
-    document.getElementById('popInfo').classList.remove('open');
-    document.getElementById('popShare').classList.toggle('open');
+    basculerMenu('popShare', 'btnShare');
   });
-  document.getElementById('btnCopyLink').addEventListener('click', ()=>{
-    navigator.clipboard.writeText(shareUrl).then(()=>{
-      document.getElementById('shareCopied').style.display='block';
-      setTimeout(()=> document.getElementById('shareCopied').style.display='none', 1800);
+  document.getElementById('btnReport').addEventListener('click', (e)=>{
+    e.stopPropagation();
+    fermerMenusFiche();
+    openReportModal(ev, e.currentTarget);
+  });
+  document.getElementById('btnCopyLink').addEventListener('click', (e)=>{
+    e.stopPropagation();
+    const copie = ()=>{
+      document.getElementById('shareCopied').style.display = 'block';
+      setTimeout(()=>{ const m = document.getElementById('shareCopied'); if(m) m.style.display = 'none'; fermerMenusFiche(); }, 1500);
+    };
+    if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(shareUrl).then(copie, ()=> window.prompt('Copie ce lien :', shareUrl));
+    else window.prompt('Copie ce lien :', shareUrl);
+  });
+  const btnContact = document.getElementById('btnContact');
+  if(btnContact){
+    btnContact.addEventListener('click', ()=>{
+      const zone = document.getElementById('evCoord');
+      const dedans = document.getElementById('evCoordIn');
+      const ouvrir = !zone.classList.contains('is-open');
+      if(ouvrir && !dedans.firstChild) dedans.innerHTML = coordonneesHtml();
+      zone.classList.toggle('is-open', ouvrir);
+      btnContact.setAttribute('aria-expanded', String(ouvrir));
+      btnContact.querySelector('span').textContent = ouvrir ? 'Masquer' : 'Contacter';
     });
-  });
+  }
   el.querySelectorAll('.photo-card').forEach(card=>{
     card.addEventListener('click', ()=>{
       const item = currentGallery[parseInt(card.dataset.photo,10)];
@@ -2144,10 +2326,11 @@ async function openEvent(id, opts){
   if(posterZoom && ev.poster){
     posterZoom.addEventListener('click', ()=> openLightbox({ img: ev.poster, caption: ev.title }));
   }
-  document.addEventListener('click', ()=>{
-    document.getElementById('popInfo')?.classList.remove('open');
-    document.getElementById('popShare')?.classList.remove('open');
-  }, {once:true});
+  if(!menusFicheBranches){
+    menusFicheBranches = true;
+    document.addEventListener('click', fermerMenusFiche);
+    document.addEventListener('keydown', e=>{ if(e.key === 'Escape') fermerMenusFiche(); });
+  }
 
   showPage('event');
   if(!fromUrl) setUrl('/evenement/' + encodeURIComponent(ev.id));
@@ -3707,6 +3890,7 @@ async function renderProfile(){
   adminSection.classList.toggle('hidden', !currentIsAdmin);
   if(currentIsAdmin){
     renderAdminEvents(); renderAdminMembers();
+    if(typeof renderAdminSignalements === 'function') renderAdminSignalements();
     if(typeof renderAdminDetection === 'function') renderAdminDetection();
   }
 }
@@ -4289,6 +4473,7 @@ function openEditModal(id){
   setFieldVal('e-sexe', ev.sexe || 'Mixte');
   setFieldVal('e-tarif', ev.tarif || '');
   setFieldVal('e-inscription', ev.lienInscription || '');
+  setFieldVal('e-billetterie', ev.lienBilletterie || '');
   setFieldVal('e-site-officiel', ev.siteOfficiel || '');
   renderCountrySelect('e-pays', eventCountry(ev));
   renderAgeChoices('e-age', ev.age);
@@ -4364,6 +4549,7 @@ function initEditModal(){
       age: readAgeChoices('e-age'),
       tarif: gv('e-tarif'),
       lienInscription: lienPropre(gv('e-inscription')),
+      lienBilletterie: lienPropre(gv('e-billetterie')),
       siteOfficiel: lienPropre(gv('e-site-officiel')),
       voyage: readVoyage('e', gv('e-type') || 'Divers'),
       dispo: gv('e-dispo'),
@@ -4469,6 +4655,8 @@ window.EBOK = {
     if(document.getElementById('page-favoris').classList.contains('active')) renderFavorites();
     maybeOpenOnboarding();       // première connexion : on pose les 4 questions
     if(document.getElementById('page-profile').classList.contains('active')) renderProfile();
+    // Pastille « signalements à traiter » sur Mon profil (admin seulement).
+    if(typeof majPastilleSignalements === 'function') majPastilleSignalements(currentIsAdmin);
   }
 };
 
@@ -4506,6 +4694,7 @@ initSearchPage();
 initCreatePage();
 initAuth();
 initEditModal();
+initReport();
 initProfileEdit();
 initOnboarding();
 initMenu();

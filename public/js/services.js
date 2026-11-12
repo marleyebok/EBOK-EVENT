@@ -146,6 +146,54 @@ export async function detectionAction(body) {
   return api("/api/detection", { method: "POST", body });
 }
 
+/* ---------- Signalements ---------- */
+
+/** Signale une erreur sur une fiche. Public : le compte est facultatif. */
+export async function signalerEvenement(eventId, motif, message) {
+  const body = { eventId, motif, message };
+  try {
+    return await api("/api/signalement", { method: "POST", body });
+  } catch (e) {
+    // Réponse du serveur (quota, motif…) : on la transmet telle quelle.
+    if (e.code || /^http_/.test(e.message)) throw e;
+    // Clerk injoignable (bloqueur de scripts, réseau) : le signalement n'exige
+    // pas de compte, on le renvoie sans identité.
+    const res = await fetch("/api/signalement", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    let data = {};
+    try { data = await res.json(); } catch { /* réponse non JSON */ }
+    if (!res.ok) {
+      const err = new Error(data.error || "http_" + res.status);
+      err.code = data.error || "";
+      throw err;
+    }
+    return data;
+  }
+}
+
+/** Liste des signalements (admin) : {signalements, ouverts}. */
+export async function getSignalements() {
+  return api("/api/signalement");
+}
+
+/** Nombre de signalements à traiter (admin), pour la pastille. */
+export async function getSignalementsOuverts() {
+  return (await api("/api/signalement?ouverts=1")).ouverts || 0;
+}
+
+/** Marque un signalement « traite » ou le rouvre « ouvert » (admin). */
+export async function majSignalement(id, statut) {
+  return api("/api/signalement?id=" + encodeURIComponent(id), { method: "PATCH", body: { statut } });
+}
+
+/** Supprime un signalement (admin). */
+export async function supprimerSignalement(id) {
+  return api("/api/signalement?id=" + encodeURIComponent(id), { method: "DELETE" });
+}
+
 export async function getAllUsers() {
   return (await api("/api/account?users=1")).users || [];
 }

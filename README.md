@@ -48,6 +48,7 @@ EBOK-EVENT/
 │   ├── _lib.js               # Client Neon, vérif token Clerk, schéma « event »
 │   ├── events.js             # CRUD événements
 │   ├── views.js              # Compteurs de « curieux »
+│   ├── signalement.js        # Signalements d'erreur sur les fiches (internes, lus par l'admin)
 │   ├── account.js            # Session, profil diffuseur, favoris, liste membres
 │   ├── upload.js             # Dépôt d'images sur Vercel Blob
 │   ├── evenement.js          # Métadonnées de partage par événement (Open Graph)
