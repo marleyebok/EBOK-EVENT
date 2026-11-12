@@ -26,6 +26,7 @@ EBOK-EVENT/
 │   │   ├── intro-boot.js     # Intro : décide si elle se joue (chargé dans le <head>)
 │   │   ├── intro.js          # Intro : le plan-séquence, dessiné dans un <canvas>
 │   │   ├── intro-montpellier.js # Intro : vrai plan de Montpellier (IGN), chargé à la demande
+│   │   ├── intro-son.js      # Intro : bande-son fabriquée à la volée (Web Audio), sans fichier son
 │   │   ├── france-map.js     # Tracés SVG des régions
 │   │   ├── cities-fr.js      # Villes de France (autocomplétion hors ligne)
 │   │   ├── services.js       # Couche API (Neon via /api + Clerk)
@@ -438,6 +439,9 @@ filtré sur cette région.
 - **Plan de Montpellier** (`js/intro-montpellier.js`) : rues, bâtiments et le Lez autour
   de la place Georges-Frêche. Source : IGN, BD TOPO® (novembre 2026), Licence Ouverte 2.0
   — mention à conserver. Fichier généré, chargé seulement quand l'intro se joue.
+- **Son** (`js/intro-son.js`) : rythme hip-hop lointain, swish, rebonds, vent de l'ascension,
+  tout généré par le code (aucun fichier audio). Les navigateurs interdisent le son avant un
+  geste du visiteur : il démarre avec le bouton « Activer le son » (ou un toucher sur l'image).
 - **Quand elle se joue** (`js/intro-boot.js`) : accueil seulement, première visite
   seulement (mémorisé dans le navigateur, clé `ebok-intro`), jamais si le visiteur a
   demandé à son système de réduire les animations. Bouton **Passer** et touche Échap.

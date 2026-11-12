@@ -194,7 +194,7 @@ const BALLON_MAIN = [
   [TAU_TIR, DEPART_TIR]
 ];
 // Après le panier : traversée du filet, chute, rebonds — simulés une fois.
-const PAS_B = 1/240, apresPanier = [];
+const PAS_B = 1/240, apresPanier = [], rebondsTau = [];
 (function(){
   let p = [PANIER_X, 0, CERCLE_Z], v = [V_TIR[0], 0, V_TIR[2] - 9.81*VOL];
   for(let i = 0; i < 240*8; i++){
@@ -202,7 +202,7 @@ const PAS_B = 1/240, apresPanier = [];
     const dansFilet = p[2] > 2.5 && p[2] < CERCLE_Z + 0.02;
     v = [v[0]*Math.exp(-(dansFilet ? 16 : 0.25)*PAS_B), 0, (v[2] - 9.81*PAS_B)*(dansFilet ? Math.exp(-5*PAS_B) : 1)];
     p = [p[0] + v[0]*PAS_B, 0, p[2] + v[2]*PAS_B];
-    if(p[2] < BALLON_R && v[2] < 0){ p[2] = BALLON_R; v[2] = -v[2]*0.62; v[0] *= 0.8; if(v[2] < 0.5) v[2] = 0; }
+    if(p[2] < BALLON_R && v[2] < 0){ if(v[2] < -1) rebondsTau.push(TAU_PANIER + i*PAS_B); p[2] = BALLON_R; v[2] = -v[2]*0.62; v[0] *= 0.8; if(v[2] < 0.5) v[2] = 0; }
   }
 })();
 function ballon(tau){
@@ -510,11 +510,9 @@ function silhouette(volumes, epaisseur, fond, bord, hachures){
 }
 
 /* Deux écritures, comme sur une affiche : le tireur en aplat bordeaux, découpé
-   d'un filet beige ; le défenseur au trait, maillot hachuré. `fantome` : simple
-   contour pâle, pour les poses passées du tireur (décomposition du geste). */
+   d'un filet beige ; le défenseur au trait, maillot hachuré. */
 const STYLE_TIREUR = { peau: BORDEAUX, tenue: BORDEAUX, bord: BEIGE, finesse: 0.55, numero: '34', encre: BEIGE };
 const STYLE_DEFENSEUR = { peau: BEIGE, tenue: BEIGE, bord: BORDEAUX, finesse: 1, hachures: trait(0.8) };
-const fantome = a=> ({ peau: BEIGE, tenue: BEIGE, bord: trait(a), finesse: 0.6 });
 
 function dessinerJoueur(J, st){
   const z = profondeur(J.poitrine);
@@ -814,16 +812,6 @@ function rendre(t){
       { z: profondeur(D.poitrine), f: ()=> dessinerJoueur(D, STYLE_DEFENSEUR) },
       { z: profondeur(A.poitrine), f: ()=> dessinerJoueur(A, STYLE_TIREUR) }
     ];
-    // Décomposition du geste : les poses passées du tireur restent un instant, en contour.
-    const echo = pente(tau, 1.36, 1.5)*(1 - pente(tau, 2.25, 2.7));
-    if(echo > 0.02 && !dessus){
-      for(let k = 3; k >= 1; k--){
-        const tk = tau - k*0.105;
-        if(tk < 1.25) continue;
-        const F = squelette(poseAttaquant(tk, ballon(tk)), 1);
-        objets.push({ z: profondeur(F.poitrine) + 0.6 + k*0.01, f: ()=> dessinerJoueur(F, fantome((0.42 - k*0.1)*echo)) });
-      }
-    }
     if(!dansFilet) objets.push({ z: profondeur(b) - (tau < TAU_TIR ? 0.5 : 0), f: ()=> dessinerBallon(b, rot) });
     objets.sort((a, c)=> c.z - a.z);
     for(const o of objets) o.f();
@@ -906,7 +894,7 @@ function boucle(maintenant){
   image = requestAnimationFrame(boucle);
   const dt = Math.min((maintenant - dernier)/1000, 0.05);
   dernier = maintenant;
-  if(!fige && !fini) t += dt; else if(fini) t += dt;   // à l'arrivée, le temps continue : les points vivent
+  if(!fige) t += dt;                                   // à l'arrivée, le temps continue : les points vivent
   if(!fini && t >= DUREE) arriver();
   rendre(fini ? Math.max(t, DUREE) : t);
   majHud(t);
@@ -915,6 +903,7 @@ function arriver(){
   if(fini) return;
   fini = true;
   if(t < DUREE){                                      // « Passer » : on réveille tout, d'un coup
+    if(bande){ bande.arreter(0.35); bande = null; }
     t = DUREE;
     villes.forEach((v, i)=> v.eveil = DUREE - 0.4 + i*0.03);
   }
@@ -928,6 +917,8 @@ function sortir(region, x, y){
   sorti = true;
   try{ localStorage.setItem('ebok-intro', '1'); }catch(e){}
   if(/[?&]intro=1/.test(location.search)){ try{ history.replaceState({}, '', '/'); }catch(e){} }
+  if(bande){ bande.arreter(0.5); bande = null; }
+  if(audio){ const a = audio; setTimeout(()=>{ try{ a.close(); }catch(e){} }, 800); }
   if(x != null) cv.style.transformOrigin = x + 'px ' + y + 'px';
   boite.classList.add('sortie');
   // Le site apparaît dessous : on rejoue son entrée (titre, terrain du hero).
@@ -987,7 +978,8 @@ function surTouche(ev){
   else if(ev.key === 'Enter' && fini && document.activeElement !== btnEntrer){ ev.preventDefault(); sortir(); }
   else if(ev.key === 'Tab'){                          // le focus reste dans l'intro
     ev.preventDefault();
-    const cible = fini ? btnEntrer : btnPasser;
+    const son = document.getElementById('introSon');
+    const cible = fini ? btnEntrer : (document.activeElement === btnPasser && son ? son : btnPasser);
     if(cible) cible.focus();
   }
 }
@@ -1010,9 +1002,86 @@ if(document.fonts && document.fonts.load) document.fonts.load("100px Anton").cat
 const mT = /[?&]t=([\d.]+)/.exec(location.search);
 if(mT){ fige = true; t = parseFloat(mT[1]); if(t >= DUREE) arriver(); }
 
+/* ---------- Le son (js/intro-son.js) ----------
+   Les navigateurs interdisent de jouer du son avant un geste du visiteur : le
+   bouton « Son » (ou un simple toucher sur l'image) le lance, calé sur l'image. */
+const btnSon = document.getElementById('introSon');
+let audio = null, bande = null, sonActif = false;
+/* Instant où chaque ville s'allume (mêmes calculs que l'image), pour les notes. */
+function calculerReveils(){
+  const faits = villes.map(()=> -1);
+  for(let x = T_ZENITH; x <= T_FIN; x += 1/90){
+    const u = cadrage(x, [0,0,0]);
+    const onde = Math.max(W, H)*1.25*Math.pow(rampe(u, 0.46, 0.9), 1.5);
+    if(onde <= 0 || dessus.s*KM >= 500) continue;
+    const mtp = solVersEcran([0,0,0]);
+    villes.forEach((v, i)=>{
+      if(i === 0 || faits[i] >= 0) return;
+      const q = solVersEcran(v.sol);
+      if(Math.hypot(q[0]-mtp[0], q[1]-mtp[1]) <= onde) faits[i] = x;
+    });
+  }
+  return faits.filter(x=> x >= 0).sort((a, b)=> a - b);
+}
+const reperesSon = ()=> ({ T_ARRET, T_TIR, T_PANIER, T_ZENITH, T_FIN,
+  rebonds: rebondsTau.slice(0, 3).map(tDe), reveils: calculerReveils() });
+function majBoutonSon(){
+  if(!btnSon) return;
+  btnSon.classList.toggle('actif', sonActif);
+  btnSon.setAttribute('aria-pressed', sonActif ? 'true' : 'false');
+  const texte = btnSon.querySelector('span');
+  if(texte) texte.textContent = sonActif ? 'Son activé' : 'Activer le son';
+}
+function lancerBande(){
+  if(!audio || !window.EbokIntroSon || sorti || !sonActif || fige) return;
+  if(bande) bande.arreter(0.05);
+  bande = null;
+  if(t > T_FIN + 2.5) return;                          // l'intro est finie : rien à jouer
+  bande = window.EbokIntroSon.composer(audio, reperesSon(), { origine: audio.currentTime - t, depuis: t, fin: T_FIN + 3.2 });
+}
+function activerSon(){
+  if(sorti) return;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if(!AC) return;
+  try{
+    if(!audio) audio = new AC();
+    sonActif = true; majBoutonSon();
+    const pret = ()=>{ if(audio.state === 'running' && !bande) lancerBande(); };
+    const p = audio.resume(); if(p && p.then) p.then(pret).catch(()=>{});
+    pret();
+  }catch(e){ sonActif = false; majBoutonSon(); }
+}
+function couperSon(fondu){
+  sonActif = false; majBoutonSon();
+  if(bande){ bande.arreter(fondu); bande = null; }
+}
+(function(){
+  let choix = '1';
+  try{ choix = localStorage.getItem('ebok-intro-son') || '1'; }catch(e){}
+  const charger = document.createElement('script');
+  charger.src = '/js/intro-son.js'; charger.async = true;
+  charger.onload = ()=>{ if(sonActif && audio && audio.state === 'running' && !bande) lancerBande(); };
+  document.head.appendChild(charger);
+  if(btnSon) btnSon.addEventListener('click', ()=>{
+    if(sonActif) couperSon(0.2); else activerSon();
+    try{ localStorage.setItem('ebok-intro-son', sonActif ? '1' : '0'); }catch(e){}
+  });
+  // Un toucher sur l'image pendant l'action lance aussi le son (sauf s'il a été coupé).
+  cv.addEventListener('pointerdown', ()=>{ if(!fini && !sonActif && choix !== '0') activerSon(); });
+  // Si le navigateur l'autorise déjà (visiteur habitué du site), le son part seul.
+  if(choix !== '0' && !mT){
+    try{
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(AC){ audio = new AC(); if(audio.state === 'running'){ sonActif = true; majBoutonSon(); } }
+    }catch(e){}
+  }
+})();
+
 window.EbokIntro = {
-  duree: DUREE, reperes: { T_ARRET, T_TIR, T_PANIER, T_ZENITH, T_FIN },
+  duree: DUREE, reperes: { T_ARRET, T_TIR, T_PANIER, T_ZENITH, T_FIN }, reperesSon,
   aller(x){ fige = true; fini = false; boite.classList.remove('fin'); t = x; if(t >= DUREE) arriver(); },
+  /* Dessine tout de suite l'image de l'instant x (montage de vidéos, réglages). */
+  image(x){ fige = true; t = x; rendre(x); majHud(x); },
   passer: arriver, entrer: sortir
 };
 dernier = performance.now();
