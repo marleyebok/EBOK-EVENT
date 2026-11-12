@@ -19,3 +19,7 @@ npm-debug.log*
 dist/
 .cache/
 .vercel/
+
+# Cache Python (régénéré à chaque exécution du skill ui-ux-pro-max)
+__pycache__/
+*.pyc
