@@ -10,7 +10,7 @@
      4. une onde part du panier, révèle les régions et « réveille » les autres
         villes, dont les points vibrent comme de petites secousses.
    On arrive sur la carte : un clic (ou « Entrer ») ouvre le site ; un clic sur
-   une région l'ouvre directement filtré sur cette région.
+   une région ouvre directement la recherche de cette région, avec sa carte.
 
    Tout est calculé : pas de vidéo, pas d'image. La scène est en 3D (mètres,
    terrain aux cotes FIBA), projetée dans un <canvas> par une caméra virtuelle.
@@ -925,7 +925,7 @@ function arriver(){
   if(btnEntrer) setTimeout(()=>{ try{ btnEntrer.focus({ preventScroll: true }); }catch(e){} }, 350);
 }
 
-/* Entrée sur le site. `region` : filtre la carte du site sur cette région. */
+/* Entrée sur le site. `region` : ouvre directement la recherche de cette région. */
 function sortir(region, x, y){
   if(sorti) return;
   sorti = true;
@@ -935,18 +935,16 @@ function sortir(region, x, y){
   if(audio){ const a = audio; setTimeout(()=>{ try{ a.close(); }catch(e){} }, 800); }
   if(x != null) cv.style.transformOrigin = x + 'px ' + y + 'px';
   boite.classList.add('sortie');
-  // Le site apparaît dessous : on rejoue son entrée (titre).
-  const accueil = document.getElementById('page-home');
-  if(accueil && accueil.classList.contains('active')){
-    accueil.classList.remove('active'); void accueil.offsetWidth; accueil.classList.add('active');
-  }
-  if(region){
-    const liste = document.getElementById('regionSelect');
-    if(liste && [...liste.options].some(o=> o.value === region)){
-      liste.value = region;
-      liste.dispatchEvent(new Event('change', { bubbles: true }));
-      const carte = document.getElementById('mapLayout');
-      if(carte) setTimeout(()=> carte.scrollIntoView({ behavior: 'smooth', block: 'start' }), 650);
+  // Région choisie : on ouvre tout de suite, sous le voile qui s'efface, la
+  // recherche filtrée sur cette région avec sa carte (comme un clic sur une
+  // région de la carte du site, js/app.js → openRegionSearch).
+  if(region && typeof window.openRegionSearch === 'function'){
+    try{ window.openRegionSearch(region); }catch(e){ if(window.console) console.error('Intro EBOK :', e); }
+  }else{
+    // Sinon le site apparaît dessous : on rejoue l'entrée de l'accueil (titre).
+    const accueil = document.getElementById('page-home');
+    if(accueil && accueil.classList.contains('active')){
+      accueil.classList.remove('active'); void accueil.offsetWidth; accueil.classList.add('active');
     }
   }
   setTimeout(()=>{

@@ -431,8 +431,8 @@ par-dessus le site : un tir en reculant du n°8 sur un playground posé devant l
 de ville de Montpellier, la caméra suit le ballon, monte à la verticale au-dessus du
 vrai plan de la ville, et le terrain devient un point sur la carte de France, dont les
 régions et les villes apparaissent. On arrive sur la carte :
-un clic (ou « Entrer sur le site ») ouvre le site ; un clic sur une région l'ouvre
-filtré sur cette région.
+un clic (ou « Entrer sur le site ») ouvre le site ; un clic sur une région ouvre
+directement la recherche de cette région, avec sa carte.
 
 - **Tout est dessiné par le code** (`js/intro.js`, dans un `<canvas>`) : ni vidéo ni image.
   Terrain aux cotes FIBA, carte reprise de `js/france-map.js`.
