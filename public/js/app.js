@@ -1503,6 +1503,8 @@ function initCreatePage(){
       age: readAgeChoices('c-age'),
       niveau: val('c-niveau') || 'Loisir',
       tarif: val('c-tarif'),
+      lienInscription: lienPropre(val('c-inscription')),
+      siteOfficiel: lienPropre(val('c-site-officiel')),
       voyage: readVoyage('c', type),
       poster: await hostPoster(posterSrc),
       description: val('c-desc'),
@@ -1912,6 +1914,53 @@ function miniMapHtml(ev){
   </div>`;
 }
 
+/* Icônes au trait (jeu Feather, licence MIT), dessinées en ligne : pas de
+   police d'icônes ni de fichier en plus. Décoratives : le libellé du bouton
+   ou son aria-label porte le sens. */
+const ICONES = {
+  star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+  share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>',
+  external: '<path d="M7 17 17 7"/><path d="M8 7h9v9"/>',
+  globe: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
+  message: '<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>',
+  calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+  pin: '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
+  users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  eye: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+  zoom: '<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>',
+  mail: '<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>',
+  phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
+  mobile: '<rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>',
+  instagram: '<rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  coffee: '<path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/>',
+  tag: '<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>',
+  card: '<rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>',
+  send: '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>',
+  home: '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+};
+function ico(nom){
+  return `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${ICONES[nom] || ''}</svg>`;
+}
+
+/* Lien saisi par un organisateur (inscription, site officiel). On accepte
+   « monclub.fr/inscription » sans le https://, et on refuse tout ce qui
+   n'est pas une adresse web : jamais de javascript: ni de texte libre dans
+   un href. */
+function lienPropre(u){
+  const s = String(u == null ? '' : u).trim();
+  if(!s || /\s/.test(s)) return '';
+  if(/^https?:\/\/[^/]+\.[^/]+/i.test(s)) return s;
+  if(/^[a-z0-9-]+(\.[a-z0-9-]+)+([/?#].*)?$/i.test(s)) return 'https://' + s;
+  return '';
+}
+
+/* Contenu du bouton « Enregistrer » de la fiche (étoile + libellé + total). */
+function favLgHtml(on, total){
+  return `${ico('star')}<span>${on ? 'Enregistré' : 'Enregistrer'}</span>${favBadge(total)}`;
+}
+
 async function openEvent(id, opts){
   const fromUrl = Boolean(opts && opts.fromUrl);
   let ev = events.find(e=>e.id===id);
@@ -1926,17 +1975,29 @@ async function openEvent(id, opts){
   const posterHtml = safeImg(ev.poster)
     ? `<button type="button" class="poster-zoom" id="posterZoom" title="Agrandir l'affiche" aria-label="Agrandir l'affiche">
          <img src="${esc(safeImg(ev.poster))}" alt="Affiche ${esc(ev.title)}">
-         <span class="poster-zoom-ic">🔍</span>
+         <span class="poster-zoom-ic">${ico('zoom')}</span>
        </button>`
-    : `<div style="aspect-ratio:3/4;background:linear-gradient(160deg, ${typeColor(ev.type)}44, var(--asphalt-3));display:flex;align-items:center;justify-content:center;font-family:var(--font-display);color:${typeColor(ev.type)};font-size:22px;text-align:center;padding:20px;">${esc(String(ev.type || '').toUpperCase())}<br><span style="font-size:13px;color:var(--chalk-dim);font-family:var(--font-body);margin-top:8px;">Affiche à venir</span></div>`;
+    : `<div style="aspect-ratio:3/4;background:linear-gradient(160deg, ${typeColor(ev.type)}44, var(--asphalt-3));display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--font-display);color:${typeColor(ev.type)};font-size:22px;text-align:center;padding:20px;">${esc(String(ev.type || '').toUpperCase())}<br><span style="font-size:13px;color:var(--chalk-dim);font-family:var(--font-body);margin-top:8px;">Affiche à venir</span></div>`;
 
+  const org = ev.org || {};
   const contactItems = [];
-  if(ev.org.insta) contactItems.push(`<a class="popover-item" href="https://instagram.com/${encodeURIComponent(ev.org.insta)}" target="_blank" rel="noopener noreferrer"><span class="ic">📷</span>Instagram — @${esc(ev.org.insta)}</a>`);
-  const orgSite = safeUrl(ev.org.site);
-  if(orgSite) contactItems.push(`<a class="popover-item" href="${esc(orgSite)}" target="_blank" rel="noopener noreferrer"><span class="ic">🔗</span>Site web</a>`);
-  if(ev.org.tel) contactItems.push(`<a class="popover-item" href="tel:${encodeURIComponent(String(ev.org.tel).replace(/\\s/g,''))}"><span class="ic">📞</span>${esc(ev.org.tel)}</a>`);
-  if(ev.org.email) contactItems.push(`<a class="popover-item" href="mailto:${encodeURIComponent(ev.org.email)}"><span class="ic">✉️</span>${esc(ev.org.email)}</a>`);
-  if(contactItems.length===0) contactItems.push(`<div class="popover-item" style="color:#7c7768;">Aucun contact renseigné</div>`);
+  if(org.insta) contactItems.push(`<a class="popover-item" href="https://instagram.com/${encodeURIComponent(org.insta)}" target="_blank" rel="noopener noreferrer"><span class="ic">${ico('instagram')}</span>Instagram — @${esc(org.insta)}</a>`);
+  const orgSite = safeUrl(org.site);
+  if(orgSite) contactItems.push(`<a class="popover-item" href="${esc(orgSite)}" target="_blank" rel="noopener noreferrer"><span class="ic">${ico('link')}</span>Site web</a>`);
+  if(org.tel) contactItems.push(`<a class="popover-item" href="tel:${encodeURIComponent(String(org.tel).replace(/\s/g,''))}"><span class="ic">${ico('phone')}</span>${esc(org.tel)}</a>`);
+  if(org.email) contactItems.push(`<a class="popover-item" href="mailto:${encodeURIComponent(org.email)}"><span class="ic">${ico('mail')}</span>${esc(org.email)}</a>`);
+  if(contactItems.length===0) contactItems.push(`<div class="popover-item popover-empty">Aucun contact renseigné</div>`);
+
+  // Boutons « S'inscrire » et « Site officiel » : affichés seulement si
+  // l'organisateur a renseigné le lien. Le site officiel reprend, à défaut,
+  // le site web donné dans le contact. Pas d'inscription à un événement passé.
+  const lienInscription = isPast(ev) ? '' : lienPropre(ev.lienInscription);
+  const lienSite = lienPropre(ev.siteOfficiel) || (/^https?:/i.test(orgSite) ? orgSite : '');
+  const ctaHtml = (lienInscription || lienSite) ? `
+        <div class="ev-cta">
+          ${lienInscription ? `<a class="btn btn-primary btn-lg ev-btn" href="${esc(lienInscription)}" target="_blank" rel="noopener noreferrer">S'inscrire${ico('external')}</a>` : ''}
+          ${lienSite ? `<a class="btn btn-outline btn-lg ev-btn" href="${esc(lienSite)}" target="_blank" rel="noopener noreferrer">${ico('globe')}Site officiel</a>` : ''}
+        </div>` : '';
 
   const shareUrl = `${location.origin}/evenement/${ev.id}`;
   const shareText = encodeURIComponent(`${ev.title} — ${fmtDateRange(ev.dateStart,ev.dateEnd)} à ${ev.city}. Plus d'infos :`);
@@ -1948,20 +2009,20 @@ async function openEvent(id, opts){
   ].filter(Boolean).join(' · ');
   const voyage = ev.voyage || {};
   const practicalRows = [
-    infos.adresse ? {ic:"📍", k:"Adresse", v:infos.adresse} : null,
-    infos.horaires ? {ic:"🕐", k:"Horaires", v:infos.horaires} : null,
-    infos.buvette ? {ic:"🥤", k:"Buvette", v:infos.buvette} : null,
-    infos.reservation ? {ic:"🎟", k:"Réservation", v:infos.reservation} : null,
-    ev.tarif ? {ic:"💶", k:"Tarifs", v:ev.tarif} : null,
-    placesValue ? {ic:"🎫", k:"Places", v:placesValue} : null,
-    voyage.destination ? {ic:"🌍", k:"Destination", v:voyage.destination} : null,
-    (voyage.dateDepart || voyage.lieuxDepart) ? {ic:"🛫", k:"Départ", v:fmtVoyageLeg(voyage.dateDepart, voyage.lieuxDepart)} : null,
-    (voyage.dateRetour || voyage.lieuRetour) ? {ic:"🛬", k:"Retour", v:fmtVoyageLeg(voyage.dateRetour, voyage.lieuRetour)} : null,
-    voyage.logement ? {ic:"🏨", k:"Logement", v:voyage.logement} : null,
+    infos.adresse ? {ic:"pin", k:"Adresse", v:infos.adresse} : null,
+    infos.horaires ? {ic:"clock", k:"Horaires", v:infos.horaires} : null,
+    infos.buvette ? {ic:"coffee", k:"Buvette", v:infos.buvette} : null,
+    infos.reservation ? {ic:"tag", k:"Réservation", v:infos.reservation} : null,
+    ev.tarif ? {ic:"card", k:"Tarifs", v:ev.tarif} : null,
+    placesValue ? {ic:"users", k:"Places", v:placesValue} : null,
+    voyage.destination ? {ic:"globe", k:"Destination", v:voyage.destination} : null,
+    (voyage.dateDepart || voyage.lieuxDepart) ? {ic:"send", k:"Départ", v:fmtVoyageLeg(voyage.dateDepart, voyage.lieuxDepart)} : null,
+    (voyage.dateRetour || voyage.lieuRetour) ? {ic:"send", k:"Retour", v:fmtVoyageLeg(voyage.dateRetour, voyage.lieuRetour)} : null,
+    voyage.logement ? {ic:"home", k:"Logement", v:voyage.logement} : null,
   ].filter(Boolean);
   const practicalHtml = practicalRows.length
     ? `<div class="practical-grid">${practicalRows.map(r=>`
-        <div class="practical-item"><span class="ic">${r.ic}</span><div><div class="k">${esc(r.k)}</div><div class="v">${esc(r.v)}</div></div></div>`).join('')}</div>`
+        <div class="practical-item"><span class="ic">${ico(r.ic)}</span><div><div class="k">${esc(r.k)}</div><div class="v">${esc(r.v)}</div></div></div>`).join('')}</div>`
     : `<p class="practical-empty">Infos pratiques à venir — contacte l'organisateur pour en savoir plus.</p>`;
 
   const gallery = ev.gallery || [];
@@ -1970,38 +2031,63 @@ async function openEvent(id, opts){
         <div class="photo-card" data-photo="${i}"><div class="ph" style="background:${safeColor(g.color)}">${esc(g.caption)}</div><div class="cap">${esc(g.caption)}</div></div>`).join('')}</div>`
     : `<div class="gallery-empty">Aucune photo d'édition précédente pour le moment.</div>`;
 
+  const favOn = favorites.has(ev.id);
+  const publicLigne = [ev.sexe, ageLabel(ev.age)].filter(Boolean).join(' · ');
+  const lieuSous = [ev.region, isAbroad(ev) ? eventCountry(ev) : ''].filter(Boolean).join(' · ');
+
   el.innerHTML = `
     <div class="event-side">
-      <div class="event-poster">${posterHtml}</div>
+      <div class="event-poster">
+        ${posterHtml}
+        <button type="button" class="fav-btn fav-star ${favOn ? 'active' : ''}" data-fav="${esc(ev.id)}"
+          aria-pressed="${favOn}" aria-label="Mettre de côté" title="Mettre de côté">${ico('star')}</button>
+      </div>
       ${miniMapHtml(ev)}
     </div>
     <div class="event-main">
       <div class="badges">
         <div class="badges-left">
           <span class="badge solid" style="background:${typeColor(ev.type)}">${esc(ev.type)}</span>
-          <span class="badge">${esc(ev.niveau)}</span>
-          <span class="badge">${esc(ev.sexe)}</span>
-          <span class="badge">${esc(ageLabel(ev.age))}</span>
+          ${isPast(ev) ? `<span class="badge">Terminé</span>` : ''}
+          ${!isPast(ev) && ev.dispo && DISPO_META[ev.dispo] ? `<span class="badge badge-dispo ${DISPO_META[ev.dispo].cls}">${DISPO_META[ev.dispo].label}</span>` : ''}
         </div>
         <div class="viewer-counter">
-          <span class="vc-icon">👁</span>
+          <span class="vc-icon">${ico('eye')}</span>
           <span class="vc-num" id="vcNum">···</span>
           <span class="vc-label">curieux</span>
         </div>
       </div>
       <h2>${esc(ev.title)}</h2>
-      <p class="event-org">${ev.org && ev.org.name ? `Organisé par <b>${esc(ev.org.name)}</b>` : ''}
+      <p class="event-org">${org.name ? `Organisé par <b>${esc(org.name)}</b>` : ''}
         ${currentIsAdmin ? `<button class="edit-inline" data-edit="${esc(ev.id)}" title="Modifier cet événement">✏️ Modifier</button>` : ``}
       </p>
 
-      <div class="info-grid">
-        <div class="info-cell"><div class="k">Lieu</div><div class="v">${esc(ev.lieu)}</div></div>
-        <div class="info-cell"><div class="k">Région</div><div class="v">${esc(ev.region)}</div></div>
-        <div class="info-cell"><div class="k">Dates</div><div class="v">${fmtDateRange(ev.dateStart, ev.dateEnd)}</div></div>
-        <div class="info-cell"><div class="k">Niveau</div><div class="v">${esc(ev.niveau)}</div></div>
+      <div class="ev-facts">
+        <div class="ev-fact">${ico('calendar')}<div><div class="k">Dates</div><div class="v">${fmtDateRange(ev.dateStart, ev.dateEnd)}</div></div></div>
+        <div class="ev-fact">${ico('pin')}<div><div class="k">Lieu</div><div class="v">${esc(ev.lieu || ev.city || '')}</div>${lieuSous ? `<div class="s">${esc(lieuSous)}</div>` : ''}</div></div>
+        <div class="ev-fact">${ico('users')}<div><div class="k">Public</div><div class="v">${esc(publicLigne)}</div>${ev.niveau ? `<div class="s">${esc(ev.niveau)}</div>` : ''}</div></div>
       </div>
 
-      <p class="event-desc">${esc(ev.description)}</p>
+      <div class="ev-actions action-row">
+        ${ctaHtml}
+        <div class="ev-tools">
+          <button type="button" class="ev-tool fav-btn fav-btn-lg ${favOn ? 'active' : ''}" data-fav="${esc(ev.id)}" aria-pressed="${favOn}">${favLgHtml(favOn, Number(ev.favCount) || 0)}</button>
+          <button type="button" class="ev-tool" id="btnShare" aria-haspopup="true">${ico('share')}<span>Partager</span></button>
+          <button type="button" class="ev-tool" id="btnInfo" aria-haspopup="true">${ico('message')}<span>Contacter</span></button>
+        </div>
+
+        <div class="popover" id="popInfo">${contactItems.join('')}</div>
+
+        <div class="popover" id="popShare">
+          <a class="popover-item" target="_blank" rel="noopener noreferrer" href="https://wa.me/?text=${shareText}%20${encodeURIComponent(shareUrl)}"><span class="ic">${ico('message')}</span>WhatsApp</a>
+          <a class="popover-item" href="sms:?&body=${shareText}%20${encodeURIComponent(shareUrl)}"><span class="ic">${ico('mobile')}</span>SMS</a>
+          <a class="popover-item" href="mailto:?subject=${encodeURIComponent(ev.title)}&body=${shareText}%20${encodeURIComponent(shareUrl)}"><span class="ic">${ico('mail')}</span>E-mail</a>
+          <button type="button" class="popover-item" id="btnCopyLink"><span class="ic">${ico('link')}</span>Copier le lien</button>
+          <div class="share-copied" id="shareCopied" role="status">Lien copié ✓</div>
+        </div>
+      </div>
+
+      ${ev.description ? `<p class="event-desc">${esc(ev.description)}</p>` : ''}
 
       <div class="practical-block">
         <div class="practical-title">Infos pratiques</div>
@@ -2013,25 +2099,8 @@ async function openEvent(id, opts){
         ${galleryHtml}
       </div>
 
-      <div class="action-row">
-        <button class="btn btn-primary btn-lg fav-btn fav-btn-lg ${favorites.has(ev.id) ? 'active' : ''}" data-fav="${esc(ev.id)}">${favorites.has(ev.id) ? '♥ Enregistré' : '♡ Enregistrer'}${favBadge(Number(ev.favCount) || 0)}</button>
-        <button class="btn btn-ghost btn-lg" id="btnShare">Partager</button>
-        <button class="btn btn-ghost btn-lg" id="btnInfo">Se renseigner</button>
-
-        <div class="popover" id="popInfo">${contactItems.join('')}</div>
-
-        <div class="popover" id="popShare">
-          <a class="popover-item" target="_blank" href="https://wa.me/?text=${shareText}%20${encodeURIComponent(shareUrl)}"><span class="ic">💬</span>WhatsApp</a>
-          <a class="popover-item" href="sms:?&body=${shareText}%20${encodeURIComponent(shareUrl)}"><span class="ic">📱</span>SMS</a>
-          <a class="popover-item" href="mailto:?subject=${encodeURIComponent(ev.title)}&body=${shareText}%20${encodeURIComponent(shareUrl)}"><span class="ic">✉️</span>Email</a>
-          <a class="popover-item" target="_blank" href="https://instagram.com"><span class="ic">📷</span>Instagram (copier le lien pour ta story)</a>
-          <button class="popover-item" id="btnCopyLink" style="width:100%;text-align:left;border:none;background:none;"><span class="ic">🔗</span>Copier le lien</button>
-          <div class="share-copied" id="shareCopied">Lien copié ✓</div>
-        </div>
-      </div>
-
       <div class="curieux-counter">
-        <span class="cc-eye">👁</span>
+        <span class="cc-eye">${ico('eye')}</span>
         <div>
           <div class="cc-label">Nombre de curieux</div>
           <div class="cc-sub">personnes ont consulté cet événement</div>
@@ -2047,6 +2116,13 @@ async function openEvent(id, opts){
   });
   document.getElementById('btnShare').addEventListener('click', (e)=>{
     e.stopPropagation();
+    // Sur téléphone : la feuille de partage du système (toutes les applis de
+    // la personne). Ailleurs, ou si elle la referme, notre petit menu.
+    const tactile = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    if(tactile && navigator.share){
+      navigator.share({ title: ev.title, text: decodeURIComponent(shareText), url: shareUrl }).catch(()=>{});
+      return;
+    }
     document.getElementById('popInfo').classList.remove('open');
     document.getElementById('popShare').classList.toggle('open');
   });
@@ -2521,8 +2597,9 @@ function updateFavButtons(id){
   document.querySelectorAll(`.fav-btn[data-fav="${id}"]`).forEach(b=>{
     b.classList.toggle('active', on);
     if(b.classList.contains('fav-btn-lg')){
-      b.innerHTML = (on ? '♥ Enregistré' : '♡ Enregistrer') + favBadge(total);
+      b.innerHTML = favLgHtml(on, total);
     }
+    if(b.hasAttribute('aria-pressed')) b.setAttribute('aria-pressed', String(on));
   });
   for(const el of document.querySelectorAll(`[data-fav-count="${id}"]`)){
     el.textContent = total > 0 ? total : '';
@@ -4211,6 +4288,8 @@ function openEditModal(id){
   setFieldVal('e-date-end', ev.dateEnd);
   setFieldVal('e-sexe', ev.sexe || 'Mixte');
   setFieldVal('e-tarif', ev.tarif || '');
+  setFieldVal('e-inscription', ev.lienInscription || '');
+  setFieldVal('e-site-officiel', ev.siteOfficiel || '');
   renderCountrySelect('e-pays', eventCountry(ev));
   renderAgeChoices('e-age', ev.age);
   fillVoyage('e', ev.voyage);
@@ -4284,6 +4363,8 @@ function initEditModal(){
       pays: gv('e-pays') || DEFAULT_COUNTRY,
       age: readAgeChoices('e-age'),
       tarif: gv('e-tarif'),
+      lienInscription: lienPropre(gv('e-inscription')),
+      siteOfficiel: lienPropre(gv('e-site-officiel')),
       voyage: readVoyage('e', gv('e-type') || 'Divers'),
       dispo: gv('e-dispo'),
       description: gv('e-desc'),

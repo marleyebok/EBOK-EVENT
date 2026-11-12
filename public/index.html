@@ -587,6 +587,18 @@
               <label for="c-reservation">Réservation</label>
               <input type="text" id="c-reservation" placeholder="Ex. Entrée libre / Lien billetterie">
             </div>
+            <!-- Deux liens facultatifs : chacun devient un bouton sur la fiche
+                 (« S'inscrire », « Site officiel ») s'il est rempli. -->
+            <div class="field">
+              <label for="c-inscription">Lien d'inscription <span class="wz-opt">(facultatif)</span></label>
+              <input type="text" id="c-inscription" inputmode="url" placeholder="https://… formulaire, billetterie ou page d'inscription">
+              <p class="field-hint">Affiche un bouton « S'inscrire » sur la fiche de l'événement.</p>
+            </div>
+            <div class="field">
+              <label for="c-site-officiel">Site officiel de l'événement <span class="wz-opt">(facultatif)</span></label>
+              <input type="text" id="c-site-officiel" inputmode="url" placeholder="https://…">
+              <p class="field-hint">Affiche un bouton « Site officiel ». Vide, il reprend le site web de ton contact.</p>
+            </div>
             <div class="form-row">
               <div class="field">
                 <label for="c-places">Nombre de places <span class="wz-opt">(facultatif)</span></label>
@@ -1099,6 +1111,16 @@
         <div class="field">
           <label for="e-tarif">Tarifs</label>
           <input type="text" id="e-tarif" placeholder="Ex. 15 € par joueur">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label for="e-inscription">Lien d'inscription</label>
+          <input type="text" id="e-inscription" inputmode="url" placeholder="https://…">
+        </div>
+        <div class="field">
+          <label for="e-site-officiel">Site officiel</label>
+          <input type="text" id="e-site-officiel" inputmode="url" placeholder="https://…">
         </div>
       </div>
       <div class="field">
