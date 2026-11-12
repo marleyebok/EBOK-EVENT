@@ -10,7 +10,7 @@
      4. une onde part du panier, révèle les régions et « réveille » les autres
         villes, dont les points vibrent comme de petites secousses.
    On arrive sur la carte : un clic (ou « Entrer ») ouvre le site ; un clic sur
-   une région ouvre directement la recherche de cette région, avec sa carte.
+   une région ouvre directement la recherche de cette région, sur sa carte.
 
    Tout est calculé : pas de vidéo, pas d'image. La scène est en 3D (mètres,
    terrain aux cotes FIBA), projetée dans un <canvas> par une caméra virtuelle.
@@ -939,7 +939,15 @@ function sortir(region, x, y){
   // recherche filtrée sur cette région avec sa carte (comme un clic sur une
   // région de la carte du site, js/app.js → openRegionSearch).
   if(region && typeof window.openRegionSearch === 'function'){
-    try{ window.openRegionSearch(region); }catch(e){ if(window.console) console.error('Intro EBOK :', e); }
+    try{
+      window.openRegionSearch(region);
+      // Droit sur la carte de la région, sous la barre du haut (qui reste collée).
+      const carte = document.getElementById('resultsMap');
+      if(carte && carte.offsetHeight){
+        const barre = document.querySelector('.topbar'), marge = (barre ? barre.offsetHeight : 0) + 14;
+        window.scrollTo({ top: Math.max(carte.getBoundingClientRect().top + window.scrollY - marge, 0), behavior: 'instant' });
+      }
+    }catch(e){ if(window.console) console.error('Intro EBOK :', e); }
   }else{
     // Sinon le site apparaît dessous : on rejoue l'entrée de l'accueil (titre).
     const accueil = document.getElementById('page-home');
