@@ -46,12 +46,13 @@
   <ul>
     <li>
       <b>Une empreinte technique de mesure d'audience.</b> Pour afficher le
-      nombre de vues d'un événement sans compter plusieurs fois la même
-      personne, une empreinte est calculée à partir de l'adresse IP et du
-      navigateur. Elle est <b>salée, non réversible et renouvelée chaque
-      jour</b> : l'adresse IP n'est ni stockée, ni reconstituable. Cette
-      empreinte est effacée au bout de 7 jours ; seul le total de vues
-      subsiste.
+      nombre de vues d'un événement, et pour compter les visiteurs du site dans
+      nos statistiques, sans compter plusieurs fois la même personne, une
+      empreinte est calculée à partir de l'adresse IP et du navigateur. Elle est
+      <b>salée, non réversible et renouvelée chaque jour</b> : l'adresse IP
+      n'est ni stockée, ni reconstituable. Cette empreinte est effacée au bout
+      de 7 jours ; seuls les totaux (vues, visiteurs par jour) subsistent.
+      Le signal « ne pas me suivre » de ton navigateur est respecté.
     </li>
     <li>
       <b>Un signalement, si tu en envoies un.</b> Depuis la fiche d'un
@@ -91,7 +92,7 @@
 
   <h3>À l'usage du service</h3>
   <ul>
-    <li><b>Favoris</b> : la liste des événements que tu mets de côté. Leur nombre total est affiché publiquement sur chaque fiche, sans révéler qui a enregistré quoi.</li>
+    <li><b>Favoris</b> : la liste des événements que tu mets de côté. Leur nombre total est affiché publiquement sur chaque fiche, sans révéler qui a enregistré quoi. Le nombre de favoris ajoutés ou retirés chaque jour est compté pour nos statistiques, sans identifier personne.</li>
     <li><b>Alertes</b> : le nom que tu leur donnes et leurs critères (régions, types d'événement, période).</li>
     <li><b>Événements publiés</b> : tout ce que contient la fiche, y compris les coordonnées de contact que tu choisis d'y faire figurer, ainsi que l'affiche et les photos transmises.</li>
     <li><b>Envois d'alertes</b> : la trace qu'une alerte a déjà donné lieu à un e-mail pour un événement donné, afin de ne pas l'envoyer deux fois.</li>
@@ -105,6 +106,7 @@
     <tr><td>Enregistrer tes favoris</td><td>Exécution du contrat</td></tr>
     <tr><td>T'envoyer les alertes que tu as créées</td><td>Consentement — tu les crées et les supprimes toi-même</td></tr>
     <tr><td>Compter les vues d'un événement</td><td>Intérêt légitime : donner aux organisateurs une mesure de l'audience, sans identifier personne</td></tr>
+    <tr><td>Compter les visiteurs du site et suivre l'activité (statistiques de l'administration)</td><td>Intérêt légitime : piloter le service, sans identifier personne</td></tr>
     <tr><td>Traiter les signalements d'erreur sur les fiches</td><td>Intérêt légitime : garder un agenda fiable</td></tr>
     <tr><td>Répondre à un message envoyé au contact</td><td>Intérêt légitime</td></tr>
     <tr><td>Sécurité du service et prévention des abus</td><td>Intérêt légitime</td></tr>
@@ -118,6 +120,7 @@
     <tr><td>Événements publiés</td><td>Conservés comme archive de l'agenda après l'événement ; supprimés sur demande</td></tr>
     <tr><td>Empreinte de mesure d'audience</td><td>7 jours</td></tr>
     <tr><td>Signalements d'événements</td><td>Jusqu'à leur traitement, puis 90 jours ; l'empreinte technique associée est effacée au bout de 7 jours</td></tr>
+    <tr><td>Totaux quotidiens (visiteurs, fiches consultées, favoris ajoutés ou retirés)</td><td>Conservés, sans donnée personnelle</td></tr>
     <tr><td>Total de vues d'un événement</td><td>Tant que l'événement est en ligne (aucune donnée personnelle)</td></tr>
     <tr><td>Trace des alertes envoyées</td><td>Supprimée avec l'alerte</td></tr>
     <tr><td>Échanges par e-mail</td><td>3 ans à compter du dernier contact</td></tr>
@@ -155,9 +158,10 @@
   <ul>
     <li><b>Cookies de session Clerk</b> : indispensables pour rester connecté. Ils sont strictement nécessaires au service et ne demandent pas de consentement.</li>
     <li><b>Stockage local du navigateur</b> : thème choisi, favoris en mode démonstration. Ces informations restent sur ton appareil et peuvent être effacées en vidant les données du site.</li>
+    <li><b>Stockage de session</b> : un simple indicateur, effacé à la fermeture de l'onglet, pour ne signaler ta visite qu'une fois dans nos statistiques.</li>
   </ul>
   <p>
-    Si un outil de mesure d'audience est ajouté plus tard, cette page sera mise
+    Si un outil de mesure d'audience tiers est ajouté plus tard, cette page sera mise
     à jour et, si la réglementation l'exige, un bandeau de consentement sera
     mis en place.
   </p>

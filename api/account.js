@@ -15,6 +15,7 @@
  * centres d'intérêt…) et la liste des favoris.
  */
 import { ensureSchema, hasDb, sql, json, readBody, sessionUid, clerkUser, isAdminEmail } from "./_lib.js";
+import { compterStat } from "../lib/stats.js";
 
 /* Champs d'identité gérés par Clerk : on les retire d'un profil avant stockage. */
 function stripIdentity(profile) {
@@ -104,6 +105,9 @@ export default async function handler(req, res) {
           INSERT INTO event.profiles (user_id, favorites)
           VALUES (${uid}, ${JSON.stringify(next)}::jsonb)
           ON CONFLICT (user_id) DO UPDATE SET favorites = ${JSON.stringify(next)}::jsonb`;
+        // Pour les statistiques : seulement un vrai changement (jamais le même favori deux fois).
+        if (add && !current.includes(eventId)) await compterStat("favoris_ajouts");
+        else if (!add && current.includes(eventId)) await compterStat("favoris_retraits");
         return json(res, 200, { favorites: next });
       }
 

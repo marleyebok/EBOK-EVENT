@@ -164,17 +164,33 @@ export default async function handler(req, res) {
       if (!admin && row.user_id !== uid) return json(res, 403, { error: "prive" });
 
       const patch = await readBody(req);
+      const aLaCle = (k) => Object.prototype.hasOwnProperty.call(patch, k);
       // status et featured sont des actions d'admin (validation / mise en avant).
-      const hasStatus = admin && Object.prototype.hasOwnProperty.call(patch, "status");
-      const hasFeatured = admin && Object.prototype.hasOwnProperty.call(patch, "featured");
+      const hasStatus = admin && aLaCle("status");
+      const hasFeatured = admin && aLaCle("featured");
       const nextStatus = hasStatus ? String(patch.status) : null;
       const nextFeatured = hasFeatured ? Boolean(patch.featured) : null;
+      // Affiliation : seul l'admin rattache un événement au compte d'un
+      // organisateur (userId = identifiant Clerk) ou le détache (userId nul).
+      // Un propriétaire ne peut pas passer la main : `userId` est une colonne,
+      // dataBlob() l'écarte de ses modifications.
+      const hasOwner = admin && aLaCle("userId");
+      const nextOwner = hasOwner && patch.userId ? String(patch.userId).slice(0, 200) : null;
       const rest = dataBlob(patch);
+      // Un organisateur qui modifie sa fiche la garde en ligne, mais l'admin est
+      // prévenu qu'il y a quelque chose à relire (drapeau `aRelire`). Il ne peut
+      // pas le retirer lui-même, et un simple changement de disponibilité ne
+      // compte pas.
+      if (!admin) {
+        delete rest.aRelire;
+        if (Object.keys(rest).some((k) => k !== "dispo" && k !== "placesTotal")) rest.aRelire = true;
+      }
 
       await sql()`
         UPDATE event.events SET
           status   = COALESCE(${nextStatus}, status),
           featured = COALESCE(${nextFeatured}, featured),
+          user_id  = CASE WHEN ${hasOwner}::boolean THEN ${nextOwner}::text ELSE user_id END,
           data     = data || ${JSON.stringify(rest)}::jsonb
         WHERE id = ${id}`;
       const out = await sql()`SELECT * FROM event.events_lecture WHERE id = ${id}`;

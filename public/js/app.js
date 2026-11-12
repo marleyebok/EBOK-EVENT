@@ -2088,6 +2088,13 @@ function favLgHtml(on, total){
   return `${ico('star')}<span>${on ? 'Enregistré' : 'Enregistrer'}</span>${favBadge(total)}`;
 }
 
+/* Qui peut modifier une fiche : l'admin, et l'organisateur à qui elle est
+   rattachée (affiliation faite par l'admin, ou événement qu'il a publié). */
+function peutModifier(ev){
+  if(currentIsAdmin) return true;
+  return !!(currentUser && ev && ev.userId && ev.userId === currentUser.uid);
+}
+
 async function openEvent(id, opts){
   const fromUrl = Boolean(opts && opts.fromUrl);
   let ev = events.find(e=>e.id===id);
@@ -2222,7 +2229,7 @@ async function openEvent(id, opts){
       <p class="ev-when">
         <strong>${fmtDateRange(ev.dateStart, ev.dateEnd)}</strong>
         <span>${esc([ev.city, ev.region].filter(Boolean).join(', '))}</span>
-        ${currentIsAdmin ? `<button class="edit-inline" data-edit="${esc(ev.id)}" title="Modifier cet événement">✏️ Modifier</button>` : ``}
+        ${peutModifier(ev) ? `<button class="edit-inline" data-edit="${esc(ev.id)}" title="Modifier cet événement">✏️ Modifier</button>` : ``}
       </p>
 
       <!-- Bloc 2 : ce qu'on fait avec l'organisateur -->
@@ -2707,6 +2714,8 @@ window.addEventListener('popstate', ()=>{
 function showPage(name){
   // Espace réservé aux comptes connectés (si l'auth est active).
   if(name === 'profile' && !currentUser && window.EBOK_AUTH){ openAuth('login'); return; }
+  // L'administration n'existe que pour l'admin (le serveur vérifie de toute façon).
+  if(name === 'admin' && !currentIsAdmin){ showPage('home'); return; }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   document.querySelectorAll('.navlink').forEach(n=>n.classList.toggle('active', n.dataset.nav===name));
@@ -2715,6 +2724,7 @@ function showPage(name){
   // Précharge la base des villes dès qu'on arrive sur la page de publication.
   if(name === 'create'){ ensureCitiesLoaded(); prefillOrgFromProfile(); }
   if(name === 'profile'){ renderProfile(); renderOnboardingNudge(); }
+  if(name === 'admin' && typeof renderAdminPage === 'function') renderAdminPage();
   if(name === 'favoris') renderFavorites();
   if(name === 'alertes') ouvrirPageAlertes();
   // Quitter une fiche événement : on revient à l'URL racine.
@@ -3085,6 +3095,7 @@ function updateAuthUI(){
   document.getElementById('accountOut').classList.toggle('hidden', !loggedOut);
   document.getElementById('accountLogged').classList.toggle('hidden', loggedOut);
   document.getElementById('navProfile').classList.toggle('hidden', loggedOut);
+  document.getElementById('navAdmin').classList.toggle('hidden', loggedOut || !currentIsAdmin);
   if(currentUser){
     document.getElementById('accountName').innerHTML =
       `<b>${esc(displayName())}</b>${currentIsAdmin ? '<span class="account-badge-admin">Admin</span>' : ''}`;
@@ -3148,6 +3159,9 @@ function syncMenu(){
   document.getElementById('menuLogged')?.classList.toggle('hidden', !connecte);
   for(const el of document.querySelectorAll('.menu-auth')){
     el.classList.toggle('hidden', !connecte);
+  }
+  for(const el of document.querySelectorAll('.menu-admin')){
+    el.classList.toggle('hidden', !(connecte && currentIsAdmin));
   }
   if(connecte){
     const nom = displayName();
@@ -3886,13 +3900,8 @@ async function renderProfile(){
 
   renderProfileAbout();
   renderMyEvents();
-  const adminSection = document.getElementById('adminSection');
-  adminSection.classList.toggle('hidden', !currentIsAdmin);
-  if(currentIsAdmin){
-    renderAdminEvents(); renderAdminMembers();
-    if(typeof renderAdminSignalements === 'function') renderAdminSignalements();
-    if(typeof renderAdminDetection === 'function') renderAdminDetection();
-  }
+  // L'administration a sa propre page : le profil n'en garde que le lien.
+  document.getElementById('adminLink').classList.toggle('hidden', !currentIsAdmin);
 }
 
 /* Récapitulatif du profil membre ("À propos de moi"). */
@@ -3971,10 +3980,11 @@ function initProfileEdit(){
 }
 
 /* Événements publiés par l'utilisateur. */
+let mineList = [];                // événements du membre (pour la fenêtre d'édition)
 async function renderMyEvents(){
   const grid = document.getElementById('mineGrid');
   await fillEventsGrid(grid,
-    ()=> window.EBOK_DATA.getEventsByUser(currentUser.uid),
+    async ()=>{ mineList = await window.EBOK_DATA.getEventsByUser(currentUser.uid); return mineList; },
     "Aucun événement publié pour l'instant. Clique sur « Publier un événement » pour commencer !");
 }
 
@@ -4025,26 +4035,65 @@ function safeColor(c){
 
 /* Tous les événements (section admin) — rendu sous forme de tableau. */
 async function renderAdminEvents(){
+  const attente = document.getElementById('adminPending');
   const wrap = document.getElementById('adminGrid');
-  if(!wrap) return;
+  if(!wrap && !attente) return;
+  const message = html=>{ if(wrap) wrap.innerHTML = html; if(attente) attente.innerHTML = html; };
   if(!window.EBOK_DATA){
-    wrap.innerHTML = `<div class="empty-state"><p>Disponible une fois la base connectée.</p></div>`;
+    message(`<div class="empty-state"><p>Disponible une fois la base connectée.</p></div>`);
     return;
   }
-  wrap.innerHTML = `<div class="empty-state"><p>Chargement…</p></div>`;
+  message(`<div class="empty-state"><p>Chargement…</p></div>`);
   let list;
   try{ list = await window.EBOK_DATA.getAllEventsForAdmin(); }
-  catch(err){ wrap.innerHTML = `<div class="empty-state"><h4>Erreur</h4><p>Impossible de charger les événements.</p></div>`; return; }
-  await loadAdminUsers();   // pour afficher le nom des créateurs
-  if(!list.length){ wrap.innerHTML = `<div class="empty-state"><p>Aucun événement dans la base.</p></div>`; return; }
+  catch(err){ message(`<div class="empty-state"><h4>Erreur</h4><p>Impossible de charger les événements.</p></div>`); return; }
+  await loadAdminUsers();   // pour afficher le nom des organisateurs
   list.sort((a,b)=> (b.createdAt || 0) - (a.createdAt || 0));
   adminList = list;
-  wrap.innerHTML = adminTableHtml(list);
+  afficherAdminEvenements();
+  if(typeof compterEvenementsAdmin === 'function' && typeof majTableauAdmin === 'function') majTableauAdmin(compterEvenementsAdmin(list));
+}
+
+/* Un événement demande l'attention de l'admin : en attente de validation, ou
+   modifié par son organisateur depuis la dernière relecture. */
+function adminATraiter(ev){ return ev.status !== 'approved' || !!ev.aRelire; }
+
+let adminFiltre = '';
+function adminFiltrer(texte){
+  adminFiltre = String(texte || '').trim().toLowerCase();
+  afficherAdminEvenements();
+}
+function afficherAdminEvenements(){
+  const attente = document.getElementById('adminPending');
+  if(attente){
+    const aTraiter = adminList.filter(adminATraiter);
+    attente.innerHTML = aTraiter.length
+      ? adminTableHtml(aTraiter)
+      : `<div class="empty-state"><p>Rien à vérifier pour le moment.</p></div>`;
+    lierListeAdmin(attente);
+  }
+  const wrap = document.getElementById('adminGrid');
+  if(wrap){
+    const q = adminFiltre;
+    const liste = q
+      ? adminList.filter(ev=> [ev.title, ev.city, ev.type, ev.org && ev.org.name].join(' ').toLowerCase().includes(q))
+      : adminList;
+    const compte = document.getElementById('adminCount');
+    if(compte) compte.textContent = `${liste.length} événement${liste.length > 1 ? 's' : ''}${q ? (liste.length > 1 ? ' trouvés' : ' trouvé') : ''}`;
+    wrap.innerHTML = liste.length
+      ? adminTableHtml(liste)
+      : `<div class="empty-state"><p>${adminList.length ? 'Aucun événement ne correspond.' : 'Aucun événement dans la base.'}</p></div>`;
+    lierListeAdmin(wrap);
+  }
+}
+function lierListeAdmin(wrap){
   wrap.querySelectorAll('[data-open]').forEach(b=> b.addEventListener('click', ()=> openEvent(b.dataset.open)));
   wrap.querySelectorAll('[data-edit]').forEach(b=> b.addEventListener('click', ()=> openEditModal(b.dataset.edit)));
   wrap.querySelectorAll('[data-del]').forEach(b=> b.addEventListener('click', ()=> handleDelete(b.dataset.del)));
   wrap.querySelectorAll('[data-approve]').forEach(b=> b.addEventListener('click', ()=> handleApprove(b.dataset.approve)));
+  wrap.querySelectorAll('[data-relu]').forEach(b=> b.addEventListener('click', ()=> handleRelu(b.dataset.relu)));
   wrap.querySelectorAll('[data-feature]').forEach(b=> b.addEventListener('click', ()=> handleToggleFeatured(b.dataset.feature)));
+  wrap.querySelectorAll('[data-affil]').forEach(b=> b.addEventListener('click', ()=> { if(typeof ouvrirAffiliation === 'function') ouvrirAffiliation(b.dataset.affil, b); }));
 }
 
 /* ---- Membres inscrits (chargés une fois pour l'espace admin) ---- */
@@ -4059,14 +4108,14 @@ async function loadAdminUsers(){
   }catch(e){ /* on garde la dernière liste connue */ }
   return adminUsers;
 }
-/* Nom lisible du créateur d'un événement. */
+/* À qui appartient la fiche : un organisateur affilié, l'admin lui-même, ou
+   personne (événement sans compte). */
 function creatorLabel(ev){
-  if(!ev.userId){
-    return `<span class="muted">${esc((ev.org && ev.org.name) || 'Admin')}</span>`;
-  }
+  if(!ev.userId) return `<span class="muted">Sans compte</span>`;
+  if(currentUser && ev.userId === currentUser.uid) return `<span class="muted">Géré par toi</span>`;
   const u = adminUsersByUid[ev.userId];
   const name = (u && (u.pseudo || u.name || u.email)) || (ev.org && ev.org.name) || 'Membre';
-  return esc(name);
+  return `Organisateur&nbsp;: <b>${esc(name)}</b>`;
 }
 
 function adminTableHtml(list){
@@ -4075,23 +4124,31 @@ function adminTableHtml(list){
 
 function adminRowHtml(ev){
   const pending = ev.status !== 'approved';
+  const relire = !!ev.aRelire;
   const feat = !!ev.featured;
   const meta = [ev.type, ev.city, fmtDateRange(ev.dateStart, ev.dateEnd)].filter(Boolean).join(' · ');
   const metaFull = meta ? `${esc(meta)} · ${creatorLabel(ev)}` : creatorLabel(ev);
-  return `<div class="admin-item${pending ? ' is-pending' : ''}">
+  const classes = (pending || relire) ? ' is-pending' : '';
+  return `<div class="admin-item${classes}">
     <button class="star-toggle ${feat ? 'on' : ''}" data-feature="${esc(ev.id)}" aria-pressed="${feat}" title="${feat ? 'Retirer de la une' : 'Mettre à la une'}">★</button>
     <div class="admin-item-body">
       <div class="admin-item-title admin-title-link" data-open="${esc(ev.id)}">
         <span class="status-dot ${pending ? 'status-pending' : 'status-approved'}">${pending ? 'En attente' : 'En ligne'}</span>
+        ${relire ? `<span class="status-dot status-review">À relire</span>` : ''}
         <b>${esc(ev.title)}</b>
       </div>
       <div class="admin-item-meta">${metaFull}</div>
+      ${relire ? `<div class="admin-item-det">✏️ Modifié par l'organisateur : vérifie les changements.</div>` : ''}
       ${ev.detection && ev.detection.auto ? `<div class="admin-item-det">🤖 Détecté${ev.detection.sourceNom ? ' sur ' + esc(ev.detection.sourceNom) : ''} · <a href="${esc(safeUrl(ev.detection.lien || ev.detection.sourceUrl))}" target="_blank" rel="noopener">vérifier à la source ↗</a></div>` : ''}
+      ${ev.importe ? `<div class="admin-item-det">📥 Importé${ev.importe.url ? ` · <a href="${esc(safeUrl(ev.importe.url))}" target="_blank" rel="noopener">vérifier à la source ↗</a>` : ''}</div>` : ''}
+      ${ev.importe && Array.isArray(ev.importe.doutes) && ev.importe.doutes.length ? `<div class="admin-item-det">❓ ${ev.importe.doutes.map(esc).join(' ; ')}</div>` : ''}
     </div>
     <div class="admin-item-actions">
       <button class="btn btn-ghost btn-xs" data-open="${esc(ev.id)}">Voir</button>
       <button class="btn btn-ghost btn-xs" data-edit="${esc(ev.id)}">Modifier</button>
+      <button class="btn btn-ghost btn-xs" data-affil="${esc(ev.id)}">Organisateur</button>
       ${pending ? `<button class="btn btn-approve btn-xs" data-approve="${esc(ev.id)}">Valider</button>` : ''}
+      ${relire ? `<button class="btn btn-approve btn-xs" data-relu="${esc(ev.id)}">Marquer comme relu</button>` : ''}
       <button class="btn btn-danger btn-xs" data-del="${esc(ev.id)}">Supprimer</button>
     </div>
   </div>`;
@@ -4111,6 +4168,7 @@ async function renderAdminMembers(){
   catch(err){ wrap.innerHTML = `<div class="empty-state"><p>Impossible de charger les membres.</p></div>`; return; }
   if(!users.length){ wrap.innerHTML = `<div class="empty-state"><p>Aucun membre inscrit pour l'instant.</p></div>`; return; }
   const list = users.slice().sort((a,b)=> (b.createdAt || 0) - (a.createdAt || 0));
+  if(typeof majTableauAdmin === 'function') majTableauAdmin({ membres: list.length });
   wrap.innerHTML = `<p class="admin-count">${list.length} membre${list.length>1?'s':''}</p>` + membersTableHtml(list);
 }
 
@@ -4355,7 +4413,7 @@ async function handleToggleFeatured(id){
   const local = events.find(e=> e.id === id); if(local) local.featured = next;
   await refreshPublicEvents();
   renderAll();
-  renderProfile();
+  rafraichirVues();
 }
 
 async function fillEventsGrid(grid, fetcher, emptyMsg){
@@ -4399,6 +4457,7 @@ function mineCardHtml(ev){
     </div>
     <div class="mine-card-actions">
       <button class="btn btn-ghost" data-open="${esc(ev.id)}">Voir</button>
+      <button class="btn btn-ghost" data-edit="${esc(ev.id)}">Modifier</button>
       ${(currentIsAdmin && pending) ? `<button class="btn btn-approve" data-approve="${esc(ev.id)}">Valider</button>` : ''}
       <button class="btn btn-danger" data-del="${esc(ev.id)}">Supprimer</button>
     </div>
@@ -4417,22 +4476,44 @@ async function handleDispoChange(id, dispo){
   if(document.getElementById('page-profile').classList.contains('active')) renderProfile();
 }
 
+/* Après une action (valider, supprimer, modifier…) : remet à jour la page
+   ouverte, et les compteurs de l'administration. */
+function rafraichirVues(){
+  if(document.getElementById('page-profile').classList.contains('active')) renderProfile();
+  if(!currentIsAdmin) return;
+  if(document.getElementById('page-admin').classList.contains('active')) renderAdminEvents();
+  else if(typeof majPastilleAdmin === 'function') majPastilleAdmin(true);
+}
+
 async function handleDelete(id){
   if(!confirm('Supprimer cet événement ? Cette action est définitive.')) return;
   try{
     await window.EBOK_DATA.deleteEvent(id);
     events = events.filter(e=> e.id !== id);
     renderAll();
-    renderProfile();
+    rafraichirVues();
   }catch(err){ showAdminRulesAlert(err); }
 }
 
 async function handleApprove(id){
   try{
     await window.EBOK_DATA.approveEvent(id);
+    // Valider, c'est aussi relire : le drapeau « à relire » tombe.
+    const connu = adminList.find(e=> e.id === id);
+    if(connu && connu.aRelire){ await window.EBOK_DATA.updateEvent(id, { aRelire: false }); connu.aRelire = false; }
     const list = await window.EBOK_DATA.getAllEvents();
     if(Array.isArray(list)){ events = list; renderAll(); }
-    renderProfile();
+    rafraichirVues();
+  }catch(err){ showAdminRulesAlert(err); }
+}
+
+/* « Marquer comme relu » : l'admin a vérifié ce que l'organisateur a modifié. */
+async function handleRelu(id){
+  try{
+    await window.EBOK_DATA.updateEvent(id, { aRelire: false });
+    const connu = adminList.find(e=> e.id === id); if(connu) connu.aRelire = false;
+    const local = events.find(e=> e.id === id); if(local) local.aRelire = false;
+    rafraichirVues();
   }catch(err){ showAdminRulesAlert(err); }
 }
 
@@ -4456,8 +4537,15 @@ function closeEditModal(){
 }
 
 function openEditModal(id){
-  const ev = adminList.find(e=> e.id === id) || events.find(e=> e.id === id);
+  const ev = adminList.find(e=> e.id === id) || mineList.find(e=> e.id === id) || events.find(e=> e.id === id);
   if(!ev){ return; }
+  // L'organisateur ne voit ni le statut ni la mise à la une : seuls l'admin les décide.
+  if(!peutModifier(ev)) return;
+  const fenetre = document.getElementById('editModal');
+  fenetre.classList.toggle('is-owner', !currentIsAdmin);
+  document.getElementById('editSub').textContent = currentIsAdmin
+    ? 'Édition réservée aux administrateurs.'
+    : "Complète ou corrige ton événement. L'équipe EBOK relira tes modifications.";
   editingId = id;
   editPosterData = null;
   editPickedLocation = null;
@@ -4486,6 +4574,15 @@ function openEditModal(id){
   setFieldVal('e-places', ev.placesTotal != null ? ev.placesTotal : '');
   setFieldVal('e-dispo', ev.dispo || '');
   setFieldVal('e-status', ev.status === 'approved' ? 'approved' : 'pending');
+  const infos = ev.infos || {}, orga = ev.org || {};
+  setFieldVal('e-horaires', infos.horaires || '');
+  setFieldVal('e-buvette', infos.buvette || '');
+  setFieldVal('e-reservation', infos.reservation || '');
+  setFieldVal('e-orgname', orga.name || '');
+  setFieldVal('e-insta', orga.insta || '');
+  setFieldVal('e-orgsite', orga.site || '');
+  setFieldVal('e-tel', orga.tel || '');
+  setFieldVal('e-email', orga.email || '');
   setFieldVal('e-desc', ev.description);
   const feat = document.getElementById('e-featured'); if(feat) feat.checked = !!ev.featured;
   const prev = document.getElementById('e-poster-preview');
@@ -4557,9 +4654,17 @@ function initEditModal(){
       status: gv('e-status') === 'approved' ? 'approved' : 'pending',
       featured: document.getElementById('e-featured').checked
     };
+    // Le statut et la une ne sont pas à l'organisateur : on ne les envoie pas.
+    if(!currentIsAdmin){ delete patch.status; delete patch.featured; }
     const placesRaw = gv('e-places');
     patch.placesTotal = placesRaw ? parseInt(placesRaw, 10) : null;
-    patch.infos = Object.assign({}, ev && ev.infos, { adresse: gv('e-address') });
+    patch.infos = Object.assign({}, ev && ev.infos, {
+      adresse: gv('e-address'), horaires: gv('e-horaires'), buvette: gv('e-buvette'), reservation: gv('e-reservation')
+    });
+    patch.org = Object.assign({}, ev && ev.org, {
+      name: gv('e-orgname'), insta: gv('e-insta').replace(/^@/, ''), site: gv('e-orgsite'),
+      tel: gv('e-tel'), email: gv('e-email')
+    });
 
     // Recalcule TOUJOURS la position depuis la ville (corrige aussi les
     // événements anciens mal placés). Priorité : ville revalidée dans la
@@ -4586,6 +4691,12 @@ function initEditModal(){
 
     try{ await window.EBOK_DATA.updateEvent(editingId, patch); }
     catch(err){
+      if(!currentIsAdmin){
+        const boite = document.getElementById('editError');
+        boite.textContent = "Enregistrement impossible. Réessaie dans un instant.";
+        boite.classList.remove('hidden');
+        return;
+      }
       closeEditModal();
       showAdminRulesAlert(err);
       return;
@@ -4597,7 +4708,7 @@ function initEditModal(){
     closeEditModal();
     await refreshPublicEvents();
     renderAll();
-    renderProfile();
+    rafraichirVues();
   });
 }
 
@@ -4655,8 +4766,8 @@ window.EBOK = {
     if(document.getElementById('page-favoris').classList.contains('active')) renderFavorites();
     maybeOpenOnboarding();       // première connexion : on pose les 4 questions
     if(document.getElementById('page-profile').classList.contains('active')) renderProfile();
-    // Pastille « signalements à traiter » sur Mon profil (admin seulement).
-    if(typeof majPastilleSignalements === 'function') majPastilleSignalements(currentIsAdmin);
+    // Pastille « à traiter » sur le lien Admin (admin seulement).
+    if(typeof majPastilleAdmin === 'function') majPastilleAdmin(currentIsAdmin);
   }
 };
 

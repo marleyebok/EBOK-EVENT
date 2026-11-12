@@ -73,7 +73,8 @@
     <button class="navlink" data-nav="create"><span class="nav-long">Publier un événement</span><span class="nav-short">Publier</span></button>
     <button class="navlink" data-nav="favoris">♥ Mes favoris</button>
     <button class="navlink" data-nav="alertes">🔔 Alertes<span class="nav-badge hidden" data-alert-badge></span></button>
-    <button class="navlink hidden" data-nav="profile" id="navProfile">Mon profil<span class="nav-badge hidden" data-report-badge title="Signalements à traiter"></span></button>
+    <button class="navlink hidden" data-nav="profile" id="navProfile">Mon profil</button>
+    <button class="navlink hidden" data-nav="admin" id="navAdmin">Admin<span class="nav-badge hidden" data-admin-badge title="À traiter"></span></button>
   </div>
   <!-- Actions rapides du mobile : la recherche et la publication restent à
        portée de pouce, le reste passe dans le volet. -->
@@ -143,7 +144,8 @@
     <button class="side-menu-link" data-nav="favoris"><span>♥</span> Mes favoris</button>
     <button class="side-menu-link" data-nav="alertes"><span>🔔</span> Mes alertes<span class="nav-badge hidden" data-alert-badge></span></button>
     <button class="side-menu-link menu-auth hidden" data-menu-section="section-mes-evenements"><span>📋</span> Mes événements</button>
-    <button class="side-menu-link menu-auth hidden" data-nav="profile"><span>👤</span> Mon profil<span class="nav-badge hidden" data-report-badge title="Signalements à traiter"></span></button>
+    <button class="side-menu-link menu-auth hidden" data-nav="profile"><span>👤</span> Mon profil</button>
+    <button class="side-menu-link menu-admin hidden" data-nav="admin"><span>👑</span> Administration<span class="nav-badge hidden" data-admin-badge title="À traiter"></span></button>
   </nav>
 
   <div class="side-menu-foot">
@@ -788,31 +790,58 @@
       <div class="results-grid" id="mineGrid"></div>
     </div>
 
-    <div class="profile-section hidden" id="adminSection">
+    <div class="profile-section hidden" id="adminLink">
       <div class="profile-section-head">
-        <h3>👑 Administration — tous les événements</h3>
+        <h3>👑 Administration</h3>
       </div>
-      <div class="admin-rules-alert hidden" id="adminRulesAlert">
-        <div class="ara-ic">🔒</div>
-        <div class="ara-body">
-          <b id="adminRulesTitle">Action refusée par la base de données.</b>
-          <div class="ara-diag" id="adminRulesDiag"></div>
-          <div id="adminRulesHelp">
-            <p>Les droits admin sont reconnus côté serveur à partir de ton adresse e-mail Clerk (<b>marley.ebok@gmail.com</b>). Si une action est refusée&nbsp;:</p>
-            <ol>
-              <li><b>Déconnecte-toi</b>, puis reconnecte-toi via Google avec le compte <b>marley.ebok@gmail.com</b>.</li>
-              <li>Vérifie que l'e-mail affiché ci-dessus est bien l'e-mail admin.</li>
-              <li>Si le problème persiste, vérifie que les variables d'environnement (DATABASE_URL, CLERK_SECRET_KEY) sont bien configurées sur Vercel.</li>
-            </ol>
-          </div>
-          <button class="btn btn-ghost btn-xs" id="adminRulesDismiss">Fermer</button>
-        </div>
-      </div>
-      <div id="adminGrid"></div>
+      <p class="section-hint">Les événements à vérifier, les signalements, l'import et les membres ont maintenant leur propre page.</p>
+      <button class="btn btn-primary" data-nav="admin">Ouvrir l'administration</button>
+    </div>
+  </section>
 
-      <div class="profile-section-head admin-subhead">
-        <h3>🚩 Signalements</h3>
+  <!-- ===================== ADMINISTRATION ===================== -->
+  <!-- Rendu par js/admin-page.js (onglets, compteurs) ; les listes viennent de
+       app.js, js/admin-signalements.js, js/admin-detection.js, js/admin-import.js. -->
+  <section id="page-admin" class="page">
+    <div class="page-head adm-head">
+      <p class="eyebrow">Espace admin</p>
+      <h2>Administration</h2>
+      <p class="hero-sub" id="admSummary"></p>
+    </div>
+
+    <div class="admin-rules-alert hidden" id="adminRulesAlert">
+      <div class="ara-ic">🔒</div>
+      <div class="ara-body">
+        <b id="adminRulesTitle">Action refusée par la base de données.</b>
+        <div class="ara-diag" id="adminRulesDiag"></div>
+        <div id="adminRulesHelp">
+          <p>Les droits admin sont reconnus côté serveur à partir de ton adresse e-mail Clerk (<b>marley.ebok@gmail.com</b>). Si une action est refusée&nbsp;:</p>
+          <ol>
+            <li><b>Déconnecte-toi</b>, puis reconnecte-toi via Google avec le compte <b>marley.ebok@gmail.com</b>.</li>
+            <li>Vérifie que l'e-mail affiché ci-dessus est bien l'e-mail admin.</li>
+            <li>Si le problème persiste, vérifie que les variables d'environnement (DATABASE_URL, CLERK_SECRET_KEY) sont bien configurées sur Vercel.</li>
+          </ol>
+        </div>
+        <button class="btn btn-ghost btn-xs" id="adminRulesDismiss">Fermer</button>
       </div>
+    </div>
+
+    <div class="adm-tabs" role="tablist" aria-label="Sections de l'administration">
+      <button type="button" role="tab" class="adm-tab" id="tab-traiter" aria-controls="panel-traiter" aria-selected="true" data-adm="traiter">À traiter<span class="adm-count hidden" data-adm-count="traiter"></span></button>
+      <button type="button" role="tab" class="adm-tab" id="tab-importer" aria-controls="panel-importer" aria-selected="false" tabindex="-1" data-adm="importer">Importer</button>
+      <button type="button" role="tab" class="adm-tab" id="tab-evenements" aria-controls="panel-evenements" aria-selected="false" tabindex="-1" data-adm="evenements">Événements</button>
+      <button type="button" role="tab" class="adm-tab" id="tab-membres" aria-controls="panel-membres" aria-selected="false" tabindex="-1" data-adm="membres">Membres</button>
+      <button type="button" role="tab" class="adm-tab" id="tab-stats" aria-controls="panel-stats" aria-selected="false" tabindex="-1" data-adm="stats">Statistiques</button>
+      <button type="button" role="tab" class="adm-tab" id="tab-outils" aria-controls="panel-outils" aria-selected="false" tabindex="-1" data-adm="outils">Outils</button>
+    </div>
+
+    <!-- À traiter : ce qui attend une décision -->
+    <div class="adm-panel" role="tabpanel" id="panel-traiter" aria-labelledby="tab-traiter">
+      <h3 class="adm-h">Événements à vérifier</h3>
+      <p class="adm-lead">Les événements en attente de validation, et ceux qu'un organisateur a modifiés depuis qu'ils sont en ligne.</p>
+      <div id="adminPending"></div>
+
+      <h3 class="adm-h">Signalements</h3>
       <!-- Rendu par js/admin-signalements.js -->
       <div class="maint-card" id="adminReports">
         <p class="maint-desc">
@@ -823,10 +852,23 @@
         <div class="maint-status" id="reportStatus"></div>
         <div id="reportList"></div>
       </div>
+    </div>
 
-      <div class="profile-section-head admin-subhead">
-        <h3>🤖 Détection automatique</h3>
+    <!-- Importer : faire entrer des événements -->
+    <div class="adm-panel hidden" role="tabpanel" id="panel-importer" aria-labelledby="tab-importer">
+      <h3 class="adm-h">Importer un lot</h3>
+      <!-- Rendu par js/admin-import.js -->
+      <div class="maint-card" id="adminImport"></div>
+
+      <h3 class="adm-h">Publier avec l'assistant IA</h3>
+      <div class="maint-card">
+        <p class="maint-desc">Un lien ou une affiche, et l'assistant remplit le formulaire de publication. Tu vérifies, tu ajustes, tu publies.</p>
+        <div class="maint-actions">
+          <button type="button" class="btn btn-primary" id="admIaBtn">Ouvrir l'assistant IA</button>
+        </div>
       </div>
+
+      <h3 class="adm-h">Détection automatique</h3>
       <!-- Rendu par js/admin-detection.js -->
       <div class="maint-card det-card" id="adminDetection">
         <p class="maint-desc">
@@ -843,10 +885,33 @@
         <div class="maint-status" id="detStatus"></div>
         <div id="detSources"></div>
       </div>
+    </div>
 
-      <div class="profile-section-head admin-subhead">
-        <h3>🖼 Hébergement des affiches</h3>
+    <!-- Événements : tous, avec recherche -->
+    <div class="adm-panel hidden" role="tabpanel" id="panel-evenements" aria-labelledby="tab-evenements">
+      <h3 class="adm-h">Tous les événements</h3>
+      <div class="adm-tools">
+        <input type="search" id="adminSearch" class="adm-search" placeholder="Chercher un titre, une ville, un organisateur…" aria-label="Chercher dans les événements" autocomplete="off">
+        <span class="admin-count" id="adminCount"></span>
       </div>
+      <div id="adminGrid"></div>
+    </div>
+
+    <!-- Membres -->
+    <div class="adm-panel hidden" role="tabpanel" id="panel-membres" aria-labelledby="tab-membres">
+      <h3 class="adm-h">Membres inscrits</h3>
+      <div id="adminMembers"></div>
+    </div>
+
+    <!-- Statistiques : rendu par js/admin-stats.js à l'ouverture de l'onglet -->
+    <div class="adm-panel adm-panel-large hidden" role="tabpanel" id="panel-stats" aria-labelledby="tab-stats">
+      <h3 class="adm-h">Statistiques</h3>
+      <div id="adminStats"></div>
+    </div>
+
+    <!-- Outils -->
+    <div class="adm-panel hidden" role="tabpanel" id="panel-outils" aria-labelledby="tab-outils">
+      <h3 class="adm-h">Hébergement des affiches</h3>
       <div class="maint-card">
         <p class="maint-desc">
           Les affiches déposées avant la mise en place du stockage de fichiers sont
@@ -860,11 +925,6 @@
         </div>
         <div class="maint-status" id="postersStatus"></div>
       </div>
-
-      <div class="profile-section-head admin-subhead">
-        <h3>👥 Membres inscrits</h3>
-      </div>
-      <div id="adminMembers"></div>
     </div>
   </section>
 
@@ -1049,6 +1109,38 @@
   </div>
 </div>
 
+<!-- ===================== MODALE ORGANISATEUR (ADMIN) ===================== -->
+<div class="edit-modal" id="affilModal" role="dialog" aria-modal="true" aria-labelledby="affilTitle" aria-hidden="true">
+  <div class="edit-box affil-box">
+    <button class="edit-close" id="affilClose" type="button" aria-label="Fermer">&times;</button>
+    <h3 id="affilTitle">Organisateur</h3>
+    <p class="edit-sub" id="affilEvent"></p>
+
+    <section class="affil-step" aria-labelledby="affilH1">
+      <h4 class="affil-h" id="affilH1">1. Prévenir l'organisateur</h4>
+      <p class="affil-help">Envoie-lui ce message, tu peux le modifier avant. Il créera un compte gratuit pour compléter ou corriger sa fiche.</p>
+      <textarea id="affilMessage" class="report-text affil-message" rows="10" aria-label="Message à l'organisateur"></textarea>
+      <div class="affil-actions">
+        <button type="button" class="btn btn-primary" id="affilCopy">Copier le message</button>
+        <a class="btn btn-ghost hidden" id="affilMail" href="#">Écrire un e-mail</a>
+      </div>
+      <p class="affil-state" id="affilCopied" role="status"></p>
+    </section>
+
+    <section class="affil-step" aria-labelledby="affilH2">
+      <h4 class="affil-h" id="affilH2">2. L'affilier à son compte</h4>
+      <p class="affil-help" id="affilCurrent"></p>
+      <input type="search" id="affilSearch" class="adm-search" placeholder="Chercher un membre : nom, pseudo ou e-mail" aria-label="Chercher un membre" autocomplete="off">
+      <div class="affil-list" id="affilList" role="listbox" aria-label="Membres"></div>
+      <p class="report-error hidden" id="affilError" role="alert"></p>
+      <div class="affil-actions">
+        <button type="button" class="btn btn-primary" id="affilSave" disabled>Affilier à ce compte</button>
+        <button type="button" class="btn btn-ghost hidden" id="affilDetach">Détacher de tout compte</button>
+      </div>
+    </section>
+  </div>
+</div>
+
 <!-- ===================== MODALE SIGNALEMENT ===================== -->
 <div class="edit-modal" id="reportModal" role="dialog" aria-modal="true" aria-labelledby="reportTitle" aria-hidden="true">
   <div class="edit-box report-box">
@@ -1083,7 +1175,7 @@
   <div class="edit-box">
     <button class="edit-close" id="editClose" aria-label="Fermer">&times;</button>
     <h3>Modifier l'événement</h3>
-    <p class="edit-sub">Édition réservée aux administrateurs.</p>
+    <p class="edit-sub" id="editSub"></p>
 
     <form id="editForm">
       <div class="field">
@@ -1228,7 +1320,7 @@
           </select>
         </div>
       </div>
-      <div class="field">
+      <div class="field admin-only">
         <label for="e-status">Statut</label>
         <select id="e-status">
           <option value="approved">En ligne (validé)</option>
@@ -1238,6 +1330,48 @@
       <div class="field">
         <label for="e-desc">Description</label>
         <textarea id="e-desc" placeholder="Format, déroulé..."></textarea>
+      </div>
+
+      <h4 class="edit-group">Infos pratiques</h4>
+      <div class="form-row">
+        <div class="field">
+          <label for="e-horaires">Horaires</label>
+          <input type="text" id="e-horaires" placeholder="Ex. Ouverture des portes 18h30">
+        </div>
+        <div class="field">
+          <label for="e-buvette">Buvette</label>
+          <input type="text" id="e-buvette" placeholder="Ex. Sur place, boissons et snacks">
+        </div>
+      </div>
+      <div class="field">
+        <label for="e-reservation">Réservation</label>
+        <input type="text" id="e-reservation" placeholder="Ex. Entrée libre, sur réservation, places limitées">
+      </div>
+
+      <h4 class="edit-group">Contact de l'organisateur</h4>
+      <div class="form-row">
+        <div class="field">
+          <label for="e-orgname">Nom</label>
+          <input type="text" id="e-orgname" placeholder="Ex. Ligue C by Courtcuts">
+        </div>
+        <div class="field">
+          <label for="e-insta">Instagram</label>
+          <input type="text" id="e-insta" placeholder="@moncompte">
+        </div>
+      </div>
+      <div class="field">
+        <label for="e-orgsite">Site web</label>
+        <input type="text" id="e-orgsite" inputmode="url" placeholder="https://…">
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label for="e-tel">Téléphone</label>
+          <input type="tel" id="e-tel" placeholder="06 00 00 00 00">
+        </div>
+        <div class="field">
+          <label for="e-email">E-mail</label>
+          <input type="email" id="e-email" placeholder="contact@…">
+        </div>
       </div>
       <div class="field">
         <label>Affiche</label>
@@ -1250,7 +1384,7 @@
         </div>
       </div>
 
-      <label class="edit-featured" for="e-featured">
+      <label class="edit-featured admin-only" for="e-featured">
         <input type="checkbox" id="e-featured">
         <span><b>★ Mettre à la une</b> — l'événement apparaît dans le bandeau de la page d'accueil.</span>
       </label>
@@ -1353,12 +1487,17 @@
 <script src="/js/data.js"></script>
 <script src="/js/app.js"></script>
 <script src="/js/create-wizard.js"></script>
+<script src="/js/admin-page.js"></script>
 <script src="/js/admin-detection.js"></script>
+<script src="/js/admin-affiliation.js"></script>
+<script src="/js/admin-import.js"></script>
+<script src="/js/admin-stats.js"></script>
 <script src="/js/admin-signalements.js"></script>
 <!-- Animations (Motion, motion.dev) : décoratives, chargées après le reste.
      Retirer ces deux lignes suffit à les couper. -->
 <script defer src="/js/vendor/motion.js"></script>
 <script defer src="/js/animations.js"></script>
+<script defer src="/js/visites.js"></script>
 
 <!-- Base Neon (/api) + comptes Clerk. Voir js/clerk-init.js. -->
 <script type="module" src="/js/clerk-init.js"></script>

@@ -218,7 +218,7 @@ proprement** sur le stockage en base : rien ne casse, les affiches s'affichent, 
 elles alourdissent la base et ne servent pas d'aperçu au partage.
 
 Les affiches déjà enregistrées en base se rapatrient ensuite depuis
-**Mon profil → Administration → Hébergement des affiches** (traitement par lots,
+**Administration → Outils → Hébergement des affiches** (traitement par lots,
 relançable sans risque).
 
 ---
@@ -241,6 +241,49 @@ répondent pas.
 - **Public** : ne voit que les événements **validés** (`status: approved`).
 - **Admin** : voit **tous** les événements, peut les **valider** / **supprimer**, et
   publie directement en ligne.
+
+### La page Administration
+
+Le lien **Admin** (barre du haut, ou « Administration » dans le volet mobile) n'existe
+que pour l'admin ; une pastille y compte ce qui attend une décision. La page a cinq
+onglets :
+
+| Onglet | Contenu |
+|---|---|
+| **À traiter** | événements en attente de validation et modifiés par leur organisateur (« à relire »), signalements des visiteurs |
+| **Importer** | import d'un lot d'événements (`IMPORT_LOT.md`), assistant IA de publication, détection automatique |
+| **Événements** | tous les événements, avec recherche |
+| **Membres** | les comptes inscrits |
+| **Statistiques** | membres, événements en ligne, favoris, visiteurs et fiches consultées, avec leur évolution sur la semaine, le mois ou l'année, et les classements |
+| **Outils** | hébergement des affiches |
+
+Fichiers : `public/js/admin-page.js` (onglets, compteurs), `admin-signalements.js`,
+`admin-detection.js`, `admin-import.js`, `admin-affiliation.js`, `admin-stats.js`.
+
+### Statistiques
+
+`public/js/visites.js` signale une visite par session de navigation (`POST /api/views?visite=1`,
+signal « ne pas me suivre » respecté). Le serveur ne garde qu'une empreinte salée, non
+réversible, renouvelée chaque jour et effacée au bout de 7 jours (comme le compteur de
+« curieux » de `api/views.js`), puis le total du jour. Les totaux quotidiens (visiteurs,
+fiches consultées, favoris ajoutés et retirés) sont dans `event.stats_jour` ; les membres et les
+événements remontent à leur date de création. Lecture : `GET /api/views?stats=1&periode=semaine|mois|annee`
+(admin). Calcul et collecte : `lib/stats.js` ; les tables sont créées à la demande, sans passer par
+`ensureSchema()`. Visiteurs, fiches consultées et favoris sont mesurés **depuis la mise en ligne** de
+cette fonction : l'onglet l'indique.
+
+### Confier un événement à son organisateur
+
+Quand l'admin publie un événement pour un organisateur, le bouton **Organisateur** de la
+liste admin ouvre une fenêtre en deux temps : un message prêt à envoyer (à copier, ou à
+envoyer par e-mail si l'événement a un contact), puis le choix du **compte** auquel
+rattacher l'événement. Une fois affilié, l'événement apparaît dans « Mes événements » de
+l'organisateur, qui peut le **modifier** (infos pratiques, contact, affiche, liens). Il
+garde la main sur le contenu, pas sur le statut ni la mise à la une.
+
+Ses modifications laissent l'événement en ligne mais le marquent **« à relire »** pour
+l'admin (drapeau `aRelire` dans la fiche) ; seul l'admin peut le retirer. Seul l'admin
+peut changer le propriétaire d'un événement (`PATCH /api/events` avec `userId`).
 
 ### Être admin
 
