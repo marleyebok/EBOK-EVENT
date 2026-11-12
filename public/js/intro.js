@@ -935,7 +935,7 @@ function sortir(region, x, y){
   if(audio){ const a = audio; setTimeout(()=>{ try{ a.close(); }catch(e){} }, 800); }
   if(x != null) cv.style.transformOrigin = x + 'px ' + y + 'px';
   boite.classList.add('sortie');
-  // Le site apparaît dessous : on rejoue son entrée (titre, terrain du hero).
+  // Le site apparaît dessous : on rejoue son entrée (titre).
   const accueil = document.getElementById('page-home');
   if(accueil && accueil.classList.contains('active')){
     accueil.classList.remove('active'); void accueil.offsetWidth; accueil.classList.add('active');

@@ -1832,7 +1832,7 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 }
 
 /* =========================================================
-   ACCUEIL ANIMÉ — hero « tableau de coach », carrousel, cartes, épingles
+   ACCUEIL ANIMÉ — titre du hero, carrousel, cartes, épingles
    ---------------------------------------------------------
    Tout ce bloc est une surcouche : le retirer rend le site à son aspect
    précédent. Les mouvements qui suivent le pointeur (reflet des cartes,
@@ -1840,42 +1840,19 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
    variables CSS ; sans lui, rien ne bouge et rien ne casse.
    ========================================================= */
 
-/* ---------- Hero : titre à gauche, demi-terrain à droite ---------- */
-.hero-home{
-  max-width:none;display:grid;grid-template-columns:minmax(0,1fr) 400px;
-  align-items:center;gap:24px;padding:44px 0 26px;
-}
+/* ---------- Hero de l'accueil ---------- */
+.hero-home{max-width:none;padding:44px 0 26px;}
 .hero-home h1{font-size:clamp(31px, 5.6vw, 76px);line-height:1;letter-spacing:.2px;}
 .hero-home .hero-sub{font-size:clamp(16px, 1.35vw, 18.5px);max-width:540px;margin-top:20px;}
 .h-line{display:block;overflow:hidden;padding-top:.06em;}
 .h-line > span{display:block;}
 
-.hero-court{position:relative;height:270px;perspective:1100px;}
-.hero-court svg{
-  position:absolute;left:44%;top:50%;width:340px;height:auto;overflow:visible;
-  transform:translate(-50%,-50%) rotateX(52deg) rotateZ(-24deg);
-  filter:drop-shadow(0 26px 22px rgba(0,0,0,.16));
-  transition:transform .6s cubic-bezier(.22,1,.36,1);
-}
-.hero-court:hover svg{transform:translate(-50%,-50%) rotateX(44deg) rotateZ(-18deg);}
-.court-lines path{fill:none;stroke:var(--chalk);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;opacity:.5;}
-.court-lines path:first-child{fill:var(--asphalt-2);opacity:1;stroke:color-mix(in srgb, var(--chalk) 50%, transparent);}
-.court-hoop{fill:none;stroke:var(--accent);stroke-width:2.5;transform-box:fill-box;transform-origin:center;}
-.court-pass,.court-shot{fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round;}
-.court-pass{stroke-dasharray:.045 .04;}
-.court-player circle{fill:var(--asphalt-2);stroke:var(--chalk);stroke-width:1.8;}
-.court-player text{font-family:var(--font-mono);font-size:12px;font-weight:700;fill:var(--chalk);text-anchor:middle;}
-.court-player{transform-box:fill-box;transform-origin:center;}
-.court-ball{fill:var(--accent);display:none;}
 
 @media(max-width:1180px){
-  .hero-home{grid-template-columns:minmax(0,1fr) 320px;}
   .hero-home h1{font-size:clamp(31px, 5vw, 76px);}
-  .hero-court svg{width:290px;}
 }
 @media(max-width:900px){
-  .hero-home{display:block;padding:34px 0 20px;}
-  .hero-court{display:none;}
+  .hero-home{padding:34px 0 20px;}
 }
 @media(max-width:640px){
   .hero-home{padding:26px 0 16px;}
@@ -1939,35 +1916,6 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
   @keyframes h-rise{from{transform:translateY(108%);}to{transform:none;}}
   @keyframes h-fade{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
 
-  /* Terrain : les lignes se tracent, les joueurs se posent, puis l'action. */
-  .court-lines path{stroke-dasharray:1;stroke-dashoffset:1;animation:c-draw 1s cubic-bezier(.65,0,.35,1) var(--d, 0s) forwards;}
-  .court-lines path:first-child{animation-name:c-draw, c-fill;animation-duration:1s, .8s;}
-  @keyframes c-draw{to{stroke-dashoffset:0;}}
-  @keyframes c-fill{from{fill-opacity:0;}to{fill-opacity:1;}}
-  .court-player{animation:c-pop .45s cubic-bezier(.34,1.56,.64,1) var(--d, 0s) both;}
-  @keyframes c-pop{from{opacity:0;transform:scale(.3);}to{opacity:1;transform:none;}}
-  /* La passe est en pointillés : on la découvre par un masque de tracé. */
-  .court-pass{clip-path:inset(0 0 0 0);animation:c-reveal .5s ease-out 1.5s both;}
-  @keyframes c-reveal{from{opacity:0;}to{opacity:1;}}
-  .court-shot{stroke-dasharray:1;stroke-dashoffset:1;animation:c-draw .7s ease-in-out 2.5s forwards;}
-  .court-hoop{animation:c-swish .6s ease-out 3.2s both;}
-  @keyframes c-swish{0%{transform:scale(1);}40%{transform:scale(1.7);stroke-width:1.5;}100%{transform:scale(1);}}
-
-  /* Le ballon suit la passe puis le tir. */
-  @supports (offset-path: path("M0 0")){
-    .court-ball{
-      display:block;offset-rotate:0deg;
-      offset-path:path("M150 222C190 205 228 170 248 136");
-      animation:c-pass .55s ease-in-out 1.5s both, c-tir .7s ease-in 2.5s forwards;
-    }
-    @keyframes c-pass{from{offset-distance:0%;opacity:0;}15%{opacity:1;}to{offset-distance:100%;opacity:1;}}
-    @keyframes c-tir{
-      from{offset-path:path("M252 118C236 70 196 40 156 33");offset-distance:0%;}
-      85%{opacity:1;}
-      to{offset-path:path("M252 118C236 70 196 40 156 33");offset-distance:100%;opacity:0;}
-    }
-  }
-
   /* Carrousel : remplissage sur 5 s, la durée du défilement (app.js). En
      pause au survol, comme lui. */
   .carousel-dot.active::after{transform-origin:left;animation:dot-fill 5s linear both;}
@@ -1985,7 +1933,7 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 }
 @media(prefers-reduced-motion: reduce){
   .btn-primary::after{display:none;}
-  .hero-court svg,.fx-poster,.event-card,.card-media img{transition:none;}
+  .fx-poster,.event-card,.card-media img{transition:none;}
 }
 
 /* =========================================================

@@ -195,16 +195,6 @@
     }, { amount: 0.25 });
   }
 
-  /* ---------- 10. Terrain du hero : un clic rejoue l'action ---------- */
-  const terrain = document.getElementById('heroCourt');
-  if(terrain){
-    terrain.addEventListener('click', ()=>{
-      const svg = terrain.querySelector('svg');
-      const copie = svg.cloneNode(true);   // un élément neuf relance ses animations CSS
-      svg.replaceWith(copie);
-    });
-  }
-
   /* ---------- Premier affichage ---------- */
   const active = document.querySelector('.page.active');
   if(active) animerPage(active);
