@@ -25,6 +25,7 @@ EBOK-EVENT/
 │   │   ├── vendor/motion.js  # Bibliothèque Motion 14.12.0 (motion.dev, MIT), hébergée ici
 │   │   ├── intro-boot.js     # Intro : décide si elle se joue (chargé dans le <head>)
 │   │   ├── intro.js          # Intro : le plan-séquence, dessiné dans un <canvas>
+│   │   ├── intro-montpellier.js # Intro : vrai plan de Montpellier (IGN), chargé à la demande
 │   │   ├── france-map.js     # Tracés SVG des régions
 │   │   ├── cities-fr.js      # Villes de France (autocomplétion hors ligne)
 │   │   ├── services.js       # Couche API (Neon via /api + Clerk)
@@ -425,14 +426,18 @@ Déployé sur **Vercel** (site statique `public/` + fonctions `/api`), sur `ebok
 ## 🎬 Intro (plan-séquence d'ouverture)
 
 À la première visite de l'accueil, une animation d'une dizaine de secondes se joue
-par-dessus le site : un tir en reculant du n°34 sur un playground de Montpellier, la
-caméra suit le ballon, monte à la verticale, et le terrain devient un point sur la
-carte de France, dont les régions et les villes apparaissent. On arrive sur la carte :
+par-dessus le site : un tir en reculant du n°34 sur un playground posé devant l'hôtel
+de ville de Montpellier, la caméra suit le ballon, monte à la verticale au-dessus du
+vrai plan de la ville, et le terrain devient un point sur la carte de France, dont les
+régions et les villes apparaissent. On arrive sur la carte :
 un clic (ou « Entrer sur le site ») ouvre le site ; un clic sur une région l'ouvre
 filtré sur cette région.
 
 - **Tout est dessiné par le code** (`js/intro.js`, dans un `<canvas>`) : ni vidéo ni image.
   Terrain aux cotes FIBA, carte reprise de `js/france-map.js`.
+- **Plan de Montpellier** (`js/intro-montpellier.js`) : rues, bâtiments et le Lez autour
+  de la place Georges-Frêche. Source : IGN, BD TOPO® (novembre 2026), Licence Ouverte 2.0
+  — mention à conserver. Fichier généré, chargé seulement quand l'intro se joue.
 - **Quand elle se joue** (`js/intro-boot.js`) : accueil seulement, première visite
   seulement (mémorisé dans le navigateur, clé `ebok-intro`), jamais si le visiteur a
   demandé à son système de réduire les animations. Bouton **Passer** et touche Échap.

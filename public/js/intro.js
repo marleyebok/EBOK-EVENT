@@ -156,13 +156,13 @@ function lignesPanier(e){
 const panierPres = lignesPanier(1), panierLoin = lignesPanier(-1);
 
 /* ---------- Le temps : l'action ralentit au moment du tir ---------- */
-const TAU_0 = -0.9;                                 // l'action commence par un dribble sur place
+const TAU_0 = 0.45;                                 // l'action commence ballon en main, juste avant le tir
 const TAU_TIR = 1.72;                               // le ballon quitte la main
 const VOL = 1.15;                                   // durée (réelle) du vol du ballon
 const TAU_PANIER = TAU_TIR + VOL;
 const vitesse = tau=> tau < 1.3 ? 1
-  : tau < TAU_PANIER + 0.15 ? mix(1, 0.55, pente(tau, 1.3, 1.5))
-  : mix(0.55, 0.85, pente(tau, TAU_PANIER + 0.15, TAU_PANIER + 0.7));
+  : tau < TAU_PANIER ? mix(1, 0.55, pente(tau, 1.3, 1.5))
+  : mix(0.55, 1, pente(tau, TAU_PANIER, TAU_PANIER + 0.25));
 const PAS_T = 1/120, tableTau = [];
 (function(){
   let tau = TAU_0;
@@ -175,25 +175,19 @@ function tauDe(t){
 function tDe(tau){ let i = 0; while(i < tableTau.length-1 && tableTau[i] < tau) i++; return i*PAS_T; }
 
 const T_ARRET = tDe(1.3), T_TIR = tDe(TAU_TIR), T_PANIER = tDe(TAU_PANIER);
-const T_ZENITH = T_PANIER + 1.15;                   // la caméra est à la verticale
-const MONTEE = 4.0;                                 // durée de l'ascension
+const T_ZENITH = T_PANIER + 0.5;                    // la caméra est à la verticale
+const MONTEE = 3.5;                                 // durée de l'ascension
 const T_FIN = T_ZENITH + MONTEE;
 
 /* ---------- Le ballon ---------- */
 const DEPART_TIR = [6.98, -0.04, 2.76];
 const V_TIR = [(PANIER_X - DEPART_TIR[0])/VOL, (0 - DEPART_TIR[1])/VOL, (CERCLE_Z - DEPART_TIR[2] + 4.905*VOL*VOL)/VOL];
-// En main : positions clés [temps, [x,y,z], allure]. Le rebond accélère en
-// descendant (« in ») et ralentit en remontant (« out »).
+// En main : positions clés [temps, [x,y,z]] — ballon à la hanche, une feinte,
+// puis il monte au-dessus de la tête.
 const BALLON_MAIN = [
-  [-0.90,[5.60,-0.30,0.95]],
-  [-0.62,[5.64,-0.30,BALLON_R],'in'],
-  [-0.34,[5.62,-0.30,0.98],'out'],
-  [-0.06,[5.64,-0.30,0.94],'io'],
-  [ 0.20,[5.98,-0.30,BALLON_R],'in'],
-  [ 0.46,[6.36,-0.30,0.94],'out'],
-  [ 0.60,[6.52,-0.30,0.90],'io'],
-  [ 0.80,[6.92,-0.28,BALLON_R],'in'],
-  [ 1.04,[7.22,-0.14,0.86],'out'],
+  [ 0.45,[7.40,-0.20,0.96]],
+  [ 0.82,[7.44,-0.16,1.20],'io'],
+  [ 1.10,[7.38,-0.14,0.98],'io'],
   [ 1.28,[7.34,-0.10,1.08],'io'],
   [ 1.46,[7.30,-0.08,1.78],'io'],
   [ 1.62,[7.06,-0.06,2.44],'io'],
@@ -263,26 +257,24 @@ const saut = (tau, t0, t1, h)=>{ const u = rampe(tau, t0, t1); return 4*h*u*(1-u
 /* Milieu des épaules, pour placer les mains par rapport au buste. */
 function epaules(P, penche, sens){ return [P[0] + sens*Math.sin(penche)*0.49, P[1] + Math.cos(penche)*0.49]; }
 
-/* --- L'attaquant, n°34 : dribble, arrêt, tir en reculant --- */
-const A_X = piste([[-0.9,5.18],[0.18,5.22],[0.62,6.0],[1.02,6.85],[1.28,7.2],[1.42,7.2],[2.12,6.46],[2.5,6.4],[5,6.4]]);
-const A_Z = piste([[-0.9,0.9],[-0.6,0.87],[-0.3,0.92],[0.18,0.87],[0.4,0.9],[0.62,0.84],[0.82,0.9],[1.02,0.84],[1.28,0.76],[1.42,1.0],[2.12,0.98],[2.32,0.82],[2.8,0.96],[5,0.97]]);
-const A_PENCHE = piste([[-0.9,0.36],[0.2,0.42],[0.62,0.46],[1.02,0.36],[1.28,0.2],[1.45,-0.08],[1.75,-0.42],[2.12,-0.26],[2.4,0.12],[3,0.06],[5,0.05]]);
+/* --- L'attaquant, n°34 : ballon en main, une feinte, tir en reculant --- */
+const A_X = piste([[0.45,7.22],[1.28,7.2],[1.42,7.2],[2.12,6.46],[2.5,6.4],[5,6.4]]);
+const A_Z = piste([[0.45,0.9],[0.82,0.93],[1.08,0.88],[1.28,0.76],[1.42,1.0],[2.12,0.98],[2.32,0.82],[2.8,0.96],[5,0.97]]);
+const A_PENCHE = piste([[0.45,0.3],[0.82,0.22],[1.1,0.3],[1.28,0.2],[1.45,-0.08],[1.75,-0.42],[2.12,-0.26],[2.4,0.12],[3,0.06],[5,0.05]]);
 function poseAttaquant(tau, b){
   const j = saut(tau, 1.42, 2.12, 0.6);
   const P = [A_X(tau), A_Z(tau) + j], penche = A_PENCHE(tau), E = epaules(P, penche, 1);
   const enLair = pente(tau, 1.42, 1.56)*(1 - pente(tau, 1.98, 2.12));
   const coup = Math.sin(Math.PI*rampe(tau, 1.45, 2.1));          // la jambe droite part vers l'avant
-  let g = pas(tau, 5.45, [[0.62,1.02,7.15,0.16],[1.6,1.9,6.3,0]]);
-  let d = pas(tau, 4.95, [[0.18,0.62,6.35,0.18],[1.0,1.28,7.38,0.1],[1.6,1.9,6.66,0]]);
+  const g = pas(tau, 7.15, [[1.6,1.9,6.3,0]]), d = pas(tau, 7.38, [[1.6,1.9,6.66,0]]);
   const sol = z=> Math.max(z, 0);
   const pg = [mix(g[0], P[0]-0.16, enLair), sol(mix(g[1], P[1]-0.93-CHEVILLE, enLair))];
   const pd = [mix(d[0], P[0]+mix(-0.02, 0.26, coup), enLair), sol(mix(d[1], P[1]-mix(0.92, 0.74, coup)-CHEVILLE, enLair))];
-  // Main droite : sur le ballon au dribble, dessous au tir, poignet cassé ensuite.
-  const dribble = 1 - pente(tau, 0.9, 1.06);
+  // Main droite sous le ballon, main gauche en guide ; poignet cassé après le tir.
   let md, mg;
   if(tau < TAU_TIR){
-    md = mix3([b[0]-0.02, b[1], Math.max(b[2]+0.14, 0.8)], [b[0]-0.07, b[1]-0.03, b[2]-0.09], 1-dribble);
-    mg = mix3([E[0]+0.36, 0.3, E[1]-0.3], [b[0]+0.03, b[1]+0.13, b[2]-0.02], 1-dribble);
+    md = [b[0]-0.07, b[1]-0.03, b[2]-0.09];
+    mg = [b[0]+0.03, b[1]+0.13, b[2]-0.02];
   }else{
     const geste = pente(tau, TAU_TIR, TAU_TIR+0.2), repos = pente(tau, 3.3, 4.3);
     const r = mix3(mix3([0.24,-0.16,0.6],[0.42,-0.16,0.36], geste), [0.22,-0.24,-0.5], repos);
@@ -290,27 +282,27 @@ function poseAttaquant(tau, b){
     const l = mix3([0.2,0.14,0.44],[0.2,0.24,-0.42], pente(tau, TAU_TIR+0.04, 2.3));
     mg = [E[0]+l[0], l[1], E[1]+l[2]];
   }
-  return { P, penche, tete: -0.12*pente(tau, 1.4, 1.8), ecart: 0.17,
+  return { P, penche, tete: -0.12*pente(tau, 1.4, 1.8), ecart: 0.17, haut: j,
     piedG: pg, piedD: pd, pointeG: borne(pg[1]*3, 0, 0.7), pointeD: borne(pd[1]*3, 0, 0.7), mainG: mg, mainD: md };
 }
 
-/* --- Le défenseur : recule en appuis, saute pour contrer, un temps trop tard --- */
-const D_X = piste([[-0.9,6.98],[0.18,7.0],[0.62,7.62],[1.02,8.22],[1.3,8.42],[1.54,8.38],[2.14,8.08],[2.5,8.04],[5,8.04]]);
-const D_Z = piste([[-0.9,0.84],[-0.45,0.86],[0.18,0.83],[0.4,0.87],[0.62,0.83],[0.82,0.87],[1.02,0.83],[1.3,0.84],[1.44,0.76],[1.54,0.99],[2.14,0.97],[2.34,0.83],[2.8,0.95],[5,0.95]]);
-const D_PENCHE = piste([[-0.9,0.34],[1.3,0.3],[1.6,0.1],[1.85,0.05],[2.14,0.15],[2.5,0.24],[5,0.2]]);
+/* --- Le défenseur : en appuis, mord un peu à la feinte, saute un temps trop tard --- */
+const D_X = piste([[0.45,8.42],[1.3,8.42],[1.54,8.38],[2.14,8.08],[2.5,8.04],[5,8.04]]);
+const D_Z = piste([[0.45,0.84],[0.86,0.9],[1.12,0.83],[1.3,0.84],[1.44,0.76],[1.54,0.99],[2.14,0.97],[2.34,0.83],[2.8,0.95],[5,0.95]]);
+const D_PENCHE = piste([[0.45,0.34],[1.3,0.3],[1.6,0.1],[1.85,0.05],[2.14,0.15],[2.5,0.24],[5,0.2]]);
 function poseDefenseur(tau){
   const j = saut(tau, 1.54, 2.14, 0.42);
   const P = [D_X(tau), D_Z(tau) + j], penche = D_PENCHE(tau), E = epaules(P, penche, -1);
   const enLair = pente(tau, 1.54, 1.66)*(1 - pente(tau, 2.02, 2.14));
-  const g = pas(tau, 6.72, [[0.5,0.8,7.42,0.07],[1.1,1.34,8.14,0.07],[1.7,1.95,7.86,0]]);
-  const d = pas(tau, 7.22, [[0.2,0.5,7.9,0.07],[0.8,1.1,8.6,0.07],[1.7,1.95,8.32,0]]);
+  const g = pas(tau, 8.14, [[1.7,1.95,7.86,0]]), d = pas(tau, 8.6, [[1.7,1.95,8.32,0]]);
   const sol = z=> Math.max(z, 0);
   const pg = [mix(g[0], P[0]-0.08, enLair), sol(mix(g[1], P[1]-0.93-CHEVILLE, enLair))];
   const pd = [mix(d[0], P[0]+0.16, enLair), sol(mix(d[1], P[1]-0.9-CHEVILLE, enLair))];
-  const contre = pente(tau, 1.46, 1.76)*(1 - pente(tau, 2.15, 2.8));
+  const feinte = 0.35*Math.sin(Math.PI*rampe(tau, 0.6, 1.15));
+  const contre = Math.max(feinte, pente(tau, 1.46, 1.76)*(1 - pente(tau, 2.15, 2.8)));
   const mg = mix3([E[0]-0.38, -0.3, E[1]-0.28], [E[0]-0.3, -0.16, E[1]+0.62], contre);
   const md = mix3([E[0]-0.2, 0.44, E[1]-0.3], [E[0]-0.15, 0.32, E[1]-0.08], contre);
-  return { P, penche, tete: -0.1*contre, ecart: 0.24,
+  return { P, penche, tete: -0.1*contre, ecart: 0.24, haut: j,
     piedG: pg, piedD: pd, pointeG: borne(pg[1]*3, 0, 0.6), pointeD: borne(pd[1]*3, 0, 0.6), mainG: mg, mainD: md };
 }
 
@@ -320,26 +312,28 @@ function squelette(po, sens){
   const dos = [sens*s, 0, c], avant = [sens*c, 0, -s];
   const P = [po.P[0], 0, po.P[1]];
   const cou = add(P, mul(dos, 0.53)), poitrine = add(P, mul(dos, 0.36)), taille = add(P, mul(dos, 0.15));
-  const it = po.penche*0.45 + (po.tete || 0);
-  const tete = add(cou, [sens*Math.sin(it)*0.2, 0, Math.cos(it)*0.2]);
+  const it = po.penche*0.35 + (po.tete || 0);
+  const tete = add(cou, [sens*Math.sin(it)*0.17, 0, Math.cos(it)*0.17]);
   const J = { P, cou, poitrine, taille, tete, dos, avant,
-    menton: add(tete, [sens*Math.cos(it)*0.045 - sens*Math.sin(it)*0.05, 0, -Math.sin(it)*0.045 - Math.cos(it)*0.05]) };
+    haut: po.haut || 0,
+    menton: add(tete, [sens*Math.cos(it)*0.04 - sens*Math.sin(it)*0.045, 0, -Math.sin(it)*0.04 - Math.cos(it)*0.045]) };
   for(const [cote, y] of [['G', sens], ['D', -sens]]){
-    const epaule = add(add(P, mul(dos, 0.49)), [0, y*0.2, 0]);
+    const epaule = add(add(P, mul(dos, 0.49)), [0, y*0.215, 0]);
     const hanche = [P[0], y*0.105, P[2] - 0.03];
     const pied = po['pied'+cote];
     const cheville = [pied[0], y*po.ecart, pied[1] + CHEVILLE];
     const [genou, chev] = plier(hanche, cheville, CUISSE, TIBIA, [sens, y*0.22, 0.1]);
     const pt = po['pointe'+cote] || 0;
-    const orteil = [chev[0] + sens*Math.cos(pt)*0.19, chev[1], Math.max(chev[2] - 0.045 - Math.sin(pt)*0.19, 0.035)];
-    const talon = [chev[0] - sens*0.05, chev[1], Math.max(chev[2] - 0.04, 0.04)];
+    const orteil = [chev[0] + sens*Math.cos(pt)*0.22, chev[1], Math.max(chev[2] - 0.04 - Math.sin(pt)*0.22, 0.05)];
+    const talon = [chev[0] - sens*0.06, chev[1], Math.max(chev[2] - 0.035, 0.055)];
     const main = po['main'+cote];
     const dm = sub(main, epaule);
     const [coude, poignet] = plier(epaule, main, BRAS, AVANT_BRAS, [sens*dm[2], y*0.6, -sens*dm[0]]);
     const av = sub(poignet, coude), al = len(av) || 1;
     J['epaule'+cote] = epaule; J['hanche'+cote] = hanche; J['genou'+cote] = genou; J['cheville'+cote] = chev;
     J['orteil'+cote] = orteil; J['talon'+cote] = talon; J['coude'+cote] = coude; J['poignet'+cote] = poignet;
-    J['main'+cote] = add(poignet, mul(av, 0.075/al));
+    J['main'+cote] = add(poignet, mul(av, 0.05/al)); J['doigts'+cote] = add(poignet, mul(av, 0.13/al));
+    J['mollet'+cote] = add(mix3(genou, chev, 0.3), [-sens*0.012, 0, 0]);
   }
   return J;
 }
@@ -354,7 +348,7 @@ const VILLES = ['Montpellier','Paris','Lille','Lyon','Nantes','Bordeaux','Toulou
   });
 const MTP = VILLES[0];
 // Le terrain est tourné par rapport au nord : la caméra pivote en montant.
-const CAP = -112*Math.PI/180;
+const CAP = -143*Math.PI/180;                      // le terrain suit l'axe de l'hôtel de ville
 function carteVersTerrain(mx, my){
   const E = (mx - MTP[0])*KM, N = -(my - MTP[1])*KM;
   return [E*Math.sin(CAP) + N*Math.cos(CAP), -E*Math.cos(CAP) + N*Math.sin(CAP)];
@@ -373,51 +367,31 @@ const villes = VILLES.map((v, i)=>{
   return { carte: v, sol: [p[0], p[1], 0], dist: Math.hypot(p[0], p[1]), phase: (i*0.37)%1, eveil: -1 };
 });
 
-/* Quartier autour du playground : un tissu de rues, inventé, qui donne
-   l'échelle entre le terrain et la carte. Tracé une fois, en mètres. */
-const rues = new Path2D(), arbres = new Path2D(), batiments = new Path2D();
-(function(){
-  let graine = 34;
-  const hasard = ()=> (graine = (graine*16807) % 2147483647) / 2147483647;
-  const R = 2600;
-  for(const axe of [0, 1]){
-    let k = -R;
-    while(k < R){
-      k += 70 + hasard()*130;
-      if(Math.abs(k) < 40) continue;                                   // pas de rue à travers le terrain
-      const demi = Math.sqrt(Math.max(R*R - k*k, 0))*(0.55 + hasard()*0.45);
-      let a = -demi*(0.4 + hasard()*0.6);
-      const fin = demi*(0.4 + hasard()*0.6), biais = (hasard()-0.5)*0.12;
-      while(a < fin){
-        const b = Math.min(a + 120 + hasard()*520, fin);
-        if(hasard() > 0.16){
-          const p = (u)=> axe ? [k + u*biais, u] : [u, k + u*biais];
-          const coupe = Math.abs(k) < 60 && a < 60 && b > -60;        // dégage le playground
-          if(!coupe){ const A = p(a), B = p(b); rues.moveTo(A[0], A[1]); rues.lineTo(B[0], B[1]); }
-        }
-        a = b + (hasard() > 0.7 ? 60 + hasard()*90 : 0);
-      }
+/* Le vrai plan de Montpellier autour de l'hôtel de ville (js/intro-montpellier.js,
+   données IGN) : chargé à part, pendant le tir. S'il n'arrive pas à temps,
+   l'ascension se fait simplement sans lui. Repère des tracés : mètres, est/nord. */
+let plan = null;
+function lirePlan(d){
+  const couche = (nom, ferme)=>{
+    const chemin = new Path2D(), pas = d.pas[nom];
+    for(const ligne of d[nom].split(';')){
+      const n = ligne.split(',');
+      let x = +n[0], y = +n[1];
+      chemin.moveTo(x*pas, y*pas);
+      for(let i = 2; i < n.length; i += 2){ x += +n[i]; y += +n[i+1]; chemin.lineTo(x*pas, y*pas); }
+      if(ferme) chemin.closePath();
     }
-  }
-  for(let i = 0; i < 13; i++){
-    const a = i/13*Math.PI*2 + hasard()*0.3, d = 21 + hasard()*16, r = 1.6 + hasard()*2;
-    const x = Math.cos(a)*d*1.35, y = Math.sin(a)*d;
-    if(Math.abs(x) < 20 && Math.abs(y) < 13) continue;
-    arbres.moveTo(x + r, y); arbres.arc(x, y, r, 0, Math.PI*2);
-  }
-  // Immeubles du quartier : des rectangles alignés sur la trame des rues.
-  for(let i = 0; i < 130; i++){
-    const a = hasard()*Math.PI*2, d = 45 + Math.pow(hasard(), 0.7)*420;
-    const x = Math.cos(a)*d, y = Math.sin(a)*d, w = 14 + hasard()*34, h = 10 + hasard()*22;
-    if(Math.abs(x) < 34 + w/2 && Math.abs(y) < 26 + h/2) continue;
-    const an = (hasard() > 0.5 ? 0 : Math.PI/2) + (hasard()-0.5)*0.1, c = Math.cos(an), n = Math.sin(an);
-    const coin = (u, v)=> [x + u*c - v*n, y + u*n + v*c];
-    const q = [coin(-w/2,-h/2), coin(w/2,-h/2), coin(w/2,h/2), coin(-w/2,h/2)];
-    batiments.moveTo(q[0][0], q[0][1]);
-    for(let k = 1; k < 4; k++) batiments.lineTo(q[k][0], q[k][1]);
-    batiments.closePath();
-    if(hasard() > 0.5){ const m1 = coin(-w/2, 0), m2 = coin(w/2, 0); batiments.moveTo(m1[0], m1[1]); batiments.lineTo(m2[0], m2[1]); }
-  }
+    return chemin;
+  };
+  plan = { bati: couche('bati', true), chemins: couche('chemins'), rues: couche('rues'),
+           grandes: couche('grandes'), eau: couche('eau', true), axes: couche('axes') };
+}
+(function(){
+  if(window.EBOK_INTRO_MTP){ lirePlan(window.EBOK_INTRO_MTP); return; }
+  const sc = document.createElement('script');
+  sc.src = '/js/intro-montpellier.js'; sc.async = true;
+  sc.onload = ()=>{ try{ if(window.EBOK_INTRO_MTP) lirePlan(window.EBOK_INTRO_MTP); }catch(e){} };
+  document.head.appendChild(sc);
 })();
 
 /* ---------- Toile et caméra ---------- */
@@ -507,10 +481,12 @@ function enveloppe(boules){
   return bas.concat(haut);
 }
 /* Un groupe de volumes = une seule silhouette : on trace épais, puis on
-   remplit par-dessus ; il ne reste que le contour extérieur. */
-function silhouette(volumes, epaisseur, fond){
+   remplit par-dessus ; il ne reste que le contour extérieur.
+   `hachures` : remplit en plus la forme de traits obliques (maillot du défenseur). */
+let ancreHachures = 0;
+function silhouette(volumes, epaisseur, fond, bord, hachures){
   ctx.beginPath();
-  let vu = false;
+  let vu = false, x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
   for(const v of volumes){
     const poly = enveloppe(v);
     if(!poly || poly.length < 3) continue;
@@ -518,37 +494,63 @@ function silhouette(volumes, epaisseur, fond){
     ctx.moveTo(poly[0][0], poly[0][1]);
     for(let i = 1; i < poly.length; i++) ctx.lineTo(poly[i][0], poly[i][1]);
     ctx.closePath();
+    if(hachures) for(const q of poly){ if(q[0] < x0) x0 = q[0]; if(q[0] > x1) x1 = q[0]; if(q[1] < y0) y0 = q[1]; if(q[1] > y1) y1 = q[1]; }
   }
   if(!vu) return;
-  ctx.lineJoin = 'round'; ctx.lineWidth = epaisseur*2; ctx.strokeStyle = BORDEAUX; ctx.stroke();
+  ctx.lineJoin = 'round'; ctx.lineWidth = epaisseur*2; ctx.strokeStyle = bord; ctx.stroke();
   ctx.fillStyle = fond; ctx.fill();
+  if(hachures){
+    const pas = Math.max(epaisseur*2.7, 2.6), h = y1 - y0;
+    ctx.save(); ctx.clip();
+    ctx.beginPath();
+    for(let x = x0 - h - ((x0 - ancreHachures) % pas + pas) % pas; x < x1; x += pas){ ctx.moveTo(x, y1); ctx.lineTo(x + h, y0); }
+    ctx.lineWidth = Math.max(epaisseur*0.62, 0.5); ctx.strokeStyle = hachures; ctx.stroke();
+    ctx.restore();
+  }
 }
 
-function dessinerJoueur(J, maillot, numero){
+/* Deux écritures, comme sur une affiche : le tireur en aplat bordeaux, découpé
+   d'un filet beige ; le défenseur au trait, maillot hachuré. `fantome` : simple
+   contour pâle, pour les poses passées du tireur (décomposition du geste). */
+const STYLE_TIREUR = { peau: BORDEAUX, tenue: BORDEAUX, bord: BEIGE, finesse: 0.55, numero: '34', encre: BEIGE };
+const STYLE_DEFENSEUR = { peau: BEIGE, tenue: BEIGE, bord: BORDEAUX, finesse: 1, hachures: trait(0.8) };
+const fantome = a=> ({ peau: BEIGE, tenue: BEIGE, bord: trait(a), finesse: 0.6 });
+
+function dessinerJoueur(J, st){
   const z = profondeur(J.poitrine);
   if(z < 0.3) return;
-  const e = borne(FOCALE/z*0.014, 0.45, 2.1);
+  const e = borne(FOCALE/z*0.014, 0.45, 2.1)*st.finesse;
+  const ancre = versEcran(J.P); if(ancre) ancreHachures = ancre[0] + ancre[1];
   const loin = profondeur(J.epauleG) > profondeur(J.epauleD) ? 'G' : 'D', pres = loin === 'G' ? 'D' : 'G';
   const bras = c=> silhouette([
-    [[J['epaule'+c], 0.06], [J['coude'+c], 0.046]],
-    [[J['coude'+c], 0.046], [J['poignet'+c], 0.036]],
-    [[J['main'+c], 0.05]]], e, BEIGE);
+    [[J['epaule'+c], 0.07], [J['coude'+c], 0.052]],
+    [[J['coude'+c], 0.054], [J['poignet'+c], 0.039]],
+    [[J['main'+c], 0.044], [J['doigts'+c], 0.03]]], e, st.peau, st.bord);
   const jambe = c=>{
     silhouette([
-      [[J['hanche'+c], 0.09], [J['genou'+c], 0.062]],
-      [[J['genou'+c], 0.058], [J['cheville'+c], 0.043]],
-      [[J['talon'+c], 0.045], [J['cheville'+c], 0.046], [J['orteil'+c], 0.04]]], e, BEIGE);
-    silhouette([[[J['hanche'+c], 0.128], [mix3(J['hanche'+c], J['genou'+c], 0.6), 0.112]]], e, maillot);
+      [[J['hanche'+c], 0.1], [J['genou'+c], 0.066]],
+      [[J['genou'+c], 0.062], [J['mollet'+c], 0.071], [J['cheville'+c], 0.043]],
+      [[J['talon'+c], 0.058], [J['cheville'+c], 0.052], [J['orteil'+c], 0.05]]], e, st.peau, st.bord);
+    // Short long et ample, façon playground.
+    silhouette([[[J['hanche'+c], 0.14], [mix3(J['hanche'+c], J['genou'+c], 0.74), 0.132]]], e, st.tenue, st.bord, st.hachures);
   };
   bras(loin); jambe(loin);
-  silhouette([[[J.hancheG, 0.125], [J.hancheD, 0.125], [J.taille, 0.12]]], e, maillot);
+  silhouette([[[J.hancheG, 0.13], [J.hancheD, 0.13], [J.taille, 0.118]]], e, st.tenue, st.bord, st.hachures);
   jambe(pres);
   silhouette([
-    [[J.epauleG, 0.085], [J.epauleD, 0.085], [J.poitrine, 0.15], [J.taille, 0.125]],
-    [[J.taille, 0.125], [J.hancheG, 0.112], [J.hancheD, 0.112]]], e, maillot);
-  if(numero) ecrireNumero(J, numero, maillot === BEIGE ? BORDEAUX : BEIGE);
-  silhouette([[[J.cou, 0.05], [J.tete, 0.05]], [[J.tete, 0.108], [J.menton, 0.086]]], e, BEIGE);
+    [[J.epauleG, 0.082], [J.epauleD, 0.082], [J.cou, 0.07], [J.poitrine, 0.155], [J.taille, 0.12]],
+    [[J.taille, 0.12], [J.hancheG, 0.116], [J.hancheD, 0.116]]], e, st.tenue, st.bord, st.hachures);
+  if(st.numero) ecrireNumero(J, st.numero, st.encre);
+  silhouette([[[J.cou, 0.062], [J.tete, 0.058]], [[J.tete, 0.097], [J.menton, 0.078]]], e, st.peau, st.bord);
   bras(pres);
+}
+/* Ombre portée au sol : elle se resserre quand le joueur décolle. */
+function ombre(x, y, rx, ry, alpha){
+  ctx.beginPath();
+  const c = [];
+  for(let k = 0; k <= 24; k++){ const a = k/24*Math.PI*2; c.push([x + rx*Math.cos(a), y + ry*Math.sin(a), 0]); }
+  ligne(c);
+  ctx.fillStyle = trait(alpha); ctx.fill();
 }
 /* Le numéro, plaqué sur le dos ou la poitrine selon ce que voit la caméra. */
 function ecrireNumero(J, texte, couleur){
@@ -585,10 +587,10 @@ function dessinerBallon(p, rot){
   if(!q) return;
   const r = BALLON_R*FOCALE/q[2];
   if(r < 0.6) return;
-  const e = borne(r*0.11, 0.5, 1.9);
+  const e = borne(r*0.1, 0.5, 1.7);
   ctx.beginPath(); ctx.arc(q[0], q[1], r, 0, Math.PI*2);
-  ctx.fillStyle = BEIGE; ctx.fill();
-  ctx.lineWidth = e; ctx.strokeStyle = BORDEAUX; ctx.stroke();
+  ctx.fillStyle = BORDEAUX; ctx.fill();
+  ctx.lineWidth = e*1.2; ctx.strokeStyle = BEIGE; ctx.stroke();
   if(r < 4) return;
   const vue = sub(C.pos, p), cr = Math.cos(rot), sr = Math.sin(rot);
   ctx.beginPath();
@@ -597,13 +599,13 @@ function dessinerBallon(p, rot){
     for(const v of l){
       const w = [v[0]*cr + v[2]*sr, v[1], -v[0]*sr + v[2]*cr];      // rotation autour de l'axe y
       if(dot(w, vue) <= 0){ pen = false; continue; }
-      const s = versEcran(add(p, mul(w, BALLON_R)));
+      const s = versEcran(add(p, mul(w, BALLON_R*0.97)));
       if(!s){ pen = false; continue; }
       if(pen) ctx.lineTo(s[0], s[1]); else ctx.moveTo(s[0], s[1]);
       pen = true;
     }
   }
-  ctx.lineWidth = e*0.7; ctx.stroke();
+  ctx.lineWidth = e*0.8; ctx.stroke();
 }
 
 /* Le filet : il se gonfle au passage du ballon, puis se balance. */
@@ -632,21 +634,20 @@ function reglerCamera(){
   const p = large || W > H ? 0 : 1;
   const v = (a, b)=> mix3(a, b, p);
   camPos = piste([
-    [0,               v([0.8,-4.3,1.45],  [1.6,-2.9,1.5])],
-    [T_ARRET,         v([2.0,-4.4,1.5],   [2.4,-3.0,1.6])],
-    [T_TIR,           v([2.5,-4.3,1.7],   [2.8,-3.0,1.8])],
-    [T_TIR + 0.9,     v([4.3,-3.6,2.7],   [4.4,-2.6,2.8])],
-    [T_PANIER - 0.7,  [8.0,-1.8,5.0]],
-    [T_PANIER,        [10.0,-0.7,6.6]],
-    [T_PANIER + 0.6,  [11.5,-0.15,8.6]],
+    [0,               v([2.1,-4.5,1.4],   [2.5,-3.0,1.5])],
+    [T_ARRET,         v([2.4,-4.4,1.5],   [2.7,-3.0,1.6])],
+    [T_TIR,           v([2.8,-4.3,1.75],  [3.0,-3.0,1.85])],
+    [T_TIR + 0.9,     v([4.5,-3.6,2.9],   [4.6,-2.6,3.0])],
+    [T_PANIER - 0.7,  [8.6,-1.5,5.4]],
+    [T_PANIER,        [11.0,-0.35,7.6]],
     [T_ZENITH,        [12.0,0,11]]
   ]);
   camCible = piste([
-    [0,               v([8.0,0.6,1.2],    [8.2,0.3,1.3])],
-    [T_ARRET,         v([8.5,0.4,1.45],   [8.6,0.2,1.55])],
-    [T_TIR,           v([8.7,0.3,2.0],    [8.8,0.1,2.1])],
+    [0,               v([8.4,0.5,1.35],   [8.5,0.3,1.45])],
+    [T_ARRET,         v([8.5,0.4,1.5],    [8.6,0.2,1.6])],
+    [T_TIR,           v([8.7,0.3,2.05],   [8.8,0.1,2.15])],
     [T_PANIER,        [PANIER_X,0,3.0]],
-    [T_PANIER + 0.65, [12.25,0,0]],
+    [T_PANIER + 0.3,  [12.15,0,0]],
     [T_ZENITH,        [12.0,0,0]]
   ]);
 }
@@ -654,14 +655,14 @@ const ALT_0 = 11;                                    // altitude au début de l'
 function cadrage(t, b){
   if(t < T_ZENITH){
     dessus = null;
-    const suivi = pente(t, T_TIR - 0.1, T_TIR + 0.7)*(1 - pente(t, T_PANIER + 0.02, T_PANIER + 0.7));
+    const suivi = pente(t, T_TIR - 0.1, T_TIR + 0.7)*(1 - pente(t, T_PANIER - 0.05, T_PANIER + 0.3));
     viser(camPos(t), mix3(camCible(t), b, suivi));
     return 0;
   }
   // Ascension : l'altitude croît de façon exponentielle (zoom régulier), la
   // caméra file en ligne droite vers son point d'arrivée au-dessus de la France.
   const u = rampe(t, T_ZENITH, T_FIN);
-  const e = doux(u) + 0.12*u*(1-u)*(1-u);
+  const e = doux(u) + 0.3*u*(1-u)*(1-u);
   const s0 = FOCALE/ALT_0, s = Math.exp(mix(Math.log(s0), Math.log(finale.s), e));
   const angle = CAP*pente(u, 0.03, 0.82);
   const r = [Math.sin(angle), -Math.cos(angle)], h = [Math.cos(angle), Math.sin(angle)];
@@ -702,7 +703,7 @@ function rendre(t){
   /* --- La carte : révélée par l'onde partie de Montpellier --- */
   if(dessus){
     const S = s*KM, mtp = solVersEcran([0,0,0]);
-    const onde = Math.max(W, H)*1.25*Math.pow(rampe(u, 0.52, 0.93), 1.5);
+    const onde = Math.max(W, H)*1.25*Math.pow(rampe(u, 0.46, 0.9), 1.5);
     if(S < 500 && onde > 0){
       const M = carteVersEcran();
       const plein = pente(u, 0.82, 1);
@@ -720,7 +721,7 @@ function rendre(t){
           const r = onde - i*46;
           if(r <= 2) continue;
           ctx.beginPath(); ctx.arc(mtp[0], mtp[1], r, 0, Math.PI*2);
-          ctx.lineWidth = 1.4 - i*0.4; ctx.strokeStyle = trait((0.5 - i*0.16)*(1 - pente(u, 0.86, 0.96))); ctx.stroke();
+          ctx.lineWidth = 1.4 - i*0.4; ctx.strokeStyle = trait((0.5 - i*0.16)*(1 - pente(u, 0.84, 0.95))); ctx.stroke();
         }
       }
       for(const v of villes){                        // l'onde réveille les villes
@@ -728,64 +729,114 @@ function rendre(t){
         if(v.eveil < 0 && Math.hypot(q[0]-mtp[0], q[1]-mtp[1]) <= onde) v.eveil = t;
         if(v.eveil > t) v.eveil = -1;                // retour en arrière (réglage)
       }
-    }else{ for(const v of villes) if(v.eveil > t || u <= 0.52) v.eveil = -1; }
+    }else{ for(const v of villes) if(v.eveil > t || u <= 0.46) v.eveil = -1; }
 
-    /* --- Le quartier : rues et arbres, entre le terrain et la carte --- */
-    const aRues = pente(s, 5, 1.2)*pente(s, 0.03, 0.12), aArbres = pente(s, 30, 12)*pente(s, 0.5, 1.6);
-    const aBati = pente(s, 13, 5)*pente(s, 0.2, 0.7);
-    if(aRues > 0.01 || aArbres > 0.01 || aBati > 0.01){
+    /* --- Montpellier : bâtiments, rues, le Lez, puis les grands axes --- */
+    if(plan && s < 45 && s > 0.0011){
       const { c, angle } = dessus, sn = Math.sin(angle), cs = Math.cos(angle);
+      const proches = pente(s, 40, 13), a = v=> v > 0.01;
+      const aBati = proches*pente(s, 0.3, 0.75), aEau = proches*pente(s, 0.035, 0.09);
+      const aRues = pente(s, 30, 9)*pente(s, 0.05, 0.13), aGrandes = pente(s, 30, 9)*pente(s, 0.016, 0.045);
+      const aAxes = pente(s, 0.3, 0.09)*pente(s, 0.0013, 0.0032);
       ctx.save();
       ctx.transform(s*sn, -s*cs, -s*cs, -s*sn, W/2 - s*(sn*c[0] - cs*c[1]), H/2 + s*(cs*c[0] + sn*c[1]));
-      if(aRues > 0.01){ ctx.lineWidth = 0.9/s; ctx.strokeStyle = trait(0.34*aRues); ctx.stroke(rues); }
-      if(aArbres > 0.01){ ctx.lineWidth = 1/s; ctx.strokeStyle = trait(0.4*aArbres); ctx.stroke(arbres); }
-      if(aBati > 0.01){ ctx.lineWidth = 0.9/s; ctx.strokeStyle = trait(0.36*aBati); ctx.stroke(batiments); }
+      ctx.transform(Math.sin(CAP), -Math.cos(CAP), Math.cos(CAP), Math.sin(CAP), 0, 0);   // est/nord → repère du terrain
+      ctx.lineJoin = 'round';
+      if(a(aEau)){ ctx.fillStyle = trait(0.1*aEau); ctx.fill(plan.eau); ctx.lineWidth = 0.9/s; ctx.strokeStyle = trait(0.42*aEau); ctx.stroke(plan.eau); }
+      if(a(aBati)){
+        ctx.fillStyle = trait(0.055*aBati); ctx.fill(plan.bati);
+        ctx.lineWidth = 0.8/s; ctx.strokeStyle = trait(0.5*aBati); ctx.stroke(plan.bati);
+        ctx.setLineDash([3/s, 4/s]); ctx.strokeStyle = trait(0.4*aBati); ctx.stroke(plan.chemins); ctx.setLineDash([]);
+      }
+      if(a(aRues)){ ctx.lineWidth = borne(0.5 + s*1.4, 0.6, 1.3)/s; ctx.strokeStyle = trait(0.42*aRues); ctx.stroke(plan.rues); }
+      if(a(aGrandes)){ ctx.lineWidth = borne(0.9 + s*2.6, 1.1, 2.4)/s; ctx.strokeStyle = trait(0.62*aGrandes); ctx.stroke(plan.grandes); }
+      if(a(aAxes)){ ctx.lineWidth = 1.1/s; ctx.strokeStyle = trait(0.5*aAxes); ctx.stroke(plan.axes); }
       ctx.restore();
     }
   }
 
   /* --- Le playground --- */
   if(proche > 0.01){
-    const eSol = dessus ? borne(0.4 + s*0.06, 0.55, 1.6) : 1.5;
+    const eSol = dessus ? borne(0.4 + s*0.06, 0.55, 1.6) : 1.6;
     ctx.globalAlpha = proche;
+    // La vue du dessus pose le terrain sur le plan : un fond clair le détache des rues.
+    if(dessus){
+      ctx.beginPath(); ligne([[-17.5,-10.5,0],[17.5,-10.5,0],[17.5,10.5,0],[-17.5,10.5,0],[-17.5,-10.5,0]]);
+      ctx.fillStyle = BEIGE; ctx.fill();
+    }
+    // Les raquettes et le rond central en aplat léger.
+    const aplat = pente(t, 0.35, 1.0);
+    if(aplat > 0){
+      ctx.beginPath();
+      for(const e of [1,-1]) ligne([[e*DEMI_L,-2.45,0],[e*8.2,-2.45,0],[e*8.2,2.45,0],[e*DEMI_L,2.45,0],[e*DEMI_L,-2.45,0]]);
+      ligne(lignesSol[2]);
+      ctx.fillStyle = trait(0.085*aplat); ctx.fill();
+    }
     // Le terrain se trace à la craie pendant la première seconde.
     ctx.beginPath();
     for(let i = 0; i < lignesSol.length; i++){
-      const f = pente(t, 0.05 + i*0.07, 0.75 + i*0.07);
+      const f = pente(t, 0.02 + i*0.04, 0.5 + i*0.04);
       if(f > 0) ligne(portion(i, f));
     }
-    ctx.lineWidth = eSol; ctx.strokeStyle = trait(0.78); ctx.stroke();
-    trait3D(grillage, 1, 0.2*pente(t, 0.3, 1.2));
+    ctx.lineWidth = eSol; ctx.strokeStyle = trait(0.82); ctx.stroke();
+    trait3D(grillage, 1, 0.22*pente(t, 0.2, 0.9));
 
     const q = tau - TAU_PANIER;
-    const aPanier = pente(t, 0.25, 1.0);
+    const aPanier = pente(t, 0.15, 0.7);
     const dessinerPanier = (lignes, avecFilet)=>{
-      trait3D(lignes, borne(eSol*1.05, 0.6, 1.7), 0.95*aPanier);
-      if(avecFilet) trait3D(filet(q, b), borne(eSol*0.6, 0.4, 0.9), 0.7*aPanier);
+      trait3D(lignes, borne(eSol*1.15, 0.6, 1.9), 0.95*aPanier);
+      if(avecFilet) trait3D(filet(q, b), borne(eSol*0.6, 0.4, 0.9), 0.75*aPanier);
     };
-    const A = squelette(poseAttaquant(tau, b), 1), D = squelette(poseDefenseur(tau), -1);
+    const pA = poseAttaquant(tau, b), pD = poseDefenseur(tau);
+    const A = squelette(pA, 1), D = squelette(pD, -1);
     const dansFilet = q > 0 && b[2] > 2.45 && b[2] < CERCLE_Z;
     const rot = -tau*9;
+
+    // Ombres portées.
+    for(const J of [A, D]){
+      const k = 1/(1 + J.haut*1.6);
+      ombre((J.chevilleG[0] + J.chevilleD[0])/2, 0, 0.5*k, 0.3*k, 0.16*k*aPanier);
+    }
+    ombre(b[0], b[1], 0.13, 0.1, 0.2/(1 + b[2]*0.8)*aPanier);
+
+    // La trajectoire du tir, en pointillés, comme sur un tableau de coach.
+    if(tau > TAU_TIR){
+      const fin = Math.min(tau, TAU_PANIER), pts = [];
+      for(let x = TAU_TIR; x < fin; x += 0.02) pts.push(ballon(x));
+      pts.push(ballon(fin));
+      ctx.beginPath(); ligne(pts);
+      ctx.setLineDash([2, 7]); ctx.lineWidth = 1.6; ctx.strokeStyle = trait(0.6*(1 - pente(q, 0.1, 0.9))); ctx.stroke(); ctx.setLineDash([]);
+    }
+
     const objets = [
       { z: profondeur([-PANIER_X,0,3]), f: ()=> dessinerPanier(panierLoin, false) },
       { z: profondeur([PANIER_X,0,3]),  f: ()=>{ if(dansFilet) dessinerBallon(b, rot); dessinerPanier(panierPres, true); } },
-      { z: profondeur(D.poitrine), f: ()=> dessinerJoueur(D, BEIGE, null) },
-      { z: profondeur(A.poitrine), f: ()=> dessinerJoueur(A, BORDEAUX, '34') }
+      { z: profondeur(D.poitrine), f: ()=> dessinerJoueur(D, STYLE_DEFENSEUR) },
+      { z: profondeur(A.poitrine), f: ()=> dessinerJoueur(A, STYLE_TIREUR) }
     ];
+    // Décomposition du geste : les poses passées du tireur restent un instant, en contour.
+    const echo = pente(tau, 1.36, 1.5)*(1 - pente(tau, 2.25, 2.7));
+    if(echo > 0.02 && !dessus){
+      for(let k = 3; k >= 1; k--){
+        const tk = tau - k*0.105;
+        if(tk < 1.25) continue;
+        const F = squelette(poseAttaquant(tk, ballon(tk)), 1);
+        objets.push({ z: profondeur(F.poitrine) + 0.6 + k*0.01, f: ()=> dessinerJoueur(F, fantome((0.42 - k*0.1)*echo)) });
+      }
+    }
     if(!dansFilet) objets.push({ z: profondeur(b) - (tau < TAU_TIR ? 0.5 : 0), f: ()=> dessinerBallon(b, rot) });
     objets.sort((a, c)=> c.z - a.z);
-    ctx.globalAlpha = proche;
     for(const o of objets) o.f();
     ctx.globalAlpha = 1;
 
     // Le panier : une onde part du cercle et court sur le sol.
     if(q > 0){
       for(let i = 0; i < 3; i++){
-        const v = rampe(t - T_PANIER - i*0.22, 0, 1.9);
+        const v = rampe(t - T_PANIER - i*0.16, 0, 1.5);
         if(v <= 0 || v >= 1) continue;
-        const rayon = 0.3 + 13*Math.pow(v, 0.8), c = [];
+        const rayon = 0.3 + 15*Math.pow(v, 0.8), c = [];
         for(let k = 0; k <= 64; k++){ const a = k/64*Math.PI*2; c.push([PANIER_X + rayon*Math.cos(a), rayon*Math.sin(a), 0]); }
-        trait3D([c], 1.5 - i*0.3, 0.6*(1-v)*proche);
+        trait3D([c], 1.6 - i*0.3, 0.65*(1-v)*proche);
       }
     }
   }
@@ -834,7 +885,7 @@ const bulle = document.getElementById('introBulle');
 let dernierHud = '';
 function majHud(t){
   if(!hud) return;
-  hud.classList.toggle('visible', t > 0.5 && t < T_FIN - 0.5);
+  hud.classList.toggle('visible', t > 0.25 && t < T_FIN - 0.5);
   let txt = '';
   if(dessus){
     const alt = FOCALE/dessus.s*0.62;
@@ -953,7 +1004,7 @@ window.addEventListener('resize', surRedimension);
 // Molette ou balayage vers le haut sur la carte de fin : on entre.
 boite.addEventListener('wheel', ev=>{ if(fini && ev.deltaY > 20) sortir(); }, { passive: true });
 if(document.fonts && document.fonts.load) document.fonts.load("100px Anton").catch(()=>{});
-if(hudLieu) hudLieu.innerHTML = 'Montpellier <b>·</b> Playground<br><b>43,61° N — 3,88° E</b>';
+
 
 // Réglage : /?intro=1&t=3.2 fige l'image à 3,2 s.
 const mT = /[?&]t=([\d.]+)/.exec(location.search);

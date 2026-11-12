@@ -12,7 +12,7 @@ html.intro-on .intro{
   -webkit-tap-highlight-color:transparent;user-select:none;
   touch-action:none;
 }
-.intro canvas{position:absolute;inset:0;width:100%;height:100%;display:block;animation:intro-apparait .8s ease both;}
+.intro canvas{position:absolute;inset:0;width:100%;height:100%;display:block;animation:intro-apparait .4s ease both;}
 @keyframes intro-apparait{from{opacity:0;}}
 .intro.fin canvas{cursor:pointer;}
 
@@ -20,14 +20,28 @@ html.intro-on .intro{
 .intro.sortie{opacity:0;transition:opacity .55s ease;pointer-events:none;}
 .intro.sortie canvas{transform:scale(1.5);transition:transform .6s cubic-bezier(.5,0,.75,0);}
 
-/* Repères discrets façon retour caméra (lieu, altitude). */
+/* En haut : le nom de l'événement, façon affiche, puis les repères de la
+   caméra (lieu, altitude). */
 .intro-hud{
-  position:absolute;left:28px;bottom:26px;pointer-events:none;
-  font-family:'Space Mono',monospace;font-size:11px;letter-spacing:2.5px;text-transform:uppercase;
-  color:#9B1C2C;line-height:1.9;opacity:0;transition:opacity .6s ease;
+  position:absolute;left:clamp(20px,3vw,40px);top:clamp(18px,3vh,34px);pointer-events:none;
+  display:flex;flex-direction:column;gap:7px;opacity:0;transition:opacity .6s ease;
 }
-.intro-hud.visible{opacity:.85;}
-.intro-hud b{font-weight:400;color:#6E675B;}
+.intro-hud.visible{opacity:1;}
+.intro-hud-titre{
+  font-family:'Anton',sans-serif;font-size:clamp(20px,2.3vw,32px);line-height:1;letter-spacing:1px;
+  text-transform:uppercase;color:#211F1B;
+}
+.intro-hud-titre i{font-style:normal;color:#9B1C2C;}
+.intro-hud-lieu,.intro-hud-alt{
+  font-family:'Space Mono',monospace;font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:#6E675B;
+}
+.intro-hud-alt{color:#9B1C2C;min-height:1.2em;}
+
+/* Grain de papier : donne à l'ensemble une matière d'affiche imprimée. */
+.intro::after{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5  0 0 0 0 .42  0 0 0 0 .36  0 0 0 .16 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23g)'/%3E%3C/svg%3E");
+}
 
 .intro-passer{
   position:absolute;left:50%;bottom:26px;transform:translateX(-50%);
@@ -96,7 +110,8 @@ html.intro-on .intro{
   .intro-entrer{margin-top:18px;}
   .intro-astuce{margin-top:12px;}
   .intro-eyebrow{margin-bottom:10px;font-size:11px;}
-  .intro-hud{left:18px;bottom:auto;top:max(16px,env(safe-area-inset-top));font-size:10px;}
+  .intro-hud{top:max(16px,env(safe-area-inset-top));}
+  .intro-hud-lieu,.intro-hud-alt{font-size:9.5px;letter-spacing:1.8px;}
   .intro-passer{bottom:max(22px,env(safe-area-inset-bottom));}
 }
 @media(max-width:859px) and (max-height:640px){
