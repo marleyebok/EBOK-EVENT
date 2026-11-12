@@ -585,19 +585,25 @@
             </div>
             <div class="field">
               <label for="c-reservation">Réservation</label>
-              <input type="text" id="c-reservation" placeholder="Ex. Entrée libre / Lien billetterie">
+              <input type="text" id="c-reservation" placeholder="Ex. Entrée libre, sur réservation, places limitées">
             </div>
-            <!-- Deux liens facultatifs : chacun devient un bouton sur la fiche
-                 (« S'inscrire », « Site officiel ») s'il est rempli. -->
+            <!-- Trois liens facultatifs : chacun active un bouton sur la fiche.
+                 Sans lien, le bouton « S'inscrire » ou « Billetterie » reste
+                 visible mais grisé. -->
             <div class="field">
               <label for="c-inscription">Lien d'inscription <span class="wz-opt">(facultatif)</span></label>
-              <input type="text" id="c-inscription" inputmode="url" placeholder="https://… formulaire, billetterie ou page d'inscription">
-              <p class="field-hint">Affiche un bouton « S'inscrire » sur la fiche de l'événement.</p>
+              <input type="text" id="c-inscription" inputmode="url" placeholder="https://… formulaire ou page d'inscription">
+              <p class="field-hint">Active le bouton « S'inscrire » sur la fiche. Vide, le bouton reste grisé.</p>
+            </div>
+            <div class="field">
+              <label for="c-billetterie">Lien de billetterie <span class="wz-opt">(facultatif)</span></label>
+              <input type="text" id="c-billetterie" inputmode="url" placeholder="https://… vente de billets">
+              <p class="field-hint">Active le bouton « Billetterie ». Vide, le bouton reste grisé.</p>
             </div>
             <div class="field">
               <label for="c-site-officiel">Site officiel de l'événement <span class="wz-opt">(facultatif)</span></label>
               <input type="text" id="c-site-officiel" inputmode="url" placeholder="https://…">
-              <p class="field-hint">Affiche un bouton « Site officiel ». Vide, il reprend le site web de ton contact.</p>
+              <p class="field-hint">Affiche un lien « Site officiel » dans le bloc organisateur. Vide, il reprend le site web de ton contact.</p>
             </div>
             <div class="form-row">
               <div class="field">
@@ -1119,9 +1125,13 @@
           <input type="text" id="e-inscription" inputmode="url" placeholder="https://…">
         </div>
         <div class="field">
-          <label for="e-site-officiel">Site officiel</label>
-          <input type="text" id="e-site-officiel" inputmode="url" placeholder="https://…">
+          <label for="e-billetterie">Lien de billetterie</label>
+          <input type="text" id="e-billetterie" inputmode="url" placeholder="https://…">
         </div>
+      </div>
+      <div class="field">
+        <label for="e-site-officiel">Site officiel</label>
+        <input type="text" id="e-site-officiel" inputmode="url" placeholder="https://…">
       </div>
       <div class="field">
         <label>Public — âge <span style="color:var(--chalk-dim);font-weight:400;">(plusieurs choix possibles)</span></label>

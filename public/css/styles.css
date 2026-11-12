@@ -1992,22 +1992,30 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .carousel-wrapper{touch-action:pan-y;}
 
 /* =========================================================
-   FICHE ÉVÉNEMENT — refonte
+   FICHE ÉVÉNEMENT — trois blocs, trois formes
    ---------------------------------------------------------
-   Ordre de lecture : quoi (titre), quand / où / pour qui (trois repères),
-   puis les actions, avant le détail. Les boutons « S'inscrire » et « Site
-   officiel » n'existent que si l'organisateur a donné le lien.
+   1. Sur EBOK (enregistrer, partager, signaler) : une barre d'outils soudée
+      à l'affiche, neutre. Elle ne parle que du site.
+   2. L'organisateur (s'inscrire, billetterie, contacter) : un billet
+      bordeaux, le seul aplat de couleur de la page, parce que c'est là qu'on
+      agit. Un bouton sans lien reste en place, grisé, avec sa raison.
+   3. Infos pratiques : une feuille de match, à plat, rayée de filets.
    ========================================================= */
 .ico{
   width:1.2em;height:1.2em;flex:none;display:inline-block;vertical-align:-0.2em;
   fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
 }
-
 .event-detail{grid-template-columns:minmax(300px, 380px) minmax(0, 1fr);gap:44px;padding:22px 0 48px;}
-.event-poster{position:relative;border-radius:20px;box-shadow:0 24px 48px -28px rgba(0,0,0,.55);}
 .event-mini-map{border-radius:18px;}
 .poster-zoom-ic{color:#fff;font-size:16px;}
+.fav-btn:focus-visible,.ev-bar-btn:focus-visible{outline:2px solid var(--accent-text);outline-offset:-3px;}
 
+/* ---------- 1. L'affiche et sa barre d'outils ---------- */
+.ev-poster-card{
+  position:relative;background:var(--asphalt-2);border:1px solid var(--line);border-radius:20px;
+  box-shadow:0 26px 44px -30px rgba(0,0,0,.5);
+}
+.ev-poster-card .event-poster{position:relative;border:0;border-radius:19px 19px 0 0;overflow:hidden;}
 /* Étoile « mettre de côté », posée sur l'affiche. */
 .fav-btn.fav-star{
   top:12px;right:12px;width:46px;height:46px;font-size:21px;color:#fff;
@@ -2016,68 +2024,131 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 }
 .fav-btn.fav-star:hover{background:rgba(12,12,14,.78);transform:scale(1.08);}
 .fav-btn.fav-star.active{color:var(--yellow);border-color:rgba(255,201,60,.6);}
-.fav-btn.fav-star.active .ico,
-.ev-tool.fav-btn-lg.active .ico{fill:currentColor;}
-.fav-btn:focus-visible,.ev-tool:focus-visible,.ev-btn:focus-visible{outline:2px solid var(--accent-text);outline-offset:3px;}
+.fav-btn.fav-star.active .ico{fill:currentColor;}
 
-.event-main h2{font-size:clamp(30px, 4.2vw, 52px);line-height:1;margin-bottom:10px;text-wrap:balance;}
-.event-org{margin-bottom:24px;font-size:15px;}
+.ev-bar{display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));border-top:1px solid var(--line);}
+.ev-bar-btn,
+.ev-bar .fav-btn.ev-bar-btn{
+  position:static;width:auto;height:auto;transform:none;
+  display:flex;align-items:center;justify-content:center;gap:7px;min-height:52px;padding:0 6px;
+  background:none;border:0;border-right:1px solid var(--line);border-radius:0;
+  color:var(--chalk);font:600 14px/1.2 var(--font-body);cursor:pointer;
+  transition:background .15s, color .15s;
+}
+.ev-bar .ev-bar-btn:first-child{border-radius:0 0 0 19px;}
+.ev-bar .ev-bar-btn:last-child{border-right:0;border-radius:0 0 19px 0;}
+.ev-bar .ev-bar-btn:hover,
+.ev-bar .fav-btn.ev-bar-btn:hover{background:var(--asphalt-3);transform:none;}
+.ev-bar .ev-bar-btn:active{background:var(--line);}
+.ev-bar .fav-btn.ev-bar-btn.active{color:var(--chalk);}
+.ev-bar .fav-btn.ev-bar-btn.active .ico{fill:var(--yellow);stroke:#B07A00;}
+.ev-bar .ev-bar-quiet{color:var(--chalk-dim);font-weight:500;}
+.ev-bar .ev-bar-quiet:hover{color:var(--chalk);}
+.ev-bar .ico{font-size:17px;}
+.ev-bar .fav-count-inline{margin:0;padding:1px 7px;background:var(--asphalt-3);color:var(--chalk-dim);}
+
+/* Menus de la barre : sous l'affiche, sur toute sa largeur. */
+.ev-poster-card .popover{top:calc(100% + 8px);left:0;right:0;width:auto;border-radius:16px;}
+.popover-item{width:100%;border:0;background:none;text-align:left;font-family:var(--font-body);cursor:pointer;min-height:44px;}
+.popover-item:hover{background:color-mix(in srgb, var(--asphalt) 14%, transparent);}
+.popover-item .ic{display:flex;justify-content:center;font-size:17px;}
+.pop-title{font-size:13px;font-weight:700;padding:6px 12px 4px;opacity:.8;}
+.pop-note{font-size:12.5px;line-height:1.4;padding:8px 12px 4px;opacity:.7;}
+.share-copied{padding:6px 12px;}
+
+/* ---------- En-tête ---------- */
+.event-main h2{font-size:clamp(30px, 4.2vw, 52px);line-height:1;margin-bottom:12px;text-wrap:balance;}
+.ev-when{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 18px;margin:0 0 26px;font-size:17px;}
+.ev-when strong{font-weight:700;}
+.ev-when span{color:var(--chalk-dim);}
 .viewer-counter .vc-icon{display:flex;font-size:15px;color:var(--chalk-dim);}
 .badge-dispo{position:static;}
 .curieux-counter .cc-eye{display:flex;color:var(--chalk-dim);}
 
-/* Les trois repères : dates, lieu, public. */
-.ev-facts{
-  display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:12px;margin-bottom:22px;
+/* ---------- 2. Le billet de l'organisateur ---------- */
+.ev-ticket{margin:0 0 34px;color:#fff;filter:drop-shadow(0 14px 18px rgba(23,23,26,.22));}
+.ev-ticket-top,
+.ev-ticket-bottom{background:var(--accent);padding:24px 26px;}
+/* Deux demi-lunes découpées de part et d'autre de la ligne de perforation. */
+.ev-ticket-top{
+  border-radius:20px 20px 0 0;padding-bottom:22px;
+  -webkit-mask:radial-gradient(circle 12px at 0 100%, #0000 96%, #000) left / 51% 100% no-repeat,
+               radial-gradient(circle 12px at 100% 100%, #0000 96%, #000) right / 51% 100% no-repeat;
+          mask:radial-gradient(circle 12px at 0 100%, #0000 96%, #000) left / 51% 100% no-repeat,
+               radial-gradient(circle 12px at 100% 100%, #0000 96%, #000) right / 51% 100% no-repeat;
 }
-.ev-fact{
-  display:flex;gap:12px;align-items:flex-start;min-width:0;
-  background:var(--asphalt-2);border:1px solid var(--line);border-radius:16px;padding:16px;
+.ev-ticket-bottom{
+  position:relative;border-radius:0 0 20px 20px;padding-top:26px;
+  -webkit-mask:radial-gradient(circle 12px at 0 0, #0000 96%, #000) left / 51% 100% no-repeat,
+               radial-gradient(circle 12px at 100% 0, #0000 96%, #000) right / 51% 100% no-repeat;
+          mask:radial-gradient(circle 12px at 0 0, #0000 96%, #000) left / 51% 100% no-repeat,
+               radial-gradient(circle 12px at 100% 0, #0000 96%, #000) right / 51% 100% no-repeat;
 }
-.ev-fact > .ico{font-size:19px;color:var(--accent-text);margin-top:1px;}
-.ev-fact > div{min-width:0;}
-.ev-fact .k{font-size:12px;font-weight:600;color:var(--chalk-dim);margin-bottom:3px;}
-.ev-fact .v{font-size:15.5px;font-weight:700;line-height:1.3;overflow-wrap:anywhere;}
-.ev-fact .s{font-size:13px;color:var(--chalk-dim);margin-top:3px;}
+.ev-ticket-bottom::before{
+  content:"";position:absolute;top:0;left:20px;right:20px;border-top:2px dashed rgba(255,255,255,.42);
+}
+.ev-ticket-kicker{font-size:14px;font-weight:600;color:rgba(255,255,255,.8);margin-bottom:6px;}
+.ev-ticket-name{font-size:clamp(24px, 2.7vw, 34px);line-height:1.05;color:#fff;overflow-wrap:anywhere;}
+.ev-ticket-site{
+  display:inline-flex;align-items:center;gap:8px;margin-top:6px;min-height:44px;
+  color:#fff;font-size:15px;font-weight:600;text-decoration:underline;
+  text-decoration-color:rgba(255,255,255,.5);text-underline-offset:4px;
+}
+.ev-ticket-site:hover{text-decoration-color:#fff;}
+.ev-ticket-site .ico{font-size:16px;}
+.ev-ticket a:focus-visible,.ev-ticket button:focus-visible{outline:3px solid #fff;outline-offset:3px;border-radius:8px;}
 
-/* Actions : les liens de l'organisateur d'abord, puis les outils. */
-/* nowrap : en colonne avec retour à la ligne, la rangée de boutons était
-   mesurée comme si elle tenait sur deux lignes, et s'étirait d'autant. */
-.ev-actions{flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:12px;margin-bottom:32px;}
-.ev-cta{display:flex;flex-wrap:wrap;gap:12px;}
-.ev-btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:9px;
-  min-height:52px;padding:14px 26px;border-radius:14px;font-size:16px;text-decoration:none;
+.ev-acts{display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:10px;}
+.ev-act{
+  display:flex;align-items:center;justify-content:center;gap:9px;width:100%;
+  min-height:54px;padding:12px 14px;border-radius:12px;border:2px solid #fff;background:#fff;
+  color:var(--accent);font:700 16px/1.2 var(--font-body);text-decoration:none;cursor:pointer;
+  transition:background .15s, color .15s, transform .1s;
 }
-.ev-btn.btn-primary{flex:1 1 220px;}
-.ev-btn.btn-outline{flex:0 1 auto;background:var(--asphalt-2);}
-.ev-tools{display:flex;flex-wrap:wrap;gap:10px;}
-.ev-tool{
-  display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  min-height:46px;padding:10px 18px;border-radius:999px;
-  background:var(--asphalt-2);border:1px solid var(--line-strong);color:var(--chalk);
-  font-family:var(--font-body);font-size:14.5px;font-weight:700;line-height:1.2;cursor:pointer;
-  transition:border-color .15s, background .15s, color .15s, transform .1s;
+.ev-act:hover{background:#F6E9EA;border-color:#F6E9EA;}
+.ev-act:active{transform:scale(.98);}
+.ev-act .ico{font-size:19px;}
+.ev-act-line{margin-top:10px;background:transparent;color:#fff;border-color:rgba(255,255,255,.72);}
+.ev-act-line:hover{background:rgba(255,255,255,.14);border-color:#fff;}
+.ev-act-line .ico:last-child:not(:first-child){margin-left:auto;transition:transform .2s;}
+.ev-act-line[aria-expanded="true"] .ico:last-child{transform:rotate(180deg);}
+/* Sans lien : toujours là, mais éteint. */
+.ev-act.is-off,.ev-act.is-off:hover{
+  background:transparent;border:2px dashed rgba(255,255,255,.5);color:rgba(255,255,255,.74);
+  cursor:not-allowed;transform:none;
 }
-.ev-tool:hover{border-color:var(--accent);background:var(--asphalt-3);}
-.ev-tool:active{transform:scale(.97);}
-.ev-tool .ico{font-size:17px;}
-/* « Enregistrer » reprend la forme des autres outils (il était bordeaux plein
-   tant qu'il était l'action principale de la fiche). */
-.ev-tool.fav-btn-lg{background:var(--asphalt-2);color:var(--chalk);width:auto;height:auto;border-radius:999px;font-size:14.5px;}
-.ev-tool.fav-btn-lg:hover{background:var(--asphalt-3);transform:none;}
-.ev-tool.fav-btn-lg.active{color:var(--chalk);border-color:var(--yellow);background:color-mix(in srgb, var(--yellow) 16%, var(--asphalt-2));}
-.ev-tool.fav-btn-lg.active .ico{color:#E0A100;}
-.ev-tool.fav-btn-lg .fav-count-inline{margin-left:2px;background:var(--asphalt-3);color:var(--chalk-dim);}
+.ev-aide{margin-top:14px;font-size:14px;line-height:1.5;color:rgba(255,255,255,.86);}
 
-.popover{border-radius:16px;width:270px;}
-.popover-item{width:100%;border:none;background:none;text-align:left;font-family:var(--font-body);cursor:pointer;min-height:44px;}
-.popover-item .ic{display:flex;justify-content:center;font-size:17px;}
-.popover-empty{color:#7c7768;cursor:default;}
+/* Coordonnées : écrites dans la page au clic, déployées en douceur. */
+.ev-coord{display:grid;grid-template-rows:0fr;visibility:hidden;transition:grid-template-rows .28s ease, visibility 0s linear .28s;}
+.ev-coord.is-open{grid-template-rows:1fr;visibility:visible;transition:grid-template-rows .28s ease;}
+.ev-coord-in{overflow:hidden;min-height:0;}
+.ev-coord-list{margin-top:12px;display:grid;}
+.ev-coord-row{
+  display:flex;align-items:center;gap:12px;min-height:52px;padding:10px 2px;color:#fff;text-decoration:none;
+  border-bottom:1px solid rgba(255,255,255,.2);font-size:16px;font-weight:600;
+}
+.ev-coord-row:last-child{border-bottom:0;}
+.ev-coord-row .ico{font-size:18px;opacity:.9;}
+.ev-coord-row span{min-width:0;overflow-wrap:anywhere;}
+.ev-coord-row em{margin-left:auto;padding-left:10px;flex:none;font-style:normal;font-weight:500;font-size:14px;color:rgba(255,255,255,.78);}
+.ev-coord-row:hover em{color:#fff;text-decoration:underline;}
 
-.event-desc{font-size:16px;color:var(--chalk);opacity:.86;max-width:66ch;white-space:pre-line;}
-.practical-item{border-radius:14px;}
-.practical-item .ic{display:flex;font-size:18px;color:var(--accent-text);margin-top:1px;}
+/* ---------- Description ---------- */
+.event-desc{font-size:16px;color:var(--chalk);opacity:.86;max-width:66ch;white-space:pre-line;margin-bottom:36px;}
+
+/* ---------- 3. La feuille de match ---------- */
+.ev-sheet{margin:0 0 40px;max-width:720px;}
+.ev-h{font-size:21px;margin-bottom:14px;color:var(--chalk);}
+.ev-h::after{content:'';display:block;width:56px;height:3px;border-radius:2px;background:var(--accent);margin-top:9px;}
+.ev-rows{margin:0;border-top:2px solid var(--chalk);}
+.ev-row{
+  display:grid;grid-template-columns:9.5rem minmax(0, 1fr);gap:16px;
+  padding:14px 0;border-bottom:1px solid var(--line-strong);
+}
+.ev-row dt{font-size:14px;font-weight:600;color:var(--chalk-dim);padding-top:2px;}
+.ev-row dd{margin:0;font-size:16px;font-weight:600;line-height:1.45;overflow-wrap:anywhere;}
+.ev-row dd small{display:block;margin-top:2px;font-size:14px;font-weight:500;color:var(--chalk-dim);}
 
 @media(max-width:980px){
   .event-detail{grid-template-columns:1fr;gap:26px;}
@@ -2087,16 +2158,14 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
   .event-side{max-width:none;}
   /* Sur téléphone la carte de France passe après le contenu utile. */
   .event-mini-map{display:none;}
-  .ev-facts{grid-template-columns:1fr;gap:8px;}
-  .ev-fact{padding:13px 14px;}
-  .ev-btn{flex:1 1 100%;}
-  .ev-tools{display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:8px;}
-  .ev-tool{flex-direction:column;gap:5px;padding:10px 6px;border-radius:14px;font-size:12.5px;min-height:60px;}
-  .ev-tool.fav-btn-lg{border-radius:14px;font-size:12.5px;}
-  .ev-tool .fav-count-inline{display:none;}
-  .popover{left:0;right:0;width:auto;}
-  .practical-grid{grid-template-columns:1fr;}
+  .ev-ticket-top,.ev-ticket-bottom{padding-left:20px;padding-right:20px;}
+  .ev-act{font-size:15.5px;padding:12px 8px;gap:7px;}
+  .ev-poster-card .popover{left:0;right:0;}
+}
+@media(max-width:520px){
+  .ev-row{grid-template-columns:1fr;gap:2px;}
+  .ev-bar .fav-count-inline{display:none;}
 }
 @media(prefers-reduced-motion: reduce){
-  .ev-tool,.fav-btn.fav-star{transition:none;}
+  .ev-act,.ev-bar-btn,.fav-btn.fav-star,.ev-coord,.ev-act-line .ico{transition:none;}
 }
