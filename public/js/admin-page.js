@@ -6,6 +6,7 @@
      Importer    import d'un lot, assistant IA, détection automatique
      Événements  tous les événements, avec recherche
      Membres     les comptes inscrits
+     Statistiques membres, événements, favoris, visiteurs, évolution (admin-stats.js)
      Outils      hébergement des affiches
 
    Chaque liste est dessinée par son propre module (app.js, admin-signalements.js,
@@ -17,7 +18,7 @@
    ========================================================= */
 (function(){
   const $ = id => document.getElementById(id);
-  const ONGLETS = ['traiter', 'importer', 'evenements', 'membres', 'outils'];
+  const ONGLETS = ['traiter', 'importer', 'evenements', 'membres', 'stats', 'outils'];
 
   /* aTraiter : événements en attente ou modifiés par leur organisateur
      (comptés une seule fois) ; aVerifier / aRelire : le détail. */
@@ -93,6 +94,8 @@
       if(actif && focus) onglet.focus();
     }
     try{ localStorage.setItem('ebok-admin-onglet', nom); }catch(e){ /* confort seulement */ }
+    // Les statistiques se chargent à l'ouverture de leur onglet, pas avec la page.
+    if(nom === 'stats' && typeof renderAdminStats === 'function') renderAdminStats();
   }
   window.choisirOngletAdmin = choisir;
 

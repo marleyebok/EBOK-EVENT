@@ -184,6 +184,13 @@ export async function getSignalementsOuverts() {
   return (await api("/api/signalement?ouverts=1")).ouverts || 0;
 }
 
+/* ---------- Statistiques (admin) ---------- */
+
+/** Statistiques de l'administration pour « semaine », « mois » ou « annee ». */
+export async function getStats(periode) {
+  return api("/api/views?stats=1&periode=" + encodeURIComponent(periode || "semaine"));
+}
+
 /** Marque un signalement « traite » ou le rouvre « ouvert » (admin). */
 export async function majSignalement(id, statut) {
   return api("/api/signalement?id=" + encodeURIComponent(id), { method: "PATCH", body: { statut } });

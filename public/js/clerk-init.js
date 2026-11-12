@@ -17,6 +17,7 @@ import {
   getAlerts, getAlertsEtReperes, markAlertsSeen, createAlert, updateAlert, deleteAlert,
   getDetection, detectionAction,
   signalerEvenement, getSignalements, getSignalementsOuverts, majSignalement, supprimerSignalement,
+  getStats,
 } from "./services.js";
 import { loadClerk } from "./clerk.js";
 
@@ -30,6 +31,7 @@ window.EBOK_DATA = {
   getAlerts, getAlertsEtReperes, markAlertsSeen, createAlert, updateAlert, deleteAlert,
   getDetection, detectionAction,
   signalerEvenement, getSignalements, getSignalementsOuverts, majSignalement, supprimerSignalement,
+  getStats,
 };
 
 // Couche authentification exposée à app.js. Tout passe par le widget Clerk :

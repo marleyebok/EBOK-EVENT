@@ -1,8 +1,12 @@
 /**
- * Compteurs de « curieux » (vues) par événement.
+ * Compteurs de « curieux » (vues) par événement, et mesure d'audience du site.
  *
  *   GET  /api/views?id=X   → lit le compteur (0 si absent)
  *   POST /api/views?id=X   → compte la visite et renvoie la valeur à jour
+ *   POST /api/views?visite=1                       → compte une visite du site (une par visiteur et par jour)
+ *   GET  /api/views?stats=1&periode=semaine|mois|annee   (admin) → statistiques de l'onglet Statistiques
+ *
+ * Les statistiques jour par jour vivent dans lib/stats.js.
  *
  * Le compteur est public : il doit fonctionner sans compte, puisque la plupart
  * des visiteurs n'en ont pas. Il est donc protégé autrement.
@@ -27,7 +31,8 @@
  * mentionner dans la politique de confidentialité.
  */
 import { createHash } from "node:crypto";
-import { ensureSchema, hasDb, sql, json } from "./_lib.js";
+import { ensureSchema, hasDb, sql, json, sessionUid, isAdminUid } from "./_lib.js";
+import { compterStat, enregistrerVisite, calculerStats, jourParis } from "../lib/stats.js";
 
 /* Au-delà, on cesse de compter pour ce visiteur : un humain ne consulte pas
    150 fiches dans la journée, un script oui. Les visites continuent d'être
@@ -37,6 +42,9 @@ const MAX_EVENEMENTS_PAR_JOUR = 150;
 /* Durée de conservation des empreintes. Assez pour la déduplication
    quotidienne, assez court pour ne rien garder d'inutile. */
 const RETENTION_JOURS = 7;
+
+/* Robots et outils de supervision : ils ne sont pas des visiteurs. */
+const ROBOTS = /bot|crawl|spider|slurp|headless|preview|facebookexternalhit|lighthouse|pingdom|uptime|monitor|curl|wget|python-requests|node-fetch/i;
 
 /** Jour courant en UTC, au format AAAA-MM-JJ. */
 function jourCourant() {
@@ -73,7 +81,35 @@ export default async function handler(req, res) {
     return json(res, 500, { error: "schema" });
   }
 
-  const id = String((req.query || {}).id || "");
+  const q = req.query || {};
+
+  // Statistiques de l'administration : lecture, réservée à l'admin.
+  if (q.stats) {
+    if (req.method !== "GET") return json(res, 405, { error: "method" });
+    try {
+      const uid = await sessionUid(req);
+      if (!(await isAdminUid(uid))) return json(res, 403, { error: "admin" });
+      return json(res, 200, await calculerStats(String(q.periode || "semaine")));
+    } catch (e) {
+      console.error("stats:", e);
+      return json(res, 500, { error: "server" });
+    }
+  }
+
+  // Visite du site : une par visiteur et par jour, hors robots.
+  if (q.visite) {
+    if (req.method !== "POST") return json(res, 405, { error: "method" });
+    const ua = String(req.headers["user-agent"] || "");
+    if (!ua || ROBOTS.test(ua)) return json(res, 200, { compte: false });
+    try {
+      return json(res, 200, { compte: await enregistrerVisite(empreinteVisiteur(req, jourParis())) });
+    } catch (e) {
+      console.error("visite:", e);
+      return json(res, 500, { error: "server" });
+    }
+  }
+
+  const id = String(q.id || "");
   if (!id) return json(res, 400, { error: "id" });
 
   try {
@@ -123,6 +159,7 @@ export default async function handler(req, res) {
         VALUES (${id}, 1)
         ON CONFLICT (event_id) DO UPDATE SET count = event.views.count + 1
         RETURNING count`;
+      await compterStat("vues_fiches");
       return json(res, 200, { count: rows[0].count, compte: true });
     }
 

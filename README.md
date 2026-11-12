@@ -254,10 +254,23 @@ onglets :
 | **Importer** | import d'un lot d'événements (`IMPORT_LOT.md`), assistant IA de publication, détection automatique |
 | **Événements** | tous les événements, avec recherche |
 | **Membres** | les comptes inscrits |
+| **Statistiques** | membres, événements en ligne, favoris, visiteurs et fiches consultées, avec leur évolution sur la semaine, le mois ou l'année, et les classements |
 | **Outils** | hébergement des affiches |
 
 Fichiers : `public/js/admin-page.js` (onglets, compteurs), `admin-signalements.js`,
-`admin-detection.js`, `admin-import.js`, `admin-affiliation.js`.
+`admin-detection.js`, `admin-import.js`, `admin-affiliation.js`, `admin-stats.js`.
+
+### Statistiques
+
+`public/js/visites.js` signale une visite par session de navigation (`POST /api/views?visite=1`,
+signal « ne pas me suivre » respecté). Le serveur ne garde qu'une empreinte salée, non
+réversible, renouvelée chaque jour et effacée au bout de 7 jours (comme le compteur de
+« curieux » de `api/views.js`), puis le total du jour. Les totaux quotidiens (visiteurs,
+fiches consultées, favoris ajoutés et retirés) sont dans `event.stats_jour` ; les membres et les
+événements remontent à leur date de création. Lecture : `GET /api/views?stats=1&periode=semaine|mois|annee`
+(admin). Calcul et collecte : `lib/stats.js` ; les tables sont créées à la demande, sans passer par
+`ensureSchema()`. Visiteurs, fiches consultées et favoris sont mesurés **depuis la mise en ligne** de
+cette fonction : l'onglet l'indique.
 
 ### Confier un événement à son organisateur
 
