@@ -2455,3 +2455,6 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 @media(prefers-reduced-motion: reduce){ .st-cadre,.st-periode,.st-tuile,.st-barre{transition:none;} }
 
 .st-erreur{margin:0 0 12px;padding:10px 14px;border:1px solid rgba(232,72,58,.5);border-radius:10px;background:color-mix(in srgb, var(--red) 8%, var(--asphalt-2));font-size:14px;font-weight:600;color:var(--chalk);}
+
+.field.is-grise label{opacity:.55;}
+.field select:disabled{opacity:.5;cursor:not-allowed;background:var(--asphalt-2);}

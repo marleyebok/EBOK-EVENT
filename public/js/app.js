@@ -213,6 +213,28 @@ function setRegionValue(id, value){
   sel.value = v;
 }
 
+/* La région est une région française : hors de France, la case est grisée
+   (et vidée quand l'utilisateur change de pays). `garder` laisse la valeur
+   d'une fiche existante intacte à l'ouverture. */
+function val_pays(id){ const el = document.getElementById(id); return (el && el.value) || DEFAULT_COUNTRY; }
+function lierPaysRegion(paysId, regionId){
+  const pays = document.getElementById(paysId), region = document.getElementById(regionId);
+  if(!pays || !region) return;
+  const synchro = (garder)=>{
+    const etranger = (pays.value || DEFAULT_COUNTRY) !== DEFAULT_COUNTRY;
+    if(etranger && !garder) region.value = '';
+    region.disabled = etranger;
+    region.title = etranger ? 'Sans objet hors de France' : '';
+    const champ = region.closest('.field');
+    if(champ) champ.classList.toggle('is-grise', etranger);
+  };
+  if(!pays.dataset.regionLiee){
+    pays.dataset.regionLiee = '1';
+    pays.addEventListener('change', ()=> synchro(false));
+  }
+  synchro(true);
+}
+
 function buildMap(){
   const svg = document.getElementById('franceMap');
   svg.setAttribute('viewBox', MAP_VIEWBOX);
@@ -1183,7 +1205,7 @@ function renderResults(){
     if(dEnd && ev.dateStart > dEnd) return false;
     if(sexe !== 'all' && ev.sexe !== sexe && ev.sexe !== 'Mixte') return false;
     if(age !== 'all' && !ageList(ev.age).includes(age)) return false;
-    if(niveau !== 'all' && ev.niveau !== niveau) return false;
+    if(niveau !== 'all' && ev.niveau !== niveau && ev.niveau !== 'Tous niveaux') return false;
     if(afficheOnly && !ev.poster) return false;
     return true;
   }).sort(parDateRecente);
@@ -1392,6 +1414,10 @@ function initCreatePage(){
 
   renderAgeChoices('c-age', []);
   renderCountrySelect('c-pays', DEFAULT_COUNTRY);
+  lierPaysRegion('c-pays', 'c-region');
+  // « Réinitialiser » du formulaire : la région redevient active avec la France.
+  const formCreation = document.getElementById('createForm');
+  if(formCreation) formCreation.addEventListener('reset', ()=> setTimeout(()=> lierPaysRegion('c-pays', 'c-region'), 0));
 
   // Les détails de voyage n'ont de sens que pour ce type d'événement.
   const typeSel = document.getElementById('c-type');
@@ -1404,7 +1430,7 @@ function initCreatePage(){
   // Autocomplétion de ville (fixe la localisation + la région).
   attachCityAutocomplete('c-ville', 'c-ville-ac', pick=>{
     createPickedLocation = pick;
-    setRegionValue('c-region', pick.region);
+    if(val_pays('c-pays') === DEFAULT_COUNTRY) setRegionValue('c-region', pick.region);
     const hint = document.getElementById('c-ville-hint');
     if(hint){ hint.textContent = '📍 ' + pick.city + (pick.region ? ' · ' + pick.region : '') + ' — localisé sur la carte.'; hint.style.color = 'var(--green)'; }
   });
@@ -1468,11 +1494,12 @@ function initCreatePage(){
     // Localisation : si l'utilisateur a validé une ville dans la liste de
     // suggestions (et n'a pas retapé par-dessus), on utilise ses coordonnées
     // et sa région EXACTES. Sinon on géocode l'adresse/ville saisie.
-    let region = val('c-region');
+    const paysChoisi = val('c-pays') || DEFAULT_COUNTRY;
+    let region = paysChoisi === DEFAULT_COUNTRY ? val('c-region') : '';
     let coords;
     if(createPickedLocation && city.toLowerCase().startsWith(createPickedLocation.city.toLowerCase())){
       coords = createPickedLocation;
-      if(!region) region = createPickedLocation.region || '';
+      if(!region && paysChoisi === DEFAULT_COUNTRY) region = createPickedLocation.region || '';
     }else{
       coords = await resolveCoords(val('c-adresse'), city, region);
     }
@@ -4314,6 +4341,7 @@ function prefillCreateFromImport(ev, poster){
   // Pays : seulement s'il existe dans la liste (sinon le choix reste France).
   const paysEl = document.getElementById('c-pays');
   if(paysEl && ev.pays && Array.from(paysEl.options).some(o=> o.value === ev.pays)) paysEl.value = ev.pays;
+  lierPaysRegion('c-pays', 'c-region');
   set('c-adresse', ev.address);
   set('c-date-debut', ev.dateStart);
   set('c-date-fin', ev.dateEnd);
@@ -4564,6 +4592,7 @@ function openEditModal(id){
   setFieldVal('e-billetterie', ev.lienBilletterie || '');
   setFieldVal('e-site-officiel', ev.siteOfficiel || '');
   renderCountrySelect('e-pays', eventCountry(ev));
+  lierPaysRegion('e-pays', 'e-region');
   renderAgeChoices('e-age', ev.age);
   fillVoyage('e', ev.voyage);
   toggleVoyageBlock('e-voyage', ev.type || 'Divers');
@@ -4607,7 +4636,7 @@ function initEditModal(){
   // Autocomplétion de ville dans l'édition → corrige position + région.
   attachCityAutocomplete('e-city', 'e-city-ac', pick=>{
     editPickedLocation = pick;
-    setRegionValue('e-region', pick.region);
+    if(val_pays('e-pays') === DEFAULT_COUNTRY) setRegionValue('e-region', pick.region);
   });
 
   const fileInput = document.getElementById('e-poster-file');

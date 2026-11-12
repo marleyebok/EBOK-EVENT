@@ -18,7 +18,7 @@
   const $ = id => document.getElementById(id);
   const MAX_LIGNES = 50;
   const SEXES = ['Masculin', 'Féminin', 'Mixte'];
-  const NIVEAUX = ['Loisir', 'Amateur', 'Confirmé', 'Semi-pro / Pro'];
+  const NIVEAUX = ['Tous niveaux', 'Loisir', 'Amateur', 'Confirmé', 'Semi-pro / Pro'];
   const VOYAGE = ['dateDepart', 'dateRetour', 'lieuxDepart', 'lieuRetour', 'destination', 'logement'];
 
   let lignes = [];
