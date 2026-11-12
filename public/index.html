@@ -512,7 +512,7 @@
                 <select id="c-pays"></select>
               </div>
             </div>
-            <p class="field-hint" id="c-pays-hint">Hors de France, l'événement est placé sur la carte du monde.</p>
+            <p class="field-hint" id="c-pays-hint">Hors de France, l'événement est placé sur la carte du monde et la région n'est pas demandée.</p>
             <div class="field">
               <label for="c-adresse">Adresse précise <span class="wz-opt">(facultatif)</span></label>
               <input type="text" id="c-adresse" placeholder="Ex. 12 rue du Stade, 34000 Montpellier">
@@ -538,7 +538,8 @@
               <div class="field">
                 <label for="c-niveau">Niveau</label>
                 <select id="c-niveau">
-                  <option>Loisir</option>
+                  <option value="Tous niveaux">Tous niveaux (ouvert à tous)</option>
+                  <option selected>Loisir</option>
                   <option>Amateur</option>
                   <option>Confirmé</option>
                   <option>Semi-pro / Pro</option>
@@ -1202,6 +1203,7 @@
         <div class="field">
           <label for="e-niveau">Niveau</label>
           <select id="e-niveau">
+            <option value="Tous niveaux">Tous niveaux (ouvert à tous)</option>
             <option>Loisir</option>
             <option>Amateur</option>
             <option>Confirmé</option>

@@ -81,7 +81,7 @@ Un objet avec la liste `evenements` (une liste seule est aussi acceptée).
 | `address` | non | adresse ou nom de la salle |
 | `sexe` | non | `Masculin`, `Féminin`, `Mixte` (défaut `Mixte`) |
 | `age` | non | liste parmi `Tout public`, `U7`, `U9`, `U11`, `U13`, `U15`, `U17`, `U18`, `U21`, `Adulte`, `Non renseigné` |
-| `niveau` | non | `Loisir`, `Amateur`, `Confirmé`, `Semi-pro / Pro` (défaut `Loisir`) |
+| `niveau` | non | `Tous niveaux` (ouvert à tous), `Loisir`, `Amateur`, `Confirmé`, `Semi-pro / Pro` (défaut `Loisir`) |
 | `tarif`, `horaires`, `buvette`, `reservation` | non | texte libre |
 | `placesTotal` | non | nombre |
 | `description` | non | texte (3 000 caractères au plus) |
