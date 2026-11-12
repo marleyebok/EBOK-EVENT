@@ -16,12 +16,17 @@ EBOK-EVENT/
 │   │   ├── profil.html       # Profil diffuseur
 │   │   └── general.html      # Identité & sécurité (composant Clerk)
 │   ├── css/
-│   │   └── styles.css        # Toute la mise en forme
+│   │   ├── styles.css        # Toute la mise en forme
+│   │   └── intro.css         # Habillage de l'intro (voile, bouton « Passer », carton de fin)
 │   ├── js/
 │   │   ├── data.js           # Données de démo : événements, couleurs, carte
 │   │   ├── app.js            # Logique : nav, filtres, carte, recherche…
 │   │   ├── animations.js     # Animations décoratives (Motion) — retirables sans rien casser
 │   │   ├── vendor/motion.js  # Bibliothèque Motion 14.12.0 (motion.dev, MIT), hébergée ici
+│   │   ├── intro-boot.js     # Intro : décide si elle se joue (chargé dans le <head>)
+│   │   ├── intro.js          # Intro : le plan-séquence, dessiné dans un <canvas>
+│   │   ├── intro-montpellier.js # Intro : vrai plan de Montpellier (IGN), chargé à la demande
+│   │   ├── intro-son.js      # Intro : bande-son fabriquée à la volée (Web Audio), sans fichier son
 │   │   ├── france-map.js     # Tracés SVG des régions
 │   │   ├── cities-fr.js      # Villes de France (autocomplétion hors ligne)
 │   │   ├── services.js       # Couche API (Neon via /api + Clerk)
@@ -416,6 +421,34 @@ vit dans **`DEVELOPMENT_PLAN.md`** — c'est la seule source de vérité.
 ### Déploiement
 
 Déployé sur **Vercel** (site statique `public/` + fonctions `/api`), sur `ebok.fr` ; `www.ebok.fr` et `event.ebok.fr` redirigent vers `ebok.fr`.
+
+---
+
+## 🎬 Intro (plan-séquence d'ouverture)
+
+À la première visite de l'accueil, une animation d'une dizaine de secondes se joue
+par-dessus le site : un tir en reculant du n°8 sur un playground posé devant l'hôtel
+de ville de Montpellier, la caméra suit le ballon, monte à la verticale au-dessus du
+vrai plan de la ville, et le terrain devient un point sur la carte de France, dont les
+régions et les villes apparaissent. On arrive sur la carte :
+un clic (ou « Entrer sur le site ») ouvre le site ; un clic sur une région l'ouvre
+filtré sur cette région.
+
+- **Tout est dessiné par le code** (`js/intro.js`, dans un `<canvas>`) : ni vidéo ni image.
+  Terrain aux cotes FIBA, carte reprise de `js/france-map.js`.
+- **Plan de Montpellier** (`js/intro-montpellier.js`) : rues, bâtiments et le Lez autour
+  de la place Georges-Frêche. Source : IGN, BD TOPO® (novembre 2026), Licence Ouverte 2.0
+  — mention à conserver. Fichier généré, chargé seulement quand l'intro se joue.
+- **Son** (`js/intro-son.js`) : rythme hip-hop lointain, « fwip » sourd du filet, aspiration puis écho d'autres terrains pendant l'ascension,
+  tout généré par le code (aucun fichier audio). Les navigateurs interdisent le son avant un
+  geste du visiteur : il démarre avec le bouton « Activer le son » (ou un toucher sur l'image).
+- **Quand elle se joue** (`js/intro-boot.js`) : accueil seulement, première visite
+  seulement (mémorisé dans le navigateur, clé `ebok-intro`), jamais si le visiteur a
+  demandé à son système de réduire les animations. Bouton **Passer** et touche Échap.
+- **La revoir** : lien « Revoir l'intro » du pied de page, ou `/?intro=1`.
+- **Régler une image précise** : `/?intro=1&t=3.2` fige l'intro à 3,2 s.
+- **La couper** : retirer d'`index.html` les balises `intro.css`, `intro-boot.js` et
+  `intro.js` — le site fonctionne à l'identique.
 
 ---
 
