@@ -2,7 +2,7 @@
    EBOK — INTRO (plan-séquence d'ouverture)
    ---------------------------------------------------------
    Un seul plan, sans coupe, dessiné au trait bordeaux sur fond beige :
-     1. un playground de Montpellier ; le n°34 dribble, s'arrête et prend un
+     1. un playground de Montpellier ; le n°8 dribble, s'arrête et prend un
         tir en reculant (fadeaway) par-dessus son défenseur ;
      2. la caméra quitte le sol et suit le ballon jusqu'au panier ;
      3. elle bascule à la verticale et s'élève comme un drone : le terrain
@@ -182,13 +182,13 @@ const T_FIN = T_ZENITH + MONTEE;
 /* ---------- Le ballon ---------- */
 const DEPART_TIR = [6.98, -0.04, 2.76];
 const V_TIR = [(PANIER_X - DEPART_TIR[0])/VOL, (0 - DEPART_TIR[1])/VOL, (CERCLE_Z - DEPART_TIR[2] + 4.905*VOL*VOL)/VOL];
-// En main : positions clés [temps, [x,y,z]] — ballon à la hanche, une feinte,
+// En main : positions clés [temps, [x,y,z]] — ballon devant le ventre, une feinte,
 // puis il monte au-dessus de la tête.
 const BALLON_MAIN = [
-  [ 0.45,[7.40,-0.20,0.96]],
-  [ 0.82,[7.44,-0.16,1.20],'io'],
-  [ 1.10,[7.38,-0.14,0.98],'io'],
-  [ 1.28,[7.34,-0.10,1.08],'io'],
+  [ 0.45,[7.52,0.02,1.00]],
+  [ 0.82,[7.54,0.02,1.22],'io'],
+  [ 1.10,[7.50,0.00,1.02],'io'],
+  [ 1.28,[7.46,-0.04,1.10],'io'],
   [ 1.46,[7.30,-0.08,1.78],'io'],
   [ 1.62,[7.06,-0.06,2.44],'io'],
   [TAU_TIR, DEPART_TIR]
@@ -257,7 +257,7 @@ const saut = (tau, t0, t1, h)=>{ const u = rampe(tau, t0, t1); return 4*h*u*(1-u
 /* Milieu des épaules, pour placer les mains par rapport au buste. */
 function epaules(P, penche, sens){ return [P[0] + sens*Math.sin(penche)*0.49, P[1] + Math.cos(penche)*0.49]; }
 
-/* --- L'attaquant, n°34 : ballon en main, une feinte, tir en reculant --- */
+/* --- L'attaquant, n°8 : ballon en main, une feinte, tir en reculant --- */
 const A_X = piste([[0.45,7.22],[1.28,7.2],[1.42,7.2],[2.12,6.46],[2.5,6.4],[5,6.4]]);
 const A_Z = piste([[0.45,0.9],[0.82,0.93],[1.08,0.88],[1.28,0.76],[1.42,1.0],[2.12,0.98],[2.32,0.82],[2.8,0.96],[5,0.97]]);
 const A_PENCHE = piste([[0.45,0.3],[0.82,0.22],[1.1,0.3],[1.28,0.2],[1.45,-0.08],[1.75,-0.42],[2.12,-0.26],[2.4,0.12],[3,0.06],[5,0.05]]);
@@ -409,8 +409,13 @@ function mesurer(){
   FOCALE = Math.min(W/(2*Math.tan(29*Math.PI/180)), H/(2*Math.tan(17*Math.PI/180)));
   if(W < H) FOCALE = W/(2*Math.tan(26*Math.PI/180));
   // Arrivée : la France tient dans la zone laissée libre par le texte.
-  const zone = large ? { x: W*0.44, y: H*0.06, w: W*0.52, h: H*0.88 }
-                     : { x: W*0.06, y: H*0.07, w: W*0.88, h: Math.max(H*0.46, H - 330) };
+  let zone = { x: W*0.44, y: H*0.06, w: W*0.52, h: H*0.88 };
+  if(!large){
+    // Téléphone : la carte tient entre le titre du haut et le texte du bas, sans jamais passer dessous.
+    const texte = boite.querySelector('[data-intro-carton]'), haut = 84;
+    const limite = texte && texte.offsetHeight ? texte.getBoundingClientRect().top - boite.getBoundingClientRect().top : H - 330;
+    zone = { x: W*0.05, y: haut, w: W*0.9, h: Math.max(limite - haut - 22, H*0.3) };
+  }
   const S = Math.min(zone.w/cadre.w, zone.h/cadre.h);                // pixels par unité carte
   const s = S/KM, r = [Math.sin(CAP), -Math.cos(CAP)], u = [Math.cos(CAP), Math.sin(CAP)];
   const p = carteVersTerrain(cadre.cx, cadre.cy);
@@ -511,7 +516,7 @@ function silhouette(volumes, epaisseur, fond, bord, hachures){
 
 /* Deux écritures, comme sur une affiche : le tireur en aplat bordeaux, découpé
    d'un filet beige ; le défenseur au trait, maillot hachuré. */
-const STYLE_TIREUR = { peau: BORDEAUX, tenue: BORDEAUX, bord: BEIGE, finesse: 0.55, numero: '34', encre: BEIGE };
+const STYLE_TIREUR = { peau: BORDEAUX, tenue: BORDEAUX, bord: BEIGE, finesse: 0.55, numero: '8', encre: BEIGE };
 const STYLE_DEFENSEUR = { peau: BEIGE, tenue: BEIGE, bord: BORDEAUX, finesse: 1, hachures: trait(0.8) };
 
 function dessinerJoueur(J, st){
@@ -812,7 +817,9 @@ function rendre(t){
       { z: profondeur(D.poitrine), f: ()=> dessinerJoueur(D, STYLE_DEFENSEUR) },
       { z: profondeur(A.poitrine), f: ()=> dessinerJoueur(A, STYLE_TIREUR) }
     ];
-    if(!dansFilet) objets.push({ z: profondeur(b) - (tau < TAU_TIR ? 0.5 : 0), f: ()=> dessinerBallon(b, rot) });
+    // Tenu devant le buste, le ballon est caché par le tireur vu de dos : on ne le
+    // découvre que lorsqu'il monte au-dessus de l'épaule.
+    if(!dansFilet) objets.push({ z: tau < TAU_TIR ? profondeur(A.poitrine) + 0.05 : profondeur(b), f: ()=> dessinerBallon(b, rot) });
     objets.sort((a, c)=> c.z - a.z);
     for(const o of objets) o.f();
     ctx.globalAlpha = 1;
@@ -1024,7 +1031,7 @@ function calculerReveils(){
   return faits.filter(x=> x >= 0).sort((a, b)=> a - b);
 }
 const reperesSon = ()=> ({ T_ARRET, T_TIR, T_PANIER, T_ZENITH, T_FIN,
-  rebonds: rebondsTau.slice(0, 3).map(tDe), reveils: calculerReveils() });
+  reveils: calculerReveils() });
 function majBoutonSon(){
   if(!btnSon) return;
   btnSon.classList.toggle('actif', sonActif);

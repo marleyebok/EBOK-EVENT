@@ -9,15 +9,16 @@
        basse, piano électrique), étouffé comme s'il venait d'une enceinte posée
        au bord du terrain ;
      - les bruits de l'action : crissement des appuis, départ du tir, le
-       « swish » du filet, les rebonds du ballon ;
-     - le vent quand la caméra s'élève, une note à chaque ville qui s'allume,
-       un accord à l'arrivée sur la carte.
+       « fwip » sourd du filet ;
+     - quand la caméra s'élève : une aspiration, puis l'écho d'autres terrains
+       (dribbles, appuis) partout dans le pays, une note à chaque ville qui
+       s'allume, un accord à l'arrivée sur la carte.
 
    Le tempo est calé sur l'image : le panier tombe pile sur un temps fort.
 
    EbokIntroSon.composer(contexte, reperes, options) programme toute la bande
    sur l'horloge du contexte audio et rend { arreter(fondu) }.
-     reperes : T_ARRET, T_TIR, T_PANIER, T_ZENITH, T_FIN, rebonds[], reveils[]
+     reperes : T_ARRET, T_TIR, T_PANIER, T_ZENITH, T_FIN, reveils[]
      options : origine (heure du contexte où l'intro est à t = 0),
                depuis  (t de l'intro à partir duquel on joue),
                fin     (t où la musique s'éteint)
@@ -151,48 +152,77 @@ function composer(ac, R, options){
     ton(bruitages, h(R.T_ARRET + 0.02), 'sawtooth', 2500, 3300, 0.03, 0.01, 0.06);
   }
   if(jouable(R.T_TIR)) souffle(bruitages, h(R.T_TIR - 0.04), 'bandpass', 700, 1700, 0.8, 0.12, 0.05, 0.22);
-  if(jouable(R.T_PANIER)){                           // le swish
+  if(jouable(R.T_PANIER)){                           // le filet : un « fwip » sourd, sans sifflante
     const t = h(R.T_PANIER);
-    souffle(bruitages, t, 'bandpass', 6400, 3000, 1.1, 0.75, 0.006, 0.34);
-    souffle(bruitages, t + 0.03, 'highpass', 2600, 2000, 0.6, 0.3, 0.004, 0.2);
-    souffle(bruitages, t + 0.09, 'bandpass', 1500, 900, 1.4, 0.2, 0.01, 0.22);
+    souffle(bruitages, t, 'bandpass', 1700, 620, 0.9, 0.9, 0.012, 0.34);
+    souffle(bruitages, t + 0.04, 'lowpass', 1300, 380, 0.5, 0.5, 0.02, 0.3);
+    souffle(bruitages, t + 0.11, 'bandpass', 800, 420, 1.2, 0.3, 0.02, 0.24);
     ton(bruitages, t + 0.02, 'sine', 74, 36, 0.65, 0.01, 0.8);   // l'onde part du panier
   }
-  (R.rebonds || []).forEach((t, i)=>{                // le ballon retombe
-    if(!jouable(t)) return;
-    const n = Math.pow(0.62, i);
-    ton(bruitages, h(t), 'sine', 120, 58, 0.5*n, 0.003, 0.13);
-    souffle(bruitages, h(t), 'lowpass', 1100, 500, 0.6, 0.28*n, 0.002, 0.05);
-  });
 
-  /* ----- Le vent de l'ascension ----- */
-  if(fin > R.T_ZENITH - 0.2 && depuis < R.T_FIN){
+  /* ----- L'ascension : une aspiration, puis l'écho des terrains de tout le pays ----- */
+  if(jouable(R.T_ZENITH)){
+    // Aspiration : un souffle qui enfle en montant dans l'aigu, puis se coupe net.
+    const a = R.T_ZENITH - 0.2, duree = 1.15;
     const src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
     src.buffer = bruit; src.loop = true;
-    f.type = 'bandpass'; f.Q.value = 0.55;
-    const a = Math.max(R.T_ZENITH - 0.15, depuis);
-    f.frequency.setValueAtTime(260, h(a));
-    f.frequency.exponentialRampToValueAtTime(1150, h(R.T_ZENITH + 1.3));
-    f.frequency.exponentialRampToValueAtTime(480, h(R.T_FIN + 0.4));
+    f.type = 'bandpass'; f.Q.value = 2.2;
+    f.frequency.setValueAtTime(140, h(a));
+    f.frequency.exponentialRampToValueAtTime(3400, h(a + duree));
     g.gain.setValueAtTime(0.0001, h(a));
-    g.gain.exponentialRampToValueAtTime(0.38, h(R.T_ZENITH + 0.9));
-    g.gain.linearRampToValueAtTime(0.24, h(R.T_FIN - 0.6));
-    g.gain.exponentialRampToValueAtTime(0.0001, h(R.T_FIN + 0.7));
-    // Des rafales : le souffle n'est jamais tout à fait régulier.
-    const rafale = ac.createOscillator(), force = ac.createGain();
-    rafale.frequency.value = 0.9; force.gain.value = 0.1;
-    rafale.connect(force); force.connect(g.gain);
+    g.gain.exponentialRampToValueAtTime(0.75, h(a + duree - 0.04));
+    g.gain.exponentialRampToValueAtTime(0.0001, h(a + duree + 0.07));
     src.connect(f); f.connect(g); g.connect(bruitages);
-    src.start(h(a)); src.stop(h(R.T_FIN + 0.8)); rafale.start(h(a)); rafale.stop(h(R.T_FIN + 0.8));
-    if(jouable(R.T_ZENITH)) souffle(bruitages, h(R.T_ZENITH - 0.1), 'bandpass', 220, 2600, 0.7, 0.3, 0.5, 0.7);
+    src.start(h(a)); src.stop(h(a + duree + 0.15));
+    const osc = ac.createOscillator(), go = ac.createGain();
+    osc.type = 'sine'; osc.frequency.setValueAtTime(55, h(a)); osc.frequency.exponentialRampToValueAtTime(330, h(a + duree));
+    go.gain.setValueAtTime(0.0001, h(a)); go.gain.exponentialRampToValueAtTime(0.28, h(a + duree - 0.05)); go.gain.exponentialRampToValueAtTime(0.0001, h(a + duree + 0.06));
+    osc.connect(go); go.connect(bruitages); osc.start(h(a)); osc.stop(h(a + duree + 0.15));
+  }
+  if(fin > R.T_ZENITH + 0.6 && depuis < R.T_FIN + 1){
+    // D'autres terrains, ailleurs : dribbles et appuis qui crissent, noyés dans
+    // l'écho, de plus en plus présents à mesure qu'on découvre le pays.
+    const echos = ac.createGain(), mouille = ac.createGain();
+    const debut = Math.max(R.T_ZENITH + 0.7, depuis), bout = Math.min(R.T_FIN + 2.4, fin);
+    echos.gain.setValueAtTime(0.0001, h(debut));
+    echos.gain.exponentialRampToValueAtTime(0.9, h(Math.max(R.T_FIN - 0.5, debut + 0.3)));
+    echos.gain.setValueAtTime(0.9, h(Math.max(R.T_FIN + 0.4, debut + 0.4)));
+    echos.gain.exponentialRampToValueAtTime(0.0001, h(Math.max(bout, debut + 0.6)));
+    mouille.gain.value = 1.5;
+    echos.connect(sortie); echos.connect(mouille); mouille.connect(cour);
+    const place = cote=>{
+      if(!ac.createStereoPanner) return echos;
+      const p = ac.createStereoPanner(); p.pan.value = cote; p.connect(echos); return p;
+    };
+    const dribble = (vers, t, n, grave)=>{
+      ton(vers, t, 'sine', 128*grave, 56*grave, 0.5*n, 0.003, 0.12);
+      souffle(vers, t, 'lowpass', 1000, 420, 0.6, 0.3*n, 0.002, 0.045);
+    };
+    const crisse = (vers, t, n)=>{
+      const f = 2000 + hasard()*900;
+      ton(vers, t, 'sawtooth', f, f*1.3, 0.05*n, 0.008, 0.07);
+      if(hasard() > 0.5) ton(vers, t + 0.11, 'sawtooth', f*1.1, f*1.35, 0.04*n, 0.008, 0.05);
+    };
+    // Chaque « terrain » : sa place dans l'espace, son tempo de dribble, sa distance.
+    for(let i = 0; i < 9; i++){
+      const vers = place((i % 2 ? 1 : -1)*(0.25 + hasard()*0.7));
+      const n = 0.45 + hasard()*0.55, grave = 0.85 + hasard()*0.35;
+      let t = debut + i*0.33 + hasard()*0.3, ecart = 0.3 + hasard()*0.16;
+      while(t < bout - 0.2){
+        const serie = 3 + Math.floor(hasard()*5);
+        for(let k = 0; k < serie && t < bout - 0.2; k++){ if(jouable(t)) dribble(vers, h(t), n, grave); t += ecart*(0.94 + hasard()*0.12); }
+        if(hasard() > 0.35 && jouable(t)) crisse(vers, h(t - ecart*0.4), n);
+        t += 0.25 + hasard()*0.7; ecart = 0.28 + hasard()*0.2;
+      }
+    }
   }
 
   /* ----- Les villes s'allument : une note chacune ----- */
   const gamme = [659.25, 783.99, 880, 987.77, 1174.66, 1318.5, 1567.98, 1760, 1975.5];
   (R.reveils || []).forEach((t, i)=>{
     if(!jouable(t)) return;
-    ton(bruitages, h(t), 'sine', gamme[i % gamme.length], gamme[i % gamme.length], 0.07, 0.006, 0.55);
-    ton(bruitages, h(t), 'triangle', gamme[i % gamme.length]*2, gamme[i % gamme.length]*2, 0.012, 0.004, 0.2);
+    ton(bruitages, h(t), 'sine', gamme[i % gamme.length], gamme[i % gamme.length], 0.045, 0.006, 0.55);
+    ton(bruitages, h(t), 'triangle', gamme[i % gamme.length]*2, gamme[i % gamme.length]*2, 0.008, 0.004, 0.2);
   });
 
   /* ----- L'arrivée sur la carte : un accord qui s'ouvre ----- */

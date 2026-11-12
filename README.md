@@ -427,7 +427,7 @@ Déployé sur **Vercel** (site statique `public/` + fonctions `/api`), sur `ebok
 ## 🎬 Intro (plan-séquence d'ouverture)
 
 À la première visite de l'accueil, une animation d'une dizaine de secondes se joue
-par-dessus le site : un tir en reculant du n°34 sur un playground posé devant l'hôtel
+par-dessus le site : un tir en reculant du n°8 sur un playground posé devant l'hôtel
 de ville de Montpellier, la caméra suit le ballon, monte à la verticale au-dessus du
 vrai plan de la ville, et le terrain devient un point sur la carte de France, dont les
 régions et les villes apparaissent. On arrive sur la carte :
@@ -439,7 +439,7 @@ filtré sur cette région.
 - **Plan de Montpellier** (`js/intro-montpellier.js`) : rues, bâtiments et le Lez autour
   de la place Georges-Frêche. Source : IGN, BD TOPO® (novembre 2026), Licence Ouverte 2.0
   — mention à conserver. Fichier généré, chargé seulement quand l'intro se joue.
-- **Son** (`js/intro-son.js`) : rythme hip-hop lointain, swish, rebonds, vent de l'ascension,
+- **Son** (`js/intro-son.js`) : rythme hip-hop lointain, « fwip » sourd du filet, aspiration puis écho d'autres terrains pendant l'ascension,
   tout généré par le code (aucun fichier audio). Les navigateurs interdisent le son avant un
   geste du visiteur : il démarre avec le bouton « Activer le son » (ou un toucher sur l'image).
 - **Quand elle se joue** (`js/intro-boot.js`) : accueil seulement, première visite
