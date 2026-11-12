@@ -2216,3 +2216,131 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
   .report-actions #reportSend{order:-1;}
 }
 @media(prefers-reduced-motion: reduce){ .report-motif{transition:none;} }
+
+/* Fenêtre d'édition : l'organisateur n'a ni le statut ni la mise à la une. */
+.edit-modal.is-owner .admin-only{display:none;}
+.edit-group{font-size:15px;margin:22px 0 10px;padding-top:16px;border-top:1px solid var(--line);}
+
+
+/* =========================================================
+   PAGE ADMINISTRATION
+   ========================================================= */
+.adm-head{max-width:760px;}
+.adm-head .hero-sub b{color:var(--chalk);font-weight:700;}
+.adm-tabs{
+  display:flex;gap:4px;padding:4px;margin:0 0 28px;max-width:100%;width:max-content;
+  background:var(--asphalt-2);border:1px solid var(--line);border-radius:999px;
+  overflow-x:auto;scrollbar-width:none;
+}
+.adm-tabs::-webkit-scrollbar{display:none;}
+.adm-tab{
+  flex:none;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 18px;
+  background:none;border:0;border-radius:999px;cursor:pointer;white-space:nowrap;
+  font:600 14px/1 var(--font-body);color:var(--chalk-dim);transition:background .15s, color .15s;
+}
+.adm-tab:hover{color:var(--chalk);}
+.adm-tab[aria-selected="true"]{background:var(--accent);color:#FFFFFF;}
+.adm-tab:focus-visible{outline:2px solid var(--accent-text);outline-offset:2px;}
+.adm-count{
+  display:inline-block;min-width:20px;height:20px;line-height:20px;padding:0 6px;border-radius:999px;
+  background:var(--accent);color:#FFFFFF;font-size:11px;font-weight:700;text-align:center;
+}
+.adm-tab[aria-selected="true"] .adm-count{background:#FFFFFF;color:var(--accent);}
+.adm-panel{max-width:980px;padding-bottom:20px;}
+.adm-h{font-size:21px;margin:34px 0 12px;color:var(--chalk);}
+.adm-h:first-child{margin-top:0;}
+.adm-h::after{content:'';display:block;width:56px;height:3px;border-radius:2px;background:var(--accent);margin-top:9px;}
+.adm-lead{font-size:14.5px;color:var(--chalk-dim);margin:0 0 14px;max-width:64ch;}
+.adm-tools{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin:0 0 14px;}
+.adm-search{
+  flex:1 1 280px;max-width:460px;min-height:44px;padding:10px 14px;
+  background:var(--asphalt-3);border:1px solid var(--line-strong);border-radius:10px;
+  color:var(--chalk);font:15px var(--font-body);
+}
+.adm-search:focus{outline:none;border-color:var(--accent);}
+.status-review{background:var(--accent);color:#FFFFFF;}
+.admin-item .btn-approve{white-space:nowrap;}
+@media(max-width:640px){
+  .adm-tabs{width:100%;}
+  .admin-item{flex-wrap:wrap;}
+  .admin-item-actions{flex:1 1 100%;justify-content:flex-start;}
+}
+
+/* Fenêtre « Organisateur » : prévenir, puis affilier */
+.affil-box{max-width:640px;}
+.affil-step{margin-top:20px;padding-top:18px;border-top:1px solid var(--line);}
+.affil-h{font-size:18px;margin-bottom:6px;}
+.affil-help{font-size:14px;color:var(--chalk-dim);margin:0 0 12px;line-height:1.5;}
+.affil-help b{color:var(--chalk);}
+.affil-message{min-height:200px;font-size:14px;line-height:1.55;}
+.affil-step .adm-search{display:block;width:100%;max-width:none;}
+.affil-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;align-items:center;}
+.affil-actions .btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center;min-height:44px;}
+.affil-state{min-height:20px;margin:8px 0 0;font-size:13.5px;font-weight:600;color:var(--green);}
+.affil-list{display:grid;gap:6px;margin-top:12px;max-height:240px;overflow-y:auto;}
+.affil-item{
+  display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;min-height:52px;padding:10px 14px;
+  background:var(--asphalt-2);border:1px solid var(--line-strong);border-radius:12px;cursor:pointer;text-align:left;
+  font-family:var(--font-body);color:var(--chalk);transition:border-color .15s, background .15s;
+}
+.affil-item b{font-size:15px;}
+.affil-item span{font-size:13px;color:var(--chalk-dim);overflow-wrap:anywhere;}
+.affil-item:hover{border-color:var(--accent);}
+.affil-item.is-selected{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 9%, var(--asphalt-2));}
+.affil-item:focus-visible{outline:2px solid var(--accent-text);outline-offset:2px;}
+.affil-vide{font-size:13.5px;color:var(--chalk-dim);margin:4px 2px;}
+@media(max-width:520px){ .affil-actions .btn{flex:1 1 100%;} }
+
+/* Importer un lot */
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;}
+.imp-texte{min-height:120px;font-family:var(--font-mono);font-size:13px;line-height:1.5;}
+.imp-fichier{display:inline-flex;align-items:center;cursor:pointer;}
+.imp-lignes{display:grid;gap:8px;margin-top:12px;}
+.imp-ligne{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;background:var(--asphalt-2);border:1px solid var(--line);border-radius:12px;}
+.imp-ligne.is-erreur{border-color:rgba(232,72,58,.5);background:color-mix(in srgb, var(--red) 6%, var(--asphalt-2));}
+.imp-ligne.is-ok{border-color:rgba(31,143,107,.5);}
+.imp-coche{display:flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;margin:-6px 0 0 -8px;cursor:pointer;}
+.imp-coche input{width:20px;height:20px;accent-color:var(--accent);}
+.imp-corps{flex:1 1 auto;min-width:0;}
+.imp-titre{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;}
+.imp-titre b{font-size:15.5px;overflow-wrap:anywhere;}
+.imp-type{font-size:12.5px;font-weight:600;color:var(--chalk-dim);}
+.imp-meta{font-size:13px;color:var(--chalk-dim);margin-top:2px;overflow-wrap:anywhere;}
+.imp-note{font-size:13.5px;line-height:1.45;margin-top:6px;color:var(--chalk);}
+.imp-note.is-erreur{color:var(--accent-text);font-weight:600;}
+.imp-note.is-doublon{font-weight:600;}
+.imp-pied-ligne{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:10px;}
+.imp-affiche-btn{cursor:pointer;}
+.imp-vignette{height:48px;width:auto;border-radius:6px;border:1px solid var(--line-strong);}
+.imp-source{font-size:13px;color:var(--accent-text);font-weight:600;}
+.imp-statut{font-size:13.5px;font-weight:600;margin-top:6px;empty-cells:hide;}
+.imp-statut:empty{display:none;}
+.imp-lien{background:none;border:0;padding:0;font:inherit;color:var(--accent-text);text-decoration:underline;cursor:pointer;}
+.imp-pied{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);}
+.imp-mode{border:0;margin:0 0 10px;padding:0;display:grid;gap:8px;}
+.imp-mode legend{font-weight:700;font-size:14.5px;margin-bottom:8px;padding:0;}
+.imp-mode label{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line-strong);border-radius:10px;cursor:pointer;background:var(--asphalt-2);}
+.imp-mode label:has(input:checked){border-color:var(--accent);background:color-mix(in srgb, var(--accent) 8%, var(--asphalt-2));}
+.imp-mode input{margin-top:3px;accent-color:var(--accent);width:18px;height:18px;flex:none;}
+.imp-mode small{display:block;color:var(--chalk-dim);font-size:13px;margin-top:1px;}
+.imp-aide{font-size:13.5px;color:var(--chalk-dim);margin:0 0 10px;}
+.imp-format{margin-top:16px;border-top:1px solid var(--line);padding-top:12px;}
+.imp-format summary{cursor:pointer;font-weight:700;font-size:14.5px;min-height:32px;}
+.imp-exemple{margin:10px 0;padding:12px 14px;max-height:260px;overflow:auto;background:var(--asphalt-3);border:1px solid var(--line);border-radius:10px;font:12.5px/1.5 var(--font-mono);white-space:pre;}
+.imp-format code{font-family:var(--font-mono);font-size:12.5px;background:var(--asphalt-3);padding:1px 5px;border-radius:4px;}
+@media(max-width:520px){ .imp-ligne{padding:10px 10px;gap:6px;} }
+
+/* Fenêtre d'édition : des champs qui tiennent dans leur colonne (la ville
+   débordait sur la région sur mobile) et un peu d'air entre eux. Elle sert
+   maintenant aux organisateurs, qui l'ouvrent surtout au téléphone. */
+.edit-box .field input,
+.edit-box .field select,
+.edit-box .field textarea{width:100%;min-width:0;max-width:100%;box-sizing:border-box;}
+.edit-box .ac-wrap{min-width:0;}
+.edit-box .field{margin-bottom:14px;}
+.edit-box .form-row{gap:0 14px;}
+.edit-box .form-row .field{min-width:0;}
+.edit-box .edit-poster-row > div{min-width:0;flex:1 1 auto;}
+.edit-box .edit-poster-row input[type="file"]{width:100%;}
+.edit-box .edit-featured input,
+.edit-box .chip-choices input{width:18px;}

@@ -353,6 +353,8 @@ dans le code — le reste est à faire.
       servie sur `/confidentialite`. Décrit les données réellement collectées,
       les bases légales, les durées de conservation, les sous-traitants (Vercel,
       Neon, Clerk, Resend, OpenRouter) et les droits RGPD.
+- [x] Page Administration dédiée, import de lot, affiliation d'un événement à un compte
+      d'organisateur (12/11/2026). Voir README (« La page Administration ») et `IMPORT_LOT.md`.
 - [x] Signalements d'erreur sur les fiches (12/11/2026) : décrits dans la politique
       de confidentialité (collecte, base légale, durées). **Texte à faire relire.**
 - [x] ~~Page « Conditions générales d'utilisation »~~ — `public/cgu.html`, servie

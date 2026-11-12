@@ -3,12 +3,12 @@
    ---------------------------------------------------------
    Les erreurs signalées par les visiteurs depuis la fiche d'un événement
    (api/signalement.js). Liste dans l'espace admin, avec de quoi corriger la
-   fiche, marquer le signalement comme traité ou le supprimer, et une pastille
-   sur « Mon profil » qui compte ceux qui attendent.
+   fiche, marquer le signalement comme traité ou le supprimer. Leur nombre
+   alimente la pastille du lien Admin (js/admin-page.js).
 
    S'appuie sur js/app.js (esc, libelleMotif, openEvent) et sur
-   window.EBOK_DATA (getSignalements, getSignalementsOuverts, majSignalement,
-   supprimerSignalement), exposé par clerk-init.js.
+   window.EBOK_DATA (getSignalements, majSignalement, supprimerSignalement),
+   exposé par clerk-init.js.
    ========================================================= */
 (function(){
   const $ = id => document.getElementById(id);
@@ -20,21 +20,6 @@
     return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
       + ' à ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   }
-
-  /* Pastille « à traiter » : sur Mon profil (barre du haut et volet mobile). */
-  function pastille(nb){
-    for(const b of document.querySelectorAll('[data-report-badge]')){
-      b.textContent = nb > 0 ? nb : '';
-      b.classList.toggle('hidden', !(nb > 0));
-    }
-  }
-  window.majPastilleSignalements = async function(admin){
-    if(!admin){ pastille(0); return; }
-    const data = window.EBOK_DATA;
-    if(!data || typeof data.getSignalementsOuverts !== 'function') return;
-    try{ pastille(await data.getSignalementsOuverts()); }
-    catch(e){ /* la pastille est un confort : sans elle, la liste reste là */ }
-  };
 
   function carte(s){
     const traite = s.statut === 'traite';
@@ -68,7 +53,7 @@
     catch(e){ box.innerHTML = '<p class="maint-desc">Impossible de charger les signalements.</p>'; return; }
     const liste = r.signalements || [];
     const ouverts = r.ouverts || 0;
-    pastille(ouverts);
+    if(typeof majTableauAdmin === 'function') majTableauAdmin({ signalements: ouverts });
     box.innerHTML = liste.length
       ? `<p class="det-summary"><b>${ouverts}</b> à traiter, ${liste.length - ouverts} traité${liste.length - ouverts > 1 ? 's' : ''}</p>${liste.map(carte).join('')}`
       : '<p class="maint-desc">Aucun signalement pour le moment.</p>';
