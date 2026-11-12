@@ -537,7 +537,13 @@ function dessinerJoueur(J, st){
     // Short long et ample, façon playground.
     silhouette([[[J['hanche'+c], 0.14], [mix3(J['hanche'+c], J['genou'+c], 0.74), 0.132]]], e, st.tenue, st.bord, st.hachures);
   };
-  bras(loin); jambe(loin);
+  // Un bras dont la main est plus loin que le buste passe DERRIÈRE lui : vu de
+  // dos, un joueur qui tient le ballon devant son ventre ne montre pas ses bras.
+  const zBuste = profondeur(J.poitrine);
+  const devant = c=> profondeur(J['main'+c]) < zBuste - 0.02 && profondeur(J['coude'+c]) < zBuste + 0.12;
+  if(!devant(pres)) bras(pres);
+  if(!devant(loin)) bras(loin);
+  jambe(loin);
   silhouette([[[J.hancheG, 0.13], [J.hancheD, 0.13], [J.taille, 0.118]]], e, st.tenue, st.bord, st.hachures);
   jambe(pres);
   silhouette([
@@ -545,7 +551,8 @@ function dessinerJoueur(J, st){
     [[J.taille, 0.12], [J.hancheG, 0.116], [J.hancheD, 0.116]]], e, st.tenue, st.bord, st.hachures);
   if(st.numero) ecrireNumero(J, st.numero, st.encre);
   silhouette([[[J.cou, 0.062], [J.tete, 0.058]], [[J.tete, 0.097], [J.menton, 0.078]]], e, st.peau, st.bord);
-  bras(pres);
+  if(devant(loin)) bras(loin);
+  if(devant(pres)) bras(pres);
 }
 /* Ombre portée au sol : elle se resserre quand le joueur décolle. */
 function ombre(x, y, rx, ry, alpha){
