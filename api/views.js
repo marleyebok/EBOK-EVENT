@@ -4,6 +4,7 @@
  *   GET  /api/views?id=X   → lit le compteur (0 si absent)
  *   POST /api/views?id=X   → compte la visite et renvoie la valeur à jour
  *   POST /api/views?visite=1                       → compte une visite du site (une par visiteur et par jour)
+ *   POST /api/views?clic=inscription|billetterie|site|contact&id=X → compte un clic vers l'organisateur
  *   GET  /api/views?stats=1&periode=semaine|mois|annee   (admin) → statistiques de l'onglet Statistiques
  *
  * Les statistiques jour par jour vivent dans lib/stats.js.
@@ -32,7 +33,7 @@
  */
 import { createHash } from "node:crypto";
 import { ensureSchema, hasDb, sql, json, sessionUid, isAdminUid } from "./_lib.js";
-import { compterStat, enregistrerVisite, calculerStats, jourParis } from "../lib/stats.js";
+import { compterStat, enregistrerVisite, enregistrerClic, calculerStats, jourParis } from "../lib/stats.js";
 
 /* Au-delà, on cesse de compter pour ce visiteur : un humain ne consulte pas
    150 fiches dans la journée, un script oui. Les visites continuent d'être
@@ -105,6 +106,21 @@ export default async function handler(req, res) {
       return json(res, 200, { compte: await enregistrerVisite(empreinteVisiteur(req, jourParis())) });
     } catch (e) {
       console.error("visite:", e);
+      return json(res, 500, { error: "server" });
+    }
+  }
+
+  // Clic vers l'organisateur (envoyé par navigator.sendBeacon depuis la fiche).
+  if (q.clic) {
+    if (req.method !== "POST") return json(res, 405, { error: "method" });
+    const ua = String(req.headers["user-agent"] || "");
+    if (!ua || ROBOTS.test(ua)) return json(res, 200, { compte: false });
+    try {
+      const compte = await enregistrerClic(
+        empreinteVisiteur(req, jourParis()), String(q.id || "").slice(0, 100), String(q.clic));
+      return json(res, 200, { compte });
+    } catch (e) {
+      console.error("clic:", e);
       return json(res, 500, { error: "server" });
     }
   }
