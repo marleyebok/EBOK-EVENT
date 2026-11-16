@@ -17,7 +17,7 @@
    ========================================================= */
 (function(){
   const SEXES = ['Masculin', 'Féminin', 'Mixte'];
-  const NIVEAUX = ['Tous niveaux', 'Loisir', 'Amateur', 'Confirmé', 'Semi-pro / Pro'];
+  const NIVEAUX = NIVEAUX_EVENT;
 
   /* Champs modifiables sur place. t = type de saisie. */
   const CHAMPS = {

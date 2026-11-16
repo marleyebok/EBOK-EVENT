@@ -1,6 +1,6 @@
 # 🏀 EBOK (anciennement EBOK Event)
 
-**L'agenda collaboratif du basket français.** Tournois, camps, 3x3, détections, clinics, matchs de gala… repérés sur une carte de France interactive.
+**L'agenda collaboratif du basket français.** Tournois, camps, 3x3, détections, clinics, matchs pro… repérés sur une carte de France interactive.
 
 Site web responsive, thème sombre (identité streetball/urbain), sans framework — HTML / CSS / JS pur.
 

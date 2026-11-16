@@ -30,7 +30,7 @@ const TYPE_COLORS = {
   "Clinic Coachs":"#2196F3",
   "Circuit 3x3":"#4CAF50",
   "Handibasket":"#9C27B0",
-  "Matchs de Gala":"#F44336",
+  "Match Pro":"#F44336",
   "Divers":"#607D8B"
 };
 
@@ -386,7 +386,7 @@ let events = [
   {
     id:"gala-match-all-stars",
     title:"Matchs de Gala — Choc des Générations",
-    type:"Matchs de Gala",
+    type:"Match Pro",
     city:"Paris",
     lieu:"AccorHotels Arena, Paris",
     region:"Île-de-France",
