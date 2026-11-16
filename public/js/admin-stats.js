@@ -28,6 +28,14 @@
       note: 'Un visiteur qui revient un autre jour est compté chaque jour.' },
     { cle: 'vues', libelle: 'Fiches consultées', mode: 'periode', graphique: 'Fiches consultées', mesuree: true,
       note: 'Une fiche compte une fois par visiteur et par jour.' },
+    { cle: 'clics', libelle: 'Clics organisateurs', mode: 'periode', graphique: 'Clics vers les organisateurs', mesuree: true, depuis: 'clicsDepuis',
+      note: "S'inscrire, Billetterie, Site officiel et Contacter. Un bouton compte une fois par visiteur et par jour pour un événement." },
+  ];
+  const BOUTONS = [
+    { cle: 'inscription', libelle: "S'inscrire" },
+    { cle: 'billetterie', libelle: 'Billetterie' },
+    { cle: 'site', libelle: 'Site officiel' },
+    { cle: 'contact', libelle: 'Contacter' },
   ];
   const PERIODES = {
     semaine: { libelle: 'Semaine', duree: '7 derniers jours', avant: 'semaine précédente', ici: 'cette semaine' },
@@ -75,9 +83,13 @@
   }
 
   /* La période d'avant est-elle entièrement couverte par les mesures ? */
-  function avantMesure(m){
+  function depuisMesure(m){
     const d = etat.donnees;
-    return !m.mesuree || (d.mesureDepuis && d.mesureDepuis <= d.debutPrecedent);
+    return m.depuis ? d[m.depuis] : d.mesureDepuis;
+  }
+  function avantMesure(m){
+    const d = etat.donnees, depuis = depuisMesure(m);
+    return !m.mesuree || (depuis && depuis <= d.debutPrecedent);
   }
 
   function enteteTuile(m){
@@ -95,7 +107,8 @@
       const fleche = e.sens === 'hausse' ? '▲' : e.sens === 'baisse' ? '▼' : '＝';
       evo = `<span class="st-delta is-${e.sens}"><span aria-hidden="true">${fleche}</span> ${e.texte}<span class="st-vs"> vs ${p.avant}</span></span>`;
     }else{
-      evo = `<span class="st-vs">${d.mesureDepuis ? 'Mesuré depuis le ' + jourCourt(d.mesureDepuis) : 'Mesure démarrée aujourd\'hui'}</span>`;
+      const depuis = depuisMesure(m);
+      evo = `<span class="st-vs">${depuis ? 'Mesuré depuis le ' + jourCourt(depuis) : 'Mesure démarrée aujourd\'hui'}</span>`;
     }
     const max = Math.max(...serie, 1);
     const barres = serie.map((v, i) => `<i class="${i === serie.length - 1 ? 'is-now' : ''}" style="height:${Math.max(v / max * 100, v > 0 ? 6 : 0)}%"></i>`).join('');
@@ -155,6 +168,30 @@
     return `<section class="st-classement"><h4>${titre}</h4><ol>${corps}</ol></section>`;
   }
 
+  /* Clics vers les organisateurs : le détail par bouton, puis les événements
+     qui en ont reçu le plus sur la période. C'est l'argument à montrer aux
+     organisateurs : combien de personnes EBOK leur a envoyées. */
+  function clicsHtml(){
+    const d = etat.donnees, c = d.clics;
+    if(!c) return '';
+    const p = PERIODES[d.periode];
+    const total = somme(BOUTONS.map(b => c.boutons[b.cle] || 0));
+    const pastilles = BOUTONS.map(b => `<div class="st-clic"><span>${b.libelle}</span><b>${nombre(c.boutons[b.cle] || 0)}</b></div>`).join('');
+    const lignes = c.evenements.length
+      ? c.evenements.map(e => `<tr>
+          <th scope="row"><button type="button" class="imp-lien" data-voir="${esc(e.id)}" title="${esc(e.titre)}">${esc(e.titre || 'Sans titre')}</button></th>
+          ${BOUTONS.map(b => `<td>${e[b.cle] ? nombre(e[b.cle]) : '–'}</td>`).join('')}
+          <td><b>${nombre(e.n)}</b></td></tr>`).join('')
+      : `<tr><td colspan="${BOUTONS.length + 2}" class="st-rang-vide">Aucun clic sur cette période.</td></tr>`;
+    return `<section class="st-clics">
+      <h4>Clics vers les organisateurs <span class="st-vs">· ${p.duree} · ${nombre(total)} au total</span></h4>
+      <div class="st-clics-boutons">${pastilles}</div>
+      <div class="st-clics-table"><table class="st-table">
+        <thead><tr><th scope="col">Événement</th>${BOUTONS.map(b => `<th scope="col">${b.libelle}</th>`).join('')}<th scope="col">Total</th></tr></thead>
+        <tbody>${lignes}</tbody></table></div>
+    </section>`;
+  }
+
   function dessiner(){
     const racine = $('adminStats');
     const d = etat.donnees;
@@ -170,6 +207,7 @@
       <div class="st-cadre" id="stCadre">
         <div class="st-tuiles">${MESURES.map(enteteTuile).join('')}</div>
         ${graphiqueHtml()}
+        ${clicsHtml()}
         <div class="st-classements">
           ${classementHtml('Fiches les plus consultées', d.classements.vues, true)}
           ${classementHtml('Fiches les plus enregistrées', d.classements.favoris, true)}

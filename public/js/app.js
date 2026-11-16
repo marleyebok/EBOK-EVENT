@@ -1287,18 +1287,160 @@ function renderResults(){
     : '';
 
   const grid = document.getElementById('resultsGrid');
+  // Proposition d'alerte : en tête quand la recherche ramène peu de chose
+  // (c'est là qu'elle rend service), en fin de liste sinon.
+  const cta = searchAbroad ? '' : alerteCtaHtml(results.length);
+  const enTete = results.length <= 3;
   if(results.length===0){
-    grid.innerHTML = `${abroadNote}<div class="empty-state"><h4>Aucun événement ne correspond</h4><p>${searchAbroad ? 'Aucun événement à l’étranger n’est publié pour le moment.' : 'Essaie d’élargir tes filtres — lieu, dates ou niveau.'}</p></div>`;
+    grid.innerHTML = `${abroadNote}<div class="empty-state"><h4>Aucun événement ne correspond</h4><p>${searchAbroad ? 'Aucun événement à l’étranger n’est publié pour le moment.' : 'Essaie d’élargir tes filtres — lieu, dates ou niveau.'}</p></div>${cta}`;
     bindAbroadClear();
+    bindAlerteCta();
     return;
   }
-  grid.innerHTML = abroadNote + results.map(ev=>`
-${eventCardHtml(ev)}`).join('');
+  grid.innerHTML = abroadNote + (enTete ? cta : '') + results.map(ev=>`
+${eventCardHtml(ev)}`).join('') + (enTete ? '' : cta);
   bindAbroadClear();
+  bindAlerteCta();
 
   grid.querySelectorAll('.event-card').forEach(card=>{
     card.addEventListener('click', ()=> openEvent(card.dataset.id));
   });
+}
+
+/* Compte un clic vers l'organisateur (S'inscrire, Billetterie, Site officiel,
+   Contacter). sendBeacon survit à l'ouverture du lien ; le serveur ne compte
+   qu'une fois par visiteur, par jour et par bouton. */
+function compterClic(eventId, bouton){
+  if(!eventId || !bouton || location.protocol === 'file:') return;
+  if(navigator.doNotTrack === '1' || window.doNotTrack === '1') return;   // « ne pas me suivre »
+  const url = `/api/views?clic=${encodeURIComponent(bouton)}&id=${encodeURIComponent(eventId)}`;
+  try{
+    if(navigator.sendBeacon && navigator.sendBeacon(url)) return;
+    fetch(url, { method: 'POST', keepalive: true }).catch(()=>{});
+  }catch(e){ /* une mesure ne doit jamais gêner la navigation */ }
+}
+
+/* =========================================================
+   ALERTE PROPOSÉE APRÈS UNE RECHERCHE
+   ---------------------------------------------------------
+   Une recherche décevante (« camp U13 en Occitanie » : 2 résultats) devient
+   une raison de créer un compte : « préviens-moi du prochain ». Les critères
+   de la recherche sont repris tels quels ; un membre connecté crée l'alerte en
+   un clic ; un visiteur s'inscrit, et l'alerte est créée à son retour.
+   ========================================================= */
+const AGES_ALERTE = AGE_OPTIONS.filter(a=> a !== 'Tout public' && a !== 'Non renseigné');
+const ALERTE_EN_ATTENTE = 'ebok-alerte-en-attente';
+
+/* Critères d'alerte tirés des filtres de la page Recherche. */
+function criteresRecherche(){
+  const val = id=> (document.getElementById(id) || {}).value || '';
+  const c = { regions: [], types: [], ages: [], niveaux: [] };
+  const region = val('f-region');
+  if(region) c.regions = [region];
+  const type = val('f-type');
+  if(TYPE_COLORS[type]) c.types = [type];
+  const age = val('f-age');
+  if(AGES_ALERTE.includes(age)) c.ages = [age];
+  const niveau = val('f-niveau');
+  if(NIVEAUX_EVENT.includes(niveau) && niveau !== NIVEAU_TOUT) c.niveaux = [niveau];
+  return c;
+}
+const criteresVides = c=> !c.regions.length && !c.types.length && !c.ages.length && !c.niveaux.length;
+const memesCriteres = (a, b)=> ['regions', 'types', 'ages', 'niveaux'].every(k=>
+  JSON.stringify([...(a[k] || [])].sort()) === JSON.stringify([...(b[k] || [])].sort())) && !a.du && !a.au;
+
+function alerteCtaHtml(nbResultats){
+  const c = criteresRecherche();
+  if(criteresVides(c)) return '';
+  const quoi = [...c.types, ...c.ages, ...c.niveaux].join(' · ');
+  const ou = c.regions.length ? c.regions[0] : 'toute la France';
+  const deja = currentUser && mesAlertes.some(a=> a.actif && memesCriteres(a.criteres || {}, c));
+  const titre = nbResultats === 0 ? 'Rien pour l’instant ? Sois le premier prévenu.'
+    : nbResultats <= 3 ? 'Peu d’événements pour l’instant. Sois prévenu des prochains.'
+    : 'Ne rate pas les prochains.';
+  const phrase = `Dès qu'un nouvel événement${quoi ? ` <b>${esc(quoi)}</b>` : ''} est publié${c.regions.length ? ' en' : ' dans'} <b>${esc(ou)}</b>, on t'envoie un e-mail.`;
+  const action = deja
+    ? `<span class="alerte-cta-ok">✓ Tu as déjà une alerte pour cette recherche. <button type="button" class="alerte-cta-lien" data-alerte-gerer>Mes alertes</button></span>`
+    : `<button type="button" class="btn btn-primary alerte-cta-btn" data-alerte-cta>🔔 ${currentUser ? 'Créer l’alerte' : 'Créer l’alerte, c’est gratuit'}</button>
+       ${currentUser ? '' : '<span class="alerte-cta-aide">Compte créé en 30 secondes, avec Google ou ton e-mail.</span>'}`;
+  return `<div class="alerte-cta" role="region" aria-label="Alerte e-mail">
+    <div class="alerte-cta-texte"><h4>${titre}</h4><p>${phrase}</p></div>
+    <div class="alerte-cta-action">${action}</div>
+  </div>`;
+}
+
+function bindAlerteCta(){
+  const btn = document.querySelector('#resultsGrid [data-alerte-cta]');
+  if(btn) btn.addEventListener('click', ()=> creerAlerteDepuisRecherche(btn));
+  const gerer = document.querySelector('#resultsGrid [data-alerte-gerer]');
+  if(gerer) gerer.addEventListener('click', ()=> showPage('alertes'));
+}
+
+async function creerAlerteDepuisRecherche(btn){
+  const criteres = criteresRecherche();
+  if(!currentUser){
+    // Le visiteur part s'inscrire (parfois via Google, donc hors de la page) :
+    // on garde ses critères pour créer l'alerte à son retour.
+    try{ localStorage.setItem(ALERTE_EN_ATTENTE, JSON.stringify({ criteres, at: Date.now() })); }catch(e){}
+    openAuth('signup');
+    return;
+  }
+  if(btn){ btn.disabled = true; btn.textContent = 'Création…'; }
+  const ok = await enregistrerAlerte(criteres);
+  if(!ok && btn){ btn.disabled = false; btn.textContent = '🔔 Créer l’alerte'; }
+}
+
+async function enregistrerAlerte(criteres){
+  if(!window.EBOK_DATA || !window.EBOK_DATA.createAlert) return false;
+  try{
+    const creee = await window.EBOK_DATA.createAlert({ nom: '', criteres });
+    if(creee) mesAlertes.unshift(creee);
+    afficherBandeau(`🔔 Alerte créée : ${resumeCriteres(criteres)}. Tu recevras un e-mail à chaque nouvel événement.`, 'Mes alertes', ()=> showPage('alertes'));
+    if(document.getElementById('page-search').classList.contains('active')) renderResults();
+    renderAlertes();
+    return true;
+  }catch(err){
+    afficherBandeau(err && err.code === 'trop_d_alertes'
+      ? 'Tu as déjà 10 alertes : supprimes-en une pour en créer une nouvelle.'
+      : 'L’alerte n’a pas pu être créée. Réessaie dans un instant.');
+    return false;
+  }
+}
+
+/* Au retour d'une inscription lancée depuis la proposition d'alerte. */
+async function reprendreAlerteEnAttente(){
+  if(!currentUser) return;
+  let attente = null;
+  try{ attente = JSON.parse(localStorage.getItem(ALERTE_EN_ATTENTE) || 'null'); localStorage.removeItem(ALERTE_EN_ATTENTE); }catch(e){}
+  if(!attente || !attente.criteres || Date.now() - (attente.at || 0) > 2 * 3600 * 1000) return;
+  if(mesAlertes.some(a=> memesCriteres(a.criteres || {}, attente.criteres))) return;
+  await enregistrerAlerte(attente.criteres);
+}
+
+/* Petit bandeau de confirmation en bas de l'écran. */
+function afficherBandeau(texte, libelleAction, action){
+  let b = document.getElementById('ebokBandeau');
+  if(!b){
+    b = document.createElement('div');
+    b.id = 'ebokBandeau';
+    b.className = 'ebok-bandeau';
+    b.setAttribute('role', 'status');
+    document.body.appendChild(b);
+  }
+  b.replaceChildren();
+  const t = document.createElement('span'); t.textContent = texte; b.appendChild(t);
+  if(libelleAction && action){
+    const a = document.createElement('button'); a.type = 'button'; a.textContent = libelleAction;
+    a.addEventListener('click', ()=>{ b.classList.remove('is-visible'); action(); });
+    b.appendChild(a);
+  }
+  const x = document.createElement('button'); x.type = 'button'; x.className = 'ebok-bandeau-x';
+  x.setAttribute('aria-label', 'Fermer'); x.textContent = '×';
+  x.addEventListener('click', ()=> b.classList.remove('is-visible'));
+  b.appendChild(x);
+  requestAnimationFrame(()=> b.classList.add('is-visible'));
+  clearTimeout(afficherBandeau._t);
+  afficherBandeau._t = setTimeout(()=> b.classList.remove('is-visible'), 9000);
 }
 
 function bindAbroadClear(){
@@ -2220,8 +2362,8 @@ async function openEvent(id, opts){
   const lienBilletterie = termine ? '' : lienPropre(ev.lienBilletterie);
   const lienSite = lienPropre(ev.siteOfficiel) || (/^https?:/i.test(orgSite) ? orgSite : '');
   const aDesCoordonnees = Boolean(org.tel || org.email || org.insta);
-  const bouton = (libelle, lien, icone, raison)=> lien
-    ? `<a class="ev-act" href="${esc(lien)}" target="_blank" rel="noopener noreferrer">${ico(icone)}<span>${libelle}</span></a>`
+  const bouton = (libelle, lien, icone, raison, clic)=> lien
+    ? `<a class="ev-act" href="${esc(lien)}" target="_blank" rel="noopener noreferrer" data-clic="${clic}">${ico(icone)}<span>${libelle}</span></a>`
     : `<button type="button" class="ev-act is-off" aria-disabled="true" aria-describedby="evAide" title="${esc(raison)}">${ico(icone)}<span>${libelle}</span></button>`;
   const manques = [];
   if(!lienInscription) manques.push("d'inscription");
@@ -2327,12 +2469,12 @@ async function openEvent(id, opts){
         <div class="ev-ticket-top">
           <p class="ev-ticket-kicker">${org.name ? 'Organisé par' : 'Organisateur'}</p>
           ${org.name ? `<h3 class="ev-ticket-name">${esc(org.name)}</h3>` : ''}
-          ${lienSite ? `<a class="ev-ticket-site" href="${esc(lienSite)}" target="_blank" rel="noopener noreferrer">${ico('globe')}<span>Site officiel</span>${ico('external')}</a>` : ''}
+          ${lienSite ? `<a class="ev-ticket-site" href="${esc(lienSite)}" target="_blank" rel="noopener noreferrer" data-clic="site">${ico('globe')}<span>Site officiel</span>${ico('external')}</a>` : ''}
         </div>
         <div class="ev-ticket-bottom">
           <div class="ev-acts">
-            ${bouton("S'inscrire", lienInscription, 'clipboard', termine ? 'Événement terminé' : "Pas de lien d'inscription pour le moment")}
-            ${bouton('Billetterie', lienBilletterie, 'ticket', termine ? 'Événement terminé' : 'Pas de billetterie pour le moment')}
+            ${bouton("S'inscrire", lienInscription, 'clipboard', termine ? 'Événement terminé' : "Pas de lien d'inscription pour le moment", 'inscription')}
+            ${bouton('Billetterie', lienBilletterie, 'ticket', termine ? 'Événement terminé' : 'Pas de billetterie pour le moment', 'billetterie')}
           </div>
           ${contactBtn}
           <div class="ev-coord" id="evCoord"><div class="ev-coord-in" id="evCoordIn"></div></div>
@@ -2399,6 +2541,11 @@ async function openEvent(id, opts){
     if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(shareUrl).then(copie, ()=> window.prompt('Copie ce lien :', shareUrl));
     else window.prompt('Copie ce lien :', shareUrl);
   });
+  // Clics vers l'organisateur : comptés pour les statistiques (le lien s'ouvre
+  // normalement, l'envoi part en arrière-plan).
+  el.querySelectorAll('[data-clic]').forEach(a=>{
+    a.addEventListener('click', ()=> compterClic(ev.id, a.dataset.clic));
+  });
   const btnContact = document.getElementById('btnContact');
   if(btnContact){
     btnContact.addEventListener('click', ()=>{
@@ -2406,6 +2553,7 @@ async function openEvent(id, opts){
       const dedans = document.getElementById('evCoordIn');
       const ouvrir = !zone.classList.contains('is-open');
       if(ouvrir && !dedans.firstChild) dedans.innerHTML = coordonneesHtml();
+      if(ouvrir) compterClic(ev.id, 'contact');
       zone.classList.toggle('is-open', ouvrir);
       btnContact.setAttribute('aria-expanded', String(ouvrir));
       btnContact.querySelector('span').textContent = ouvrir ? 'Masquer' : 'Contacter';
@@ -3815,6 +3963,8 @@ function resumeCriteres(c){
   const bouts = [];
   bouts.push(c.regions && c.regions.length ? c.regions.join(', ') : 'toute la France');
   bouts.push(c.types && c.types.length ? c.types.join(', ') : 'tous les types');
+  if(c.ages && c.ages.length) bouts.push(c.ages.join(', '));
+  if(c.niveaux && c.niveaux.length) bouts.push(c.niveaux.join(', '));
   if(c.du && c.au) bouts.push(`du ${dateAlerteFr(c.du)} au ${dateAlerteFr(c.au)}`);
   else if(c.du) bouts.push(`à partir du ${dateAlerteFr(c.du)}`);
   else if(c.au) bouts.push(`jusqu'au ${dateAlerteFr(c.au)}`);
@@ -3872,6 +4022,8 @@ function openAlertModal(id, depart){
 
   remplirMenuAlerte('al-regions', regionsDisponibles(), c.regions, 'Toute la France', 'régions');
   remplirMenuAlerte('al-types', Object.keys(TYPE_COLORS), c.types, 'Tous les types', 'types');
+  remplirMenuAlerte('al-ages', AGES_ALERTE, c.ages, 'Tous les âges', 'âges');
+  remplirMenuAlerte('al-niveaux', NIVEAUX_EVENT.filter(n=> n !== NIVEAU_TOUT), c.niveaux, 'Tous les niveaux', 'niveaux');
 
   document.getElementById('alertError').classList.add('hidden');
   m.classList.add('open');
@@ -3895,11 +4047,7 @@ function initAlertes(){
       if(b.dataset.newAlert === 'home'){
         if(dispo.includes(selectedRegion)) depart.regions = [selectedRegion];
       }else{
-        const type = document.getElementById('f-type').value;
-        if(TYPE_COLORS[type]) depart.types = [type];
-        const choisie = document.getElementById('f-region').value;
-        const region = dispo.find(r=> r === choisie);
-        if(region) depart.regions = [region];
+        Object.assign(depart, criteresRecherche());
       }
       showPage('alertes');
       openAlertModal(null, depart);
@@ -3950,7 +4098,7 @@ function initAlertes(){
     }
     const donnees = {
       nom: document.getElementById('al-nom').value.trim(),
-      criteres: { regions: coches('al-regions'), types: coches('al-types'), du, au },
+      criteres: { regions: coches('al-regions'), types: coches('al-types'), ages: coches('al-ages'), niveaux: coches('al-niveaux'), du, au },
     };
     try{
       if(alerteEnCours){
@@ -4862,6 +5010,8 @@ window.EBOK = {
     syncMenu();                  // le volet reflète l'état de connexion
     await chargerAlertes();
     renderAlertes();
+    await reprendreAlerteEnAttente();
+    if(document.getElementById('page-search').classList.contains('active')) renderResults();
     if(document.getElementById('page-alertes').classList.contains('active')) ouvrirPageAlertes();
     if(document.getElementById('page-favoris').classList.contains('active')) renderFavorites();
     maybeOpenOnboarding();       // première connexion : on pose les 4 questions

@@ -24,7 +24,7 @@ function critresPropres(brut) {
   const liste = (v) =>
     Array.isArray(v) ? v.map((x) => String(x).trim()).filter(Boolean).slice(0, 30) : [];
   const date = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || "")) ? String(v) : "");
-  return { regions: liste(c.regions), types: liste(c.types), du: date(c.du), au: date(c.au) };
+  return { regions: liste(c.regions), types: liste(c.types), ages: liste(c.ages), niveaux: liste(c.niveaux), du: date(c.du), au: date(c.au) };
 }
 
 function versAlerte(row) {

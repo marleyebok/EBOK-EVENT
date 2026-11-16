@@ -2440,7 +2440,7 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .st-cadre{transition:opacity .2s;}
 .st-cadre.is-chargement{opacity:.55;pointer-events:none;}
 
-.st-tuiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:0 0 20px;}
+.st-tuiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin:0 0 20px;}
 .st-tuile{
   display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0;padding:14px 14px 12px;text-align:left;
   background:var(--asphalt-2);border:1px solid var(--line);border-radius:14px;cursor:pointer;color:var(--chalk);
@@ -2491,6 +2491,21 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .st-table tbody th{font-weight:500;color:var(--chalk-dim);}
 .st-table td{font-variant-numeric:tabular-nums;font-weight:600;}
 
+/* Clics vers les organisateurs : détail par bouton, puis par événement. */
+.st-clics{margin:0 0 28px;padding:18px;background:var(--asphalt-2);border:1px solid var(--line);border-radius:14px;}
+.st-clics h4{font-size:17px;margin-bottom:12px;}
+.st-clics h4 .st-vs{font-size:14px;}
+.st-clics-boutons{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;}
+.st-clic{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;}
+.st-clic span{font-size:13px;color:var(--chalk-dim);font-weight:600;}
+.st-clic b{font-size:22px;font-variant-numeric:tabular-nums;}
+.st-clics-table{overflow-x:auto;}
+.st-clics-table thead th{font-size:12.5px;color:var(--chalk-dim);font-weight:600;white-space:nowrap;}
+.st-clics-table td{white-space:nowrap;}
+.st-clics-table tbody th{max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.st-clics-table .imp-lien{color:var(--chalk);text-decoration:none;font-weight:500;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.st-clics-table .imp-lien:hover{text-decoration:underline;}
+
 .st-classements{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;}
 .st-classement h4{font-size:16px;margin-bottom:10px;}
 .st-classement ol{list-style:none;margin:0;padding:0;display:grid;gap:10px;}
@@ -2509,6 +2524,8 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 }
 @media(max-width:640px){
   .st-tuiles{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .st-clics-boutons{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .st-clics{padding:14px 12px;}
   .st-tuile-valeur{font-size:26px;}
   .st-graphique{padding:14px 12px 12px;}
   .st-axe-y{min-width:28px;}
@@ -2522,3 +2539,42 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 
 .field.is-grise label{opacity:.55;}
 .field select:disabled{opacity:.5;cursor:not-allowed;background:var(--asphalt-2);}
+
+/* =========================================================
+   ALERTE PROPOSÉE APRÈS UNE RECHERCHE
+   Une carte sur toute la largeur de la grille de résultats.
+   ========================================================= */
+.results-grid .empty-state + .alerte-cta{margin-top:4px;}
+.alerte-cta{
+  grid-column:1 / -1;display:flex;align-items:center;justify-content:space-between;gap:16px 24px;flex-wrap:wrap;
+  padding:20px 22px;border-radius:16px;
+  background:color-mix(in srgb, var(--accent) 8%, var(--asphalt-2));
+  border:1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+}
+.alerte-cta-texte{flex:1 1 320px;min-width:0;}
+.alerte-cta h4{font-size:19px;margin:0 0 4px;color:var(--chalk);}
+.alerte-cta p{margin:0;font-size:15px;line-height:1.5;color:var(--chalk);opacity:.86;}
+.alerte-cta p b{color:var(--accent-text, var(--accent));opacity:1;}
+.alerte-cta-action{display:flex;flex-direction:column;align-items:flex-start;gap:6px;flex:0 0 auto;}
+.alerte-cta-btn{min-height:48px;padding:0 22px;font-size:16px;font-weight:700;}
+.alerte-cta-aide{font-size:12.5px;color:var(--chalk-dim);}
+.alerte-cta-ok{font-size:15px;font-weight:600;color:var(--chalk);}
+.alerte-cta-lien{background:none;border:0;padding:0 0 0 6px;color:var(--accent-text, var(--accent));font:inherit;text-decoration:underline;cursor:pointer;}
+@media(max-width:640px){
+  .alerte-cta{padding:16px;}
+  .alerte-cta-action{width:100%;}
+  .alerte-cta-btn{width:100%;justify-content:center;}
+}
+
+/* Bandeau de confirmation (bas de l'écran). */
+.ebok-bandeau{
+  position:fixed;left:50%;bottom:20px;z-index:4000;transform:translate(-50%, 140%);
+  display:flex;align-items:center;gap:14px;max-width:min(640px, calc(100vw - 32px));
+  padding:12px 12px 12px 18px;border-radius:14px;background:var(--chalk);color:var(--asphalt);
+  box-shadow:0 18px 40px rgba(0,0,0,.28);font-size:14.5px;line-height:1.4;
+  transition:transform .3s ease;
+}
+.ebok-bandeau.is-visible{transform:translate(-50%, 0);}
+.ebok-bandeau button{flex:none;background:none;border:0;color:inherit;font:700 14.5px var(--font-body);text-decoration:underline;cursor:pointer;padding:6px;}
+.ebok-bandeau .ebok-bandeau-x{text-decoration:none;font-size:20px;line-height:1;opacity:.6;}
+@media(prefers-reduced-motion: reduce){ .ebok-bandeau{transition:none;} }
