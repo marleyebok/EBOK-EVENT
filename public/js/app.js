@@ -4231,7 +4231,7 @@ function adminRowHtml(ev){
       ${relire ? `<div class="admin-item-det">✏️ Modifié par l'organisateur : vérifie les changements.</div>` : ''}
       ${ev.detection && ev.detection.auto ? `<div class="admin-item-det">🤖 Détecté${ev.detection.sourceNom ? ' sur ' + esc(ev.detection.sourceNom) : ''} · <a href="${esc(safeUrl(ev.detection.lien || ev.detection.sourceUrl))}" target="_blank" rel="noopener">vérifier à la source ↗</a></div>` : ''}
       ${ev.importe ? `<div class="admin-item-det">📥 Importé${ev.importe.url ? ` · <a href="${esc(safeUrl(ev.importe.url))}" target="_blank" rel="noopener">vérifier à la source ↗</a>` : ''}</div>` : ''}
-      ${ev.importe && Array.isArray(ev.importe.doutes) && ev.importe.doutes.length ? `<div class="admin-item-det">❓ ${ev.importe.doutes.map(esc).join(' ; ')}</div>` : ''}
+      ${(window.EbokVerif && (pending || relire || (ev.importe && Array.isArray(ev.importe.doutes) && ev.importe.doutes.length))) ? window.EbokVerif.html('event', ev, ev.id) : ''}
     </div>
     <div class="admin-item-actions">
       <button class="btn btn-ghost btn-xs" data-open="${esc(ev.id)}">Voir</button>

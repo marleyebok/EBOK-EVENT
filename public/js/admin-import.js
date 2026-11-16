@@ -141,8 +141,8 @@
       for(const k of VOYAGE) if(b.voyage[k]) l.voyage[k] = court(b.voyage[k], 200);
     }
 
-    const doutes = Array.isArray(b.doutes) ? b.doutes : (b.doutes ? [b.doutes] : []);
-    l.doutes = doutes.map(d => court(d, 200)).filter(Boolean).slice(0, 6);
+    // Doutes : une phrase, ou { champ, note } pour pointer le champ à confirmer.
+    l.doutes = window.EbokVerif.normaliser(b.doutes);
 
     // Doublon : même jour, même titre, ou même ville et titres qui se contiennent.
     const t = cle(l.title);
@@ -177,19 +177,23 @@
     return '';
   }
 
+  function metaTexte(l){
+    const publicTexte = [l.sexe, l.age.length ? l.age.join(', ') : '', l.niveau].filter(Boolean).join(', ');
+    return [fmtDateRange(l.dateStart, l.dateEnd) || 'date ?', l.city || 'ville ?', publicTexte].filter(Boolean).join(' · ');
+  }
+
   function ligneHtml(l){
     const bloque = l.erreurs.length > 0;
     const figee = enCours || l.statut === 'ok' || l.statut === 'cours';
-    const publicTexte = [l.sexe, l.age.length ? l.age.join(', ') : '', l.niveau].filter(Boolean).join(', ');
     return `<div class="imp-ligne${bloque ? ' is-erreur' : ''}${l.statut === 'ok' ? ' is-ok' : ''}" data-i="${l.i}">
       <label class="imp-coche"><input type="checkbox" ${l.coche ? 'checked' : ''} ${(bloque || figee) ? 'disabled' : ''} aria-label="Ajouter « ${esc(l.title || 'sans titre')} »"></label>
       <div class="imp-corps">
         <div class="imp-titre"><b>${esc(l.title || '(sans titre)')}</b><span class="imp-type">${esc(l.type)}</span></div>
-        <div class="imp-meta">${esc([fmtDateRange(l.dateStart, l.dateEnd) || 'date ?', l.city || 'ville ?', publicTexte].filter(Boolean).join(' · '))}</div>
+        <div class="imp-meta">${esc(metaTexte(l))}</div>
         ${l.erreurs.map(e => `<div class="imp-note is-erreur">⛔ ${esc(e)}</div>`).join('')}
         ${l.doublon ? `<div class="imp-note is-doublon">⚠️ Déjà sur le site ? « ${esc(l.doublon.title)} », le même jour. Décoché par défaut.</div>` : ''}
         ${l.alertes.map(a => `<div class="imp-note">⚠️ ${esc(a)}</div>`).join('')}
-        ${l.doutes.map(d => `<div class="imp-note">❓ ${esc(d)}</div>`).join('')}
+        ${(bloque || l.statut === 'ok' || l.statut === 'cours') ? '' : window.EbokVerif.html('import', l, l.i)}
         <div class="imp-pied-ligne">
           ${bloque ? '' : `<label class="btn btn-ghost btn-xs imp-affiche-btn">${l.poster ? "Changer l'affiche" : "Ajouter l'affiche"}<input type="file" accept="image/*" hidden data-affiche="${l.i}" ${figee ? 'disabled' : ''}></label>`}
           ${l.poster ? `<img class="imp-vignette" src="${esc(l.poster)}" alt="Affiche de ${esc(l.title)}">` : (l.affiche && !bloque ? `<span class="imp-source">attendue : ${esc(l.affiche)}</span>` : '')}
@@ -222,6 +226,23 @@
     }
     return bilan;
   }
+
+  /* Les lignes « ? » et « ✕ » de l'aperçu se corrigent sur place : la valeur va
+     dans la ligne du lot, et part avec elle au moment de l'ajout. */
+  window.EbokVerif.declarer('import', {
+    trouver: i => lignes[Number(i)] || null,
+    lire: (l, c) => l[c],
+    doutes: l => l.doutes,
+    async enregistrer(l, valeurs, doutes){
+      Object.assign(l, valeurs);
+      l.doutes = doutes;
+      const el = document.querySelector(`.imp-ligne[data-i="${l.i}"]`);
+      if(el){
+        const titre = el.querySelector('.imp-titre b'); if(titre) titre.textContent = l.title || '(sans titre)';
+        const meta = el.querySelector('.imp-meta'); if(meta) meta.textContent = metaTexte(l);
+      }
+    },
+  });
 
   function nbCoches(){ return lignes.filter(l => l.coche && !l.erreurs.length && l.statut !== 'ok').length; }
 
@@ -400,6 +421,7 @@
       <p class="maint-desc">
         Envoie tes liens, affiches ou calendriers à Claude dans une session sur ce projet : il te rend un lot.
         Colle-le ici, vérifie l'aperçu, joins les affiches (toutes d'un coup avec « Joindre toutes les affiches »), puis ajoute.
+        Sous chaque événement : <b>?</b> une information à confirmer, <b>✕</b> une information qui manque. Les deux se corrigent sur place.
       </p>
       <label class="sr-only" for="impTexte">Lot d'événements</label>
       <textarea id="impTexte" class="report-text imp-texte" rows="6" placeholder="Colle ici le lot d'événements…" spellcheck="false"></textarea>
