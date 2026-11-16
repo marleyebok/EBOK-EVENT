@@ -142,7 +142,7 @@ Chaque événement = objet avec :
   dateEnd: "2026-07-04",
   sexe: "Masculin|Féminin|Mixte",
   age: "Enfants (6-11 ans)|Ados (12-17 ans)|Séniors (18-35 ans)|Vétérans (35+)",
-  niveau: "Loisir|Amateur|Confirmé|Semi-pro / Pro",
+  niveau: "Loisir|Départemental|Régional|National|Espoirs|Pros|Tout niveau",
   poster: "data:image/jpeg;base64,..." ou null,
   description: "Texte descriptif",
   infos: {

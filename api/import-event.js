@@ -308,6 +308,7 @@ Règles :
 - "age" : TABLEAU de catégories parmi [${AGE_OPTIONS.join(", ")}]. Les mentions "U13", "moins de 13 ans", "benjamins" donnent "U13", etc. Si l'événement est ouvert à tous, mets ["Tout public"]. Si rien n'est indiqué, mets [].
 - "pays" : le pays de l'événement, en français ("France", "Belgique", "Suisse", "Canada"…). Le Québec est au Canada. Par défaut "France".
 - "region" : la région déduite de la ville si possible, sinon "" — France : région administrative (ex. "Occitanie") ; Belgique : province (ex. "Liège") ; Suisse : canton (ex. "Vaud") ; Canada : province (ex. "Québec").
+- "niveau" : une valeur parmi ["Loisir", "Départemental", "Régional", "National", "Espoirs", "Pros", "Tout niveau"] ("Tout niveau" si ouvert à tous les niveaux), sinon "".
 - "description" : 2 à 4 phrases synthétiques en français.
 - "insta" : identifiant Instagram sans le @, sinon "".
 - "tarif" : le ou les prix indiqués, tels quels (ex. "15 € par joueur, gratuit -12 ans"), sinon "".

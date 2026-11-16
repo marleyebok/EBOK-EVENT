@@ -176,7 +176,7 @@ function eventCardHtml(ev){
         <h4>${esc(ev.title)}</h4>
         <div class="card-meta">
           <b>${esc(ev.city)}</b> · ${fmtDateRange(ev.dateStart, ev.dateEnd)}<br>
-          ${esc(ev.sexe)} · ${esc(ageLabel(ev.age))} · ${esc(ev.niveau)}
+          ${esc(ev.sexe)} · ${esc(ageLabel(ev.age))} · ${esc(niveauEvent(ev.niveau))}
         </div>
       </div>
     </div>`;
@@ -735,7 +735,7 @@ function showTooltip(pin){
   if(!ev) return;
   tt.innerHTML = `<div class="tt-type" style="color:${typeColor(ev.type)}">${esc(ev.type)}</div>
     <div class="tt-title">${esc(ev.title)}</div>
-    <div class="tt-meta">${esc(ev.lieu)}<br>${fmtDateRange(ev.dateStart,ev.dateEnd)}<br>${esc(ev.sexe)} · ${esc(ageLabel(ev.age))} · ${esc(ev.niveau)}</div>`;
+    <div class="tt-meta">${esc(ev.lieu)}<br>${fmtDateRange(ev.dateStart,ev.dateEnd)}<br>${esc(ev.sexe)} · ${esc(ageLabel(ev.age))} · ${esc(niveauEvent(ev.niveau))}</div>`;
   tt.classList.add('show');
 }
 function hideTooltip(){ const tt = document.getElementById('mapTooltip'); if(tt) tt.classList.remove('show'); }
@@ -1268,7 +1268,7 @@ function renderResults(){
     if(dEnd && ev.dateStart > dEnd) return false;
     if(sexe !== 'all' && ev.sexe !== sexe && ev.sexe !== 'Mixte') return false;
     if(age !== 'all' && !ageList(ev.age).includes(age)) return false;
-    if(niveau !== 'all' && ev.niveau !== niveau && ev.niveau !== 'Tous niveaux') return false;
+    if(niveau !== 'all' && niveauEvent(ev.niveau) !== niveau && niveauEvent(ev.niveau) !== NIVEAU_TOUT) return false;
     if(afficheOnly && !ev.poster) return false;
     return true;
   }).sort(parDateRecente);
@@ -2256,7 +2256,7 @@ async function openEvent(id, opts){
     ['Horaires', infos.horaires],
     ['Lieu', infos.adresse || ev.lieu || ev.city, lieuSous],
     ['Public', [ev.sexe, ageLabel(ev.age)].filter(Boolean).join(', ')],
-    ['Niveau', ev.niveau],
+    ['Niveau', niveauEvent(ev.niveau)],
     ['Tarif', ev.tarif],
     ['Places', placesValue],
     ['Buvette', infos.buvette],
@@ -2657,7 +2657,7 @@ function renderFeatured(){
     const poster = safeImg(ev.poster)
       ? `<img src="${esc(safeImg(ev.poster))}" alt="Affiche ${esc(ev.title)}">`
       : `<div class="fx-poster-ph" style="--c:${c}">${esc((ev.type||'').slice(0,12).toUpperCase())}</div>`;
-    const meta = [fmtDateRange(ev.dateStart, ev.dateEnd), ev.niveau, ev.sexe].filter(Boolean).join(' · ');
+    const meta = [fmtDateRange(ev.dateStart, ev.dateEnd), niveauEvent(ev.niveau), ev.sexe].filter(Boolean).join(' · ');
     return `<div class="carousel-item">
       <div class="fx-bg ${safeImg(ev.poster) ? 'blur' : ''}" style="${bg}"></div>
       <div class="fx-scrim"></div>
@@ -3012,6 +3012,13 @@ const SOCIAL_LABELS = [
   ["instagram", "Instagram"], ["tiktok", "TikTok"], ["snapchat", "Snapchat"],
   ["facebook", "Facebook"], ["linkedin", "LinkedIn"],
 ];
+/* Niveaux d'un événement (création, modification, filtre). « Tout niveau »
+   ressort dans toutes les recherches par niveau. */
+const NIVEAUX_EVENT = ["Loisir", "Départemental", "Régional", "National", "Espoirs", "Pros", "Tout niveau"];
+const NIVEAU_TOUT = "Tout niveau";
+/* Anciennes valeurs encore présentes en base, ramenées sur la nouvelle liste. */
+const NIVEAUX_ANCIENS = { "Tous niveaux": "Tout niveau", "Semi-pro / Pro": "Pros" };
+function niveauEvent(v){ return NIVEAUX_ANCIENS[v] || v || ''; }
 const INTEREST_OPTIONS = ["Tournois", "Camps", "Circuit 3x3", "Détections", "All-Star Game", "Clinic Coachs", "Show", "Voyage", "Matchs de Gala", "Handibasket"];
 const MAX_INTERESTS = 3;
 /* Niveaux de pratique, du plus accessible au plus élevé. Posés aux joueurs à
@@ -4409,7 +4416,7 @@ function prefillCreateFromImport(ev, poster){
   set('c-date-debut', ev.dateStart);
   set('c-date-fin', ev.dateEnd);
   set('c-sexe', ev.sexe);
-  set('c-niveau', ev.niveau);
+  set('c-niveau', niveauEvent(ev.niveau));
   set('c-desc', ev.description);
   set('c-orgname', ev.orgName);
   set('c-insta', ev.insta);
@@ -4643,7 +4650,7 @@ function openEditModal(id){
   ensureCitiesLoaded();
   setFieldVal('e-title', ev.title);
   setFieldVal('e-type', ev.type || 'Divers');
-  setFieldVal('e-niveau', ev.niveau || 'Loisir');
+  setFieldVal('e-niveau', niveauEvent(ev.niveau) || 'Loisir');
   setFieldVal('e-city', ev.city);
   setRegionValue('e-region', ev.region);
   setFieldVal('e-address', (ev.infos && ev.infos.adresse) || ev.lieu || '');

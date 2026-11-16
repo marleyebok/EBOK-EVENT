@@ -18,7 +18,7 @@
   const $ = id => document.getElementById(id);
   const MAX_LIGNES = 50;
   const SEXES = ['Masculin', 'Féminin', 'Mixte'];
-  const NIVEAUX = ['Tous niveaux', 'Loisir', 'Amateur', 'Confirmé', 'Semi-pro / Pro'];
+  const NIVEAUX = NIVEAUX_EVENT;
   const VOYAGE = ['dateDepart', 'dateRetour', 'lieuxDepart', 'lieuRetour', 'destination', 'logement'];
 
   let lignes = [];
@@ -36,7 +36,7 @@
       "address": "Gymnase Jean Bouin",
       "sexe": "Mixte",
       "age": ["U15", "U17"],
-      "niveau": "Amateur",
+      "niveau": "Régional",
       "tarif": "10 € par équipe",
       "horaires": "9h à 18h",
       "orgName": "Mosson Basket",
@@ -103,7 +103,7 @@
     }
     l.sexe = dans(b.sexe, SEXES);
     if(!l.sexe){ if(b.sexe) alertes.push(`Public « ${court(b.sexe, 30)} » inconnu : remis à Mixte.`); l.sexe = 'Mixte'; }
-    l.niveau = dans(b.niveau, NIVEAUX);
+    l.niveau = dans(niveauEvent(b.niveau), NIVEAUX);
     if(!l.niveau){ if(b.niveau) alertes.push(`Niveau « ${court(b.niveau, 30)} » inconnu : remis à Loisir.`); l.niveau = 'Loisir'; }
 
     const ages = Array.isArray(b.age) ? b.age : (b.age ? [b.age] : []);
