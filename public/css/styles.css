@@ -408,6 +408,8 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .world-inset:hover .globe-line,.world-inset:focus .globe-line{stroke:var(--accent);}
 .world-inset:hover .inset-label,.world-inset:focus .inset-label{fill:var(--accent);}
 .world-badge-bg{fill:var(--accent);}
+.inset-badge{cursor:pointer;}
+.inset-badge:focus{outline:none;}
 .world-badge{fill:#fff;font-family:var(--font-mono);font-size:12px;font-weight:700;}
 
 /* Rappel du filtre international sur la page de recherche. */
