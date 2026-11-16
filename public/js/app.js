@@ -1591,7 +1591,7 @@ function initCreatePage(){
       dateStart, dateEnd,
       sexe: val('c-sexe') || 'Mixte',
       age: readAgeChoices('c-age'),
-      niveau: val('c-niveau') || 'Loisir',
+      niveau: val('c-niveau') || NIVEAU_TOUT,
       tarif: val('c-tarif'),
       lienInscription: lienPropre(val('c-inscription')),
       lienBilletterie: lienPropre(val('c-billetterie')),
@@ -3012,14 +3012,15 @@ const SOCIAL_LABELS = [
   ["instagram", "Instagram"], ["tiktok", "TikTok"], ["snapchat", "Snapchat"],
   ["facebook", "Facebook"], ["linkedin", "LinkedIn"],
 ];
-/* Niveaux d'un événement (création, modification, filtre). « Tout niveau »
-   ressort dans toutes les recherches par niveau. */
-const NIVEAUX_EVENT = ["Loisir", "Départemental", "Régional", "National", "Espoirs", "Pros", "Tout niveau"];
-const NIVEAU_TOUT = "Tout niveau";
-/* Anciennes valeurs encore présentes en base, ramenées sur la nouvelle liste. */
-const NIVEAUX_ANCIENS = { "Tous niveaux": "Tout niveau", "Semi-pro / Pro": "Pros" };
-function niveauEvent(v){ return NIVEAUX_ANCIENS[v] || v || ''; }
-const INTEREST_OPTIONS = ["Tournois", "Camps", "Circuit 3x3", "Détections", "All-Star Game", "Clinic Coachs", "Show", "Voyage", "Matchs de Gala", "Handibasket"];
+/* Niveaux d'un événement (création, modification, filtre). « Tous les niveaux »
+   (valeur par défaut) ressort dans toutes les recherches par niveau. */
+const NIVEAU_TOUT = "Tous les niveaux";
+const NIVEAUX_EVENT = [NIVEAU_TOUT, "Loisir", "Départemental", "Régional", "National", "Espoirs", "Pros"];
+/* Anciennes valeurs (ex. import collé), ramenées sur la nouvelle liste. */
+const NIVEAUX_ANCIENS = { "Tous niveaux": NIVEAU_TOUT, "Tout niveau": NIVEAU_TOUT, "Amateur": "Départemental",
+  "Débutant": "Départemental", "Confirmé": "Régional", "Semi-pro": "National", "Semi-pro / Pro": "Pros", "Pro": "Pros" };
+function niveauEvent(v){ return NIVEAUX_ANCIENS[v] || v || NIVEAU_TOUT; }
+const INTEREST_OPTIONS = ["Tournois", "Camps", "Circuit 3x3", "Détections", "All-Star Game", "Clinic Coachs", "Show", "Voyage", "Match Pro", "Handibasket"];
 const MAX_INTERESTS = 3;
 /* Niveaux de pratique, du plus accessible au plus élevé. Posés aux joueurs à
    l'inscription (voir la modale de bienvenue). */
@@ -4650,7 +4651,7 @@ function openEditModal(id){
   ensureCitiesLoaded();
   setFieldVal('e-title', ev.title);
   setFieldVal('e-type', ev.type || 'Divers');
-  setFieldVal('e-niveau', niveauEvent(ev.niveau) || 'Loisir');
+  setFieldVal('e-niveau', niveauEvent(ev.niveau));
   setFieldVal('e-city', ev.city);
   setRegionValue('e-region', ev.region);
   setFieldVal('e-address', (ev.infos && ev.infos.adresse) || ev.lieu || '');

@@ -180,7 +180,7 @@
           <h4>${titre}</h4>
           <div class="card-meta">
             ${ville} · ${dates}<br>
-            ${esc(val('c-sexe') || 'Mixte')} · ${esc(ages.length ? ageLabel(ages) : 'Tous âges')} · ${esc(val('c-niveau') || 'Loisir')}
+            ${esc(val('c-sexe') || 'Mixte')} · ${esc(ages.length ? ageLabel(ages) : 'Tous âges')} · ${esc(val('c-niveau') || 'Tous les niveaux')}
           </div>
         </div>
       </div>`;

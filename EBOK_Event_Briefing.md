@@ -133,7 +133,7 @@ Chaque événement = objet avec :
 {
   id: "unique-id",
   title: "Nom Événement",
-  type: "Tournoi|Camp|Voyage|All-Star Game|Show|Détections|Clinic Coachs|Circuit 3x3|Handibasket|Matchs de Gala|Divers",
+  type: "Tournoi|Camp|Voyage|All-Star Game|Show|Détections|Clinic Coachs|Circuit 3x3|Handibasket|Match Pro|Divers",
   city: "Paris",
   lieu: "Adresse complète",
   region: "Île-de-France",
@@ -142,7 +142,7 @@ Chaque événement = objet avec :
   dateEnd: "2026-07-04",
   sexe: "Masculin|Féminin|Mixte",
   age: "Enfants (6-11 ans)|Ados (12-17 ans)|Séniors (18-35 ans)|Vétérans (35+)",
-  niveau: "Loisir|Départemental|Régional|National|Espoirs|Pros|Tout niveau",
+  niveau: "Tous les niveaux|Loisir|Départemental|Régional|National|Espoirs|Pros",
   poster: "data:image/jpeg;base64,..." ou null,
   description: "Texte descriptif",
   infos: {
@@ -245,7 +245,7 @@ function isPast(ev) { return ev.dateEnd < TODAY; }
 | Clinic Coachs | #2196F3 (bleu) | Masterclass |
 | Circuit 3x3 | #4CAF50 (vert clair) | Tournois 3x3 (FIBA Open/Start/Growth) |
 | Handibasket | #9C27B0 (mauve) | Inclusivité |
-| Matchs de Gala | #F44336 (rouge clair) | Événements spéciaux |
+| Match Pro | #F44336 (rouge clair) | Événements spéciaux |
 | Divers | #607D8B (gris bleu) | Autres |
 
 ---

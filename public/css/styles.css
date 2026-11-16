@@ -2139,6 +2139,29 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .ev-coord-row em{margin-left:auto;padding-left:10px;flex:none;font-style:normal;font-weight:500;font-size:14px;color:rgba(255,255,255,.78);}
 .ev-coord-row:hover em{color:#fff;text-decoration:underline;}
 
+/* Ordinateur : billet plus bas. Les trois boutons sur une ligne, le site
+   officiel à droite du nom de l'organisateur. */
+@media(min-width:981px){
+  .ev-ticket{margin-bottom:28px;}
+  .ev-ticket-top{
+    display:grid;grid-template-columns:minmax(0, 1fr) auto;column-gap:18px;align-items:end;
+    padding:16px 22px 14px;
+  }
+  .ev-ticket-kicker{grid-column:1;margin-bottom:2px;font-size:13px;}
+  .ev-ticket-name{grid-column:1;font-size:clamp(20px, 1.9vw, 26px);}
+  .ev-ticket-site{grid-column:2;grid-row:1 / span 2;margin-top:0;min-height:40px;}
+  .ev-ticket-bottom{
+    display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:10px;
+    padding:16px 22px 16px;
+  }
+  .ev-ticket-bottom .ev-acts{display:contents;}
+  .ev-act{min-height:46px;padding:8px 12px;font-size:15px;}
+  .ev-act-line{margin-top:0;}
+  .ev-coord,.ev-aide{grid-column:1 / -1;}
+  .ev-coord-list{margin-top:2px;}
+  .ev-aide{margin-top:0;font-size:13.5px;}
+}
+
 /* ---------- Description ---------- */
 .event-desc{font-size:16px;color:var(--chalk);opacity:.86;max-width:66ch;white-space:pre-line;margin-bottom:36px;}
 

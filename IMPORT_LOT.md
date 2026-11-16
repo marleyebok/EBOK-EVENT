@@ -83,7 +83,7 @@ Un objet avec la liste `evenements` (une liste seule est aussi acceptée).
 | Champ | Obligatoire | Valeurs |
 |---|---|---|
 | `title` | oui | texte (200 caractères au plus) |
-| `type` | oui | `Tournoi`, `Camp`, `Voyage`, `All-Star Game`, `Show`, `Détections`, `Clinic Coachs`, `Circuit 3x3`, `Handibasket`, `Matchs de Gala`, `Divers` (inconnu : `Divers`) |
+| `type` | oui | `Tournoi`, `Camp`, `Voyage`, `All-Star Game`, `Show`, `Détections`, `Clinic Coachs`, `Circuit 3x3`, `Handibasket`, `Match Pro`, `Divers` (inconnu : `Divers`) |
 | `dateStart` | oui | `AAAA-MM-JJ` |
 | `dateEnd` | non | `AAAA-MM-JJ` (défaut : `dateStart`) |
 | `city` | oui | nom de la ville ; sert à placer l'événement sur la carte |
@@ -92,7 +92,7 @@ Un objet avec la liste `evenements` (une liste seule est aussi acceptée).
 | `address` | non | adresse ou nom de la salle |
 | `sexe` | non | `Masculin`, `Féminin`, `Mixte` (défaut `Mixte`) |
 | `age` | non | liste parmi `Tout public`, `U7`, `U9`, `U11`, `U13`, `U15`, `U17`, `U18`, `U21`, `Adulte`, `Non renseigné` |
-| `niveau` | non | `Loisir`, `Départemental`, `Régional`, `National`, `Espoirs`, `Pros`, `Tout niveau` (ouvert à tous : ressort dans toutes les recherches) (défaut `Loisir`) |
+| `niveau` | non | `Tous les niveaux` (ouvert à tous : ressort dans toutes les recherches), `Loisir`, `Départemental`, `Régional`, `National`, `Espoirs`, `Pros` (défaut `Tous les niveaux`) |
 | `tarif`, `horaires`, `buvette`, `reservation` | non | texte libre |
 | `placesTotal` | non | nombre |
 | `description` | non | texte (3 000 caractères au plus) |
