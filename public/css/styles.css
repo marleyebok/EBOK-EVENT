@@ -99,7 +99,7 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .featured-carousel{position:relative;margin:10px 0 36px;}
 .carousel-wrapper{
   position:relative;overflow:hidden;border-radius:20px;
-  background:var(--asphalt-2);border:1px solid var(--line);
+  background:#5E1420;border:1px solid rgba(179,42,59,0.55);
   box-shadow:0 18px 40px rgba(0,0,0,0.28);
 }
 .carousel-track{display:flex;transition:transform 0.55s cubic-bezier(0.4, 0.0, 0.2, 1);}
@@ -110,7 +110,7 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
   width:42px;height:42px;display:flex;align-items:center;justify-content:center;
   z-index:10;border-radius:999px;transition:background .2s;
 }
-.carousel-nav:hover{background:var(--accent);}
+.carousel-nav:hover{background:#17171A;}
 .carousel-prev{left:14px;}
 .carousel-next{right:14px;}
 .carousel-dots{display:flex;justify-content:center;gap:8px;padding:16px 0 2px;align-items:center;}
@@ -118,15 +118,15 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
   width:8px;height:8px;border-radius:50%;background:var(--asphalt-3);cursor:pointer;
   border:1px solid var(--line-strong);transition:all .25s;padding:0;
 }
-.carousel-dot.active{background:var(--accent);border-color:var(--accent);width:26px;border-radius:4px;}
+.carousel-dot.active{background:#5E1420;border-color:var(--accent);width:26px;border-radius:4px;}
 .carousel-dot:hover{background:var(--chalk-dim);}
 
-/* Bannière immersive (toujours sombre, façon affiche de cinéma) */
-.carousel-item{position:relative;flex:0 0 100%;min-height:340px;overflow:hidden;background:#101014;}
+/* Bannière immersive (toujours bordeaux, couleur de la marque, façon affiche de cinéma) */
+.carousel-item{position:relative;flex:0 0 100%;min-height:340px;overflow:hidden;background:#5E1420;}
 .fx-bg{position:absolute;inset:-8%;background-size:cover;background-position:center;z-index:0;}
-.fx-bg.blur{filter:blur(30px) brightness(0.5) saturate(1.15);transform:scale(1.12);}
+.fx-bg.blur{filter:blur(30px) brightness(0.45) saturate(0.6) sepia(0.3);transform:scale(1.12);}
 .fx-scrim{position:absolute;inset:0;z-index:1;
-  background:linear-gradient(90deg, rgba(9,9,12,0.86) 0%, rgba(9,9,12,0.62) 42%, rgba(9,9,12,0.72) 100%);}
+  background:linear-gradient(90deg, rgba(110,20,34,0.94) 0%, rgba(122,26,40,0.78) 45%, rgba(90,16,28,0.86) 100%);}
 .fx-content{position:relative;z-index:2;display:flex;align-items:center;gap:30px;
   height:100%;min-height:340px;padding:30px 40px;}
 .fx-poster{
@@ -154,6 +154,9 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .featured-place{color:#fff;font-size:15px;font-weight:600;}
 .featured-meta{color:rgba(255,255,255,0.72);font-size:13.5px;}
 .featured-actions{display:flex;align-items:center;gap:14px;margin-top:10px;}
+/* Sur le fond bordeaux, le bouton passe en noir pour ressortir. */
+.featured-actions .btn-primary{background:#17171A;border-color:#17171A;color:#fff;box-shadow:0 6px 18px rgba(0,0,0,0.35);}
+.featured-actions .btn-primary:hover{background:#000;border-color:#000;}
 .featured-slot-empty{
   margin:8px 0 34px;border:1px dashed var(--line-strong);border-radius:16px;padding:22px 26px;
   color:var(--chalk-dim);font-size:14px;
@@ -408,6 +411,8 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .world-inset:hover .globe-line,.world-inset:focus .globe-line{stroke:var(--accent);}
 .world-inset:hover .inset-label,.world-inset:focus .inset-label{fill:var(--accent);}
 .world-badge-bg{fill:var(--accent);}
+.inset-badge{cursor:pointer;}
+.inset-badge:focus{outline:none;}
 .world-badge{fill:#fff;font-family:var(--font-mono);font-size:12px;font-weight:700;}
 
 /* Rappel du filtre international sur la page de recherche. */

@@ -88,11 +88,21 @@ Un objet avec la liste `evenements` (une liste seule est aussi acceptée).
 | `orgName`, `insta`, `site`, `tel`, `email` | non | contact de l'organisateur |
 | `lienInscription`, `lienBilletterie`, `siteOfficiel` | non | adresses web (un lien illisible est ignoré) |
 | `voyage` | non | pour le type `Voyage` : `dateDepart`, `dateRetour`, `lieuxDepart`, `lieuRetour`, `destination`, `logement` |
+| `affiche` | non | nom du fichier de l'affiche fournie avec le lot (sert à la placer automatiquement) |
 | `source` | non | adresse web d'où vient l'information (gardée pour « vérifier à la source ») |
 | `doutes` | non | liste de phrases courtes sur ce qui reste incertain |
 
-L'affiche ne fait pas partie du JSON : l'admin la joint ligne par ligne dans
-l'aperçu (elle est compressée puis hébergée comme à la publication d'un événement).
+L'image de l'affiche ne fait pas partie du JSON. L'admin la joint dans l'aperçu
+(elle est compressée puis hébergée comme à la publication d'un événement) :
+
+- **toutes d'un coup** avec « Joindre toutes les affiches » : chaque fichier va sur
+  la ligne dont le champ `affiche` porte son nom (`"affiche": "03-tournoi-nice.jpg"`,
+  l'extension et la casse ne comptent pas). Si le lot ne nomme aucune affiche, le
+  numéro en tête du nom de fichier désigne la ligne (`03-…` → 3ᵉ événement) ;
+- ou une par une, avec le bouton de chaque ligne.
+
+Quand Claude prépare un lot avec des affiches, il nomme les fichiers
+`NN-titre-court.jpg` dans l'ordre du lot et écrit ce nom dans `affiche`.
 
 ## Côté code
 

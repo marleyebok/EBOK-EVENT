@@ -271,6 +271,8 @@ function buildMap(){
     </g>`;
 
   // Encarts outre-mer (DROM) : cadre + territoire cliquable + libellé.
+  const insetCounts = {};
+  for(const ev of events){ const n = insetOf(ev); if(n) insetCounts[n] = (insetCounts[n] || 0) + 1; }
   const overseas = (typeof FRANCE_INSETS !== 'undefined') ? `
     <g class="overseas-layer">
       <line class="overseas-sep" x1="12" y1="${OVERSEAS_BAND_TOP-16}" x2="${MAP_W-12}" y2="${OVERSEAS_BAND_TOP-16}"/>
@@ -280,6 +282,17 @@ function buildMap(){
         ${FRANCE_INSETS.map(ins=> `<path class="region inset-region" data-region="${ins.name}" tabindex="0" role="button" aria-label="Territoire ${ins.name}" d="${ins.d}"><title>${ins.name}</title></path>`).join('')}
       </g>
       ${FRANCE_INSETS.map(ins=> `<text class="inset-label" x="${ins.cx}" y="${ins.labelY}" text-anchor="middle">${ins.name}</text>`).join('')}
+      ${FRANCE_INSETS.map(ins=>{
+        // Pastille du nombre d'événements du territoire, comme sur « Monde ».
+        const n = insetCounts[ins.name] || 0;
+        if(!n) return '';
+        const bx = ins.box.x + ins.box.w - 14, by = ins.box.y + 14;
+        return `<g class="inset-badge" role="button" tabindex="0" data-region="${ins.name}" aria-label="${n} événement${n > 1 ? 's' : ''} — ${ins.name}">
+          <title>${ins.name} — ${n} événement${n > 1 ? 's' : ''}</title>
+          <circle class="world-badge-bg" cx="${bx}" cy="${by}" r="12"/>
+          <text class="world-badge" x="${bx}" y="${by + 4}" text-anchor="middle">${n}</text>
+        </g>`;
+      }).join('')}
     </g>` : '';
 
   // Marqueur de position de l'utilisateur + cercle de rayon (géolocalisation).
@@ -312,7 +325,7 @@ function buildMap(){
   // (:hover / :focus) — pas de manipulation du DOM, donc plus d'effet
   // "bloqué en relief" quand la souris quitte la zone.
   // Clic = ouvre la recherche filtrée sur cette région.
-  svg.querySelectorAll('.region').forEach(reg=>{
+  svg.querySelectorAll('.region, .inset-badge').forEach(reg=>{
     reg.addEventListener('click', ()=> openRegionSearch(reg.dataset.region));
     reg.addEventListener('keydown', e=>{
       if(e.key==='Enter' || e.key===' '){ e.preventDefault(); openRegionSearch(reg.dataset.region); }
@@ -595,9 +608,59 @@ function initMapZoom(){
 function positionAllEvents(){
   for(const ev of events) positionEvent(ev);
 }
+/* Outre-mer : la projection de la métropole enverrait ces événements hors de
+   la carte. On les place dans leur encart, en ramenant leurs coordonnées
+   GPS sur le contour du territoire dessiné. Bornes géographiques approchées
+   de chaque territoire (île principale et dépendances proches). */
+const INSET_GEO = {
+  'Guadeloupe': { lat: [15.83, 16.52], lng: [-61.81, -61.00] },
+  'Martinique': { lat: [14.39, 14.88], lng: [-61.23, -60.81] },
+  'Guyane':     { lat: [2.11, 5.75],   lng: [-54.60, -51.62] },
+  'La Réunion': { lat: [-21.39, -20.87], lng: [55.22, 55.84] },
+  'Mayotte':    { lat: [-13.00, -12.64], lng: [45.02, 45.30] }
+};
+let insetBoundsCache = null;
+function insetBounds(){
+  if(insetBoundsCache) return insetBoundsCache;
+  insetBoundsCache = {};
+  if(typeof FRANCE_INSETS === 'undefined') return insetBoundsCache;
+  for(const ins of FRANCE_INSETS){
+    const n = (ins.d.match(/-?\d+(?:\.\d+)?/g) || []).map(Number);
+    const xs = n.filter((_, i)=> i % 2 === 0), ys = n.filter((_, i)=> i % 2 === 1);
+    insetBoundsCache[ins.name] = { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
+  }
+  return insetBoundsCache;
+}
+/* Territoire d'outre-mer de l'événement : par sa région, sinon par ses
+   coordonnées GPS. */
+function insetOf(ev){
+  if(!ev || isAbroad(ev)) return '';
+  if(ev.region && INSET_GEO[ev.region]) return ev.region;
+  if(typeof ev.lat === 'number' && typeof ev.lng === 'number'){
+    for(const [name, g] of Object.entries(INSET_GEO)){
+      if(ev.lat >= g.lat[0] - 0.3 && ev.lat <= g.lat[1] + 0.3 && ev.lng >= g.lng[0] - 0.3 && ev.lng <= g.lng[1] + 0.3) return name;
+    }
+  }
+  return '';
+}
+function positionInset(ev, name){
+  const b = insetBounds()[name], g = INSET_GEO[name];
+  if(!b) return false;
+  let fx = 0.5, fy = 0.5;
+  if(typeof ev.lat === 'number' && typeof ev.lng === 'number'){
+    fx = Math.min(1, Math.max(0, (ev.lng - g.lng[0]) / (g.lng[1] - g.lng[0])));
+    fy = Math.min(1, Math.max(0, (g.lat[1] - ev.lat) / (g.lat[1] - g.lat[0])));
+  }
+  ev.x = Math.round((b.x0 + fx * (b.x1 - b.x0)) * 10) / 10;
+  ev.y = Math.round((b.y0 + fy * (b.y1 - b.y0)) * 10) / 10;
+  return true;
+}
 function positionEvent(ev){
   const c = CITY_COORDS[ev.city];
-  if(c){
+  const ins = c ? '' : insetOf(ev);
+  if(ins && positionInset(ev, ins)){
+    // placé dans son encart outre-mer
+  }else if(c){
     const j = stableJitter(ev.id);
     ev.x = c[0] + j.dx;
     ev.y = c[1] + j.dy;

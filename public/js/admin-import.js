@@ -83,6 +83,8 @@
       orgName: court(b.orgName, 120), insta: court(b.insta, 80).replace(/^@/, ''), site: court(b.site, 300),
       tel: court(b.tel, 40), email: court(b.email, 120),
       dateStart: court(b.dateStart, 10), dateEnd: court(b.dateEnd, 10),
+      // Nom du fichier de l'affiche, pour la placer toute seule (« Joindre toutes les affiches »).
+      affiche: court(b.affiche, 200),
     };
 
     if(!l.title) erreurs.push('Titre manquant.');
@@ -190,12 +192,35 @@
         ${l.doutes.map(d => `<div class="imp-note">❓ ${esc(d)}</div>`).join('')}
         <div class="imp-pied-ligne">
           ${bloque ? '' : `<label class="btn btn-ghost btn-xs imp-affiche-btn">${l.poster ? "Changer l'affiche" : "Ajouter l'affiche"}<input type="file" accept="image/*" hidden data-affiche="${l.i}" ${figee ? 'disabled' : ''}></label>`}
-          ${l.poster ? `<img class="imp-vignette" src="${esc(l.poster)}" alt="Affiche de ${esc(l.title)}">` : ''}
+          ${l.poster ? `<img class="imp-vignette" src="${esc(l.poster)}" alt="Affiche de ${esc(l.title)}">` : (l.affiche && !bloque ? `<span class="imp-source">attendue : ${esc(l.affiche)}</span>` : '')}
           ${l.source ? `<a class="imp-source" href="${esc(l.source)}" target="_blank" rel="noopener noreferrer">source ↗</a>` : ''}
         </div>
         <div class="imp-statut" role="status">${intituleStatut(l)}</div>
       </div>
     </div>`;
+  }
+
+  /* Place d'un coup plusieurs affiches sur leurs lignes. Une affiche va sur la
+     ligne dont le champ `affiche` du lot porte son nom de fichier ; à défaut,
+     sur la ligne dont le numéro ouvre son nom (« 03-tournoi.jpg » → 3e ligne). */
+  const nomNu = n => String(n || '').toLowerCase().replace(/\.[a-z0-9]+$/, '').trim();
+  function ligneDeLAffiche(nom){
+    const nu = nomNu(nom);
+    const parNom = lignes.find(l => l.affiche && nomNu(l.affiche) === nu);
+    if(parNom) return parNom;
+    if(lignes.some(l => l.affiche)) return null;   // le lot nomme ses affiches : pas de devinette
+    const m = nu.match(/^(\d{1,3})(?!\d)/);
+    return m ? (lignes[Number(m[1]) - 1] || null) : null;
+  }
+  async function placerAffiches(fichiers){
+    const bilan = { placees: 0, ignorees: [] };
+    for(const f of fichiers){
+      const l = ligneDeLAffiche(f.name);
+      if(!l || l.erreurs.length || l.statut === 'ok' || l.statut === 'cours'){ bilan.ignorees.push(f.name); continue; }
+      try{ l.poster = await compressImage(f, 1200, 0.8); majLigne(l); bilan.placees++; }
+      catch(err){ bilan.ignorees.push(f.name); }
+    }
+    return bilan;
   }
 
   function nbCoches(){ return lignes.filter(l => l.coche && !l.erreurs.length && l.statut !== 'ok').length; }
@@ -216,6 +241,10 @@
     const bloquees = lignes.filter(l => l.erreurs.length).length;
     zone.innerHTML = `
       <p class="det-summary"><b>${lignes.length}</b> événement${lignes.length > 1 ? 's' : ''} dans le lot${bloquees ? `, dont <b>${bloquees}</b> à corriger` : ''}. Décoche ce que tu ne veux pas ajouter.</p>
+      <div class="maint-actions">
+        <label class="btn btn-ghost imp-fichier">Joindre toutes les affiches<input type="file" id="impAffiches" accept="image/*" multiple hidden></label>
+        <span class="maint-status" id="impAffichesMsg" role="status"></span>
+      </div>
       <div class="imp-lignes">${lignes.map(ligneHtml).join('')}</div>
       <div class="imp-pied">
         <fieldset class="imp-mode">
@@ -342,6 +371,14 @@
         if(l){ l.coche = t.checked; majPied(); }
       }else if(t.name === 'impMode'){
         majPied();
+      }else if(t.id === 'impAffiches' && t.files.length){
+        const fichiers = Array.from(t.files);
+        t.value = '';
+        const msg = $('impAffichesMsg');
+        if(msg) msg.textContent = 'Lecture des affiches…';
+        const bilan = await placerAffiches(fichiers);
+        if(msg) msg.textContent = `${bilan.placees} affiche${bilan.placees > 1 ? 's' : ''} placée${bilan.placees > 1 ? 's' : ''}`
+          + (bilan.ignorees.length ? ` · non reconnue${bilan.ignorees.length > 1 ? 's' : ''} : ${bilan.ignorees.join(', ')}` : '') + '.';
       }else if(t.dataset && t.dataset.affiche != null && t.files[0]){
         const l = lignes[Number(t.dataset.affiche)];
         try{ l.poster = await compressImage(t.files[0], 1200, 0.8); majLigne(l); }
@@ -362,7 +399,7 @@
     racine.innerHTML = `
       <p class="maint-desc">
         Envoie tes liens, affiches ou calendriers à Claude dans une session sur ce projet : il te rend un lot.
-        Colle-le ici, vérifie l'aperçu, joins les affiches, puis ajoute.
+        Colle-le ici, vérifie l'aperçu, joins les affiches (toutes d'un coup avec « Joindre toutes les affiches »), puis ajoute.
       </p>
       <label class="sr-only" for="impTexte">Lot d'événements</label>
       <textarea id="impTexte" class="report-text imp-texte" rows="6" placeholder="Colle ici le lot d'événements…" spellcheck="false"></textarea>
