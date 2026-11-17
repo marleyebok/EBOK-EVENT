@@ -129,6 +129,7 @@ n'est pas configurée, le site fonctionne sur les **données de démo** de
 | `RESEND_API_KEY` | Envoi des alertes e-mail (resend.com) — sans elle, aucune alerte n'est envoyée et le reste du site fonctionne | 🔒 oui |
 | `ALERTS_FROM` | *(optionnel)* expéditeur des alertes (défaut : `EBOK <alertes@ebok.fr>`) | non |
 | `IG_ACCESS_TOKEN` | Clé d'accès Instagram (app Meta, « API setup with Instagram login ») pour publier depuis le site. Posée une fois : le site la renouvelle ensuite tout seul. Sans elle, le bouton « Publier sur Instagram » n'apparaît pas | 🔒 oui |
+| `IG_USER_ID` | *(optionnel)* identifiant du compte Instagram pro. Utile seulement si le site ne le trouve pas tout seul avec la clé « connexion unifiée » | non |
 | `IG_API_VERSION` | *(optionnel)* version de l'API Instagram (défaut `v24.0`) | non |
 
 > La clé Clerk **publishable** (`pk_live_…`) est **publique** et vit en dur dans
@@ -287,15 +288,20 @@ l'organisateur sur la photo (si Instagram refuse l'identification, la publicatio
 part sans). Une confirmation est demandée avant d'envoyer ; la fenêtre signale un
 événement déjà publié et le nombre de publications faites par le site sur 24 h.
 
-- **API** : « Instagram API with Instagram Login » (`graph.instagram.com`),
-  autorisations `instagram_business_basic` et `instagram_business_content_publish`.
-  Compte Instagram **professionnel** requis ; l'app Meta reste en mode
-  développement (pas de validation Meta, elle ne publie que sur notre compte).
-- **Clé** : générée dans l'app Meta (Cas d'utilisation Instagram → *API setup with
-  Instagram login* → *Générer des tokens d'accès*). Valable 60 jours : la tâche du
-  lundi (`/api/instagram?tache=refresh`, protégée par `CRON_SECRET`) la renouvelle
-  et la range dans `event.instagram_auth`. Pour en changer, remplace simplement
-  `IG_ACCESS_TOKEN` dans Vercel : la nouvelle reprend la main.
+- **API** : deux configurations Meta sont reconnues, selon la clé posée :
+  - **connexion unifiée** (*API setup with Unified login*, la seule proposée aux
+    nouvelles apps Meta depuis fin 2026) : clé d'utilisateur système `EAA…` qui
+    **n'expire jamais**, API `graph.facebook.com`, autorisations `instagram_basic` et
+    `instagram_content_publish`. Le compte Instagram pro est trouvé via la Page
+    Facebook qui lui est liée ; à défaut, renseigner `IG_USER_ID` ;
+  - **connexion Instagram** (anciennes apps) : clé `IG…`, API `graph.instagram.com`,
+    valable 60 jours et renouvelée par la tâche du lundi
+    (`/api/instagram?tache=refresh`, protégée par `CRON_SECRET`).
+  Compte Instagram **professionnel** requis ; l'app Meta reste en mode développement
+  (elle ne publie que sur notre compte).
+- **Clé** : posée dans `IG_ACCESS_TOKEN` (Vercel) et rangée dans
+  `event.instagram_auth`. Pour en changer, remplace simplement la variable : la
+  nouvelle reprend la main.
 - **Traces** : `event.instagram_posts` (événement, lien du post, date).
 - **Droits** : vérifiés côté serveur (`isAdminUid`) ; la clé ne quitte jamais le serveur.
 

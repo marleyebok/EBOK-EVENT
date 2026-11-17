@@ -26,7 +26,16 @@
 import { createHash } from "node:crypto";
 import { hasDb, sql, ensureSchema, json, readBody, sessionUid, isAdminUid } from "./_lib.js";
 
-const API = "https://graph.instagram.com";
+/* Deux sortes de clés, selon la configuration choisie dans l'app Meta :
+   - « connexion Instagram » : clé « IG… », API graph.instagram.com, 60 jours,
+     renouvelée par la tâche du lundi ;
+   - « connexion unifiée » (Facebook Login for Business, imposée aux nouvelles
+     apps) : clé d'utilisateur système « EAA… », API graph.facebook.com, qui
+     n'expire jamais. L'IG_ID se lit alors via les Pages, ou dans IG_USER_ID. */
+const API_IG = "https://graph.instagram.com";
+const API_FB = "https://graph.facebook.com";
+const estCleIG = (t) => /^IG/.test(String(t || ""));
+const hoteApi = (t) => (estCleIG(t) ? API_IG : API_FB);
 const VERSION = (process.env.IG_API_VERSION || "v24.0").trim();
 const LEGENDE_MAX = 2200;
 // Seules les images hébergées par notre Blob store sont publiables.
@@ -67,7 +76,7 @@ class ErreurIG extends Error {
   constructor(message, code, detail) { super(message); this.code = code; this.detail = detail; }
 }
 async function ig(chemin, { method = "GET", params = {}, token }) {
-  const url = new URL(`${API}/${VERSION}/${chemin.replace(/^\//, "")}`);
+  const url = new URL(`${hoteApi(token)}/${VERSION}/${chemin.replace(/^\//, "")}`);
   const corps = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
     if (v === undefined || v === null || v === "") continue;
@@ -96,16 +105,17 @@ function empreinte(s) { return createHash("sha256").update(String(s)).digest("he
    sinon celle de Vercel (posée ou remplacée par l'admin). */
 async function cle() {
   const seed = String(process.env.IG_ACCESS_TOKEN || "").trim();
+  const idFixe = String(process.env.IG_USER_ID || "").trim();
+  const signature = empreinte(seed + "|" + idFixe);
   const rows = await sql()`SELECT * FROM event.instagram_auth WHERE id = 1`;
   const ligne = rows[0];
-  if (ligne && (!seed || ligne.seed_hash === empreinte(seed))) return ligne;
+  if (ligne && (!seed || ligne.seed_hash === signature)) return ligne;
   if (!seed) return null;
   // Nouvelle clé : on identifie le compte pour connaître l'IG_ID de publication.
-  const moi = await ig("me", { params: { fields: "user_id,username" }, token: seed });
-  const igId = String(moi.user_id || moi.id || "");
+  const { igId, username } = await identifier(seed, idFixe);
   const res = await sql()`
     INSERT INTO event.instagram_auth (id, token, seed_hash, ig_user_id, username, expires_at, refreshed_at)
-    VALUES (1, ${seed}, ${empreinte(seed)}, ${igId}, ${moi.username || ""}, NULL, now())
+    VALUES (1, ${seed}, ${signature}, ${igId}, ${username}, NULL, now())
     ON CONFLICT (id) DO UPDATE SET token = EXCLUDED.token, seed_hash = EXCLUDED.seed_hash,
       ig_user_id = EXCLUDED.ig_user_id, username = EXCLUDED.username,
       expires_at = NULL, refreshed_at = now()
@@ -113,9 +123,35 @@ async function cle() {
   return res[0];
 }
 
-/* Renouvelle la clé (60 jours de plus). Meta exige qu'elle ait au moins 24 h. */
+/* Compte Instagram à publier : son IG_ID et son @. */
+async function identifier(token, idFixe) {
+  if (estCleIG(token)) {
+    const moi = await ig("me", { params: { fields: "user_id,username" }, token });
+    return { igId: String(moi.user_id || moi.id || ""), username: moi.username || "" };
+  }
+  let igId = idFixe;
+  if (!igId) {
+    // Clé « connexion unifiée » : le compte Instagram pro est rattaché à une Page.
+    try {
+      const pages = await ig("me/accounts", { params: { fields: "instagram_business_account{id,username}" }, token });
+      const p = (pages.data || []).find((x) => x.instagram_business_account);
+      if (p) return { igId: String(p.instagram_business_account.id), username: p.instagram_business_account.username || "" };
+    } catch { /* pas d'accès aux Pages : IG_USER_ID nécessaire */ }
+    throw new ErreurIG("ig_user_id", "ig_user_id");
+  }
+  return { igId, username: await lireUsername({ token, ig_user_id: igId }).catch(() => "") };
+}
+async function lireUsername(ligne) {
+  const r = estCleIG(ligne.token)
+    ? await ig("me", { params: { fields: "username" }, token: ligne.token })
+    : await ig(ligne.ig_user_id, { params: { fields: "username" }, token: ligne.token });
+  return r.username || "";
+}
+
+/* Renouvelle la clé (60 jours de plus). Meta exige qu'elle ait au moins 24 h.
+   Seules les clés « connexion Instagram » expirent. */
 async function renouveler(ligne) {
-  const url = new URL(`${API}/refresh_access_token`);
+  const url = new URL(`${API_IG}/refresh_access_token`);
   url.searchParams.set("grant_type", "ig_refresh_token");
   url.searchParams.set("access_token", ligne.token);
   const r = await fetch(url);
@@ -163,6 +199,7 @@ async function conteneur(ligne, { imageUrl, caption, tag }) {
 /* Traduit une erreur en message utile pour l'admin. */
 function messageErreur(e) {
   const code = Number(e && e.code);
+  if (e && e.code === "ig_user_id") return "Compte Instagram introuvable avec cette clé : ajoute IG_USER_ID (identifiant du compte Instagram) dans Vercel.";
   if (code === 190) return "La clé Instagram n'est plus valable : génère-en une nouvelle dans l'app Meta et remplace IG_ACCESS_TOKEN dans Vercel.";
   if (code === 10 || code === 200) return "L'app Meta n'a pas l'autorisation de publier (instagram_business_content_publish).";
   if (code === 9 || code === 4 || code === 32) return "Limite de publications Instagram atteinte : réessaie plus tard.";
@@ -188,6 +225,7 @@ export default async function handler(req, res) {
       }
       const ligne = await cle();
       if (!ligne) return json(res, 200, { ok: true, renouvele: false, raison: "non_configure" });
+      if (!estCleIG(ligne.token)) return json(res, 200, { ok: true, renouvele: false, raison: "cle_permanente" });
       if (Date.now() - new Date(ligne.refreshed_at).getTime() < 24 * 3600 * 1000) {
         return json(res, 200, { ok: true, renouvele: false, raison: "trop_recente" });
       }
@@ -219,9 +257,9 @@ export default async function handler(req, res) {
       // Le @ peut changer sans que la clé change : on le relit à chaque fois.
       let compte = ligne.username;
       try {
-        const moi = await ig("me", { params: { fields: "username" }, token: ligne.token });
-        if (moi.username && moi.username !== compte) {
-          compte = moi.username;
+        const u = await lireUsername(ligne);
+        if (u && u !== compte) {
+          compte = u;
           await sql()`UPDATE event.instagram_auth SET username = ${compte} WHERE id = 1`;
         }
       } catch { /* l'ancien @ reste affiché */ }
