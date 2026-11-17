@@ -387,12 +387,17 @@
               <textarea id="ci-legende" rows="8"></textarea>
               <button type="button" class="btn btn-ghost btn-xs ci-copier" id="ciCopier">Copier la légende</button>
             </div>
-            <p class="ci-astuce">Pense à identifier l'organisateur sur la photo et à le mentionner dans la légende.</p>
+            <div class="ci-publier" id="ciBlocIg" hidden>
+              <label class="ci-check"><input type="checkbox" id="ci-tag" checked> Identifier l'organisateur sur la photo</label>
+              <p class="ci-ig" id="ciIg"></p>
+            </div>
+            <p class="ci-astuce" id="ciAstuce">Pense à identifier l'organisateur sur la photo et à le mentionner dans la légende.</p>
           </div>
         </div>
         <div class="edit-actions">
           <button type="button" class="btn btn-ghost" id="ciPartager" hidden>Partager…</button>
           <button type="button" class="btn btn-primary" id="ciTelecharger">Télécharger l'image</button>
+          <button type="button" class="btn btn-primary" id="ciPublierBtn" hidden>Publier sur Instagram</button>
         </div>
       </div>`;
     document.body.appendChild(fen);
@@ -412,11 +417,21 @@
     fen.querySelector('#ciCopier').addEventListener('click', copierLegende);
     fen.querySelector('#ciTelecharger').addEventListener('click', telecharger);
     fen.querySelector('#ciPartager').addEventListener('click', partager);
+    fen.querySelector('#ciPublierBtn').addEventListener('click', publier);
+    fen.addEventListener('input', ()=> annulerConfirmation());
     return fen;
   }
 
   function champ(id){ return fen.querySelector('#' + id); }
-  function dire(msg){ champ('ciEtat').textContent = msg || ''; }
+  function dire(msg, lien){
+    const p = champ('ciEtat');
+    p.textContent = msg || '';
+    if(lien && /^https:\/\/(www\.)?instagram\.com\//.test(lien)){
+      const a = document.createElement('a');
+      a.href = lien; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Voir la publication ↗';
+      p.append(' ', a);
+    }
+  }
 
   function lireChamps(){
     return {
@@ -453,6 +468,7 @@
     champ('ci-titre').focus({ preventScroll: true });
     dire('Préparation de l\'image…');
     champ('ciTelecharger').disabled = true;
+    preparerInstagram(ev);
 
     const moi = etat;
     const src = adresseImage(ev.poster);
@@ -469,6 +485,84 @@
     if(!src) dire('Pas d\'affiche sur la fiche : la carte affiche le type à la place.');
     else if(!affiche) dire('L\'affiche n\'a pas pu être chargée (hébergée sur un site qui bloque la copie ?). Remplace-la via « Modifier » pour l\'avoir sur la carte.');
     else dire('');
+  }
+
+  /* ---------- Publication directe (api/instagram.js) ---------- */
+
+  async function preparerInstagram(ev){
+    const bloc = champ('ciBlocIg'), info = champ('ciIg'), bouton = champ('ciPublierBtn'), dl = champ('ciTelecharger');
+    bloc.hidden = true; bouton.hidden = true; bouton.disabled = false;
+    bouton.textContent = 'Publier sur Instagram'; bouton.dataset.etape = '';
+    dl.classList.replace('btn-ghost', 'btn-primary');
+    info.textContent = '';
+    const data = window.EBOK_DATA;
+    if(!data || !data.getInstagram) return;
+    const moi = etat;
+    let st;
+    try{ st = await data.getInstagram(ev.id); }catch(e){ return; }
+    if(moi !== etat) return;
+    bloc.hidden = false;
+    const lignes = [];
+    if(!st.configure){
+      lignes.push("Publication directe pas encore branchée : ajoute IG_ACCESS_TOKEN dans Vercel (voir README).");
+    }else if(!st.valide){
+      lignes.push(st.message || "Connexion Instagram à vérifier.");
+    }else{
+      bouton.hidden = false;
+      dl.classList.replace('btn-primary', 'btn-ghost');
+      let l = `Publication sur @${st.compte || 'compte EBOK'}`;
+      if(st.quota && st.quota.utilise != null) l += ` · ${st.quota.utilise}${st.quota.max ? '/' + st.quota.max : ''} publication(s) via le site sur 24 h`;
+      lignes.push(l);
+    }
+    if(st.posts && st.posts.length){
+      const d = new Date(st.posts[0].published_at);
+      lignes.push(`⚠️ Déjà publié le ${d.toLocaleDateString('fr-FR')}${st.posts.length > 1 ? ` (${st.posts.length} fois)` : ''}.`);
+    }
+    info.textContent = lignes.join(' ');
+    champ('ci-tag').disabled = !st.valide;
+  }
+
+  let minuterieConfirm = 0;
+  function annulerConfirmation(){
+    const b = fen && champ('ciPublierBtn');
+    if(!b || b.dataset.etape !== 'confirmer') return;
+    b.dataset.etape = ''; b.textContent = 'Publier sur Instagram';
+    clearTimeout(minuterieConfirm);
+  }
+
+  async function publier(){
+    if(!etat || !etat.pret) return;
+    const b = champ('ciPublierBtn');
+    // Première pression : on demande confirmation (publication publique, définitive).
+    if(b.dataset.etape !== 'confirmer'){
+      b.dataset.etape = 'confirmer';
+      b.textContent = 'Confirmer : publier maintenant';
+      dire("La publication sera visible tout de suite sur Instagram. Appuie encore pour confirmer.");
+      clearTimeout(minuterieConfirm);
+      minuterieConfirm = setTimeout(annulerConfirmation, 8000);
+      return;
+    }
+    clearTimeout(minuterieConfirm);
+    b.dataset.etape = 'envoi'; b.disabled = true; b.textContent = 'Publication…';
+    const moi = etat;
+    try{
+      dire("Envoi de l'image…");
+      const blob = await enJpeg();
+      const url = await window.EBOK_DATA.uploadCarteInsta(blob, nomFichier());
+      dire('Publication sur Instagram… (quelques secondes)');
+      const d = lireChamps();
+      const r = await window.EBOK_DATA.publierInstagram({
+        eventId: moi.ev.id, imageUrl: url, caption: champ('ci-legende').value,
+        tag: champ('ci-tag').checked ? d.insta : ''
+      });
+      if(moi !== etat) return;
+      b.textContent = 'Publié ✓';
+      dire(r.tagIgnore ? "Publié ! (l'organisateur n'a pas pu être identifié : compte introuvable ou privé)" : 'Publié sur Instagram !', r.permalink);
+    }catch(e){
+      if(moi !== etat) return;
+      b.disabled = false; b.dataset.etape = ''; b.textContent = 'Publier sur Instagram';
+      dire(e && e.message && !/^http_|^upload_/.test(e.message) ? e.message : "La publication a échoué. Réessaie, ou télécharge l'image pour la publier à la main.");
+    }
   }
 
   function fermer(){

@@ -128,6 +128,8 @@ n'est pas configurée, le site fonctionne sur les **données de démo** de
 | `CRON_SECRET` | *(recommandé)* protège la tâche quotidienne de détection : Vercel l'envoie lui-même à `/api/detection?tache=cron`. Une longue chaîne aléatoire suffit | 🔒 oui |
 | `RESEND_API_KEY` | Envoi des alertes e-mail (resend.com) — sans elle, aucune alerte n'est envoyée et le reste du site fonctionne | 🔒 oui |
 | `ALERTS_FROM` | *(optionnel)* expéditeur des alertes (défaut : `EBOK <alertes@ebok.fr>`) | non |
+| `IG_ACCESS_TOKEN` | Clé d'accès Instagram (app Meta, « API setup with Instagram login ») pour publier depuis le site. Posée une fois : le site la renouvelle ensuite tout seul. Sans elle, le bouton « Publier sur Instagram » n'apparaît pas | 🔒 oui |
+| `IG_API_VERSION` | *(optionnel)* version de l'API Instagram (défaut `v24.0`) | non |
 
 > La clé Clerk **publishable** (`pk_live_…`) est **publique** et vit en dur dans
 > `public/js/clerk.js` — c'est normal. Ne mets **jamais** `sk_…` ni `DATABASE_URL`
@@ -275,6 +277,27 @@ Tout se passe dans le navigateur (`public/js/carte-instagram.js`, dessin sur `<c
 rien n'est écrit en base ni envoyé à un service. Les affiches hébergées sur Vercel Blob
 s'exportent sans souci ; une affiche restée sur un site qui interdit sa copie est
 signalée, il suffit alors de la remplacer via « Modifier ».
+
+#### Publier directement sur Instagram
+
+Une fois `IG_ACCESS_TOKEN` posée dans Vercel, la fenêtre affiche **Publier sur
+Instagram** : l'image est hébergée sur Vercel Blob (dossier `instagram`), puis
+`api/instagram.js` la publie sur le compte EBOK avec la légende, en identifiant
+l'organisateur sur la photo (si Instagram refuse l'identification, la publication
+part sans). Une confirmation est demandée avant d'envoyer ; la fenêtre signale un
+événement déjà publié et le nombre de publications faites par le site sur 24 h.
+
+- **API** : « Instagram API with Instagram Login » (`graph.instagram.com`),
+  autorisations `instagram_business_basic` et `instagram_business_content_publish`.
+  Compte Instagram **professionnel** requis ; l'app Meta reste en mode
+  développement (pas de validation Meta, elle ne publie que sur notre compte).
+- **Clé** : générée dans l'app Meta (Cas d'utilisation Instagram → *API setup with
+  Instagram login* → *Générer des tokens d'accès*). Valable 60 jours : la tâche du
+  lundi (`/api/instagram?tache=refresh`, protégée par `CRON_SECRET`) la renouvelle
+  et la range dans `event.instagram_auth`. Pour en changer, remplace simplement
+  `IG_ACCESS_TOKEN` dans Vercel : la nouvelle reprend la main.
+- **Traces** : `event.instagram_posts` (événement, lien du post, date).
+- **Droits** : vérifiés côté serveur (`isAdminUid`) ; la clé ne quitte jamais le serveur.
 
 ### Statistiques
 
