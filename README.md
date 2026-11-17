@@ -302,6 +302,16 @@ part sans). Une confirmation est demandée avant d'envoyer ; la fenêtre signale
 - **Clé** : posée dans `IG_ACCESS_TOKEN` (Vercel) et rangée dans
   `event.instagram_auth`. Pour en changer, remplace simplement la variable : la
   nouvelle reprend la main.
+- **Organisateur** : son compte (champ « Compte Instagram ») est **identifié** sur
+  la photo et **invité à collaborer** (`collaborators` : s'il accepte, le post
+  s'affiche aussi sur son profil). Deux cases dans la fenêtre ; si Instagram refuse
+  l'un ou l'autre (compte privé, introuvable), la publication part sans et la
+  fenêtre le signale.
+- **Message à l'organisateur** : après publication, la fenêtre prépare un message
+  privé (lien du post, lien de la fiche, rattachement de la fiche, invitation à
+  collaborer) avec **Copier le message** et **Ouvrir la conversation** (`ig.me/m/…`).
+  L'envoi reste manuel : l'API Instagram ne permet pas d'écrire en premier à un
+  compte.
 - **Traces** : `event.instagram_posts` (événement, lien du post, date).
 - **Droits** : vérifiés côté serveur (`isAdminUid`) ; la clé ne quitte jamais le serveur.
 

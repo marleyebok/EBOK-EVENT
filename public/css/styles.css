@@ -2600,3 +2600,9 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .ci-ig{margin:8px 0 0;font-size:12.5px;line-height:1.45;color:var(--chalk-dim);}
 .ci-etat a{color:var(--accent-text);font-weight:700;}
 .carte-insta .edit-actions{flex-wrap:wrap;}
+.ci-publier .ci-check + .ci-check{margin-top:8px;}
+.ci-dm{margin:0 0 12px;padding:12px 14px;border:1px solid var(--accent);border-radius:12px;background:var(--asphalt-3);}
+.ci-dm label{display:block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--chalk-dim);margin-bottom:8px;}
+.ci-dm textarea{width:100%;box-sizing:border-box;font-size:13.5px;line-height:1.45;resize:vertical;}
+.ci-dm-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+.ci-dm-actions a.btn{text-decoration:none;display:inline-flex;align-items:center;}

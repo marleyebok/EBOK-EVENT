@@ -79,9 +79,9 @@ export async function getInstagram(eventId) {
 }
 
 /** Publie une carte déjà hébergée sur le compte Instagram EBOK. */
-export async function publierInstagram({ eventId, imageUrl, caption, tag }) {
+export async function publierInstagram({ eventId, imageUrl, caption, compte, tag, collab }) {
   const opts = { method: "POST", headers: { ...(await authHeader()), "Content-Type": "application/json" },
-    body: JSON.stringify({ eventId, imageUrl, caption, tag }) };
+    body: JSON.stringify({ eventId, imageUrl, caption, compte, tag, collab }) };
   const res = await fetch("/api/instagram", opts);
   let data = {};
   try { data = await res.json(); } catch { /* réponse non JSON */ }
