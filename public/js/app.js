@@ -2462,6 +2462,7 @@ async function openEvent(id, opts){
         <strong>${fmtDateRange(ev.dateStart, ev.dateEnd)}</strong>
         <span>${esc([ev.city, ev.region].filter(Boolean).join(', '))}</span>
         ${peutModifier(ev) ? `<button class="edit-inline" data-edit="${esc(ev.id)}" title="Modifier cet événement">✏️ Modifier</button>` : ``}
+        ${currentIsAdmin ? `<button class="edit-inline" data-insta="${esc(ev.id)}" title="Générer la carte Instagram de cet événement">📸 Carte Insta</button>` : ``}
       </p>
 
       <!-- Bloc 2 : ce qu'on fait avec l'organisateur -->
@@ -3056,6 +3057,24 @@ document.addEventListener('click', (e)=>{
   const btn = e.target.closest && e.target.closest('[data-edit]');
   if(btn){ e.preventDefault(); e.stopPropagation(); openEditModal(btn.dataset.edit); }
 }, true);
+
+// Carte Instagram (admin) : bouton sur la fiche et dans la liste Administration.
+document.addEventListener('click', (e)=>{
+  const btn = e.target.closest && e.target.closest('[data-insta]');
+  if(btn){ e.preventDefault(); e.stopPropagation(); ouvrirCarteInsta(btn.dataset.insta); }
+}, true);
+
+/* Ouvre le générateur de carte Instagram (js/carte-instagram.js). Réservé à
+   l'admin ; rien n'est écrit en base, l'image est faite dans le navigateur. */
+async function ouvrirCarteInsta(id){
+  if(!currentIsAdmin || !window.EbokCarteInsta) return;
+  let ev = adminList.find(e=> e.id === id) || events.find(e=> e.id === id);
+  if(!ev && window.EBOK_DATA && typeof window.EBOK_DATA.getEvent === 'function'){
+    try{ ev = await window.EBOK_DATA.getEvent(id); }catch(err){ ev = null; }
+  }
+  if(ev) window.EbokCarteInsta.ouvrir(ev);
+  else afficherBandeau("Événement introuvable.");
+}
 
 async function renderFavorites(){
   const grid = document.getElementById('favoritesGrid');
@@ -4392,6 +4411,7 @@ function adminRowHtml(ev){
     <div class="admin-item-actions">
       <button class="btn btn-ghost btn-xs" data-open="${esc(ev.id)}">Voir</button>
       <button class="btn btn-ghost btn-xs" data-edit="${esc(ev.id)}">Modifier</button>
+      <button class="btn btn-ghost btn-xs" data-insta="${esc(ev.id)}" title="Générer la carte Instagram">Carte Insta</button>
       <button class="btn btn-ghost btn-xs" data-affil="${esc(ev.id)}">Organisateur</button>
       ${pending ? `<button class="btn btn-approve btn-xs" data-approve="${esc(ev.id)}">Valider</button>` : ''}
       ${relire ? `<button class="btn btn-approve btn-xs" data-relu="${esc(ev.id)}">Marquer comme relu</button>` : ''}

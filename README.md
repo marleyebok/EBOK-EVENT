@@ -260,6 +260,22 @@ onglets :
 Fichiers : `public/js/admin-page.js` (onglets, compteurs), `admin-signalements.js`,
 `admin-detection.js`, `admin-import.js`, `admin-affiliation.js`, `admin-stats.js`.
 
+### Carte Instagram
+
+Le bouton **Carte Insta** (onglet Événements, et à côté de « Modifier » sur la fiche,
+visible de l'admin seulement) ouvre le générateur de publication Instagram : une image
+JPEG 1080 × 1350 (portrait 4:5) avec le logo EBOK, la pastille du type aux couleurs de
+la carte, l'affiche de l'organisateur créditée (@instagram), le titre, le lieu, les
+dates, le tarif et « Toutes les infos sur ebok.fr ». Titre, lieu, dates, tarif et compte
+se corrigent avant l'export (sans toucher à la fiche) ; la légende est préparée et se
+copie en un clic. Sur téléphone, **Partager…** envoie l'image directement vers
+Instagram ou la pellicule.
+
+Tout se passe dans le navigateur (`public/js/carte-instagram.js`, dessin sur `<canvas>`) :
+rien n'est écrit en base ni envoyé à un service. Les affiches hébergées sur Vercel Blob
+s'exportent sans souci ; une affiche restée sur un site qui interdit sa copie est
+signalée, il suffit alors de la remplacer via « Modifier ».
+
 ### Statistiques
 
 `public/js/visites.js` signale une visite par session de navigation (`POST /api/views?visite=1`,

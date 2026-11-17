@@ -2578,3 +2578,19 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .ebok-bandeau button{flex:none;background:none;border:0;color:inherit;font:700 14.5px var(--font-body);text-decoration:underline;cursor:pointer;padding:6px;}
 .ebok-bandeau .ebok-bandeau-x{text-decoration:none;font-size:20px;line-height:1;opacity:.6;}
 @media(prefers-reduced-motion: reduce){ .ebok-bandeau{transition:none;} }
+
+/* ---- Carte Instagram (admin) : js/carte-instagram.js ---- */
+.carte-insta .ci-box{max-width:900px;}
+.ci-grille{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:24px;align-items:start;}
+.ci-apercu canvas{display:block;width:100%;height:auto;aspect-ratio:4/5;border-radius:10px;background:#101114;box-shadow:0 0 0 1px var(--line);}
+.ci-etat{min-height:1.4em;margin:10px 0 0;font-size:13px;color:var(--chalk-dim);line-height:1.45;}
+.ci-champs{min-width:0;}
+.ci-champs .field{margin-bottom:14px;}
+.ci-champs .field input,.ci-champs .field textarea{width:100%;min-width:0;box-sizing:border-box;}
+.ci-champs .form-row{gap:0 14px;}
+.ci-champs .form-row .field{min-width:0;}
+.ci-champs textarea{font-size:13.5px;line-height:1.45;resize:vertical;}
+.ci-copier{margin-top:8px;}
+.ci-astuce{font-size:12.5px;color:var(--chalk-dim);margin:0;}
+.carte-insta .edit-actions .btn[disabled]{opacity:.55;cursor:progress;}
+@media(max-width:720px){ .ci-grille{grid-template-columns:minmax(0,1fr);} .ci-apercu{max-width:340px;margin:0 auto;width:100%;} }
