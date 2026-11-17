@@ -216,8 +216,17 @@ export default async function handler(req, res) {
       } catch (e) {
         return json(res, 200, { configure: true, valide: false, compte: ligne.username, message: messageErreur(e), posts });
       }
+      // Le @ peut changer sans que la clé change : on le relit à chaque fois.
+      let compte = ligne.username;
+      try {
+        const moi = await ig("me", { params: { fields: "username" }, token: ligne.token });
+        if (moi.username && moi.username !== compte) {
+          compte = moi.username;
+          await sql()`UPDATE event.instagram_auth SET username = ${compte} WHERE id = 1`;
+        }
+      } catch { /* l'ancien @ reste affiché */ }
       return json(res, 200, {
-        configure: true, valide: true, compte: ligne.username,
+        configure: true, valide: true, compte,
         expire: ligne.expires_at, quota, posts,
       });
     }
