@@ -53,6 +53,46 @@ export async function uploadImage(dataUrl, name = "affiche.jpg") {
   return data.url;
 }
 
+/* ---------- Instagram (admin) ---------- */
+
+/** Héberge la carte Instagram (JPEG) et renvoie son URL publique. */
+export async function uploadCarteInsta(blob, name = "carte.jpg") {
+  const res = await fetch("/api/upload", {
+    method: "POST",
+    headers: {
+      ...(await authHeader()),
+      "Content-Type": "image/jpeg",
+      "x-filename": encodeURIComponent(name),
+      "x-folder": "instagram",
+    },
+    body: blob,
+  });
+  let data = {};
+  try { data = await res.json(); } catch { /* réponse non JSON */ }
+  if (!res.ok || !data.url) throw new Error(data.error || "upload_" + res.status);
+  return data.url;
+}
+
+/** État de la connexion Instagram (+ publications déjà faites pour un événement). */
+export async function getInstagram(eventId) {
+  return api("/api/instagram" + (eventId ? "?event=" + encodeURIComponent(eventId) : ""));
+}
+
+/** Publie une carte déjà hébergée sur le compte Instagram EBOK. */
+export async function publierInstagram({ eventId, imageUrl, caption, tag }) {
+  const opts = { method: "POST", headers: { ...(await authHeader()), "Content-Type": "application/json" },
+    body: JSON.stringify({ eventId, imageUrl, caption, tag }) };
+  const res = await fetch("/api/instagram", opts);
+  let data = {};
+  try { data = await res.json(); } catch { /* réponse non JSON */ }
+  if (!res.ok) {
+    const err = new Error(data.message || data.error || "http_" + res.status);
+    err.code = data.error || "";
+    throw err;
+  }
+  return data;
+}
+
 /* ---------- Événements ---------- */
 
 /** Événements publics : uniquement ceux qui sont validés (approved). */

@@ -2594,3 +2594,9 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .ci-astuce{font-size:12.5px;color:var(--chalk-dim);margin:0;}
 .carte-insta .edit-actions .btn[disabled]{opacity:.55;cursor:progress;}
 @media(max-width:720px){ .ci-grille{grid-template-columns:minmax(0,1fr);} .ci-apercu{max-width:340px;margin:0 auto;width:100%;} }
+.ci-publier{margin:0 0 12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--asphalt-3);}
+.ci-check{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;cursor:pointer;}
+.ci-check input{width:18px;height:18px;accent-color:var(--accent);}
+.ci-ig{margin:8px 0 0;font-size:12.5px;line-height:1.45;color:var(--chalk-dim);}
+.ci-etat a{color:var(--accent-text);font-weight:700;}
+.carte-insta .edit-actions{flex-wrap:wrap;}

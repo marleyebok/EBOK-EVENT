@@ -15,6 +15,9 @@
     },
     "api/detection.js": {
       "maxDuration": 60
+    },
+    "api/instagram.js": {
+      "maxDuration": 60
     }
   },
   "redirects": [
@@ -87,6 +90,10 @@
     {
       "path": "/api/detection?tache=cron",
       "schedule": "0 9 * * 1"
+    },
+    {
+      "path": "/api/instagram?tache=refresh",
+      "schedule": "30 4 * * 1"
     }
   ]
 }
