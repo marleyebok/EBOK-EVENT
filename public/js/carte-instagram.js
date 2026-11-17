@@ -389,7 +389,17 @@
             </div>
             <div class="ci-publier" id="ciBlocIg" hidden>
               <label class="ci-check"><input type="checkbox" id="ci-tag" checked> Identifier l'organisateur sur la photo</label>
+              <label class="ci-check"><input type="checkbox" id="ci-collab" checked> L'inviter à collaborer (le post s'affichera aussi sur son profil)</label>
               <p class="ci-ig" id="ciIg"></p>
+            </div>
+            <div class="ci-dm" id="ciDm" hidden>
+              <label for="ci-dm-texte">Message à envoyer à l'organisateur</label>
+              <textarea id="ci-dm-texte" rows="10"></textarea>
+              <div class="ci-dm-actions">
+                <button type="button" class="btn btn-ghost btn-xs" id="ciDmCopier">Copier le message</button>
+                <a class="btn btn-primary btn-xs" id="ciDmOuvrir" target="_blank" rel="noopener" hidden>Ouvrir la conversation</a>
+              </div>
+              <p class="ci-ig">Instagram n'autorise pas l'envoi automatique d'un premier message : copie-le, puis colle-le dans la conversation qui s'ouvre.</p>
             </div>
             <p class="ci-astuce" id="ciAstuce">Pense à identifier l'organisateur sur la photo et à le mentionner dans la légende.</p>
           </div>
@@ -418,6 +428,7 @@
     fen.querySelector('#ciTelecharger').addEventListener('click', telecharger);
     fen.querySelector('#ciPartager').addEventListener('click', partager);
     fen.querySelector('#ciPublierBtn').addEventListener('click', publier);
+    fen.querySelector('#ciDmCopier').addEventListener('click', copierMessage);
     fen.addEventListener('input', ()=> annulerConfirmation());
     return fen;
   }
@@ -492,6 +503,7 @@
   async function preparerInstagram(ev){
     const bloc = champ('ciBlocIg'), info = champ('ciIg'), bouton = champ('ciPublierBtn'), dl = champ('ciTelecharger');
     bloc.hidden = true; bouton.hidden = true; bouton.disabled = false;
+    champ('ciDm').hidden = true;
     bouton.textContent = 'Publier sur Instagram'; bouton.dataset.etape = '';
     dl.classList.replace('btn-ghost', 'btn-primary');
     info.textContent = '';
@@ -520,6 +532,48 @@
     }
     info.textContent = lignes.join(' ');
     champ('ci-tag').disabled = !st.valide;
+    champ('ci-collab').disabled = !st.valide;
+    // Déjà publié : le message à l'organisateur reste disponible.
+    if(st.posts && st.posts.length && st.posts[0].permalink) afficherMessage(st.posts[0].permalink, false);
+  }
+
+  /* Message privé à l'organisateur, prêt à copier (pas d'envoi automatique :
+     Instagram ne permet pas d'écrire en premier à un compte via l'API). */
+  function texteMessage(permalink, collab){
+    const ev = etat.ev, d = lireChamps();
+    const nom = (ev.org && ev.org.name) || (d.insta ? '@' + d.insta : '');
+    const lignes = [
+      `Salut${nom ? ' ' + nom : ''} 👋`,
+      '',
+      `On vient de mettre en avant ton événement « ${d.titre} » sur notre Instagram et sur ebok.fr, l'agenda du basket en France 🏀`,
+      '',
+      permalink ? `📸 La publication : ${permalink}` : '',
+      `📍 La fiche : https://ebok.fr/evenement/${encodeURIComponent(ev.id)}`,
+      '',
+      "Ta fiche est gratuite. Pour la modifier ou la supprimer, crée ton compte sur ebok.fr et réponds-nous ici avec l'adresse e-mail utilisée : on te la rattache.",
+    ];
+    if(collab) lignes.push('', "On t'a aussi envoyé une invitation à collaborer sur la publication : en l'acceptant, elle apparaît sur ton profil et touche tes abonnés en plus des nôtres 💪");
+    lignes.push('', 'Belle réussite pour ton événement !', "L'équipe EBOK");
+    return lignes.filter((l, i, a)=> !(l === '' && a[i-1] === '')).join('\n');
+  }
+  function afficherMessage(permalink, collab){
+    if(!etat) return;
+    const d = lireChamps();
+    champ('ci-dm-texte').value = texteMessage(permalink, collab);
+    const lien = champ('ciDmOuvrir');
+    if(d.insta){
+      lien.href = 'https://ig.me/m/' + encodeURIComponent(d.insta);
+      lien.textContent = `Ouvrir la conversation avec @${d.insta}`;
+      lien.hidden = false;
+    }else{
+      lien.hidden = true;
+    }
+    champ('ciDm').hidden = false;
+  }
+  async function copierMessage(){
+    const zone = champ('ci-dm-texte');
+    try{ await navigator.clipboard.writeText(zone.value); dire('Message copié : colle-le dans la conversation Instagram.'); }
+    catch(e){ zone.focus(); zone.select(); dire('Sélectionné : fais Ctrl+C (ou Copier) pour le copier.'); }
   }
 
   let minuterieConfirm = 0;
@@ -553,11 +607,17 @@
       const d = lireChamps();
       const r = await window.EBOK_DATA.publierInstagram({
         eventId: moi.ev.id, imageUrl: url, caption: champ('ci-legende').value,
-        tag: champ('ci-tag').checked ? d.insta : ''
+        compte: d.insta,
+        tag: !!(d.insta && champ('ci-tag').checked),
+        collab: !!(d.insta && champ('ci-collab').checked)
       });
       if(moi !== etat) return;
       b.textContent = 'Publié ✓';
-      dire(r.tagIgnore ? "Publié ! (l'organisateur n'a pas pu être identifié : compte introuvable ou privé)" : 'Publié sur Instagram !', r.permalink);
+      const notes = [];
+      if(r.tagIgnore) notes.push("identification refusée");
+      if(r.collabIgnore) notes.push("invitation à collaborer refusée");
+      dire(notes.length ? `Publié ! (${notes.join(', ')} par Instagram : compte introuvable ou privé)` : 'Publié sur Instagram !', r.permalink);
+      afficherMessage(r.permalink, !!(d.insta && champ('ci-collab').checked && !r.collabIgnore));
     }catch(e){
       if(moi !== etat) return;
       b.disabled = false; b.dataset.etape = ''; b.textContent = 'Publier sur Instagram';

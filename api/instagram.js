@@ -5,7 +5,8 @@
  *                                       jusqu'à quand, publications du jour,
  *                                       et (avec ?event=<id>) les publications
  *                                       déjà faites pour cet événement.
- *   POST /api/instagram                 { eventId, imageUrl, caption, tag }
+ *   POST /api/instagram                 { eventId, imageUrl, caption, compte,
+ *                                       tag (identifier), collab (inviter) }
  *                                       publie la carte (déjà hébergée sur
  *                                       Vercel Blob) sur le compte EBOK.
  *   GET  /api/instagram?tache=refresh   tâche planifiée : renouvelle la clé.
@@ -170,24 +171,36 @@ async function renouveler(ligne) {
 const attendre = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* Crée le conteneur puis attend qu'Instagram ait fini de récupérer l'image. */
-async function conteneur(ligne, { imageUrl, caption, tag }) {
-  const params = { image_url: imageUrl, caption };
-  // Identification de l'organisateur au milieu de l'affiche.
-  if (tag) params.user_tags = [{ username: tag, x: 0.5, y: 0.4 }];
-  let c;
-  let tagIgnore = false;
-  try {
-    c = await ig(`${ligne.ig_user_id}/media`, { method: "POST", params, token: ligne.token });
-  } catch (e) {
-    // Compte à identifier introuvable ou privé : on publie sans l'identifier.
-    if (!tag) throw e;
-    delete params.user_tags;
-    tagIgnore = true;
-    c = await ig(`${ligne.ig_user_id}/media`, { method: "POST", params, token: ligne.token });
+async function conteneur(ligne, { imageUrl, caption, compte, identifier, collab }) {
+  /* L'organisateur est identifié sur l'affiche (user_tags) et invité à
+     collaborer (collaborators : le post s'affiche aussi sur son profil s'il
+     accepte). Instagram refuse l'un ou l'autre pour un compte introuvable ou
+     privé : on réessaie alors sans, pour que la publication parte quand même. */
+  const base = { image_url: imageUrl, caption };
+  const tag = compte;
+  const veutTag = !!(compte && identifier), veutCollab = !!(compte && collab);
+  const essais = [];
+  const ajout = (t, c) => essais.push({ t, c });
+  ajout(veutTag, veutCollab);
+  if (veutTag && veutCollab) { ajout(true, false); ajout(false, true); }
+  if (veutTag || veutCollab) ajout(false, false);
+  let c = null, retenu = essais[0], derniere = null;
+  for (const e of essais) {
+    const params = { ...base };
+    if (e.t) params.user_tags = [{ username: tag, x: 0.5, y: 0.4 }];
+    if (e.c) params.collaborators = [tag];
+    try {
+      c = await ig(`${ligne.ig_user_id}/media`, { method: "POST", params, token: ligne.token });
+      retenu = e;
+      break;
+    } catch (err) { derniere = err; }
   }
+  if (!c) throw derniere;
+  const tagIgnore = veutTag && !retenu.t;
+  const collabIgnore = veutCollab && !retenu.c;
   for (let i = 0; i < 20; i++) {
     const s = await ig(c.id, { params: { fields: "status_code" }, token: ligne.token });
-    if (s.status_code === "FINISHED") return { id: c.id, tagIgnore };
+    if (s.status_code === "FINISHED") return { id: c.id, tagIgnore, collabIgnore };
     if (s.status_code === "ERROR" || s.status_code === "EXPIRED") {
       throw new ErreurIG("conteneur_" + s.status_code.toLowerCase(), "conteneur");
     }
@@ -274,7 +287,12 @@ export default async function handler(req, res) {
       const eventId = String(body.eventId || "").slice(0, 100);
       const imageUrl = String(body.imageUrl || "");
       const caption = String(body.caption || "").slice(0, LEGENDE_MAX);
-      const tag = /^[A-Za-z0-9._]{1,30}$/.test(String(body.tag || "")) ? String(body.tag) : "";
+      // compte : @ de l'organisateur ; identifier / collab : ce qu'on en fait.
+      // (Ancien format accepté : tag = "@" à identifier.)
+      const brut = String(body.compte || (typeof body.tag === "string" ? body.tag : "") || "");
+      const compte = /^[A-Za-z0-9._]{1,30}$/.test(brut) ? brut : "";
+      const identifier = body.tag === true || (typeof body.tag === "string" && body.tag !== "");
+      const collab = body.collab === true;
 
       let hote = "";
       try { const u = new URL(imageUrl); hote = u.protocol === "https:" ? u.hostname : ""; } catch { /* invalide */ }
@@ -283,7 +301,7 @@ export default async function handler(req, res) {
 
       const ligne = await cle();
       try {
-        const { id, tagIgnore } = await conteneur(ligne, { imageUrl, caption, tag });
+        const { id, tagIgnore, collabIgnore } = await conteneur(ligne, { imageUrl, caption, compte, identifier, collab });
         const pub = await ig(`${ligne.ig_user_id}/media_publish`, { method: "POST", params: { creation_id: id }, token: ligne.token });
         let permalink = "";
         try { permalink = (await ig(pub.id, { params: { fields: "permalink" }, token: ligne.token })).permalink || ""; }
@@ -292,7 +310,7 @@ export default async function handler(req, res) {
           INSERT INTO event.instagram_posts (media_id, event_id, permalink, image_url)
           VALUES (${pub.id}, ${eventId || null}, ${permalink}, ${imageUrl})
           ON CONFLICT (media_id) DO NOTHING`;
-        return json(res, 200, { ok: true, permalink, tagIgnore });
+        return json(res, 200, { ok: true, permalink, tagIgnore, collabIgnore });
       } catch (e) {
         console.error("instagram publish:", e && e.message, e && e.code, e && e.detail);
         return json(res, 502, { error: "instagram", message: messageErreur(e) });
