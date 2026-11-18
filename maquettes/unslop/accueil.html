@@ -8,7 +8,7 @@
      Fichier autonome, il ne touche pas au site. Données = celles du mode démo.
      Typo au choix : ajouter ?typo=a, ?typo=b ou ?typo=c à l'adresse.
      unslop by Damir Sokolovsky (@heydamir), CC BY 4.0. -->
-<script>(function(){var m=/[?&]typo=([abc])/.exec(location.search);if(m)document.documentElement.dataset.typo=m[1];})();</script>
+<script>(function(){var m=/[?&]typo=([abcd])/.exec(location.search);if(m)document.documentElement.dataset.typo=m[1];})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700&family=Archivo:wght@400;500;600&family=Barlow+Condensed:wght@500;600&family=Barlow:wght@400;500;600&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -24,6 +24,7 @@
 /* Trois propositions de typo */
 [data-typo=a]{--display:'Big Shoulders Display',sans-serif;--ui:'Archivo',system-ui,sans-serif;--dw:700;--dcase:uppercase;--dtrack:0;--h1:84px}
 [data-typo=b]{--display:'Barlow Condensed',sans-serif;--ui:'Barlow',system-ui,sans-serif;--dw:600;--dcase:uppercase;--dtrack:-.01em;--h1:80px}
+[data-typo=d]{--display:Impact,'Anton',sans-serif;--ui:'Archivo',system-ui,sans-serif;--dw:400;--dcase:uppercase;--dtrack:.005em;--h1:80px}
 [data-typo=c]{--display:'Bricolage Grotesque',sans-serif;--ui:'Bricolage Grotesque',system-ui,sans-serif;--dw:600;--dcase:none;--dtrack:-.03em;--h1:68px}
 
 *{box-sizing:border-box}
