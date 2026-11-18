@@ -80,6 +80,17 @@ h1 span{color:var(--accent);display:block}
 .search input::placeholder{color:var(--ink-3)}
 .search input::-webkit-search-cancel-button{-webkit-appearance:none}
 .search .btn{height:48px}
+.searchbox{position:relative}
+.suggest{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:5;background:var(--card);border:1px solid var(--line-2);border-radius:12px;padding:6px;box-shadow:0 12px 32px rgba(28,26,23,.12);margin:0;list-style:none}
+.suggest[hidden]{display:none}
+.suggest li{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:8px;cursor:pointer}
+.suggest li[aria-selected=true],.suggest li:hover{background:var(--raised)}
+.suggest .sg-d{flex:none;width:64px;font:500 12px/16px var(--mono);color:var(--accent-ink)}
+.suggest .sg-t{font-weight:500;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.suggest .sg-c{margin-left:auto;font:400 12px var(--mono);color:var(--ink-3);white-space:nowrap}
+.suggest mark{background:none;color:inherit;text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:3px;text-decoration-thickness:2px}
+.suggest .sg-head{font:400 11px/16px var(--mono);color:var(--ink-3);padding:4px 10px 6px;cursor:default}
+.suggest .sg-head:hover{background:none}
 .understood{font:400 12px/16px var(--mono);color:var(--ink-3);margin:10px 0 0;min-height:16px}
 .understood b{font-weight:500;color:var(--ink)}
 .publish{display:flex;align-items:center;gap:12px;margin-top:28px;padding-top:20px;border-top:1px solid var(--line);color:var(--ink-2)}
@@ -109,7 +120,9 @@ h1 span{color:var(--accent);display:block}
 .pin circle{fill:var(--ink);stroke:var(--card);stroke-width:2}
 .pin-n{font:500 11px var(--mono);fill:var(--chalk);text-anchor:middle}
 .pin-l{font:500 12px var(--mono);fill:var(--ink);paint-order:stroke;stroke:#E7DFCF;stroke-width:4px;stroke-linejoin:round}
-.pin-feat circle{fill:var(--accent)}
+.pin-multi circle{fill:var(--accent)}
+.pin .ring{fill:none;stroke:var(--ink);stroke-width:2}
+.pin-feat:not(.pin-multi) circle.dot{fill:var(--accent)}
 .callout{opacity:0;transition:opacity .3s var(--ease)}
 .callout.on{opacity:1}
 .callout path{stroke:var(--ink);stroke-width:1.5;fill:none}
@@ -152,7 +165,7 @@ h2{font-family:var(--display);font-weight:var(--dw);font-size:40px;line-height:1
 .head .count{font-size:13px}
 
 /* à la une : fond bordeaux */
-.une{display:grid;grid-template-columns:340px minmax(0,1fr);gap:56px;align-items:center;background:var(--bordeaux);color:var(--chalk);border:1px solid rgba(179,42,59,.55);border-radius:20px;padding:48px 56px;position:relative}
+.une{display:grid;grid-template-columns:340px minmax(0,1fr);gap:56px;align-items:center;background:var(--bordeaux);color:var(--chalk);border:1px solid rgba(179,42,59,.55);border-radius:20px;padding:48px 56px;position:relative;min-height:560px}
 .poster{width:100%;height:auto;aspect-ratio:700/934;object-fit:cover;border-radius:6px;transform:rotate(-2deg);box-shadow:0 18px 40px rgba(0,0,0,.35),0 2px 6px rgba(0,0,0,.3)}
 .une-meta{font:400 13px/20px var(--mono);color:rgba(244,240,231,.7);margin:0 0 12px}
 .une h3{font-family:var(--display);font-weight:var(--dw);font-size:68px;line-height:1;letter-spacing:var(--dtrack);text-transform:var(--dcase);margin:0 0 24px}
@@ -169,9 +182,20 @@ h2{font-family:var(--display);font-weight:var(--dw);font-size:40px;line-height:1
 .btn-chalk:hover{background:#fff}
 .une .btn-line{background:transparent;border-color:rgba(244,240,231,.28);color:var(--chalk)}
 .une .btn-line:hover{background:rgba(244,240,231,.1)}
-.une-nav{position:absolute;right:24px;bottom:24px;display:flex;align-items:center;gap:8px;font:400 12px var(--mono);color:rgba(244,240,231,.7)}
-.une-nav button{width:36px;height:36px;border-radius:8px;border:1px solid rgba(244,240,231,.22);background:none;color:var(--chalk);display:grid;place-items:center}
-.une-nav button:hover{background:rgba(244,240,231,.1)}
+.une-in{display:contents}
+.une>*{transition:opacity .2s var(--ease)}
+.une.swap>*{opacity:0}
+.poster-vide{width:100%;aspect-ratio:700/934;border-radius:6px;transform:rotate(-2deg);background:#4A0F19;box-shadow:0 18px 40px rgba(0,0,0,.35),inset 0 0 0 1px rgba(244,240,231,.14);display:flex;flex-direction:column;justify-content:space-between;padding:28px 24px}
+.poster-vide .pv-t{font:400 12px/16px var(--mono);color:rgba(244,240,231,.7)}
+.poster-vide .pv-n{font-family:var(--display);font-weight:var(--dw);text-transform:var(--dcase);letter-spacing:var(--dtrack);font-size:44px;line-height:1;color:var(--chalk)}
+.poster-vide .pv-c{font:500 14px/20px var(--mono);color:#F2C2C8}
+.dots{display:flex;justify-content:center;gap:8px;margin-top:20px}
+.dots button{width:8px;height:8px;padding:0;border:0;border-radius:4px;background:rgba(28,26,23,.2);position:relative;overflow:hidden;transition:width .3s var(--ease),background-color .2s var(--ease)}
+.dots button:hover{background:rgba(28,26,23,.35)}
+.dots button[aria-current=true]{width:32px;background:rgba(179,42,59,.25)}
+.dots button[aria-current=true]::after{content:"";position:absolute;inset:0;background:var(--accent);transform-origin:left;transform:scaleX(0);animation:fill var(--dur,6s) linear forwards}
+.dots.pause button[aria-current=true]::after{animation-play-state:paused}
+@keyframes fill{to{transform:scaleX(1)}}
 
 /* agenda */
 .agenda{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
@@ -232,10 +256,10 @@ footer{border-top:1px solid var(--line);margin-top:32px;padding:48px 0 32px}
   .zoom{top:8px;right:8px}
   section.block{padding:48px 0}
   h2{font-size:30px}
-  .une{grid-template-columns:1fr;padding:32px 20px 80px;gap:32px}
-  .poster{max-width:240px;margin:0 auto}
+  .une{grid-template-columns:1fr;padding:32px 20px 40px;gap:32px;min-height:0}
+  .poster,.poster-vide{max-width:240px;margin:0 auto}
+  .suggest .sg-c{display:none}
   .une h3{font-size:44px}
-  .une-nav{right:20px;bottom:20px}
   .row{gap:16px;padding:12px 16px}
   .row-t{font-size:16px;white-space:normal}
   .foot{grid-template-columns:1fr;gap:32px}
@@ -272,12 +296,15 @@ footer{border-top:1px solid var(--line);margin-top:32px;padding:48px 0 32px}
       <p class="kicker"><b>20</b> événements · <b>13</b> villes · France, Belgique, Suisse, Québec</p>
       <h1 id="titre">Partout où <span>ça joue</span></h1>
       <p class="sub">Tournois, camps, 3x3, détections : tout le basket francophone sur une seule carte.</p>
+      <div class="searchbox">
       <form class="search" id="search" role="search">
         <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <input id="q" type="search" placeholder="Un camp à Lyon en juillet" aria-label="Rechercher un événement" autocomplete="off">
+        <input id="q" type="search" placeholder="Un camp à Lyon en juillet" aria-label="Rechercher un événement" autocomplete="off" role="combobox" aria-controls="suggest" aria-expanded="false">
         <button class="btn btn-ink" type="submit">Chercher</button>
       </form>
-      <p class="understood" id="understood" aria-live="polite"></p>
+      <ul class="suggest" id="suggest" role="listbox" hidden></ul>
+      </div>
+      <p class="understood" id="understood" aria-live="polite">Un type, une ville, un mois ou le nom d'un événement</p>
       <div class="publish">
         <span>Tu organises un événement ?</span>
         <a class="btn btn-line" href="#"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>Publier un événement</a>
@@ -315,23 +342,8 @@ footer{border-top:1px solid var(--line);margin-top:32px;padding:48px 0 32px}
 
   <section class="block" aria-labelledby="une">
     <div class="head"><h2 id="une">À la une</h2><span class="count">5 événements mis en avant</span></div>
-    <article class="une">
-      <img class="poster" src="assets/demo-ligue-c.jpg" alt="Affiche de La Ligue C 2026, gymnase Jean Bouin à Montpellier" width="700" height="934">
-      <div>
-        <p class="une-meta">Tournoi · Régional · Masculin · Séniors</p>
-        <h3>La Ligue C</h3>
-        <div class="une-row">
-          <span class="score score-big"><span class="sc-d">SAM → SAM</span><span class="sc-n">27<i>–</i>04</span><span class="sc-m">JUIN · JUIL</span></span>
-          <div class="une-where"><strong>Gymnase Jean Bouin, Montpellier</strong><span>Occitanie · matchs tous les soirs à 19h</span></div>
-        </div>
-        <p class="desc">Ligue d'été : qualifications tous les soirs, demi-finales le 3 juillet, finale le 4 juillet. Organisé par Courtcuts x Mosson Basket.</p>
-        <div class="actions">
-          <a class="btn btn-chalk btn-lg" href="#">Voir l'événement</a>
-          <a class="btn btn-line btn-lg" href="#"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>Favori</a>
-        </div>
-      </div>
-      <div class="une-nav"><button type="button" aria-label="Précédent"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button><span>1 / 5</span><button type="button" aria-label="Suivant"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button></div>
-    </article>
+    <article class="une" id="une-card" aria-live="polite"></article>
+    <div class="dots" id="dots" role="tablist" aria-label="Événements à la une"></div>
   </section>
 
   <section class="block" id="agenda" aria-labelledby="ag">
@@ -394,7 +406,8 @@ footer{border-top:1px solid var(--line);margin-top:32px;padding:48px 0 32px}
 </footer>
 
 <script>
-const EV = [{"t":"La Ligue C","ty":"Tournoi","c":"Montpellier","r":"Occitanie","s":"2026-06-27","e":"2026-07-04","f":true,"xy":[387,464.3]},{"t":"All-Star Game Île-de-France","ty":"All-Star Game","c":"Paris","r":"Île-de-France","s":"2026-07-11","e":"2026-07-11","f":false,"xy":[325,154]},{"t":"Camp d'été Ballers Academy","ty":"Camp","c":"Lyon","r":"Auvergne-Rhône-Alpes","s":"2026-07-13","e":"2026-07-17","f":false,"xy":[426,337]},{"t":"Basket Trip Riviera","ty":"Voyage","c":"Nice","r":"Provence-Alpes-Côte d'Azur","s":"2026-08-03","e":"2026-08-08","f":false,"xy":[524.6,458.5]},{"t":"Summer League Toulouse","ty":"Tournoi","c":"Toulouse","r":"Occitanie","s":"2026-07-20","e":"2026-07-26","f":false,"xy":[288.1,464.7]},{"t":"Camp Filles Ouest Basket","ty":"Camp","c":"Nantes","r":"Pays de la Loire","s":"2026-07-06","e":"2026-07-09","f":false,"xy":[166.3,250.9]},{"t":"Streetball Show Strasbourg","ty":"Show","c":"Strasbourg","r":"Grand Est","s":"2026-07-18","e":"2026-07-18","f":false,"xy":[544.5,170.8]},{"t":"Spring Cup Bordeaux","ty":"Tournoi","c":"Bordeaux","r":"Nouvelle-Aquitaine","s":"2026-05-09","e":"2026-05-10","f":false,"xy":[205.9,391.8]},{"t":"Winter Jam Lille","ty":"Show","c":"Lille","r":"Hauts-de-France","s":"2026-02-14","e":"2026-02-14","f":false,"xy":[353.7,49.2]},{"t":"3x3 FIBA Open — Paris Streetball","ty":"Circuit 3x3","c":"Paris","r":"Île-de-France","s":"2026-07-25","e":"2026-07-26","f":true,"xy":[325,154]},{"t":"3x3 Start Lyon — Découverte","ty":"Circuit 3x3","c":"Lyon","r":"Auvergne-Rhône-Alpes","s":"2026-08-08","e":"2026-08-09","f":false,"xy":[426,337]},{"t":"3x3 Growth Tour — Marseille","ty":"Circuit 3x3","c":"Marseille","r":"Provence-Alpes-Côte d'Azur","s":"2026-07-11","e":"2026-07-12","f":false,"xy":[447.7,482.9]},{"t":"Camp d'été ASVEL — Perfectionnement","ty":"Camp","c":"Lyon","r":"Auvergne-Rhône-Alpes","s":"2026-07-27","e":"2026-07-31","f":true,"xy":[426,337]},{"t":"Camp Feminin Cholet Basket","ty":"Camp","c":"Cholet","r":"Pays de la Loire","s":"2026-08-10","e":"2026-08-14","f":false,"xy":[193.7,260.3]},{"t":"Clinic NBA avec Tony Parker","ty":"Clinic Coachs","c":"Lyon","r":"Auvergne-Rhône-Alpes","s":"2026-07-06","e":"2026-07-06","f":true,"xy":[426,337]},{"t":"Détection NBB — Scouts Pro","ty":"Détections","c":"Limoges","r":"Nouvelle-Aquitaine","s":"2026-06-20","e":"2026-06-20","f":false,"xy":[280.7,332.9]},{"t":"Matchs de Gala — Choc des Générations","ty":"Match Pro","c":"Paris","r":"Île-de-France","s":"2026-09-12","e":"2026-09-12","f":false,"xy":[325,154]},{"t":"Tournoi Handibasket — Open Sud","ty":"Handibasket","c":"Toulouse","r":"Occitanie","s":"2026-06-12","e":"2026-06-14","f":false,"xy":[288.1,464.7]},{"t":"Tournoi Juniors Atlantique","ty":"Tournoi","c":"Nantes","r":"Pays de la Loire","s":"2026-07-19","e":"2026-07-21","f":false,"xy":[166.3,250.9]},{"t":"Voyage Basketball — Semaine Corse","ty":"Voyage","c":"Bastia","r":"Corse","s":"2026-08-16","e":"2026-08-22","f":true,"xy":[613.6,518.2]}];
+const EV = [{"t":"La Ligue C","ty":"Tournoi","c":"Montpellier","r":"Occitanie","s":"2026-06-27","e":"2026-07-04","f":true,"xy":[387,464.3],"lieu":"Gymnase Jean Bouin, Montpellier","niv":"Confirmé","ag":"Séniors","sx":"Masculin","d":"Tournoi ligue d'été qui se joue du 27 juin au 4 juillet 2026 au gymnase Jean Bouin de Montpellier.","p":"assets/demo-ligue-c.jpg"},{"t":"All-Star Game Île-de-France","ty":"All-Star Game","c":"Paris","r":"Île-de-France","s":"2026-07-11","e":"2026-07-11","f":false,"xy":[325,154],"lieu":"COSEC Binet, Paris 19e","niv":"Confirmé","ag":"Séniors","sx":"Mixte","d":"Soirée all-star game réunissant les meilleurs profils street d'Île-de-France : concours de dunks, 3 points contest et match des étoiles devant le public parisien.","p":""},{"t":"Camp d'été Ballers Academy","ty":"Camp","c":"Lyon","r":"Auvergne-Rhône-Alpes","s":"2026-07-13","e":"2026-07-17","f":false,"xy":[426,337],"lieu":"Halle Diagana, Lyon","niv":"Amateur","ag":"Ados","sx":"Mixte","d":"Camp d'entraînement sur 5 jours pour ados : fondamentaux, ateliers tir, préparation physique et tournoi de clôture le vendredi.","p":""},{"t":"Basket Trip Riviera","ty":"Voyage","c":"Nice","r":"Provence-Alpes-Côte d'Azur","s":"2026-08-03","e":"2026-08-08","f":false,"xy":[524.6,458.5],"lieu":"Plages du Prado & terrains extérieurs, Nice","niv":"Loisir","ag":"Séniors","sx":"Mixte","d":"Une semaine sur la Côte d'Azur mêlant basket outdoor, plage et soirées : tournois 3x3 en journée, sessions libres et activités entre joueurs venus de toute la France.","p":""},{"t":"Summer League Toulouse","ty":"Tournoi","c":"Toulouse","r":"Occitanie","s":"2026-07-20","e":"2026-07-26","f":false,"xy":[288.1,464.7],"lieu":"Gymnase du Mirail, Toulouse","niv":"Semi-pro / Pro","ag":"Séniors","sx":"Masculin","d":"Compétition en poules puis phase finale à élimination directe, ouverte aux équipes régionales confirmées.","p":""},{"t":"Camp Filles Ouest Basket","ty":"Camp","c":"Nantes","r":"Pays de la Loire","s":"2026-07-06","e":"2026-07-09","f":false,"xy":[166.3,250.9],"lieu":"Complexe sportif Beaulieu, Nantes","niv":"Amateur","ag":"Ados","sx":"Féminin","d":"Camp dédié aux jeunes joueuses : renforcement technique, préparation mentale et rencontre avec des joueuses professionnelles de la région.","p":""},{"t":"Streetball Show Strasbourg","ty":"Show","c":"Strasbourg","r":"Grand Est","s":"2026-07-18","e":"2026-07-18","f":false,"xy":[544.5,170.8],"lieu":"Place Kléber, Strasbourg","niv":"Loisir","ag":"Séniors","sx":"Mixte","d":"Exhibition en plein cœur de ville : freestyle, dunks et animations musicales pour un show basket ouvert à tous les publics.","p":""},{"t":"Spring Cup Bordeaux","ty":"Tournoi","c":"Bordeaux","r":"Nouvelle-Aquitaine","s":"2026-05-09","e":"2026-05-10","f":false,"xy":[205.9,391.8],"lieu":"Palais des Sports, Bordeaux","niv":"Amateur","ag":"Séniors","sx":"Mixte","d":"Tournoi de printemps en 5x5, deux jours de poules et phase finale.","p":""},{"t":"Winter Jam Lille","ty":"Show","c":"Lille","r":"Hauts-de-France","s":"2026-02-14","e":"2026-02-14","f":false,"xy":[353.7,49.2],"lieu":"Grand Palais, Lille","niv":"Loisir","ag":"Séniors","sx":"Mixte","d":"Show hivernal indoor avec concours de dunks et animations DJ.","p":""},{"t":"3x3 FIBA Open — Paris Streetball","ty":"Circuit 3x3","c":"Paris","r":"Île-de-France","s":"2026-07-25","e":"2026-07-26","f":true,"xy":[325,154],"lieu":"Parc des Buttes-aux-Cailles, Paris 13e","niv":"Confirmé","ag":"Séniors","sx":"Mixte","d":"Tournoi 3x3 FIBA Open de niveau élevé réunissant les meilleures équipes d'Île-de-France.","p":""},{"t":"3x3 Start Lyon — Découverte","ty":"Circuit 3x3","c":"Lyon","r":"Auvergne-Rhône-Alpes","s":"2026-08-08","e":"2026-08-09","f":false,"xy":[426,337],"lieu":"Parc de la Tête d'Or, Lyon","niv":"Amateur","ag":"Ados","sx":"Mixte","d":"Circuit 3x3 START pour débuter en compétition 3x3.","p":""},{"t":"3x3 Growth Tour — Marseille","ty":"Circuit 3x3","c":"Marseille","r":"Provence-Alpes-Côte d'Azur","s":"2026-07-11","e":"2026-07-12","f":false,"xy":[447.7,482.9],"lieu":"Plage du Prado, Marseille","niv":"Amateur","ag":"Séniors","sx":"Mixte","d":"3x3 Growth Tour sur les plages du Prado — compétition de milieu de gamme, tremplin vers l'Open.","p":""},{"t":"Camp d'été ASVEL — Perfectionnement","ty":"Camp","c":"Lyon","r":"Auvergne-Rhône-Alpes","s":"2026-07-27","e":"2026-07-31","f":true,"xy":[426,337],"lieu":"Pôle France ASVEL, Villeurbanne","niv":"Confirmé","ag":"Ados","sx":"Mixte","d":"Camp d'été du centre de formation ASVEL.","p":""},{"t":"Camp Feminin Cholet Basket","ty":"Camp","c":"Cholet","r":"Pays de la Loire","s":"2026-08-10","e":"2026-08-14","f":false,"xy":[193.7,260.3],"lieu":"Aréna Metz Handball, Cholet","niv":"Amateur","ag":"Ados","sx":"Féminin","d":"Camp d'entraînement féminin spécialisé.","p":""},{"t":"Clinic NBA avec Tony Parker","ty":"Clinic Coachs","c":"Lyon","r":"Auvergne-Rhône-Alpes","s":"2026-07-06","e":"2026-07-06","f":true,"xy":[426,337],"lieu":"Astroballe ASVEL, Villeurbanne","niv":"Confirmé","ag":"Séniors","sx":"Mixte","d":"Masterclass exceptionnelle avec la légende Tony Parker.","p":""},{"t":"Détection NBB — Scouts Pro","ty":"Détections","c":"Limoges","r":"Nouvelle-Aquitaine","s":"2026-06-20","e":"2026-06-20","f":false,"xy":[280.7,332.9],"lieu":"Complexe Beaulieu, Limoges","niv":"Confirmé","ag":"Séniors","sx":"Mixte","d":"Séance de détection organisée par les scouts des clubs professionnels de la NBB.","p":""},{"t":"Matchs de Gala — Choc des Générations","ty":"Match Pro","c":"Paris","r":"Île-de-France","s":"2026-09-12","e":"2026-09-12","f":false,"xy":[325,154],"lieu":"AccorHotels Arena, Paris","niv":"Semi-pro / Pro","ag":"Séniors","sx":"Mixte","d":"Soirée de gala avec matchs opposant les légendes du basketball français aux jeunes talents.","p":""},{"t":"Tournoi Handibasket — Open Sud","ty":"Handibasket","c":"Toulouse","r":"Occitanie","s":"2026-06-12","e":"2026-06-14","f":false,"xy":[288.1,464.7],"lieu":"Palais des Sports de Toulouse","niv":"Confirmé","ag":"Séniors","sx":"Mixte","d":"Tournoi régional handbasket réunissant les équipes du sud.","p":""},{"t":"Tournoi Juniors Atlantique","ty":"Tournoi","c":"Nantes","r":"Pays de la Loire","s":"2026-07-19","e":"2026-07-21","f":false,"xy":[166.3,250.9],"lieu":"Complexe des Oiseaux, Nantes","niv":"Amateur","ag":"Ados","sx":"Mixte","d":"Tournoi U18 interrégional réunissant les meilleures équipes juniors.","p":""},{"t":"Voyage Basketball — Semaine Corse","ty":"Voyage","c":"Bastia","r":"Corse","s":"2026-08-16","e":"2026-08-22","f":true,"xy":[613.6,518.2],"lieu":"Multisports Sporting, Bastia","niv":"Loisir","ag":"Séniors","sx":"Mixte","d":"Une semaine en Corse mêlant basketball, plage et découverte.","p":""}];
+const AIDE = 'Un type, une ville, un mois ou le nom d\'un événement';
 const MOIS_C = ['JANV','FÉVR','MARS','AVR','MAI','JUIN','JUIL','AOÛT','SEPT','OCT','NOV','DÉC'];
 const MOIS_L = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
 const NS = 'http://www.w3.org/2000/svg';
@@ -406,7 +419,7 @@ const VB = { x: 40, y: 20, w: 600, h: 600 };
 
 /* ---- lecture d'une phrase : « un camp à Lyon en juillet » ---- */
 const TYPE_MOTS = [
-  [/3 ?x ?3/, 'Circuit 3x3'], [/\bcamps?\b|\bstages?\b/, 'Camp'], [/tournois?|\bligue/, 'Tournoi'],
+  [/3 ?x ?3/, 'Circuit 3x3'], [/\bcamps?\b|\bstages?\b/, 'Camp'], [/tournois?/, 'Tournoi'],
   [/detections?|recrutement|scout/, 'Détections'], [/clinics?|coachs?\b|formation/, 'Clinic Coachs'],
   [/voyages?|sejours?|\btrip/, 'Voyage'], [/\bshows?\b|streetball|dunk/, 'Show'], [/all.?star/, 'All-Star Game'],
   [/handi/, 'Handibasket'], [/gala|match(s)? pro/, 'Match Pro'],
@@ -422,6 +435,58 @@ function lire(q) {
   return f;
 }
 
+/* ---- recherche par nom ---- */
+const STOP = new Set('je j cherche cherches recherche trouver veux voudrais un une des le la les l a au aux en de du d pour sur mois cet cette ce et pres chez dans vers moi on nous qui avec basket basketball evenement evenements event events'.split(' '));
+const MOIS_N = MOIS_L.map(norm);
+function mots(q) { return norm(q).split(/[^a-z0-9]+/).filter(w => w && !STOP.has(w)); }
+function explique(w, f) {
+  if (TYPE_MOTS.some(([re]) => re.test(w))) return true;
+  if (f.city && norm(f.city) === w) return true;
+  if (w === 'villeurbanne' || w === 'ete' || MOIS_N.includes(w)) return true;
+  if (f.region && norm(f.region).split(/[^a-z]+/).includes(w)) return true;
+  return false;
+}
+const foin = e => norm(e.t + ' ' + e.c + ' ' + e.lieu);
+let nom = [];   // mots du nom recherché, en plus des filtres
+function parNom(e) { const h = foin(e); return nom.every(w => h.includes(w)); }
+
+/* ---- suggestions pendant la frappe ---- */
+let sel = -1, propositions = [];
+function dateCourte(e) { const a = new Date(e.s); return String(a.getDate()).padStart(2, '0') + ' ' + MOIS_C[a.getMonth()]; }
+function souligne(txt, ws) {
+  let out = txt.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  for (const w of ws) {
+    const n = norm(out), i = n.indexOf(w);
+    if (w.length > 1 && i >= 0) out = out.slice(0, i) + '<mark>' + out.slice(i, i + w.length) + '</mark>' + out.slice(i + w.length);
+  }
+  return out;
+}
+function suggerer() {
+  const ws = mots($('q').value), box = $('suggest');
+  propositions = ws.length && ws.join('').length >= 2 ? EV.filter(e => { const h = foin(e); return ws.every(w => h.includes(w)); }).sort((a, b) => a.s.localeCompare(b.s)).slice(0, 5) : [];
+  sel = -1;
+  if (!propositions.length) { box.hidden = true; $('q').setAttribute('aria-expanded', 'false'); return; }
+  box.innerHTML = '<li class="sg-head" role="presentation">Événements</li>' + propositions.map((e, i) =>
+    `<li role="option" id="sg${i}" data-i="${i}" aria-selected="false"><span class="sg-d">${dateCourte(e)}</span><span class="sg-t">${souligne(e.t, ws)}</span><span class="sg-c">${e.c}</span></li>`).join('');
+  box.hidden = false; $('q').setAttribute('aria-expanded', 'true');
+}
+function fermer() { $('suggest').hidden = true; $('q').setAttribute('aria-expanded', 'false'); sel = -1; }
+function choisir(e) { $('q').value = e.t; fermer(); $('search').requestSubmit(); }
+$('q').addEventListener('input', suggerer);
+$('q').addEventListener('keydown', ev => {
+  const items = [...$('suggest').querySelectorAll('[role=option]')];
+  if ($('suggest').hidden || !items.length) return;
+  if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+    ev.preventDefault();
+    sel = (sel + (ev.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+    items.forEach((li, i) => li.setAttribute('aria-selected', i === sel));
+    $('q').setAttribute('aria-activedescendant', 'sg' + sel);
+  } else if (ev.key === 'Enter' && sel >= 0) { ev.preventDefault(); choisir(propositions[sel]); }
+  else if (ev.key === 'Escape') fermer();
+});
+$('suggest').addEventListener('mousedown', ev => { const li = ev.target.closest('[data-i]'); if (li) { ev.preventDefault(); choisir(propositions[+li.dataset.i]); } });
+$('q').addEventListener('blur', () => setTimeout(fermer, 100));
+
 /* ---- filtres ---- */
 function filtres() { return { type: $('type').value, city: $('city').value.trim(), region: $('region').value, month: $('month').value }; }
 function poser(f) {
@@ -435,6 +500,7 @@ function marquer() {
   $('fMonth').classList.toggle('set', !!$('month').value);
 }
 function garde(e, f) {
+  if (nom.length && !parNom(e)) return false;
   if (f.type && e.ty !== f.type) return false;
   if (f.city && norm(e.c) !== norm(f.city)) return false;
   if (f.region && e.r !== f.region) return false;
@@ -459,14 +525,15 @@ function dessiner(liste, f) {
   for (const e of liste) (groupes[e.c] ||= []).push(e);
   // l'événement mis en avant : le plus proche en date parmi les résultats (ou La Ligue C sans filtre)
   const tri = [...liste].sort((a, b) => a.s.localeCompare(b.s));
-  const actif = (Object.values(f).some(v => v) ? tri[0] : liste.find(e => e.f && e.c === 'Montpellier')) || null;
+  const actif = (Object.values(f).some(v => v) || nom.length ? tri[0] : liste.find(e => e.f && e.c === 'Montpellier')) || null;
   for (const [c, evs] of Object.entries(groupes)) {
     const [x, y] = evs[0].xy, r = evs.length > 1 ? 11 : 6;
     const feat = actif && actif.c === c;
     const left = LEFT.has(c);
     const dy = c === 'Cholet' ? 14 : c === 'Montpellier' && !f.city ? -10 : 4;
-    const pin = el('g', { class: 'pin' + (feat ? ' pin-feat' : ''), 'data-y': y });
-    pin.append(el('circle', { cx: x, cy: y, r }));
+    const pin = el('g', { class: 'pin' + (feat ? ' pin-feat' : '') + (evs.length > 1 ? ' pin-multi' : ''), 'data-y': y });
+    if (feat) pin.append(el('circle', { class: 'ring', cx: x, cy: y, r: r + 4 }));
+    pin.append(el('circle', { class: 'dot', cx: x, cy: y, r }));
     if (evs.length > 1) pin.append(el('text', { class: 'pin-n', x, y: y + 4 }, evs.length));
     pin.append(el('text', { class: 'pin-l', x: left ? x - r - 6 : x + r + 6, y: y + dy, 'text-anchor': left ? 'end' : 'start' }, c));
     g.append(pin);
@@ -485,7 +552,7 @@ function dessiner(liste, f) {
     co.append(el('text', { class: 'co-t', x: bx + 12, y: by + 46 }, t));
   }
   // régions : celles qui ont un résultat ressortent quand un filtre est posé
-  const filtre = Object.values(f).some(v => v);
+  const filtre = Object.values(f).some(v => v) || nom.length > 0;
   const avec = new Set(liste.map(e => e.r));
   for (const p of $('reg').children) {
     const nom = p.querySelector('title').textContent;
@@ -523,21 +590,69 @@ function appliquer() {
 }
 
 /* ---- branchements ---- */
-['type', 'region', 'month'].forEach(id => $(id).addEventListener('change', () => { $('understood').textContent = ''; appliquer(); }));
-let tCity; $('city').addEventListener('input', () => { clearTimeout(tCity); tCity = setTimeout(appliquer, 400); });
+['type', 'region', 'month'].forEach(id => $(id).addEventListener('change', () => { nom = []; $('understood').textContent = AIDE; appliquer(); }));
+let tCity; $('city').addEventListener('input', () => { clearTimeout(tCity); tCity = setTimeout(() => { nom = []; appliquer(); }, 400); });
 $('search').addEventListener('submit', ev => {
-  ev.preventDefault();
+  ev.preventDefault(); fermer();
   const q = $('q').value.trim();
   const f = lire(q);
+  // les mots qui ne sont ni un type, ni une ville, ni un mois : on les cherche dans les noms
+  const reste = mots(q).filter(w => !explique(w, f));
+  nom = reste.length && EV.some(e => { const h = foin(e); return reste.every(w => h.includes(w)); }) ? reste : [];
+  if (nom.length) { const h = EV.filter(parNom); if (f.city && !h.some(e => e.c === f.city)) f.city = ''; }
   poser(f);
   const liste = appliquer();
-  const mots = [f.type, f.city, f.region, f.month === 'ete' ? 'cet été' : f.month !== '' ? MOIS_L[+f.month] : ''].filter(Boolean);
-  $('understood').innerHTML = q ? (mots.length
-    ? 'Compris : <b>' + mots.join(' · ') + '</b> — ' + liste.length + ' résultat' + (liste.length > 1 ? 's' : '')
-    : 'Je n\'ai pas reconnu de type, de ville ni de mois, essaie « tournoi à Paris en juillet »') : '';
+  const pluriel = n => n + ' résultat' + (n > 1 ? 's' : '');
+  const crit = [f.type, f.city, f.region, f.month === 'ete' ? 'cet été' : f.month !== '' ? MOIS_L[+f.month] : ''].filter(Boolean);
+  let msg = '';
+  if (q && nom.length && liste.length === 1) msg = 'Trouvé : <b>' + liste[0].t + '</b> — ' + liste[0].c + ', ' + dates(liste[0]).toLowerCase();
+  else if (q && nom.length) msg = 'Nom contenant <b>« ' + nom.join(' ') + ' »</b>' + (crit.length ? ' · <b>' + crit.join(' · ') + '</b>' : '') + ' — ' + pluriel(liste.length);
+  else if (q && crit.length) msg = 'Compris : <b>' + crit.join(' · ') + '</b> — ' + pluriel(liste.length) + (reste.length ? ' · aucun événement ne s\'appelle « ' + reste.join(' ') + ' »' : '');
+  else if (q) msg = 'Aucun type, ville, mois ou nom d\'événement reconnu, essaie « tournoi à Paris en juillet » ou « ASVEL »';
+  $('understood').innerHTML = msg;
   if (innerWidth <= 1080) $('fr').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
 });
-document.addEventListener('click', ev => { if (ev.target.closest('[data-reset]')) { poser({ type: '', city: '', region: '', month: '' }); $('q').value = ''; $('understood').textContent = ''; appliquer(); } });
+document.addEventListener('click', ev => { if (ev.target.closest('[data-reset]')) { nom = []; poser({ type: '', city: '', region: '', month: '' }); $('q').value = ''; $('understood').textContent = AIDE; appliquer(); } });
+
+/* ---- À la une : carrousel à petits ronds ---- */
+const UNE = EV.filter(e => e.f).sort((a, b) => (b.c === 'Montpellier') - (a.c === 'Montpellier'));
+const JOURS_C = ['DIM','LUN','MAR','MER','JEU','VEN','SAM'];
+const HEART = document.querySelector('.nav a:nth-child(4) svg').outerHTML;
+function tableau(e) {
+  const a = new Date(e.s), b = new Date(e.e), p = n => String(n).padStart(2, '0');
+  if (e.s === e.e) return `<span class="score score-big"><span class="sc-d">${JOURS_C[a.getDay()]}</span><span class="sc-n">${p(a.getDate())}</span><span class="sc-m">${MOIS_C[a.getMonth()]}</span></span>`;
+  return `<span class="score score-big"><span class="sc-d">${JOURS_C[a.getDay()]} → ${JOURS_C[b.getDay()]}</span><span class="sc-n">${p(a.getDate())}<i>–</i>${p(b.getDate())}</span><span class="sc-m">${MOIS_C[a.getMonth()]}${a.getMonth() !== b.getMonth() ? ' · ' + MOIS_C[b.getMonth()] : ''}</span></span>`;
+}
+function diapo(e) {
+  const affiche = e.p
+    ? `<img class="poster" src="${e.p}" alt="Affiche de ${e.t}" width="700" height="934">`
+    : `<div class="poster-vide" aria-hidden="true"><span class="pv-t">${e.ty}</span><span class="pv-n">${e.t.split(' — ')[0]}</span><span class="pv-c">${dates(e)}<br>${e.c}</span></div>`;
+  return `${affiche}<div>
+    <p class="une-meta">${e.ty} · ${e.niv} · ${e.sx} · ${e.ag}</p>
+    <h3>${e.t.split(' — ')[0]}</h3>
+    <div class="une-row">${tableau(e)}<div class="une-where"><strong>${e.lieu}</strong><span>${e.r}</span></div></div>
+    <p class="desc">${e.d}</p>
+    <div class="actions"><a class="btn btn-chalk btn-lg" href="#">Voir l'événement</a><a class="btn btn-line btn-lg" href="#">${HEART}Favori</a></div>
+  </div>`;
+}
+let cur = 0, tUne;
+const DUREE = 6000;
+function montrer(i, anime) {
+  cur = (i + UNE.length) % UNE.length;
+  const card = $('une-card');
+  const poserDiapo = () => { card.innerHTML = diapo(UNE[cur]); card.classList.remove('swap'); };
+  if (anime && !reduce) { card.classList.add('swap'); setTimeout(poserDiapo, 200); } else poserDiapo();
+  $('dots').innerHTML = UNE.map((e, k) => `<button type="button" role="tab" aria-label="${e.t}" aria-current="${k === cur}" style="--dur:${DUREE}ms"></button>`).join('');
+  clearTimeout(tUne);
+  if (!reduce && !$('dots').classList.contains('pause')) tUne = setTimeout(() => montrer(cur + 1, true), DUREE);
+}
+$('dots').addEventListener('click', ev => { const b = ev.target.closest('button'); if (b) montrer([...$('dots').children].indexOf(b), true); });
+const zone = [$('une-card'), $('dots')];
+zone.forEach(z => {
+  z.addEventListener('mouseenter', () => { $('dots').classList.add('pause'); clearTimeout(tUne); });
+  z.addEventListener('mouseleave', () => { $('dots').classList.remove('pause'); montrer(cur, false); });
+});
+montrer(0, false);
 
 // Entrée : la carte se dessine par un premier balayage
 appliquer();
