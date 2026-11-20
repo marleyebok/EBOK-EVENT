@@ -133,7 +133,7 @@ Chaque événement = objet avec :
 {
   id: "unique-id",
   title: "Nom Événement",
-  type: "Tournoi|Camp|Voyage|All-Star Game|Show|Détections|Clinic Coachs|Circuit 3x3|Handibasket|Match Pro|Divers",
+  type: "Tournoi|Camp|Stage|Voyage|All-Star Game|Show|Détections|Clinic Coachs|Circuit 3x3|Handibasket|Match Pro|Divers",
   city: "Paris",
   lieu: "Adresse complète",
   region: "Île-de-France",
@@ -238,6 +238,7 @@ function isPast(ev) { return ev.dateEnd < TODAY; }
 |------|---------|-----------|
 | Tournoi | #FF5722 (orange) | Compétitions |
 | Camp | #1F8F6B (vert) | Entraînements collectifs |
+| Stage | #00ACC1 (cyan) | Perfectionnement, vacances sportives |
 | Voyage | #FFC93C (jaune) | Séjours basket |
 | All-Star Game | #E8483A (rouge) | Matchs d'exhibition |
 | Show | #9D6FFF (violet) | Spectacles (dunk contest) |
