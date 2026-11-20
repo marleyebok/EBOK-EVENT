@@ -3187,7 +3187,7 @@ const NIVEAUX_EVENT = [NIVEAU_TOUT, "Loisir", "Départemental", "Régional", "Na
 const NIVEAUX_ANCIENS = { "Tous niveaux": NIVEAU_TOUT, "Tout niveau": NIVEAU_TOUT, "Amateur": "Départemental",
   "Débutant": "Départemental", "Confirmé": "Régional", "Semi-pro": "National", "Semi-pro / Pro": "Pros", "Pro": "Pros" };
 function niveauEvent(v){ return NIVEAUX_ANCIENS[v] || v || NIVEAU_TOUT; }
-const INTEREST_OPTIONS = ["Tournois", "Camps", "Circuit 3x3", "Détections", "All-Star Game", "Clinic Coachs", "Show", "Voyage", "Match Pro", "Handibasket"];
+const INTEREST_OPTIONS = ["Tournois", "Camps", "Stages", "Circuit 3x3", "Détections", "All-Star Game", "Clinic Coachs", "Show", "Voyage", "Match Pro", "Handibasket"];
 const MAX_INTERESTS = 3;
 /* Niveaux de pratique, du plus accessible au plus élevé. Posés aux joueurs à
    l'inscription (voir la modale de bienvenue). */

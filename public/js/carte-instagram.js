@@ -95,7 +95,7 @@
       .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'evenement';
   }
   const TAGS_TYPE = {
-    'Camp':'campbasket', 'Détections':'detectionbasket', 'Circuit 3x3':'3x3basketball',
+    'Camp':'campbasket', 'Stage':'stagebasket', 'Détections':'detectionbasket', 'Circuit 3x3':'3x3basketball',
     'Tournoi':'tournoibasket', 'Voyage':'voyagebasket', 'Clinic Coachs':'coachbasket',
     'Handibasket':'handibasket', 'Match Pro':'basketpro', 'All-Star Game':'allstargame', 'Show':'basketshow'
   };
