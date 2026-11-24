@@ -153,8 +153,10 @@ Idée du propriétaire (24/11/2026) : proposer aux organisateurs de **gérer leu
       côté serveur, invitation révocable, trace de qui a fait quoi.
 - [ ] **Menu simplifié + page « Mes événements »** (maquette :
       `maquettes/unslop/mes-evenements.html`) — barre du haut : Rechercher,
-      Mes événements (pastille des alertes), bouton « Publier un événement »,
-      bouton « Mon compte » (déconnecté : Créer un compte / Se connecter ;
+      bouton « Publier un événement » **au centre**, Mes événements (pastille
+      des alertes), puis bouton « Mon compte » à droite ; sur portable, barre
+      en bas de l'écran Rechercher / + Publier / Mes événements, et « Mon
+      compte » en haut à droite (déconnecté : Créer un compte / Se connecter ;
       connecté : profil, administration, thème, déconnexion). Page en quatre
       onglets : Favoris, Alertes, Mes inscriptions, J'organise (tableau de bord
       par événement : vues, favoris, inscrits, documents, co-organisateurs).
