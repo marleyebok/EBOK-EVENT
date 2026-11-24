@@ -1,7 +1,7 @@
 /**
  * Événements EBOK.
  *
- *   GET    /api/events            → événements publics (status = approved)
+ *   GET    /api/events            → événements publics (status = approved, hors événements privés)
  *   GET    /api/events?id=X       → un événement (public s'il est approuvé,
  *                                    sinon réservé à son diffuseur ou l'admin)
  *   GET    /api/events?mine=1     → mes événements (tous statuts) — auth
@@ -24,7 +24,7 @@ import { inscriptions, roleSur } from "../lib/inscriptions.js";
    renvoyés au public (les e-mails des co-organisateurs sont privés) et jamais
    modifiables par la route générale de modification. */
 const CHAMPS_ORGA = ["coorgs"];
-const CHAMPS_ORGA_ECRITURE = ["coorgs", "interetOutils", "inscription"];
+const CHAMPS_ORGA_ECRITURE = ["coorgs", "interetOutils", "inscription", "visibilite"];
 
 /* Champs promus en colonnes : ils ne sont pas dupliqués dans `data`. */
 const COLUMN_FIELDS = ["id", "status", "user_id", "userId", "featured", "createdAt", "created_at"];
@@ -66,7 +66,9 @@ function dataBlob(obj) {
  * Les e-mails ne sont pas lus en base : « zéro miroir », l'adresse vient de
  * Clerk à la volée.
  */
-async function notifierAlertes(ev, req) {
+export async function notifierAlertes(ev, req) {
+  // Un événement privé (non répertorié) ne déclenche aucune alerte.
+  if (ev.visibilite === "prive") return;
   const alertes = await sql()`SELECT * FROM event.alerts WHERE actif = true`;
   if (!alertes.length) return;
 
@@ -118,7 +120,7 @@ export default async function handler(req, res) {
   // Vercel limite leur nombre), logique dans lib/inscriptions.js.
   if ((req.query || {}).r === "insc") {
     try {
-      return await inscriptions(req, res, uid);
+      return await inscriptions(req, res, uid, { notifierAlertes, toEvent });
     } catch (e) {
       console.error("inscriptions:", e);
       return json(res, 500, { error: "server" });
@@ -146,8 +148,12 @@ export default async function handler(req, res) {
         }
         return json(res, 200, { event: toEvent(row) });
       }
-      // Liste publique : uniquement les événements validés.
-      const rows = await sql()`SELECT * FROM event.events_lecture WHERE status = 'approved' ORDER BY created_at DESC LIMIT 1000`;
+      // Liste publique : uniquement les événements validés, et pas les
+      // événements privés (non répertoriés : accessibles par leur lien seulement).
+      const rows = await sql()`
+        SELECT * FROM event.events_lecture
+        WHERE status = 'approved' AND COALESCE(data->>'visibilite', 'public') <> 'prive'
+        ORDER BY created_at DESC LIMIT 1000`;
       return json(res, 200, { events: rows.map(toEvent) });
     }
 

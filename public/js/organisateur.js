@@ -271,7 +271,7 @@ async function renderOrga(){
     const etat = ev.status === 'approved' ? '<span class="st-pill st-ok"><i></i>En ligne</span>' : '<span class="st-pill st-wait"><i></i>En attente de validation</span>';
     return `<button type="button" class="orga-item" data-sel="${esc(ev.id)}" aria-pressed="${ev.id === orga.sel}">
       ${tableauDeMarque(ev)}
-      <span class="orga-item-txt"><b>${esc(ev.title)}</b>${etat}${attente ? `<em>${attente} demande${attente > 1 ? 's' : ''} à traiter</em>` : ''}${ev.role === 'coorg' ? '<em class="is-coorg">Co-organisateur</em>' : ''}</span>
+      <span class="orga-item-txt"><b>${esc(ev.title)}</b>${etat}${attente ? `<em>${attente} demande${attente > 1 ? 's' : ''} à traiter</em>` : ''}${ev.visibilite === 'prive' ? '<em class="is-coorg">Privé · accessible par lien</em>' : ''}${ev.role === 'coorg' ? '<em class="is-coorg">Co-organisateur</em>' : ''}</span>
     </button>`;
   }).join('')}
     <button type="button" class="orga-item orga-new" data-go-create>${ico('plus')}Publier un événement</button>
@@ -314,6 +314,16 @@ function dessinerTableau(){
         <button type="button" class="btn btn-ghost" data-od="voir">Voir la fiche</button>
       </div>
     </div>
+    <div class="od-vis" role="group" aria-label="Visibilité de l'événement">
+      <div class="od-vis-seg">
+        <button type="button" class="chip" data-vis="public" aria-pressed="${d.visibilite !== 'prive'}">${ico('globe')}Public</button>
+        <button type="button" class="chip" data-vis="prive" aria-pressed="${d.visibilite === 'prive'}">${ico('lock')}Privé</button>
+      </div>
+      <p class="od-vis-txt">${d.visibilite === 'prive'
+        ? "<b>Privé :</b> absent de la carte, de la recherche, de l'agenda et des alertes. Seules les personnes qui ont le lien voient la fiche et peuvent s'inscrire."
+        : '<b>Public :</b> visible sur la carte, dans la recherche, l\'agenda et les alertes.'}</p>
+      <button type="button" class="btn btn-ghost btn-sm" data-od="lien">${ico('link')}Copier le lien</button>
+    </div>
     ${d.event.status !== 'approved' ? `<p class="od-note">Ton événement attend la validation de l'équipe EBOK. Tu peux déjà préparer les inscriptions : elles s'ouvriront sur la fiche dès sa mise en ligne.</p>` : ''}
     ${!reg.active ? `<div class="od-banner">${ICO_OUTILS}<span>Les inscriptions ne sont pas ouvertes sur ta fiche.</span><button type="button" class="btn btn-primary btn-sm" data-od="ouvrir">Ouvrir les inscriptions</button></div>` : ''}
     <div class="od-stats">
@@ -327,9 +337,32 @@ function dessinerTableau(){
   dash.querySelectorAll('[data-sous]').forEach(b=> b.addEventListener('click', ()=>{ orga.sous = b.dataset.sous; dessinerTableau(); }));
   dash.querySelector('[data-od="voir"]').addEventListener('click', ()=> openEvent(orga.sel));
   dash.querySelector('[data-od="modifier"]').addEventListener('click', modifierFiche);
+  dash.querySelectorAll('[data-vis]').forEach(b=> b.addEventListener('click', ()=> changerVisibilite(b.dataset.vis)));
+  dash.querySelector('[data-od="lien"]').addEventListener('click', async e=>{
+    const lien = `${location.origin}/evenement/${orga.sel}`;
+    const btn = e.currentTarget;
+    try{ await navigator.clipboard.writeText(lien); btn.lastChild.textContent = 'Lien copié'; setTimeout(()=>{ btn.lastChild.textContent = 'Copier le lien'; }, 2000); }
+    catch{ prompt('Lien de la fiche :', lien); }
+  });
   const ouvrir = dash.querySelector('[data-od="ouvrir"]');
   if(ouvrir) ouvrir.addEventListener('click', ()=>{ orga.sous = 'reglages'; dessinerTableau(); });
   ({ inscrits: vueInscrits, messages: vueMessages, reglages: vueReglages, equipe: vueEquipe })[orga.sous]();
+}
+
+async function changerVisibilite(vis){
+  if((orga.data.visibilite || 'public') === vis) return;
+  if(vis === 'prive' && !confirm("Rendre l'événement privé ? Il disparaît de la carte, de la recherche et de l'agenda ; il reste accessible par son lien.")) return;
+  try{
+    const r = await D().majReglagesInscription(orga.sel, { visibilite: vis });
+    orga.data.visibilite = r.visibilite;
+    const ev = orga.liste.find(x=> x.id === orga.sel); if(ev) ev.visibilite = r.visibilite;
+    // La carte et l'agenda suivent tout de suite.
+    if(r.visibilite === 'prive'){
+      const i = events.findIndex(x=> x.id === orga.sel);
+      if(i >= 0){ events.splice(i, 1); if(typeof renderAll === 'function') renderAll(); }
+    }
+    renderOrga();
+  }catch(e){ alert(messageErreur(e)); }
 }
 
 async function modifierFiche(){

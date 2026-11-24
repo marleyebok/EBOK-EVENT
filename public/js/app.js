@@ -2469,6 +2469,7 @@ const ICONES = {
   alert: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
   check: '<path d="M20 6 9 17l-5-5"/>',
   download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
+  lock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
   map: '<path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/>',
 };
 function ico(nom){
@@ -2762,6 +2763,8 @@ async function openEvent(id, opts){
         ${peutModifier(ev) ? `<button class="edit-inline" data-edit="${esc(ev.id)}" title="Modifier cet événement">${ico('edit')}Modifier</button>` : ``}
         ${currentIsAdmin ? `<button class="edit-inline" data-insta="${esc(ev.id)}" title="Générer la carte Instagram de cet événement">${ico('instagram')}Carte Insta</button>` : ``}
       </p>
+
+      ${ev.visibilite === 'prive' ? `<p class="ev-prive">${ico('lock')}<span><b>Événement privé.</b> Il n'apparaît ni sur la carte ni dans la recherche : seules les personnes qui ont ce lien le voient.</span></p>` : ''}
 
       <!-- Bloc 2 : ce qu'on fait avec l'organisateur -->
       <section class="ev-ticket" aria-label="Organisateur">
@@ -4706,6 +4709,7 @@ function adminRowHtml(ev){
       <div class="admin-item-meta">${metaFull}</div>
       ${relire ? `<div class="admin-item-det">${ico('edit')}Modifié par l'organisateur : vérifie les changements.</div>` : ''}
       ${ev.detection && ev.detection.auto ? `<div class="admin-item-det">Détecté${ev.detection.sourceNom ? ' sur ' + esc(ev.detection.sourceNom) : ''} · <a href="${esc(safeUrl(ev.detection.lien || ev.detection.sourceUrl))}" target="_blank" rel="noopener">vérifier à la source ↗</a></div>` : ''}
+      ${ev.visibilite === 'prive' ? `<div class="admin-item-det">${ico('lock')}Privé : accessible par lien seulement</div>` : ''}
       ${ev.interetOutils && ev.interetOutils.reponse ? `<div class="admin-item-det">Outils EBOK : ${esc({oui:'intéressé', plus_tard:'plus tard', non:'pas intéressé'}[ev.interetOutils.reponse] || ev.interetOutils.reponse)}</div>` : ''}
       ${ev.importe ? `<div class="admin-item-det">${ico('download')}Importé${ev.importe.url ? ` · <a href="${esc(safeUrl(ev.importe.url))}" target="_blank" rel="noopener">vérifier à la source ↗</a>` : ''}</div>` : ''}
       ${(window.EbokVerif && (pending || relire || (ev.importe && Array.isArray(ev.importe.doutes) && ev.importe.doutes.length))) ? window.EbokVerif.html('event', ev, ev.id) : ''}

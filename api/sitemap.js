@@ -56,7 +56,7 @@ export default async function handler(req, res) {
       const rows = await sql()`
         SELECT id, created_at, data->>'dateEnd' AS date_end
         FROM event.events
-        WHERE status = 'approved'
+        WHERE status = 'approved' AND COALESCE(data->>'visibilite', 'public') <> 'prive'
         ORDER BY created_at DESC
         LIMIT 5000`;
       const aujourdhui = new Date().toISOString().slice(0, 10);

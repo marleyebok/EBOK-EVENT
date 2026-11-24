@@ -130,7 +130,8 @@ droits admin se retrouvent seuls (reconnus par e-mail).
 > inscriptions, J'organise), inscription depuis la fiche **validée par
 > l'organisateur**, tableau de bord (statuts, catégories, commentaire privé,
 > documents, messages groupés, réglages ; sélection, tri et actions groupées ;
-> exports Excel, PDF et CSV), co-organisateurs, question
+> exports Excel, PDF et CSV), événement **privé** (accessible par lien seulement),
+> co-organisateurs, question
 > « outils EBOK » après publication (réponse visible dans l'administration).
 > Voir README › Outils d'organisateur.
 >

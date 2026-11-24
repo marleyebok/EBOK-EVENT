@@ -207,6 +207,12 @@ export default async function handler(req, res) {
   }
 
   if (ev) html = inject(html, ev, id, req);
+  // Événement privé : la fiche s'ouvre par son lien, mais les moteurs de
+  // recherche ne l'indexent pas.
+  if (ev && ev.visibilite === "prive") {
+    html = html.replace("</head>", '<meta name="robots" content="noindex, nofollow">\n</head>');
+    res.setHeader("X-Robots-Tag", "noindex, nofollow");
+  }
 
   // 200 même sans métadonnées : certains événements ne vivent pas en base
   // (données locales de data.js) et la page reste parfaitement fonctionnelle.

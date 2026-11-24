@@ -582,6 +582,11 @@ Palette complète et code couleur par type d'événement : voir `EBOK_Event_Brie
   sur la sélection (valider, liste d'attente, refuser, ajouter / retirer une
   catégorie, valider les documents déposés, écrire, copier les e-mails,
   exporter, supprimer définitivement).
+- **Événement privé** (réglage du tableau de bord) : non répertorié — absent de
+  la carte, de la recherche, de l'agenda, des alertes, du plan du site et de
+  Google (`noindex`), mais la fiche et les inscriptions restent accessibles par
+  le lien. Repasser en public déclenche les alertes. La validation par l'équipe
+  EBOK reste nécessaire.
 - **Exports** de la liste ou de la sélection en **Excel (.xlsx)**, **PDF** et
   CSV, fabriqués dans le navigateur sans bibliothèque (`public/js/exports.js`).
 - **Serveur** : `lib/inscriptions.js`, servi par `api/events.js?r=insc` (pas de

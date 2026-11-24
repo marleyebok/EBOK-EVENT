@@ -3235,3 +3235,13 @@ input,select,textarea{font-family:var(--font-body);}
    (display:flex) ; dans le menu, son contenu s'empile. */
 .acct-menu .account-out,.acct-menu .account-logged{display:block;}
 .acct-menu .account-out.hidden,.acct-menu .account-logged.hidden{display:none !important;}
+
+/* ---------- Visibilité : public / privé (non répertorié) ---------- */
+.od-vis{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:16px 24px 0;padding:12px 14px;border:1px solid var(--line);border-radius:12px;}
+.od-vis-seg{display:flex;gap:6px;}
+.od-vis-seg .chip .ico{width:15px;height:15px;}
+.od-vis-txt{flex:1;min-width:220px;margin:0;font-size:13px;color:var(--chalk-dim);}
+.od-vis .btn .ico{width:15px;height:15px;}
+.ev-prive{display:flex;gap:10px;align-items:flex-start;margin:0 0 16px;padding:10px 14px;border-radius:10px;background:var(--asphalt-3);font-size:14px;color:var(--chalk-dim);}
+.ev-prive .ico{width:18px;height:18px;flex:none;margin-top:2px;color:var(--chalk);}
+@media(max-width:640px){ .od-vis{margin:16px 16px 0;} }
