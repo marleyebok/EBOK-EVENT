@@ -156,12 +156,12 @@ Idée du propriétaire (24/11/2026) : proposer aux organisateurs de **gérer leu
       bouton « Publier un événement » **au centre**, Mes événements (pastille
       des alertes), puis bouton « Mon compte » à droite ; sur portable, barre
       en bas de l'écran Rechercher / + Publier / Mes événements, et « Mon
-      compte » en haut à droite; sur ordinateur, boutons du header à la
+      compte » en haut à droite ; sur ordinateur, boutons du header à la
       forme du logo (coins haut gauche et bas droit arrondis, les deux autres
-      carrés) ; menu « Mon compte » déconnecté : Créer un compte / Se
-      connecter + favoris, alertes, « Gère tes événements avec les outils
-      EBOK" (déconnecté : Créer un compte / Se connecter ;
-      connecté : profil, administration, thème, déconnexion). Page en quatre
+      carrés). Menu « Mon compte » — déconnecté : Créer un compte / Se
+      connecter, et trois atouts (favoris, alertes, « Gère tes événements
+      avec les outils EBOK ») ; connecté : profil, administration, thème,
+      déconnexion. Page en quatre
       onglets : Favoris, Alertes, Mes inscriptions, J'organise (tableau de bord
       par événement : vues, favoris, inscrits, documents, co-organisateurs).
 - [ ] **Avant de toucher aux documents** — certificats médicaux et données de
