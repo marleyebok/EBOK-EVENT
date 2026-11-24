@@ -54,9 +54,9 @@ partagé, plus de lecture du profil du site mère. Seul reste le point ci-dessou
 - [x] Carte de France interactive, carte du monde pour l'étranger
 - [x] Assistant IA d'import depuis un lien ou une image (réservé admin)
 - [x] Autocomplétion de ville hors ligne (`cities-fr.js`) + repli sur la Base Adresse Nationale
-- [x] Thème clair par défaut, bascule sombre conservée et mémorisée
+- [x] Thème clair uniquement (mode nuit retiré le 25/11/2026)
 - [x] Barre du haut compacte sur mobile et tablette (logo, loupe, +, menu) avec
-      volet latéral : compte, navigation, favoris, mes événements, thème,
+      volet latéral : compte, navigation, favoris, mes événements,
       déconnexion
 - [x] Échappement des données d'événement dans les rendus HTML (XSS stocké)
 - [x] **Refonte visuelle (11/2026)** — titres en Impact (repli Anton), texte en
