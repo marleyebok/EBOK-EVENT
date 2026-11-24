@@ -83,7 +83,7 @@ Un objet avec la liste `evenements` (une liste seule est aussi acceptée).
 | Champ | Obligatoire | Valeurs |
 |---|---|---|
 | `title` | oui | texte (200 caractères au plus) |
-| `type` | oui | `Tournoi`, `Camp`, `Voyage`, `All-Star Game`, `Show`, `Détections`, `Clinic Coachs`, `Circuit 3x3`, `Handibasket`, `Match Pro`, `Divers` (inconnu : `Divers`) |
+| `type` | oui | `Tournoi`, `Camp`, `Stage`, `Voyage`, `All-Star Game`, `Show`, `Détections`, `Clinic Coachs`, `Circuit 3x3`, `Handibasket`, `Match Pro`, `Divers` (inconnu : `Divers`) |
 | `dateStart` | oui | `AAAA-MM-JJ` |
 | `dateEnd` | non | `AAAA-MM-JJ` (défaut : `dateStart`) |
 | `city` | oui | nom de la ville ; sert à placer l'événement sur la carte |

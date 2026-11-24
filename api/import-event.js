@@ -35,7 +35,7 @@ import { clerkUser, isAdminEmail, hasDb, sql, ensureSchema } from "./_lib.js";
 import { AIService } from "../lib/services/AIService.js";
 
 const TYPES = [
-  "Tournoi", "Camp", "Voyage", "All-Star Game", "Show", "Détections",
+  "Tournoi", "Camp", "Stage", "Voyage", "All-Star Game", "Show", "Détections",
   "Clinic Coachs", "Circuit 3x3", "Handibasket", "Match Pro", "Divers"
 ];
 const FIELDS = ["title", "type", "city", "region", "pays", "address", "dateStart", "dateEnd",

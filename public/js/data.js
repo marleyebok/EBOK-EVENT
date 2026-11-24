@@ -23,6 +23,7 @@ const VIEW_SEEDS = {
 const TYPE_COLORS = {
   "Tournoi":"#FF5722",
   "Camp":"#1F8F6B",
+  "Stage":"#00ACC1",
   "Voyage":"#FFC93C",
   "All-Star Game":"#E8483A",
   "Show":"#9D6FFF",
