@@ -32,6 +32,7 @@ EBOK-EVENT/
 │   │   ├── services.js       # Couche API (Neon via /api + Clerk)
 │   │   ├── clerk.js          # Chargeur Clerk — ⚙️ config de l'instance
 │   │   ├── clerk-init.js     # Branchement : expose EBOK_DATA / EBOK_AUTH à app.js
+│   │   ├── organisateur.js   # Menu « Mon compte », Mes événements, tableau de bord organisateur
 │   │   ├── compte-shell.js   # Coquille de l'espace compte (sidebar, portail)
 │   │   ├── compte-profil.js  # Profil diffuseur
 │   │   └── compte-general.js # Identité & sécurité
@@ -46,7 +47,7 @@ EBOK-EVENT/
 │       └── apple-touch-icon.png # 180 px ┘ sauf iOS : fond blanc imposé
 ├── api/                      # Fonctions serverless Vercel (Neon + Clerk)
 │   ├── _lib.js               # Client Neon, vérif token Clerk, schéma « event »
-│   ├── events.js             # CRUD événements
+│   ├── events.js             # CRUD événements + inscriptions / outils d'organisateur (?r=insc)
 │   ├── views.js              # Compteurs de « curieux »
 │   ├── signalement.js        # Signalements d'erreur sur les fiches (internes, lus par l'admin)
 │   ├── account.js            # Session, profil diffuseur, favoris, liste membres
@@ -54,6 +55,7 @@ EBOK-EVENT/
 │   ├── evenement.js          # Métadonnées de partage par événement (Open Graph)
 │   ├── migrate-posters.js    # Reprise des affiches stockées en base (ponctuel)
 │   └── import-event.js       # Assistant IA (OpenRouter/Gemini) — réservé admin
+├── lib/inscriptions.js       # Inscriptions, tableau de bord organisateur, co-organisateurs, messages
 ├── lib/services/             # Assistant IA, indépendant du fournisseur
 ├── scripts/
 │   └── verifier-clerk.mjs    # Contrôle l'instance Clerk (npm run clerk:check)
@@ -560,3 +562,29 @@ Palette complète et code couleur par type d'événement : voir `EBOK_Event_Brie
 - 🔔 **Alertes email** — « préviens-moi des events *type* près de *ville* » (nécessite un backend d'envoi : Cloud Functions + service mail type SendGrid).
 - 💬 **Avis / discussion** — questions à l'organisateur avant l'event, avis sur les éditions passées (nécessite de la modération admin).
 - 🎟️ **Billetterie / inscriptions** (plus tard) — liens type Ticketmaster avec commission.
+
+
+---
+
+## 🧰 Outils d'organisateur (V1, novembre 2026)
+
+- **Inscription = demande** : un membre clique sur « S'inscrire » sur la fiche ;
+  l'organisateur la **valide**, la **refuse** ou la met en **liste d'attente**
+  (après un paiement, l'étude d'une candidature…). Seules les inscriptions
+  validées occupent une place ; au-delà des places, les nouvelles demandes
+  arrivent en liste d'attente.
+- **Tableau de bord** (Mes événements › J'organise) : vues, favoris, inscrits ;
+  catégories et commentaire **privés** ; documents demandés (image ou PDF)
+  validés ou « à refaire » ; message groupé par statut et catégorie ;
+  export CSV ; co-organisateurs invités par e-mail.
+- **Serveur** : `lib/inscriptions.js`, servi par `api/events.js?r=insc` (pas de
+  nouvelle fonction Vercel : le forfait en limite le nombre). Tables
+  `event.inscriptions` et `event.insc_messages`, créées automatiquement.
+  Nom et e-mail des inscrits lus chez Clerk (« zéro miroir »).
+- **E-mails** (Resend, `RESEND_API_KEY`) : accusé de réception au participant,
+  alerte à l'organisateur, décision au participant, invitation des
+  co-organisateurs, messages groupés (API « batch »). Sans clé, rien ne part
+  mais tout le reste fonctionne.
+- **Documents** : déposés sur Vercel Blob dans `documents/`, à une adresse
+  impossible à deviner, et listés seulement à l'organisateur et à ses
+  co-organisateurs. Pas de certificat médical (données de santé).

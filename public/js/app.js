@@ -2099,9 +2099,9 @@ function initCreatePage(){
     // n'est pas montré publiquement avant validation.
     if(published){
       window.EBOK.addEvent(newEvent);
-      showConfirm('approved');
+      showConfirm('approved', newEvent.id);
     }else{
-      showConfirm('pending');
+      showConfirm('pending', newEvent.id);
     }
   });
 }
@@ -2116,7 +2116,7 @@ function showCreateBanner(msg){
 /* Affiche la page de confirmation après une publication réussie.
    - 'pending'  : événement d'un diffuseur → étudié puis accepté sous 24h.
    - 'approved' : publié en ligne tout de suite (admin ou mode démo). */
-function showConfirm(mode){
+function showConfirm(mode, eventId){
   const title = document.getElementById('confirmTitle');
   const text  = document.getElementById('confirmText');
   const sub   = document.getElementById('confirmSub');
@@ -2125,10 +2125,11 @@ function showConfirm(mode){
     if(text)  text.innerHTML = 'Il est déjà visible sur la carte et dans la recherche.';
     if(sub)   sub.textContent = 'Merci de faire vivre le basket francophone.';
   }else{
-    if(title) title.textContent = 'Ton événement a bien été créé !';
+    if(title) title.textContent = 'Ton événement a bien été créé';
     if(text)  text.innerHTML = 'Il va être étudié par notre équipe, puis accepté avant publication <b>sous 24h</b>. Tu le retrouveras ensuite sur la carte et dans la recherche, ainsi que dans « Mes événements ».';
     if(sub)   sub.textContent = 'Merci de faire vivre le basket francophone.';
   }
+  if(typeof poserQuestionOutils === 'function') poserQuestionOutils(eventId);
   showPage('confirm');
 }
 
@@ -2617,6 +2618,8 @@ function favLgHtml(on, total){
    rattachée (affiliation faite par l'admin, ou événement qu'il a publié). */
 function peutModifier(ev){
   if(currentIsAdmin) return true;
+  // Co-organisateur : marqué par le tableau de bord (le serveur revérifie).
+  if(ev && ev.__coorg) return true;
   return !!(currentUser && ev && ev.userId && ev.userId === currentUser.uid);
 }
 
@@ -2652,6 +2655,8 @@ async function openEvent(id, opts){
      grisé, et une phrase dit pourquoi. Sur un événement terminé, il n'y a
      plus rien à réserver. */
   const lienInscription = termine ? '' : lienPropre(ev.lienInscription);
+  // Inscriptions gérées sur EBOK (outils d'organisateur) : elles remplacent le lien externe.
+  const inscEbok = !termine && ev.inscription && ev.inscription.active;
   const lienBilletterie = termine ? '' : lienPropre(ev.lienBilletterie);
   const lienSite = lienPropre(ev.siteOfficiel) || (/^https?:/i.test(orgSite) ? orgSite : '');
   const aDesCoordonnees = Boolean(org.tel || org.email || org.insta);
@@ -2659,7 +2664,7 @@ async function openEvent(id, opts){
     ? `<a class="ev-act" href="${esc(lien)}" target="_blank" rel="noopener noreferrer" data-clic="${clic}">${ico(icone)}<span>${libelle}</span></a>`
     : `<button type="button" class="ev-act is-off" aria-disabled="true" aria-describedby="evAide" title="${esc(raison)}">${ico(icone)}<span>${libelle}</span></button>`;
   const manques = [];
-  if(!lienInscription) manques.push("d'inscription");
+  if(!lienInscription && !inscEbok) manques.push("d'inscription");
   if(!lienBilletterie) manques.push('de billetterie');
   const aide = [];
   if(termine) aide.push('Cet événement est terminé.');
@@ -2767,7 +2772,9 @@ async function openEvent(id, opts){
         </div>
         <div class="ev-ticket-bottom">
           <div class="ev-acts">
-            ${bouton("S'inscrire", lienInscription, 'clipboard', termine ? 'Événement terminé' : "Pas de lien d'inscription pour le moment", 'inscription')}
+            ${inscEbok
+              ? `<button type="button" class="ev-act" id="btnInscEbok" data-insc="${esc(ev.id)}">${ico('clipboard')}<span>S'inscrire</span></button>`
+              : bouton("S'inscrire", lienInscription, 'clipboard', termine ? 'Événement terminé' : "Pas de lien d'inscription pour le moment", 'inscription')}
             ${bouton('Billetterie', lienBilletterie, 'ticket', termine ? 'Événement terminé' : 'Pas de billetterie pour le moment', 'billetterie')}
           </div>
           ${contactBtn}
@@ -2840,6 +2847,8 @@ async function openEvent(id, opts){
   el.querySelectorAll('[data-clic]').forEach(a=>{
     a.addEventListener('click', ()=> compterClic(ev.id, a.dataset.clic));
   });
+  // Inscription sur EBOK : bouton, puis état de ma demande (js/organisateur.js).
+  if(typeof brancherInscriptionFiche === 'function') brancherInscriptionFiche(ev);
   const btnContact = document.getElementById('btnContact');
   if(btnContact){
     btnContact.addEventListener('click', ()=>{
@@ -3243,21 +3252,23 @@ window.addEventListener('popstate', ()=>{
 });
 
 function showPage(name){
+  // Favoris et alertes sont des onglets de « Mes événements ».
+  if(name === 'favoris' || name === 'alertes'){ window.mesOnglet = name; name = 'mes'; }
   // Espace réservé aux comptes connectés (si l'auth est active).
   if(name === 'profile' && !currentUser && window.EBOK_AUTH){ openAuth('login'); return; }
   // L'administration n'existe que pour l'admin (le serveur vérifie de toute façon).
   if(name === 'admin' && !currentIsAdmin){ showPage('home'); return; }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
-  document.querySelectorAll('.navlink').forEach(n=>n.classList.toggle('active', n.dataset.nav===name));
+  document.querySelectorAll('.navlink, .tabbar [data-nav]').forEach(n=>n.classList.toggle('active', n.dataset.nav===name));
+  if(typeof fermerMenuCompte === 'function') fermerMenuCompte();
   // Publier exige un compte : on propose la connexion sans masquer le formulaire.
   if(name === 'create' && !currentUser && window.EBOK_AUTH){ openAuth('login'); }
   // Précharge la base des villes dès qu'on arrive sur la page de publication.
   if(name === 'create'){ ensureCitiesLoaded(); prefillOrgFromProfile(); }
   if(name === 'profile'){ renderProfile(); renderOnboardingNudge(); }
   if(name === 'admin' && typeof renderAdminPage === 'function') renderAdminPage();
-  if(name === 'favoris') renderFavorites();
-  if(name === 'alertes') ouvrirPageAlertes();
+  if(name === 'mes' && typeof renderMes === 'function') renderMes();
   // Quitter une fiche événement : on revient à l'URL racine.
   if(!syncingFromUrl && name !== 'event' && eventIdFromUrl()) setUrl('/');
   syncMenuActif(name);
@@ -3653,9 +3664,19 @@ function updateAuthUI(){
   document.getElementById('accountLogged').classList.toggle('hidden', loggedOut);
   document.getElementById('navProfile').classList.toggle('hidden', loggedOut);
   document.getElementById('navAdmin').classList.toggle('hidden', loggedOut || !currentIsAdmin);
+  const icone = document.getElementById('acctIcon');
   if(currentUser){
+    const nom = displayName();
     document.getElementById('accountName').innerHTML =
-      `<b>${esc(displayName())}</b>${currentIsAdmin ? '<span class="account-badge-admin">Admin</span>' : ''}`;
+      `${esc(nom || 'Mon compte')}${currentIsAdmin ? ' <span class="account-badge-admin">Admin</span>' : ''}`;
+    const mail = document.getElementById('acctMail');
+    if(mail) mail.textContent = currentUser.email || '';
+    const initiales = esc((nom || currentUser.email || '?').trim().slice(0, 2).toUpperCase());
+    const avatar = document.getElementById('acctAvatar');
+    if(avatar) avatar.textContent = initiales.replace(/&[^;]+;/g, '');
+    if(icone) icone.innerHTML = `<span class="acct-initiales">${initiales}</span>`;
+  }else if(icone){
+    icone.innerHTML = ico('user');
   }
   // L'assistant IA d'import est ouvert à tout membre connecté ; c'est le
   // parcours de publication (js/create-wizard.js) qui l'affiche à la demande.
@@ -4685,6 +4706,7 @@ function adminRowHtml(ev){
       <div class="admin-item-meta">${metaFull}</div>
       ${relire ? `<div class="admin-item-det">${ico('edit')}Modifié par l'organisateur : vérifie les changements.</div>` : ''}
       ${ev.detection && ev.detection.auto ? `<div class="admin-item-det">Détecté${ev.detection.sourceNom ? ' sur ' + esc(ev.detection.sourceNom) : ''} · <a href="${esc(safeUrl(ev.detection.lien || ev.detection.sourceUrl))}" target="_blank" rel="noopener">vérifier à la source ↗</a></div>` : ''}
+      ${ev.interetOutils && ev.interetOutils.reponse ? `<div class="admin-item-det">Outils EBOK : ${esc({oui:'intéressé', plus_tard:'plus tard', non:'pas intéressé'}[ev.interetOutils.reponse] || ev.interetOutils.reponse)}</div>` : ''}
       ${ev.importe ? `<div class="admin-item-det">${ico('download')}Importé${ev.importe.url ? ` · <a href="${esc(safeUrl(ev.importe.url))}" target="_blank" rel="noopener">vérifier à la source ↗</a>` : ''}</div>` : ''}
       ${(window.EbokVerif && (pending || relire || (ev.importe && Array.isArray(ev.importe.doutes) && ev.importe.doutes.length))) ? window.EbokVerif.html('event', ev, ev.id) : ''}
     </div>
@@ -5313,8 +5335,7 @@ window.EBOK = {
     renderAlertes();
     await reprendreAlerteEnAttente();
     if(document.getElementById('page-search').classList.contains('active')) renderResults();
-    if(document.getElementById('page-alertes').classList.contains('active')) ouvrirPageAlertes();
-    if(document.getElementById('page-favoris').classList.contains('active')) renderFavorites();
+    if(document.getElementById('page-mes').classList.contains('active') && typeof renderMes === 'function') renderMes();
     maybeOpenOnboarding();       // première connexion : on pose les 4 questions
     if(document.getElementById('page-profile').classList.contains('active')) renderProfile();
     // Pastille « à traiter » sur le lien Admin (admin seulement).

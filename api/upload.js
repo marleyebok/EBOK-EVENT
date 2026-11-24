@@ -1,5 +1,6 @@
 /**
- * Upload d'image (affiche d'événement) → Vercel Blob.
+ * Upload d'image (affiche d'événement) ou de document d'inscription (image ou
+ * PDF, dossier « documents ») → Vercel Blob.
  *   POST /api/upload   corps = octets du fichier
  *     en-têtes : x-filename, x-folder, content-type
  *
@@ -30,7 +31,12 @@ export default async function handler(req, res) {
   if (blob === "malforme") return json(res, 503, { error: "stockage_mal_configure" });
 
   const contentType = String(req.headers["content-type"] || "").split(";")[0].trim();
-  if (!ALLOWED.has(contentType)) return json(res, 415, { error: "type_non_supporte" });
+  // Les documents demandés par un organisateur (droit à l'image, autorisation
+  // parentale, règlement signé…) peuvent aussi être des PDF.
+  const dossierDocs = String(req.headers["x-folder"] || "") === "documents";
+  if (!ALLOWED.has(contentType) && !(dossierDocs && contentType === "application/pdf")) {
+    return json(res, 415, { error: "type_non_supporte" });
+  }
 
   try {
     const chunks = [];

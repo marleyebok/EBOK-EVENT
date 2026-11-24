@@ -19,6 +19,9 @@ import {
   signalerEvenement, getSignalements, getSignalementsOuverts, majSignalement, supprimerSignalement,
   getStats,
   uploadCarteInsta, getInstagram, publierInstagram,
+  etatInscriptions, sInscrire, mesInscriptions, annulerInscription, deposerDocument,
+  mesEvenementsOrganises, tableauOrganisateur, majInscription, majReglagesInscription,
+  envoyerMessageInscrits, repondreInteretOutils,
 } from "./services.js";
 import { loadClerk } from "./clerk.js";
 
@@ -34,6 +37,9 @@ window.EBOK_DATA = {
   signalerEvenement, getSignalements, getSignalementsOuverts, majSignalement, supprimerSignalement,
   getStats,
   uploadCarteInsta, getInstagram, publierInstagram,
+  etatInscriptions, sInscrire, mesInscriptions, annulerInscription, deposerDocument,
+  mesEvenementsOrganises, tableauOrganisateur, majInscription, majReglagesInscription,
+  envoyerMessageInscrits, repondreInteretOutils,
 };
 
 // Couche authentification exposée à app.js. Tout passe par le widget Clerk :

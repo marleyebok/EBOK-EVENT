@@ -123,7 +123,21 @@ droits admin se retrouvent seuls (reconnus par e-mail).
 
 ## 🔜 Prochaines étapes
 
-### 0. Outils d'organisateur — V1 *(prochain chantier, après la fusion de la refonte)*
+### 0. Outils d'organisateur — V1 *(codée le 24/11/2026 — lots A et B)*
+
+> ✅ Fait : menu simplifié (Rechercher / Publier / Mes événements / Mon compte,
+> barre du bas sur portable), page « Mes événements » (Favoris, Alertes, Mes
+> inscriptions, J'organise), inscription depuis la fiche **validée par
+> l'organisateur**, tableau de bord (statuts, catégories, commentaire privé,
+> documents, messages groupés, réglages, export CSV), co-organisateurs, question
+> « outils EBOK » après publication (réponse visible dans l'administration).
+> Voir README › Outils d'organisateur.
+>
+> Reste à faire : documents **privés** côté stockage (aujourd'hui adresse
+> impossible à deviner, pas d'accès signé) ; suppression automatique des
+> documents quelques mois après l'événement ; relecture juridique (CGU,
+> politique de confidentialité : EBOK sous-traitant des organisateurs) ;
+> rappel automatique la veille ; statistiques de clics par contact.
 
 Idée du propriétaire (24/11/2026) : proposer aux organisateurs de **gérer leur
 événement sur ebok.fr**, pas seulement de l'annoncer.

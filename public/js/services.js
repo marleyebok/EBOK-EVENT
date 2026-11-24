@@ -300,3 +300,59 @@ export async function hostStoredPosters({ dry = false, limit = 5 } = {}) {
   const q = `?limit=${encodeURIComponent(limit)}${dry ? "&dry=1" : ""}`;
   return api("/api/migrate-posters" + q, { method: "POST" });
 }
+
+/* ---------- Inscriptions et outils d'organisateur ---------- */
+const INSC = "/api/events?r=insc";
+const e = encodeURIComponent;
+/** État des inscriptions d'un événement (ouvertes, places, ma demande). */
+export async function etatInscriptions(eventId) {
+  return api(`${INSC}&event=${e(eventId)}&etat=1`);
+}
+/** M'inscrire : envoie une demande que l'organisateur validera. */
+export async function sInscrire(eventId, demande) {
+  return api(`${INSC}&event=${e(eventId)}`, { method: "POST", body: demande });
+}
+export async function mesInscriptions() {
+  return (await api(`${INSC}&mine=1`)).inscriptions || [];
+}
+export async function annulerInscription(id) {
+  return api(`${INSC}&id=${e(id)}`, { method: "DELETE" });
+}
+/** Dépose un document demandé (image ou PDF) puis le rattache à l'inscription. */
+export async function deposerDocument(inscriptionId, docId, fichier) {
+  const res = await fetch("/api/upload", {
+    method: "POST",
+    headers: {
+      ...(await authHeader()),
+      "Content-Type": fichier.type || "application/pdf",
+      "x-filename": encodeURIComponent(fichier.name || "document"),
+      "x-folder": "documents",
+    },
+    body: fichier,
+  });
+  let data = {};
+  try { data = await res.json(); } catch { /* réponse non JSON */ }
+  if (!res.ok || !data.url) throw new Error(data.error || "upload_" + res.status);
+  return api(`${INSC}&id=${e(inscriptionId)}&doc=${e(docId)}`, { method: "PATCH", body: { url: data.url, nom: fichier.name || "" } });
+}
+/** Les événements que j'organise (propriétaire ou co-organisateur). */
+export async function mesEvenementsOrganises() {
+  return (await api(`${INSC}&orga=1`)).events || [];
+}
+/** Tableau de bord d'un événement : réglages, inscrits, messages. */
+export async function tableauOrganisateur(eventId) {
+  return api(`${INSC}&event=${e(eventId)}`);
+}
+export async function majInscription(id, patch) {
+  return (await api(`${INSC}&id=${e(id)}`, { method: "PATCH", body: patch })).inscription;
+}
+export async function majReglagesInscription(eventId, patch) {
+  return api(`${INSC}&event=${e(eventId)}&reglages=1`, { method: "PATCH", body: patch });
+}
+export async function envoyerMessageInscrits(eventId, message) {
+  return api(`${INSC}&event=${e(eventId)}&message=1`, { method: "POST", body: message });
+}
+/** Réponse à « gérer ton événement avec les outils EBOK ? ». */
+export async function repondreInteretOutils(eventId, reponse) {
+  return api(`${INSC}&event=${e(eventId)}&interet=1`, { method: "POST", body: { reponse } });
+}

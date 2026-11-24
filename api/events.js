@@ -18,14 +18,23 @@
  */
 import { ensureSchema, hasDb, sql, json, readBody, newId, ms, sessionUid, isAdminUid, clerkUser } from "./_lib.js";
 import { correspond, message, envoyer } from "../lib/alertes.js";
+import { inscriptions, roleSur } from "../lib/inscriptions.js";
+
+/* Champs gérés par les outils d'organisateur (lib/inscriptions.js) : jamais
+   renvoyés au public (les e-mails des co-organisateurs sont privés) et jamais
+   modifiables par la route générale de modification. */
+const CHAMPS_ORGA = ["coorgs"];
+const CHAMPS_ORGA_ECRITURE = ["coorgs", "interetOutils", "inscription"];
 
 /* Champs promus en colonnes : ils ne sont pas dupliqués dans `data`. */
 const COLUMN_FIELDS = ["id", "status", "user_id", "userId", "featured", "createdAt", "created_at"];
 
 /** Reconstitue la fiche attendue par le front (mêmes champs qu'avant). */
 function toEvent(row) {
+  const data = { ...row.data };
+  for (const k of CHAMPS_ORGA) delete data[k];
   return {
-    ...row.data,
+    ...data,
     id: row.id,
     status: row.status,
     userId: row.user_id,
@@ -105,6 +114,17 @@ export default async function handler(req, res) {
   const uid = await sessionUid(req);
   const { id, mine, all } = req.query || {};
 
+  // Inscriptions et outils d'organisateur : même fonction serveur (le forfait
+  // Vercel limite leur nombre), logique dans lib/inscriptions.js.
+  if ((req.query || {}).r === "insc") {
+    try {
+      return await inscriptions(req, res, uid);
+    } catch (e) {
+      console.error("inscriptions:", e);
+      return json(res, 500, { error: "server" });
+    }
+  }
+
   try {
     if (req.method === "GET") {
       if (mine) {
@@ -161,9 +181,11 @@ export default async function handler(req, res) {
       const row = rows[0];
       if (!row) return json(res, 404, { error: "introuvable" });
       const admin = await isAdminUid(uid);
-      if (!admin && row.user_id !== uid) return json(res, 403, { error: "prive" });
+      // Le propriétaire, l'admin, et les co-organisateurs peuvent modifier la fiche.
+      if (!admin && row.user_id !== uid && !(await roleSur(row, uid))) return json(res, 403, { error: "prive" });
 
       const patch = await readBody(req);
+      for (const k of CHAMPS_ORGA_ECRITURE) delete patch[k];
       const aLaCle = (k) => Object.prototype.hasOwnProperty.call(patch, k);
       // status et featured sont des actions d'admin (validation / mise en avant).
       const hasStatus = admin && aLaCle("status");
