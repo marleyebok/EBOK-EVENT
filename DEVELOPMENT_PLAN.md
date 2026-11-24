@@ -146,6 +146,24 @@ Idée du propriétaire (24/11/2026) : proposer aux organisateurs de **gérer leu
         règlement…), dépôt et suivi
   - [ ] Réservation **payante** : seulement avec un statut professionnel
         (voir section 7) — paiement, commission, CGV, rétractation
+- [ ] **Co-organisateurs** — le propriétaire d'un événement invite d'autres
+      comptes (par e-mail) à le gérer avec lui. Rôles proposés : *propriétaire*
+      (tout, dont supprimer l'événement et gérer l'équipe) et *co-organisateur*
+      (inscrits, messages, documents, modification de la fiche). Droits vérifiés
+      côté serveur, invitation révocable, trace de qui a fait quoi.
+- [ ] **Menu simplifié + page « Mes événements »** (maquette :
+      `maquettes/unslop/mes-evenements.html`) — barre du haut : Rechercher,
+      bouton « Publier un événement » **au centre**, Mes événements (pastille
+      des alertes), puis bouton « Mon compte » à droite ; sur portable, barre
+      en bas de l'écran Rechercher / + Publier / Mes événements, et « Mon
+      compte » en haut à droite ; sur ordinateur, boutons du header à la
+      forme du logo (coins haut gauche et bas droit arrondis, les deux autres
+      carrés). Menu « Mon compte » — déconnecté : Créer un compte / Se
+      connecter, et trois atouts (favoris, alertes, « Gère tes événements
+      avec les outils EBOK ») ; connecté : profil, administration, thème,
+      déconnexion. Page en quatre
+      onglets : Favoris, Alertes, Mes inscriptions, J'organise (tableau de bord
+      par événement : vues, favoris, inscrits, documents, co-organisateurs).
 - [ ] **Avant de toucher aux documents** — certificats médicaux et données de
       mineurs = données sensibles (RGPD) : base légale, durée de
       conservation, accès restreint à l'organisateur, mise à jour de la
