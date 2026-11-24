@@ -1439,21 +1439,47 @@ function initHomeSearch(){
    en bas et les épingles retenues s'allument à son passage. Rien si le
    visiteur a demandé moins d'animations, ni pour un simple zoom.
    ========================================================= */
-let dernierFiltre = null, scanAnim = 0;
+let dernierFiltre = null, scanAnim = 0, scanAttente = 0;
 function signatureFiltres(){
   const types = [...document.querySelectorAll('#typeFilterHome .type-chip.active')].map(c=> c.dataset.type).join(',');
   return [types, homeCity, homeRegion, periodStart, periodEnd, homeRadius, homeNom.join(' ')].join('|');
 }
+const SCAN_DUREE = 2000;          // durée d'un balayage (ms)
+const SCAN_DELAI_ACCUEIL = 1500;  // attente avant le premier balayage, à l'arrivée sur l'accueil
 function scannerCarteSiFiltresChanges(){
   const sig = signatureFiltres();
   if(sig === dernierFiltre) return;
+  const premier = dernierFiltre === null;
   dernierFiltre = sig;
-  scannerCarte();
+  if(premier) scanDArrivee(); else scannerCarte();
+}
+/* Premier affichage : les épingles attendent, puis la ligne passe une fois,
+   pour donner un peu de vie à la carte. Si l'intro animée se joue, on
+   attend qu'elle soit terminée. */
+function scanDArrivee(){
+  const svg = document.getElementById('franceMap');
+  const accueil = document.getElementById('page-home');
+  if(!svg || !accueil || !accueil.classList.contains('active')) return;
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  svg.classList.add('scanning');
+  const lancer = ()=>{ scanAttente = setTimeout(()=>{
+    if(accueil.classList.contains('active')) scannerCarte();
+    else svg.classList.remove('scanning');
+  }, SCAN_DELAI_ACCUEIL); };
+  const html = document.documentElement;
+  if(!html.classList.contains('intro-on')){ lancer(); return; }
+  const obs = new MutationObserver(()=>{
+    if(!html.classList.contains('intro-on')){ obs.disconnect(); lancer(); }
+  });
+  obs.observe(html, { attributes: true, attributeFilter: ['class'] });
 }
 function scannerCarte(){
+  clearTimeout(scanAttente);
   const svg = document.getElementById('franceMap'), wrap = document.getElementById('homeMapView');
-  if(!svg || !wrap || wrap.classList.contains('hidden')) return;
-  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if(!svg) return;
+  if(!wrap || wrap.classList.contains('hidden') || matchMedia('(prefers-reduced-motion: reduce)').matches){
+    svg.classList.remove('scanning'); return;
+  }
   cancelAnimationFrame(scanAnim);
   const H = 90, NS = 'http://www.w3.org/2000/svg';
   let g = document.getElementById('mapScan');
@@ -1464,9 +1490,10 @@ function scannerCarte(){
   }
   svg.appendChild(g);   // toujours au-dessus des épingles
   svg.classList.add('scanning');
-  const fin = MAP_H, t0 = performance.now(), D = 1100;
+  const fin = MAP_H, t0 = performance.now(), D = SCAN_DUREE;
   const pas = now=>{
-    const k = Math.min(1, (now - t0) / D), y = -H + (fin + H) * (1 - Math.pow(1 - k, 3));
+    // Vitesse régulière, adoucie au départ et à l'arrivée.
+    const k = Math.min(1, (now - t0) / D), y = -H + (fin + H) * (0.5 - Math.cos(Math.PI * k) / 2);
     g.setAttribute('transform', `translate(0 ${y.toFixed(1)})`);
     svg.querySelectorAll('#pinLayer .pin:not(.lit)').forEach(p=>{ if(+p.dataset.sy <= y + H) p.classList.add('lit'); });
     if(k < 1) scanAnim = requestAnimationFrame(pas);

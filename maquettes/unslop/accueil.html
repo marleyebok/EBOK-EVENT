@@ -598,10 +598,10 @@ function scanner(done) {
   cancelAnimationFrame(anim);
   const pins = [...$('pins').children], scan = $('scan'), co = $('callout');
   if (reduce) { pins.forEach(p => p.classList.add('on')); co.classList.add('on'); return; }
-  const y0 = VB.y - 90, y1 = VB.y + VB.h, D = 1100, t0 = performance.now();
+  const y0 = VB.y - 90, y1 = VB.y + VB.h, D = 2000, t0 = performance.now();
   scan.classList.add('run');
   const pas = now => {
-    const k = Math.min(1, (now - t0) / D), e = 1 - Math.pow(1 - k, 3), y = y0 + (y1 - y0) * e;
+    const k = Math.min(1, (now - t0) / D), e = 0.5 - Math.cos(Math.PI * k) / 2, y = y0 + (y1 - y0) * e;
     scan.setAttribute('transform', `translate(0 ${y})`);
     for (const p of pins) if (+p.dataset.y <= y + 89) p.classList.add('on');
     if (k < 1) anim = requestAnimationFrame(pas);
@@ -684,7 +684,8 @@ zone.forEach(z => {
 montrer(0, false);
 
 // Entrée : la carte se dessine par un premier balayage
-appliquer();
+// Arrivée : la carte attend 1,5 s, puis un premier balayage lent allume les épingles.
+{ const f = filtres(); marquer(); dessiner(EV.filter(e => garde(e, f)), f); setTimeout(() => scanner(), 1500); }
 </script>
 </body>
 </html>
