@@ -355,30 +355,35 @@ Idées mises de côté, déjà esquissées dans le code par le passé :
 
 | Phase | Fonctionnalités |
 |---|---|
-| **V1** | Fiche événement et listing *(déjà en place)*, formulaire d'inscription personnalisable, quotas et liste d'attente, export des inscrits, e-mail groupé par segment |
+| **V1** ✅ | Fiche événement et listing *(déjà en place)*, formulaire d'inscription personnalisable, quotas et liste d'attente, export des inscrits, e-mail groupé par segment |
 | **V2** | Documents obligatoires et autorisations, rappels automatiques, accueil par QR code, profil participant réutilisable |
 | **V3** | Paiement et factures, réservation de ressources, bénévoles *(paiement : seulement avec un statut pro)* |
 | **V4** | Tournois (poules, scores, résultats en direct), offre vidéo, statistiques |
 | **V5** | Différenciation : suivi après l'événement, assistant IA de l'organisateur |
 
-#### V1 — Inscriptions et communication *(en cours)*
+#### V1 — Inscriptions et communication ✅ *(24/11/2026)*
 
 - [x] Fiche événement publique partageable, listing, filtres, carte (existant)
-- [ ] L'organisateur **active les inscriptions EBOK** sur son événement :
+- [x] L'organisateur **active les inscriptions EBOK** sur son événement :
       nombre de places, date limite, questions supplémentaires (texte court,
       choix dans une liste, oui/non ; obligatoires ou non)
-- [ ] Bouton **« S'inscrire »** sur la fiche (compte EBOK requis), avec
+- [x] Bouton **« S'inscrire »** sur la fiche (compte EBOK requis), avec
       e-mail de confirmation ; le participant peut **annuler** lui-même
-- [ ] **Liste d'attente automatique** quand c'est complet : une place libérée
+- [x] **Liste d'attente automatique** quand c'est complet : une place libérée
       est donnée au premier de la liste, prévenu par e-mail
-- [ ] Page **« Gérer les inscriptions »** pour l'organisateur : liste des
+- [x] Page **« Gérer les inscriptions »** pour l'organisateur : liste des
       inscrits et de la liste d'attente, compteur de places, retrait d'un inscrit
-- [ ] **Export CSV** des inscrits (ouvrable dans Excel)
-- [ ] **E-mail groupé** aux inscrits, par segment : tous, confirmés, liste
+- [x] **Export CSV** des inscrits (ouvrable dans Excel)
+- [x] **E-mail groupé** aux inscrits, par segment : tous, confirmés, liste
       d'attente ; avec une limite d'envoi pour éviter les abus
-- [ ] « Mes inscriptions » côté participant
-- [ ] Pages légales mises à jour (inscriptions, données transmises à
+- [x] « Mes inscriptions » côté participant
+- [x] Pages légales mises à jour (inscriptions, données transmises à
       l'organisateur, durée de conservation)
+- [ ] **Reste à faire par toi :** activer Resend (`RESEND_API_KEY`, voir
+      « Alertes e-mail » ci-dessus) — sans lui, pas de confirmation, pas de
+      place libérée annoncée, pas d'e-mail groupé
+- [ ] **À tester en vrai** après déploiement : une inscription avec deux
+      comptes, une annulation, un export ouvert dans Excel
 
 #### V2 — Dossiers et jour J
 

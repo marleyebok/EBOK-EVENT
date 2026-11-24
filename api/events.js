@@ -10,6 +10,8 @@
  *   PATCH  /api/events?id=X {...} → modifier (diffuseur ou admin ; les champs
  *                                    status / featured ne bougent qu'en admin)
  *   DELETE /api/events?id=X       → supprimer (diffuseur ou admin)
+ *   …?module=inscriptions…        → inscriptions prises sur EBOK, déléguées à
+ *                                    lib/inscriptions-route.js (voir ce fichier)
  *
  * Modèle (voir api/_lib.js) : colonnes indexables (id, status, user_id,
  * featured, created_at) + JSONB `data` = tout le reste de la fiche (title,
@@ -18,6 +20,8 @@
  */
 import { ensureSchema, hasDb, sql, json, readBody, newId, ms, sessionUid, isAdminUid, clerkUser } from "./_lib.js";
 import { correspond, message, envoyer } from "../lib/alertes.js";
+import { normaliserConfig } from "../lib/inscriptions.js";
+import inscriptionsRoute, { promouvoirEtSynchroniser } from "../lib/inscriptions-route.js";
 
 /* Champs promus en colonnes : ils ne sont pas dupliqués dans `data`. */
 const COLUMN_FIELDS = ["id", "status", "user_id", "userId", "featured", "createdAt", "created_at"];
@@ -38,10 +42,15 @@ function toEvent(row) {
 }
 
 
-/** Extrait le blob `data` (tout sauf les champs promus en colonnes). */
+/** Extrait le blob `data` (tout sauf les champs promus en colonnes). La
+ *  configuration des inscriptions est nettoyée au passage : questions,
+ *  options et date limite ne sont jamais enregistrées telles quelles. */
 function dataBlob(obj) {
   const data = { ...obj };
   for (const k of COLUMN_FIELDS) delete data[k];
+  if (Object.prototype.hasOwnProperty.call(data, "inscriptions")) {
+    data.inscriptions = normaliserConfig(data.inscriptions);
+  }
   return data;
 }
 
@@ -100,6 +109,15 @@ export default async function handler(req, res) {
   } catch (e) {
     console.error("events schema:", e);
     return json(res, 500, { error: "schema" });
+  }
+
+  if ((req.query || {}).module === "inscriptions") {
+    try {
+      return await inscriptionsRoute(req, res);
+    } catch (e) {
+      console.error("inscriptions:", e);
+      return json(res, 500, { error: "server" });
+    }
   }
 
   const uid = await sessionUid(req);
@@ -183,7 +201,10 @@ export default async function handler(req, res) {
       // compte pas.
       if (!admin) {
         delete rest.aRelire;
-        if (Object.keys(rest).some((k) => k !== "dispo" && k !== "placesTotal")) rest.aRelire = true;
+        // La configuration des inscriptions (places, questions) ne change rien
+        // à ce qui est publié sur la fiche : pas de relecture pour elle non plus.
+        const sansRelecture = ["dispo", "placesTotal", "inscriptions"];
+        if (Object.keys(rest).some((k) => !sansRelecture.includes(k))) rest.aRelire = true;
       }
 
       await sql()`
@@ -202,6 +223,11 @@ export default async function handler(req, res) {
       if (nextStatus === "approved" && row.status !== "approved") {
         notifierAlertes(fiche, req).catch((e) => console.error("alertes:", e));
       }
+      // Des places en plus (ou les inscriptions réactivées) : la liste
+      // d'attente avance tout de suite.
+      if (aLaCle("placesTotal") || aLaCle("inscriptions")) {
+        await promouvoirEtSynchroniser(id, req).catch((e) => console.error("inscriptions:", e));
+      }
 
       return json(res, 200, { event: fiche });
     }
@@ -216,6 +242,8 @@ export default async function handler(req, res) {
       if (!admin && row.user_id !== uid) return json(res, 403, { error: "prive" });
       await sql()`DELETE FROM event.events WHERE id = ${id}`;
       await sql()`DELETE FROM event.views WHERE event_id = ${id}`;
+      await sql()`DELETE FROM event.inscriptions WHERE event_id = ${id}`;
+      await sql()`DELETE FROM event.inscription_envois WHERE event_id = ${id}`;
       return json(res, 200, { ok: true });
     }
 

@@ -2600,3 +2600,95 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .ci-ig{margin:8px 0 0;font-size:12.5px;line-height:1.45;color:var(--chalk-dim);}
 .ci-etat a{color:var(--accent-text);font-weight:700;}
 .carte-insta .edit-actions{flex-wrap:wrap;}
+
+/* =========================================================
+   INSCRIPTIONS PRISES SUR EBOK (public/js/inscriptions.js)
+   ========================================================= */
+.ins-places{margin:4px 0 14px;font-size:14px;font-weight:600;color:var(--chalk-dim);}
+.ins-places strong{color:var(--chalk);}
+.ins-form .field{margin-bottom:14px;}
+.ins-form .field textarea,.ins-form .field input,.ins-form .field select{width:100%;box-sizing:border-box;}
+.ins-oui-non{display:flex;gap:8px;flex-wrap:wrap;}
+.ins-oui-non label{
+  display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border:1px solid var(--line-strong);
+  border-radius:999px;cursor:pointer;font-size:14px;font-weight:600;text-transform:none;letter-spacing:normal;color:var(--chalk);
+}
+.ins-oui-non input{accent-color:var(--accent);margin:0;}
+.ins-oui-non label:has(input:checked){border-color:var(--accent);background:rgba(var(--accent-rgb),0.12);}
+.ins-oblig{color:var(--accent-text);}
+.ins-legal{font-size:12.5px;line-height:1.5;color:var(--chalk-dim);margin:4px 0 0;}
+.ins-legal a{color:inherit;}
+.ins-statut{
+  border:1px solid var(--line-strong);border-radius:12px;padding:16px;margin:4px 0 6px;
+  background:var(--asphalt-3);line-height:1.5;
+}
+.ins-statut strong{display:block;font-size:17px;margin-bottom:4px;}
+.ins-statut.is-ok{border-color:var(--green);}
+.ins-statut.is-wait{border-color:var(--yellow);}
+.ins-reponses{margin:10px 0 0;padding:0;list-style:none;font-size:13.5px;color:var(--chalk-dim);}
+.ins-reponses li{margin-top:3px;}
+.ins-reponses b{color:var(--chalk);font-weight:600;}
+
+/* Bouton « S'inscrire » de la fiche quand les inscriptions sont sur EBOK. */
+.ev-act.is-inscrit{background:var(--green);border-color:var(--green);color:#fff;}
+.ev-act.is-attente{background:var(--yellow);border-color:var(--yellow);color:#191008;}
+.ev-ins-jauge{margin:10px 0 0;font-size:13px;color:rgba(255,255,255,.85);}
+
+/* Gestion (organisateur) */
+.ins-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:8px;}
+.ins-stat{background:var(--asphalt-2);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;}
+.ins-stat span{display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--chalk-dim);}
+.ins-stat b{display:block;font-family:var(--font-display);font-size:30px;font-weight:400;margin-top:4px;}
+.ins-stat small{display:block;font-size:12.5px;color:var(--chalk-dim);margin-top:2px;}
+.ins-reglages,.ins-message{background:var(--asphalt-2);border:1px solid var(--line);border-radius:var(--radius);padding:18px;}
+.ins-reglages .form-row{margin:6px 0 4px;}
+.ins-hint{margin:6px 0 12px;}
+.ins-questions{border:0;padding:0;margin:14px 0 0;min-width:0;}
+.ins-questions legend{font-size:15px;font-weight:700;padding:0;margin-bottom:10px;}
+.ins-q{border:1px solid var(--line-strong);border-radius:12px;padding:12px;margin-bottom:10px;display:grid;gap:10px;}
+.ins-q-ligne{display:grid;grid-template-columns:minmax(0,1fr) 170px;gap:10px;}
+.ins-q input[type="text"],.ins-q select{
+  width:100%;box-sizing:border-box;background:var(--asphalt-3);border:1px solid var(--line-strong);
+  color:var(--chalk);padding:10px 12px;border-radius:8px;font-size:14px;
+}
+.ins-q-bas{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:13.5px;}
+.ins-q-bas label{display:inline-flex;align-items:center;gap:7px;cursor:pointer;}
+.ins-q-bas input{accent-color:var(--accent);}
+.ins-q-suppr{background:none;border:0;color:var(--chalk-dim);cursor:pointer;font-size:13.5px;padding:4px;}
+.ins-q-suppr:hover{color:var(--red);}
+.ins-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px;}
+.ins-ok{font-size:14px;font-weight:600;color:var(--green);}
+.ins-message .field{margin-bottom:12px;}
+.ins-message .field input,.ins-message .field select{width:100%;box-sizing:border-box;}
+.ins-filtres{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.ins-chip{
+  padding:7px 14px;border:1px solid var(--line-strong);border-radius:999px;background:transparent;
+  color:var(--chalk-dim);font:600 13px var(--font-body);cursor:pointer;
+}
+.ins-chip.active{border-color:var(--accent);color:var(--chalk);background:rgba(var(--accent-rgb),0.12);}
+.ins-ligne{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+  background:var(--asphalt-2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;
+}
+.ins-ligne-id{min-width:0;}
+.ins-ligne-id strong{display:block;font-size:15px;overflow-wrap:anywhere;}
+.ins-ligne-id a,.ins-ligne-id span{font-size:13px;color:var(--chalk-dim);overflow-wrap:anywhere;}
+.ins-pastille{
+  display:inline-block;font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:999px;margin-left:6px;vertical-align:2px;
+  background:rgba(31,143,107,.16);color:var(--green);
+}
+.ins-pastille.is-wait{background:rgba(255,201,60,.2);color:#8a6400;}
+[data-theme="dark"] .ins-pastille.is-wait,:root:not([data-theme="light"]) .ins-pastille.is-wait{color:var(--yellow);}
+.ins-ligne .btn{padding:7px 12px;font-size:13px;flex:none;}
+.ins-envois{margin-top:14px;font-size:13.5px;color:var(--chalk-dim);}
+.ins-envois li{margin-top:4px;}
+
+/* Mes inscriptions */
+.ins-mes .alert-card{align-items:center;}
+.ins-mes-date{display:block;color:var(--chalk-dim);font-size:13px;margin-top:2px;}
+
+@media(max-width:600px){
+  .ins-q-ligne{grid-template-columns:1fr;}
+  .ins-ligne{flex-direction:column;}
+  .ins-ligne .btn{align-self:flex-end;}
+}

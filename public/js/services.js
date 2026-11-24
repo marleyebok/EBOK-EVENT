@@ -294,6 +294,47 @@ export async function deleteAlert(id) {
   await api("/api/alerts?id=" + encodeURIComponent(id), { method: "DELETE" });
 }
 
+/* ---------- Inscriptions prises sur EBOK ---------- */
+/* Servies par /api/events?module=inscriptions (voir lib/inscriptions-route.js). */
+const INS = "/api/events?module=inscriptions";
+const insEv = (id) => INS + "&event=" + encodeURIComponent(id);
+
+/** État des inscriptions d'un événement + ma situation (moi: null si pas inscrit). */
+export async function getInscription(eventId) {
+  return api(insEv(eventId));
+}
+/** M'inscrire : renvoie { statut: "confirme"|"attente", rang }. */
+export async function inscrire(eventId, reponses) {
+  return api(insEv(eventId), { method: "POST", body: { reponses } });
+}
+/** Annuler mon inscription (ou ma place en liste d'attente). */
+export async function annulerInscription(eventId) {
+  await api(insEv(eventId), { method: "DELETE" });
+}
+/** Mes inscriptions, avec la fiche de chaque événement. */
+export async function getMesInscriptions() {
+  return (await api(INS + "&mine=1")).inscriptions || [];
+}
+/** Organisateur : configuration, inscrits nominatifs, historique des envois. */
+export async function getGestionInscriptions(eventId) {
+  return api(insEv(eventId) + "&gestion=1");
+}
+/** Organisateur : retirer un inscrit. */
+export async function retirerInscrit(eventId, inscritId) {
+  await api(insEv(eventId) + "&inscrit=" + encodeURIComponent(inscritId), { method: "DELETE" });
+}
+/** Organisateur : e-mail groupé ({ segment, sujet, corps }). */
+export async function envoyerMessageInscrits(eventId, message) {
+  return api(insEv(eventId) + "&envoi=1", { method: "POST", body: message });
+}
+/** Organisateur : export CSV (le fichier exige le jeton, d'où le fetch). */
+export async function exporterInscrits(eventId) {
+  const res = await fetch(insEv(eventId) + "&gestion=1&format=csv", { headers: { ...(await authHeader()) } });
+  if (!res.ok) throw new Error("export_" + res.status);
+  const nom = (/filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") || "") || [])[1] || "inscrits.csv";
+  return { blob: await res.blob(), nom };
+}
+
 /** Héberge un lot d'affiches encore stockées en base (admin).
  *  Traité par lots côté serveur : renvoie `restant` et `relancer`. */
 export async function hostStoredPosters({ dry = false, limit = 5 } = {}) {

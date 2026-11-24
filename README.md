@@ -200,6 +200,42 @@ Chaque e-mail porte un lien de désinscription à jeton, utilisable **sans être
 connecté** : c'est ce qu'exige un message légitime, et ça protège la réputation
 du domaine.
 
+### Inscriptions prises sur EBOK
+
+Un organisateur peut prendre les inscriptions de son événement **directement sur
+EBOK**, au lieu de renvoyer vers un lien externe. Depuis « Mon profil → Mes
+événements », le bouton **📝 Inscriptions** ouvre la page de gestion :
+
+- **Réglages** : activer, nombre de places (le même champ `placesTotal` que la
+  fiche ; vide = illimité), date limite, jusqu'à 10 questions (réponse libre,
+  liste de choix, oui/non ; obligatoires ou non). Ces réglages ne déclenchent pas
+  de relecture par l'admin.
+- **Liste d'attente automatique** : au-delà des places, les inscrits passent en
+  attente. Une place libérée (annulation, retrait, places ajoutées) revient au
+  premier de la liste, prévenu par e-mail. Un verrou Postgres par événement
+  (`pg_advisory_xact_lock`) empêche deux inscriptions simultanées de prendre la
+  même dernière place. Le badge « Places dispo / Bientôt complet / Complet » de
+  la fiche suit le remplissage.
+- **Liste des inscrits** (filtres confirmés / attente), retrait d'un inscrit,
+  **export CSV** ouvrable dans Excel (séparateur « ; », formules neutralisées).
+- **E-mail groupé** par segment (tous, confirmés, liste d'attente) : un e-mail
+  par personne, réponse directe à l'organisateur (`reply_to`), **3 envois par
+  jour et par événement** (l'admin n'a pas de limite).
+
+Côté participant : le bouton « S'inscrire » de la fiche ouvre le formulaire
+(compte EBOK requis), e-mail de confirmation, annulation depuis la fiche ou la
+page **« Mes inscriptions »**.
+
+Technique : tables `event.inscriptions` et `event.inscription_envois`, « zéro
+miroir » (nom et e-mail lus dans Clerk à la consultation). Les inscriptions d'un
+événement terminé depuis plus de 12 mois sont purgées. Le projet ayant déjà
+12 fonctions serverless (limite du plan gratuit Vercel), la route vit dans
+`lib/inscriptions-route.js` et passe par `api/events.js?module=inscriptions`.
+La logique pure (`lib/inscriptions.js`) se teste sans base :
+`npm run test:inscriptions`. Les e-mails partent par Resend : sans
+`RESEND_API_KEY`, les inscriptions fonctionnent mais aucun e-mail ne part, et
+l'e-mail groupé est refusé avec un message clair.
+
 ### Schéma
 
 Le schéma `event` (tables `events`, `views`, `profiles`) est **créé

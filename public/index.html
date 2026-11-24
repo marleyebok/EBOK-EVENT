@@ -143,6 +143,7 @@
     <button class="side-menu-link" data-nav="create"><span>➕</span> Publier un événement</button>
     <button class="side-menu-link" data-nav="favoris"><span>♥</span> Mes favoris</button>
     <button class="side-menu-link" data-nav="alertes"><span>🔔</span> Mes alertes<span class="nav-badge hidden" data-alert-badge></span></button>
+    <button class="side-menu-link menu-auth hidden" data-nav="inscriptions"><span>📝</span> Mes inscriptions</button>
     <button class="side-menu-link menu-auth hidden" data-menu-section="section-mes-evenements"><span>📋</span> Mes événements</button>
     <button class="side-menu-link menu-auth hidden" data-nav="profile"><span>👤</span> Mon profil</button>
     <button class="side-menu-link menu-admin hidden" data-nav="admin"><span>👑</span> Administration<span class="nav-badge hidden" data-admin-badge title="À traiter"></span></button>
@@ -759,6 +760,102 @@
     </div>
   </section>
 
+  <!-- ===================== MES INSCRIPTIONS ===================== -->
+  <section id="page-inscriptions" class="page">
+    <div class="page-head">
+      <p class="eyebrow">Espace membre</p>
+      <h2>📝 Mes inscriptions</h2>
+      <p class="hero-sub">Les événements auxquels tu t'es inscrit sur EBOK, et ta place sur les listes d'attente.</p>
+    </div>
+    <div class="ins-mes" id="mesInscriptions"></div>
+  </section>
+
+  <!-- ===================== GÉRER LES INSCRIPTIONS (ORGANISATEUR) ===================== -->
+  <section id="page-gestion-ins" class="page">
+    <button class="back-link" data-nav="profile">← Mes événements</button>
+    <div class="page-head">
+      <p class="eyebrow">Espace organisateur</p>
+      <h2 id="gesTitre">Gérer les inscriptions</h2>
+      <p class="hero-sub" id="gesSous"></p>
+    </div>
+
+    <div class="ins-stats" id="gesStats"></div>
+
+    <div class="profile-section">
+      <div class="profile-section-head"><h3>Réglages</h3></div>
+      <form class="ins-reglages" id="gesForm" novalidate>
+        <div class="field field-check">
+          <input type="checkbox" id="gesActif">
+          <label for="gesActif">Prendre les inscriptions sur EBOK</label>
+        </div>
+        <p class="section-hint ins-hint">Le bouton « S'inscrire » de ta fiche ouvre alors le formulaire EBOK au lieu de ton lien externe. Les participants doivent avoir un compte EBOK.</p>
+        <div class="form-row">
+          <div class="field">
+            <label for="gesPlaces">Nombre de places <span class="wz-opt">(vide = illimité)</span></label>
+            <input type="number" id="gesPlaces" min="1" max="100000" inputmode="numeric" placeholder="Ex. 40">
+          </div>
+          <div class="field">
+            <label for="gesLimite">Date limite <span class="wz-opt">(facultatif)</span></label>
+            <input type="date" id="gesLimite">
+          </div>
+        </div>
+        <p class="section-hint ins-hint">Quand c'est complet, les suivants vont en liste d'attente. Une place libérée revient au premier de la liste, prévenu par e-mail.</p>
+        <fieldset class="ins-questions">
+          <legend>Questions aux participants <span class="wz-opt">(10 au plus)</span></legend>
+          <div id="gesQuestions"></div>
+          <button type="button" class="btn btn-ghost" id="gesAjoutQ">+ Ajouter une question</button>
+        </fieldset>
+        <p class="report-error hidden" id="gesErreur" role="alert"></p>
+        <div class="ins-actions">
+          <button type="submit" class="btn btn-primary" id="gesEnregistrer">Enregistrer les réglages</button>
+          <span class="ins-ok hidden" id="gesOk" role="status">Enregistré ✓</span>
+        </div>
+      </form>
+    </div>
+
+    <div class="profile-section">
+      <div class="profile-section-head">
+        <h3>Inscrits</h3>
+        <button class="btn btn-ghost" id="gesExport">⬇ Exporter (Excel)</button>
+      </div>
+      <div class="ins-filtres" role="group" aria-label="Filtrer les inscrits" id="gesFiltres">
+        <button type="button" class="ins-chip active" data-filtre="tous">Tous</button>
+        <button type="button" class="ins-chip" data-filtre="confirme">Confirmés</button>
+        <button type="button" class="ins-chip" data-filtre="attente">Liste d'attente</button>
+      </div>
+      <div id="gesListe"></div>
+    </div>
+
+    <div class="profile-section">
+      <div class="profile-section-head"><h3>Écrire aux inscrits</h3></div>
+      <p class="section-hint">Un e-mail par personne : personne ne voit l'adresse des autres. Les réponses arrivent directement dans ta boîte mail. <span id="gesQuota"></span></p>
+      <form class="ins-message" id="gesMsgForm" novalidate>
+        <div class="field">
+          <label for="gesSegment">Destinataires</label>
+          <select id="gesSegment">
+            <option value="tous">Tous les inscrits (confirmés + liste d'attente)</option>
+            <option value="confirmes">Confirmés seulement</option>
+            <option value="attente">Liste d'attente seulement</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="gesSujet">Objet</label>
+          <input type="text" id="gesSujet" maxlength="150" placeholder="Ex. Horaires et lieu de rendez-vous">
+        </div>
+        <div class="field">
+          <label for="gesCorps">Message</label>
+          <textarea id="gesCorps" class="report-text" rows="6" maxlength="5000" placeholder="Bonjour à tous,&#10;&#10;Rendez-vous samedi à 9h au gymnase…"></textarea>
+        </div>
+        <p class="report-error hidden" id="gesMsgErreur" role="alert"></p>
+        <div class="ins-actions">
+          <button type="submit" class="btn btn-primary" id="gesEnvoyer">Envoyer</button>
+          <span class="ins-ok hidden" id="gesMsgOk" role="status"></span>
+        </div>
+      </form>
+      <div class="ins-envois" id="gesEnvois"></div>
+    </div>
+  </section>
+
   <!-- ===================== MON PROFIL ===================== -->
   <section id="page-profile" class="page">
     <div class="profile-head">
@@ -786,6 +883,14 @@
         <button class="btn btn-ghost" id="btnEditProfile">Modifier mon profil</button>
       </div>
       <div class="about-grid" id="profileAbout"></div>
+    </div>
+
+    <div class="profile-section">
+      <div class="profile-section-head">
+        <h3>📝 Mes inscriptions</h3>
+        <button class="btn btn-ghost" data-nav="inscriptions">Voir mes inscriptions</button>
+      </div>
+      <p class="section-hint">Les événements auxquels tu t'es inscrit sur EBOK. Organisateur ? Le bouton « 📝 Inscriptions » de chacun de tes événements ci-dessous te permet de prendre les inscriptions sur EBOK.</p>
     </div>
 
     <div class="profile-section" id="section-mes-evenements">
@@ -1193,6 +1298,17 @@
   </div>
 </div>
 
+<!-- ===================== MODALE INSCRIPTION ===================== -->
+<div class="edit-modal" id="insModal" role="dialog" aria-modal="true" aria-labelledby="insTitre" aria-hidden="true">
+  <div class="edit-box report-box">
+    <button class="edit-close" id="insFermer" type="button" aria-label="Fermer">&times;</button>
+    <h3 id="insTitre">S'inscrire</h3>
+    <p class="edit-sub report-event" id="insEvent"></p>
+    <p class="ins-places" id="insPlaces"></p>
+    <div id="insCorps"></div>
+  </div>
+</div>
+
 <!-- ===================== MODALE ÉDITION (ADMIN) ===================== -->
 <div class="edit-modal" id="editModal" aria-hidden="true">
   <div class="edit-box">
@@ -1522,6 +1638,7 @@
 <script src="/js/admin-stats.js"></script>
 <script src="/js/admin-signalements.js"></script>
 <script src="/js/carte-instagram.js"></script>
+<script src="/js/inscriptions.js"></script>
 <!-- Animations (Motion, motion.dev) : décoratives, chargées après le reste.
      Retirer ces deux lignes suffit à les couper. -->
 <script defer src="/js/vendor/motion.js"></script>

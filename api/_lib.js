@@ -14,6 +14,9 @@
  *   event.alerts   : alertes e-mail des membres (critères JSONB + jeton de
  *                    désinscription)
  *   event.alert_sends : envois déjà effectués, pour ne pas alerter deux fois
+ *   event.inscriptions : inscriptions prises sur EBOK (statut confirme /
+ *                    attente), sans nom ni e-mail
+ *   event.inscription_envois : e-mails groupés des organisateurs (quota)
  *   event.profiles : profils diffuseurs propres à Event (JSONB) + favoris,
  *                    indexés par l'ID utilisateur Clerk. Ne contient NI e-mail
  *                    NI nom réel (lus en direct depuis Clerk).
@@ -159,6 +162,39 @@ export async function ensureSchema() {
       source_id  TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )`;
+
+  /* Inscriptions prises sur EBOK (lib/inscriptions-route.js).
+     Une ligne par membre et par événement : `statut` vaut « confirme » ou
+     « attente » (liste d'attente, dans l'ordre de `created_at`). Une
+     annulation SUPPRIME la ligne : on ne garde pas de trace de qui s'est
+     désisté. « Zéro miroir » : ni nom ni e-mail ici, ils sont lus dans Clerk
+     au moment où l'organisateur consulte ou exporte sa liste. */
+  await q`
+    CREATE TABLE IF NOT EXISTS event.inscriptions (
+      id         TEXT PRIMARY KEY,
+      event_id   TEXT NOT NULL,
+      user_id    TEXT NOT NULL,
+      statut     TEXT NOT NULL DEFAULT 'confirme',
+      reponses   JSONB NOT NULL DEFAULT '{}',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE (event_id, user_id)
+    )`;
+  await q`CREATE INDEX IF NOT EXISTS inscriptions_event_idx ON event.inscriptions (event_id, statut, created_at)`;
+  await q`CREATE INDEX IF NOT EXISTS inscriptions_user_idx ON event.inscriptions (user_id)`;
+  /* E-mails groupés envoyés par les organisateurs : sert au quota quotidien
+     et à l'historique affiché sur la page de gestion. */
+  await q`
+    CREATE TABLE IF NOT EXISTS event.inscription_envois (
+      id         TEXT PRIMARY KEY,
+      event_id   TEXT NOT NULL,
+      user_id    TEXT NOT NULL,
+      segment    TEXT NOT NULL,
+      sujet      TEXT NOT NULL,
+      nb         INTEGER NOT NULL DEFAULT 0,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`;
+  await q`CREATE INDEX IF NOT EXISTS inscription_envois_event_idx ON event.inscription_envois (event_id, created_at)`;
 
   /* Vue de lecture : chaque fiche porte son nombre de favoris. Les favoris
      vivent dans event.profiles.favorites (un tableau JSONB par membre) ; on

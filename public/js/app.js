@@ -2002,7 +2002,7 @@ function ensureCitiesLoaded(){
   if(_citiesPromise) return _citiesPromise;
   _citiesPromise = new Promise(resolve=>{
     const s = document.createElement('script');
-    s.src = 'js/cities-fr.js';
+    s.src = '/js/cities-fr.js';
     s.onload = ()=> resolve();
     s.onerror = ()=> resolve();   // pas grave : on basculera sur la recherche en ligne
     document.head.appendChild(s);
@@ -2359,6 +2359,9 @@ async function openEvent(id, opts){
      grisé, et une phrase dit pourquoi. Sur un événement terminé, il n'y a
      plus rien à réserver. */
   const lienInscription = termine ? '' : lienPropre(ev.lienInscription);
+  // Inscriptions prises sur EBOK : le bouton ouvre notre formulaire (voir
+  // inscriptions.js), le lien externe éventuel n'est plus proposé.
+  const insEbok = !termine && Boolean(ev.inscriptions && ev.inscriptions.actif);
   const lienBilletterie = termine ? '' : lienPropre(ev.lienBilletterie);
   const lienSite = lienPropre(ev.siteOfficiel) || (/^https?:/i.test(orgSite) ? orgSite : '');
   const aDesCoordonnees = Boolean(org.tel || org.email || org.insta);
@@ -2366,7 +2369,7 @@ async function openEvent(id, opts){
     ? `<a class="ev-act" href="${esc(lien)}" target="_blank" rel="noopener noreferrer" data-clic="${clic}">${ico(icone)}<span>${libelle}</span></a>`
     : `<button type="button" class="ev-act is-off" aria-disabled="true" aria-describedby="evAide" title="${esc(raison)}">${ico(icone)}<span>${libelle}</span></button>`;
   const manques = [];
-  if(!lienInscription) manques.push("d'inscription");
+  if(!lienInscription && !insEbok) manques.push("d'inscription");
   if(!lienBilletterie) manques.push('de billetterie');
   const aide = [];
   if(termine) aide.push('Cet événement est terminé.');
@@ -2474,9 +2477,12 @@ async function openEvent(id, opts){
         </div>
         <div class="ev-ticket-bottom">
           <div class="ev-acts">
-            ${bouton("S'inscrire", lienInscription, 'clipboard', termine ? 'Événement terminé' : "Pas de lien d'inscription pour le moment", 'inscription')}
+            ${insEbok
+              ? `<button type="button" class="ev-act" id="btnInscrire" aria-haspopup="dialog">${ico('clipboard')}<span>S'inscrire</span></button>`
+              : bouton("S'inscrire", lienInscription, 'clipboard', termine ? 'Événement terminé' : "Pas de lien d'inscription pour le moment", 'inscription')}
             ${bouton('Billetterie', lienBilletterie, 'ticket', termine ? 'Événement terminé' : 'Pas de billetterie pour le moment', 'billetterie')}
           </div>
+          ${insEbok ? `<p class="ev-ins-jauge" id="evInsJauge" aria-live="polite"></p>` : ''}
           ${contactBtn}
           <div class="ev-coord" id="evCoord"><div class="ev-coord-in" id="evCoordIn"></div></div>
           ${aide.length ? `<p class="ev-aide" id="evAide">${esc(aide.join(' '))}</p>` : ''}
@@ -2576,6 +2582,13 @@ async function openEvent(id, opts){
     menusFicheBranches = true;
     document.addEventListener('click', fermerMenusFiche);
     document.addEventListener('keydown', e=>{ if(e.key === 'Escape') fermerMenusFiche(); });
+  }
+
+  // inscriptions.js est chargé après ce fichier : une fiche ouverte depuis un
+  // lien direct peut arriver avant lui.
+  if(insEbok){
+    const brancher = ()=> window.EBOK_INS && window.EBOK_INS.brancherFiche(ev);
+    if(window.EBOK_INS) brancher(); else window.addEventListener('DOMContentLoaded', brancher, { once:true });
   }
 
   showPage('event');
@@ -2953,6 +2966,7 @@ window.addEventListener('popstate', ()=>{
 function showPage(name){
   // Espace réservé aux comptes connectés (si l'auth est active).
   if(name === 'profile' && !currentUser && window.EBOK_AUTH){ openAuth('login'); return; }
+  if((name === 'inscriptions' || name === 'gestion-ins') && !currentUser && window.EBOK_AUTH){ openAuth('login'); return; }
   // L'administration n'existe que pour l'admin (le serveur vérifie de toute façon).
   if(name === 'admin' && !currentIsAdmin){ showPage('home'); return; }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -2966,6 +2980,7 @@ function showPage(name){
   if(name === 'admin' && typeof renderAdminPage === 'function') renderAdminPage();
   if(name === 'favoris') renderFavorites();
   if(name === 'alertes') ouvrirPageAlertes();
+  if(name === 'inscriptions' && window.EBOK_INS) window.EBOK_INS.ouvrirMesInscriptions();
   // Quitter une fiche événement : on revient à l'URL racine.
   if(!syncingFromUrl && name !== 'event' && eventIdFromUrl()) setUrl('/');
   syncMenuActif(name);
@@ -4701,6 +4716,9 @@ async function fillEventsGrid(grid, fetcher, emptyMsg){
   grid.querySelectorAll('[data-approve]').forEach(b=> b.addEventListener('click', ()=> handleApprove(b.dataset.approve)));
   grid.querySelectorAll('[data-feature]').forEach(b=> b.addEventListener('click', ()=> handleToggleFeatured(b.dataset.feature)));
   grid.querySelectorAll('[data-dispo]').forEach(sel=> sel.addEventListener('change', ()=> handleDispoChange(sel.dataset.dispo, sel.value)));
+  grid.querySelectorAll('[data-gerer-ins]').forEach(b=> b.addEventListener('click', ()=>{
+    if(window.EBOK_INS) window.EBOK_INS.ouvrirGestion(b.dataset.gererIns);
+  }));
 }
 
 function mineCardHtml(ev){
@@ -4725,6 +4743,7 @@ function mineCardHtml(ev){
     <div class="mine-card-actions">
       <button class="btn btn-ghost" data-open="${esc(ev.id)}">Voir</button>
       <button class="btn btn-ghost" data-edit="${esc(ev.id)}">Modifier</button>
+      <button class="btn btn-ghost" data-gerer-ins="${esc(ev.id)}">${ev.inscriptions && ev.inscriptions.actif ? '📝 Inscrits' : '📝 Inscriptions'}</button>
       ${(currentIsAdmin && pending) ? `<button class="btn btn-approve" data-approve="${esc(ev.id)}">Valider</button>` : ''}
       <button class="btn btn-danger" data-del="${esc(ev.id)}">Supprimer</button>
     </div>
