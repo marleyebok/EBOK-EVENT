@@ -3265,6 +3265,8 @@ function showPage(name){
   document.getElementById('page-'+name).classList.add('active');
   document.querySelectorAll('.navlink, .tabbar [data-nav]').forEach(n=>n.classList.toggle('active', n.dataset.nav===name));
   if(typeof fermerMenuCompte === 'function') fermerMenuCompte();
+  // Les fenêtres d'inscription ne survivent pas à un changement de page.
+  for(const id of ['inscModal', 'inscritModal']){ const m = document.getElementById(id); if(m && m.classList.contains('open')){ m.classList.remove('open'); m.setAttribute('aria-hidden', 'true'); } }
   // Publier exige un compte : on propose la connexion sans masquer le formulaire.
   if(name === 'create' && !currentUser && window.EBOK_AUTH){ openAuth('login'); }
   // Précharge la base des villes dès qu'on arrive sur la page de publication.

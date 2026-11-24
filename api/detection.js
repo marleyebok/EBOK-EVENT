@@ -3,7 +3,8 @@
  * quotidienne. Le moteur est dans lib/detection.js.
  *
  *   GET  /api/detection                    (admin) → sources + derniers détectés
- *   GET  /api/detection?tache=cron         (tâche planifiée Vercel, chaque lundi
+ *   GET  /api/detection?tache=cron         (tâche planifiée Vercel, chaque jour : rappels
+ *        et purges des inscriptions ; la détection elle-même ne tourne que le lundi
  *        matin) → lance en parallèle l'analyse de TOUTES les sources actives,
  *        chacune dans son propre appel (?tache=source&id=…) : une analyse peut
  *        prendre près d'une minute, la limite d'un appel chez Vercel.
@@ -20,6 +21,7 @@
  * la tâche reste sans danger : une seule source par 20 h, et rien n'est jamais
  * publié — tout arrive « en attente ».
  */
+import { maintenanceInscriptions } from "../lib/inscriptions.js";
 import { ensureSchema, hasDb, sql, json, readBody, newId, sessionUid, isAdminUid } from "./_lib.js";
 import { isBlockedHost, fetchUrl } from "./import-event.js";
 import { AIService } from "../lib/services/AIService.js";
@@ -165,6 +167,15 @@ export default async function handler(req, res) {
         return json(res, 200, { ok: true, analyse: rows[0].url, resume });
       }
 
+      // Chaque jour : rappels de la veille et durées de conservation des
+      // inscriptions (lib/inscriptions.js). La détection, elle, ne tourne que
+      // le lundi (la tâche planifiée est quotidienne depuis le 25/11/2026).
+      let entretien = null;
+      try { entretien = await maintenanceInscriptions(req); }
+      catch (e) { console.error("entretien inscriptions:", e); }
+      const lundi = new Date().toLocaleDateString("en-US", { timeZone: "Europe/Paris", weekday: "short" }) === "Mon";
+      if (!lundi && !(req.query || {}).forcer) return json(res, 200, { ok: true, entretien, detection: "lundi seulement" });
+
       // Toutes les sources dues, en parallèle : un appel par source.
       const rows = await sql()`
         SELECT id, url FROM event.detection_sources
@@ -187,6 +198,7 @@ export default async function handler(req, res) {
       return json(res, 200, {
         ok: true,
         lancees: rows.length,
+        entretien,
         resultats: res2.map((r, i) => ({ url: rows[i].url, resume: r.status === "fulfilled" ? r.value.resume : "en cours ou interrompue" })),
       });
     }

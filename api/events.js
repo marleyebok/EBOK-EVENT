@@ -18,7 +18,7 @@
  */
 import { ensureSchema, hasDb, sql, json, readBody, newId, ms, sessionUid, isAdminUid, clerkUser } from "./_lib.js";
 import { correspond, message, envoyer } from "../lib/alertes.js";
-import { inscriptions, roleSur } from "../lib/inscriptions.js";
+import { inscriptions, roleSur, effacerInscriptions } from "../lib/inscriptions.js";
 
 /* Champs gérés par les outils d'organisateur (lib/inscriptions.js) : jamais
    renvoyés au public (les e-mails des co-organisateurs sont privés) et jamais
@@ -244,6 +244,7 @@ export default async function handler(req, res) {
       if (!admin && row.user_id !== uid) return json(res, 403, { error: "prive" });
       await sql()`DELETE FROM event.events WHERE id = ${id}`;
       await sql()`DELETE FROM event.views WHERE event_id = ${id}`;
+      await effacerInscriptions([id]);
       return json(res, 200, { ok: true });
     }
 

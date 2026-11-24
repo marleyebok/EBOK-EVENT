@@ -22,6 +22,9 @@ async function api(path, { method = "GET", body } = {}) {
   if (!res.ok) {
     const err = new Error(data.error || "http_" + res.status);
     err.code = data.error || "";
+    // Détails utiles au message d'erreur (question manquante, minimum d'équipe…).
+    if (data.question) err.question = data.question;
+    if (data.min) err.min = data.min;
     throw err;
   }
   return data;
@@ -363,4 +366,8 @@ export async function actionLotInscrits(eventId, action) {
 /** Supprime définitivement des inscriptions (organisateur). */
 export async function supprimerInscrits(eventId, ids) {
   return api(`${INSC}&event=${e(eventId)}&lot=1`, { method: "DELETE", body: { ids } });
+}
+/** Pointe un inscrit le jour J (organisateur) : liste à cocher ou QR code. */
+export async function pointerInscrit(eventId, inscriptionId, present = true) {
+  return api(`${INSC}&event=${e(eventId)}&pointage=${e(inscriptionId)}`, { method: "POST", body: { present } });
 }
