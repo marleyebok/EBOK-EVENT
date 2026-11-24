@@ -340,6 +340,95 @@ Idées mises de côté, déjà esquissées dans le code par le passé :
 - [ ] Vente d'espaces publicitaires
 - [ ] Billetterie / inscriptions — avec commission
 
+### 8. Outils organisateurs — centraliser leurs besoins *(feuille de route du 24/11/2026)*
+
+> 🎯 **Objectif :** qu'un organisateur (tournoi, camp, stage, clinic,
+> formation) gère tout son événement sur EBOK, de la publication au
+> lendemain de l'événement. On vend du **temps gagné**, pas une commission :
+> HelloAsso est gratuit pour les associations, inutile de se battre sur le prix.
+>
+> ⚖️ Tant qu'il n'y a pas de statut professionnel (section 7), tout reste
+> **gratuit** : la V3 (paiement) est bloquée par cette décision.
+> 🔐 Inscriptions = nouvelles données personnelles transmises à
+> l'organisateur : mettre à jour `confidentialite.html` et les CGU **avant**
+> l'ouverture au public.
+
+| Phase | Fonctionnalités |
+|---|---|
+| **V1** | Fiche événement et listing *(déjà en place)*, formulaire d'inscription personnalisable, quotas et liste d'attente, export des inscrits, e-mail groupé par segment |
+| **V2** | Documents obligatoires et autorisations, rappels automatiques, accueil par QR code, profil participant réutilisable |
+| **V3** | Paiement et factures, réservation de ressources, bénévoles *(paiement : seulement avec un statut pro)* |
+| **V4** | Tournois (poules, scores, résultats en direct), offre vidéo, statistiques |
+| **V5** | Différenciation : suivi après l'événement, assistant IA de l'organisateur |
+
+#### V1 — Inscriptions et communication *(en cours)*
+
+- [x] Fiche événement publique partageable, listing, filtres, carte (existant)
+- [ ] L'organisateur **active les inscriptions EBOK** sur son événement :
+      nombre de places, date limite, questions supplémentaires (texte court,
+      choix dans une liste, oui/non ; obligatoires ou non)
+- [ ] Bouton **« S'inscrire »** sur la fiche (compte EBOK requis), avec
+      e-mail de confirmation ; le participant peut **annuler** lui-même
+- [ ] **Liste d'attente automatique** quand c'est complet : une place libérée
+      est donnée au premier de la liste, prévenu par e-mail
+- [ ] Page **« Gérer les inscriptions »** pour l'organisateur : liste des
+      inscrits et de la liste d'attente, compteur de places, retrait d'un inscrit
+- [ ] **Export CSV** des inscrits (ouvrable dans Excel)
+- [ ] **E-mail groupé** aux inscrits, par segment : tous, confirmés, liste
+      d'attente ; avec une limite d'envoi pour éviter les abus
+- [ ] « Mes inscriptions » côté participant
+- [ ] Pages légales mises à jour (inscriptions, données transmises à
+      l'organisateur, durée de conservation)
+
+#### V2 — Dossiers et jour J
+
+- [ ] Questions de catégorie d'âge calculées depuis la date de naissance
+- [ ] Inscription d'une équipe (un capitaine pour N joueurs) et inscription
+      familiale (un parent pour plusieurs enfants)
+- [ ] Dépôt des documents : certificat médical ou questionnaire de santé
+      (mineurs), autorisation parentale, droit à l'image signés en ligne
+- [ ] Relance automatique des dossiers incomplets + tableau « complets /
+      incomplets »
+- [ ] Rappels automatiques J-7 et J-1, modèles de messages prêts à l'emploi
+- [ ] Accueil des participants par **QR code** depuis un téléphone,
+      feuille de présence exportable (PDF / Excel)
+- [ ] **Profil participant réutilisable** : infos et documents saisis une
+      seule fois, réinscription en 30 secondes
+- [ ] Événements récurrents et modèles d'événement à dupliquer
+
+#### V3 — Paiement et logistique
+
+- [ ] Paiement en ligne *(bloqué : statut pro + CGU, voir section 7)* :
+      tarif « premiers inscrits », codes promo, tarifs fratrie / club,
+      paiement en plusieurs fois, remboursement selon une règle annoncée
+- [ ] Factures et attestations automatiques (attestation de présence et
+      certificat de réalisation pour les formations)
+- [ ] Réservation de ressources : terrains, salles, hébergement et repas
+      d'un camp, transport
+- [ ] Bénévoles : créneaux à remplir (buvette, table de marque, arbitrage),
+      inscription et rappels
+- [ ] Encadrement : affectation des coachs aux groupes, fiche utile
+      (allergies, contact d'urgence)
+
+#### V4 — Tournois, vidéo, statistiques
+
+- [ ] Génération des poules et des tableaux, planning des matchs par terrain
+- [ ] Saisie des scores depuis un téléphone, classements automatiques
+- [ ] Page de résultats en direct pour les parents et le public
+- [ ] Offre vidéo : temps forts du tournoi, clips par joueur, analyse livrée
+      après l'événement
+- [ ] Tableau de bord organisateur : remplissage, recettes, dossiers
+      incomplets, comparaison avec l'édition précédente
+
+#### V5 — Différenciation
+
+- [ ] Suivi après l'événement : questionnaire de satisfaction automatique,
+      galerie photos et vidéos, « réinscris-toi à la prochaine édition » en
+      un clic
+- [ ] Assistant IA de l'organisateur : rédaction de la fiche, des messages
+      groupés et des posts réseaux à partir des infos déjà saisies (s'appuie
+      sur l'assistant d'import existant et l'agent réseaux sociaux, section 6)
+
 ---
 
 ## 🚦 Avant le lancement public
