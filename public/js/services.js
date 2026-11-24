@@ -356,3 +356,11 @@ export async function envoyerMessageInscrits(eventId, message) {
 export async function repondreInteretOutils(eventId, reponse) {
   return api(`${INSC}&event=${e(eventId)}&interet=1`, { method: "POST", body: { reponse } });
 }
+/** Action groupée sur des inscrits : {ids, statut?, ajouterCat?, retirerCat?, docsValides?}. */
+export async function actionLotInscrits(eventId, action) {
+  return api(`${INSC}&event=${e(eventId)}&lot=1`, { method: "PATCH", body: action });
+}
+/** Supprime définitivement des inscriptions (organisateur). */
+export async function supprimerInscrits(eventId, ids) {
+  return api(`${INSC}&event=${e(eventId)}&lot=1`, { method: "DELETE", body: { ids } });
+}

@@ -246,7 +246,7 @@ function ouvrirInscription(ev){
 /* =========================================================
    J'ORGANISE — liste et tableau de bord
    ========================================================= */
-const orga = { liste: [], sel: null, data: null, sous: 'inscrits', filtre: { statut: '', cat: '', q: '' } };
+const orga = { liste: [], sel: null, data: null, sous: 'inscrits', filtre: { statut: '', cat: '', q: '' }, choix: new Set(), tri: { col: 'date', sens: 1 }, msgIds: null };
 
 async function renderOrga(){
   const box = document.getElementById('orgaZone');
@@ -278,7 +278,7 @@ async function renderOrga(){
   </aside>
   <div class="orga-dash" id="orgaDash">${chargement()}</div>`;
   box.querySelectorAll('[data-sel]').forEach(b=> b.addEventListener('click', ()=>{
-    orga.sel = b.dataset.sel; orga.sous = 'inscrits'; orga.filtre = { statut: '', cat: '', q: '' };
+    orga.sel = b.dataset.sel; orga.sous = 'inscrits'; orga.filtre = { statut: '', cat: '', q: '' }; orga.choix = new Set(); orga.msgIds = null;
     box.querySelectorAll('[data-sel]').forEach(x=> x.setAttribute('aria-pressed', String(x === b)));
     chargerTableau();
   }));
@@ -344,10 +344,25 @@ async function modifierFiche(){
 /* ---------- Inscrits ---------- */
 function inscritsFiltres(){
   const f = orga.filtre, q = (f.q || '').toLowerCase();
-  return orga.data.inscriptions.filter(i=>
+  const liste = orga.data.inscriptions.filter(i=>
     (!f.statut ? i.statut !== 'annulee' : i.statut === f.statut) &&
     (!f.cat || (i.categories || []).includes(f.cat)) &&
-    (!q || [i.nom, i.email, i.demande.equipe, i.demande.tel].join(' ').toLowerCase().includes(q)));
+    (!q || [i.nom, i.email, i.demande.equipe, i.demande.tel, (i.categories || []).join(' ')].join(' ').toLowerCase().includes(q)));
+  return trier(liste);
+}
+/* Tri : clic sur l'en-tête d'une colonne (une seconde fois : ordre inverse). */
+const CLES_TRI = {
+  nom: i=> (i.nom || i.email || '').toLowerCase(),
+  equipe: i=> (i.demande.equipe || '').toLowerCase(),
+  date: i=> new Date(i.createdAt).getTime() || 0,
+  statut: i=> STATUTS_ORDRE.indexOf(i.statut),
+  personnes: i=> Number(i.demande.nb) || 1,
+  categories: i=> (i.categories || []).join(', ').toLowerCase(),
+  documents: i=> orga.data.reglages.documents.filter(d=> (i.documents[d.id] || {}).statut === 'valide').length,
+};
+function trier(liste){
+  const { col, sens } = orga.tri, cle = CLES_TRI[col] || CLES_TRI.date;
+  return liste.slice().sort((a, b)=>{ const x = cle(a), y = cle(b); return (x < y ? -1 : x > y ? 1 : 0) * sens; });
 }
 function docsResume(i){
   const demandes = orga.data.reglages.documents;
@@ -357,14 +372,32 @@ function docsResume(i){
   const cls = ok === demandes.length ? 'doc-ok' : deposes > ok ? 'doc-wait' : 'doc-miss';
   return `<span class="doc-etat ${cls}">${ok}/${demandes.length}${deposes > ok ? ` · ${deposes - ok} à vérifier` : ''}</span>`;
 }
+function menuExport(id, libelle){
+  return `<div class="od-menu"><button type="button" class="btn btn-ghost" data-menu="${id}" aria-expanded="false">${ico('download')}${libelle}${ico('chevron')}</button>
+    <div class="od-menu-list" id="${id}" hidden>
+      <button type="button" data-export="xlsx">Excel (.xlsx)</button>
+      <button type="button" data-export="pdf">PDF</button>
+      <button type="button" data-export="csv">CSV</button>
+    </div></div>`;
+}
 function vueInscrits(){
   const body = document.getElementById('odBody');
   const d = orga.data, c = compteParStatut(), f = orga.filtre;
   if(!d.inscriptions.length){
-    body.innerHTML = `<div class="empty-state"><h4>Pas encore d'inscrit</h4><p>${d.reglages.active ? 'Les demandes arrivent ici dès qu\'un membre clique sur « S\'inscrire » sur ta fiche. Tu reçois aussi un e-mail.' : 'Ouvre les inscriptions dans l\'onglet Réglages : un bouton « S\'inscrire » apparaîtra sur ta fiche.'}</p></div>`;
+    body.innerHTML = `<div class="empty-state"><h4>Pas encore d'inscrit</h4><p>${d.reglages.active ? 'Les demandes arrivent ici dès qu\'un membre clique sur « S\'inscrire » sur ta fiche. Tu reçois aussi un e-mail.' : 'Ouvre les inscriptions dans l\'onglet Réglages : un bouton « S\'inscrire » apparaît sur ta fiche.'}</p></div>`;
     return;
   }
+  // La sélection ne garde que des inscrits qui existent encore.
+  const existants = new Set(d.inscriptions.map(i=> i.id));
+  for(const id of [...orga.choix]) if(!existants.has(id)) orga.choix.delete(id);
   const liste = inscritsFiltres();
+  const nSel = orga.choix.size;
+  const tousCoches = liste.length && liste.every(i=> orga.choix.has(i.id));
+  const th = (col, libelle, cls)=>{
+    const actif = orga.tri.col === col;
+    return `<th class="${cls || ''}" aria-sort="${actif ? (orga.tri.sens > 0 ? 'ascending' : 'descending') : 'none'}"><button type="button" class="od-sort" data-tri="${col}">${libelle}<span class="od-sort-ic">${actif ? (orga.tri.sens > 0 ? '↑' : '↓') : ''}</span></button></th>`;
+  };
+  const docs = d.reglages.documents.length;
   body.innerHTML = `
     <div class="od-tools">
       <div class="od-chips" role="group" aria-label="Filtrer par statut">
@@ -374,37 +407,136 @@ function vueInscrits(){
       <div class="od-tools-row">
         <label class="od-search">${ico('search')}<input type="search" id="odQ" placeholder="Rechercher un inscrit" value="${esc(f.q)}"></label>
         ${d.reglages.categories.length ? `<select id="odCat" class="od-select" aria-label="Filtrer par catégorie"><option value="">Toutes les catégories</option>${d.reglages.categories.map(x=> `<option ${f.cat === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select>` : ''}
-        <button type="button" class="btn btn-ghost" id="odExport">${ico('download')}Exporter</button>
+        ${menuExport('odExportMenu', 'Exporter')}
         <button type="button" class="btn btn-ink" id="odEcrire">${ico('send')}Écrire aux inscrits</button>
       </div>
     </div>
+    <div class="od-bulk" id="odBulk" ${nSel ? '' : 'hidden'} role="region" aria-label="Actions sur la sélection">
+      <span class="od-bulk-n"><b>${nSel}</b> sélectionné${nSel > 1 ? 's' : ''}</span>
+      <button type="button" class="btn btn-sm btn-primary" data-lot="validee">${ico('check')}Valider</button>
+      <button type="button" class="btn btn-sm btn-ghost" data-lot="liste_attente">Liste d'attente</button>
+      <button type="button" class="btn btn-sm btn-ghost" data-lot="refusee">Refuser</button>
+      ${d.reglages.categories.length ? `<select class="od-select od-select-sm" id="odLotCat" aria-label="Catégorie"><option value="">Catégorie…</option>${d.reglages.categories.map(x=> `<option value="+${esc(x)}">Ajouter « ${esc(x)} »</option>`).join('')}${d.reglages.categories.map(x=> `<option value="-${esc(x)}">Retirer « ${esc(x)} »</option>`).join('')}</select>` : ''}
+      ${docs ? `<button type="button" class="btn btn-sm btn-ghost" data-lot-docs>Valider les documents déposés</button>` : ''}
+      <button type="button" class="btn btn-sm btn-ghost" data-lot-ecrire>${ico('send')}Écrire</button>
+      <button type="button" class="btn btn-sm btn-ghost" data-lot-mails>${ico('mail')}Copier les e-mails</button>
+      ${menuExport('odExportSel', 'Exporter')}
+      <button type="button" class="btn btn-sm btn-ghost od-danger" data-lot-suppr>${ico('trash')}Supprimer</button>
+      <button type="button" class="od-bulk-clear" data-lot-vider>Tout désélectionner</button>
+    </div>
     <div class="od-table-wrap"><table class="od-table">
-      <thead><tr><th>Inscrit</th><th class="hide-m">Demande le</th><th>Statut</th><th class="hide-m">Catégories</th>${d.reglages.documents.length ? '<th class="hide-m">Documents</th>' : ''}<th class="od-th-act"><span class="sr-only">Actions</span></th></tr></thead>
-      <tbody>${liste.map(i=> `<tr data-insc="${esc(i.id)}" tabindex="0">
+      <thead><tr>
+        <th class="od-check"><input type="checkbox" id="odTous" aria-label="Tout sélectionner" ${tousCoches ? 'checked' : ''}></th>
+        ${th('nom', 'Inscrit')}${th('date', 'Demande le', 'hide-m')}${th('statut', 'Statut')}${th('categories', 'Catégories', 'hide-m')}${docs ? th('documents', 'Documents', 'hide-m') : ''}
+        <th class="od-th-act"><span class="sr-only">Actions</span></th></tr></thead>
+      <tbody>${liste.map(i=> `<tr data-insc="${esc(i.id)}" tabindex="0" class="${orga.choix.has(i.id) ? 'is-sel' : ''}">
+        <td class="od-check"><input type="checkbox" data-coche="${esc(i.id)}" aria-label="Sélectionner ${esc(i.nom || i.email || 'cet inscrit')}" ${orga.choix.has(i.id) ? 'checked' : ''}></td>
         <td><b>${esc(i.nom || i.email || 'Membre')}</b><span class="od-sub">${esc([i.demande.equipe, i.demande.nb > 1 ? `${i.demande.nb} personnes` : ''].filter(Boolean).join(' · ') || i.email)}</span>${i.commentaire ? `<span class="od-note-ic" title="Commentaire privé">${ico('message')}</span>` : ''}</td>
         <td class="num hide-m">${dateCourteFr(i.createdAt)}</td>
         <td>${pastille(i.statut)}</td>
         <td class="hide-m">${(i.categories || []).map(x=> `<span class="tag">${esc(x)}</span>`).join('')}</td>
-        ${d.reglages.documents.length ? `<td class="hide-m">${docsResume(i)}</td>` : ''}
+        ${docs ? `<td class="hide-m">${docsResume(i)}</td>` : ''}
         <td class="od-act">${i.statut === 'en_attente' || i.statut === 'liste_attente' ? `<button type="button" class="btn btn-sm btn-primary" data-vite="validee" data-id="${esc(i.id)}">Valider</button>` : ''}</td>
-      </tr>`).join('') || `<tr><td colspan="6" class="od-vide">Aucun inscrit ne correspond.</td></tr>`}</tbody>
-    </table></div>`;
+      </tr>`).join('') || `<tr><td colspan="7" class="od-vide">Aucun inscrit ne correspond.</td></tr>`}</tbody>
+    </table></div>
+    <p class="field-hint od-legende">Coche des inscrits pour agir sur plusieurs à la fois. Clique sur un titre de colonne pour trier.</p>`;
+
   body.querySelectorAll('[data-f-statut]').forEach(b=> b.addEventListener('click', ()=>{ f.statut = b.dataset.fStatut; vueInscrits(); }));
   const qIn = document.getElementById('odQ');
   qIn.addEventListener('input', ()=>{ f.q = qIn.value; const pos = qIn.selectionStart; vueInscrits(); const n = document.getElementById('odQ'); n.focus(); n.setSelectionRange(pos, pos); });
   const cat = document.getElementById('odCat'); if(cat) cat.addEventListener('change', ()=>{ f.cat = cat.value; vueInscrits(); });
-  document.getElementById('odExport').addEventListener('click', exporterCsv);
-  document.getElementById('odEcrire').addEventListener('click', ()=>{ orga.sous = 'messages'; dessinerTableau(); });
+  body.querySelectorAll('[data-tri]').forEach(b=> b.addEventListener('click', ()=>{
+    orga.tri = { col: b.dataset.tri, sens: orga.tri.col === b.dataset.tri ? -orga.tri.sens : 1 };
+    vueInscrits();
+  }));
+  document.getElementById('odEcrire').addEventListener('click', ()=>{ orga.msgIds = null; orga.sous = 'messages'; dessinerTableau(); });
+  brancherMenus(body, format=> exporter(format, liste), format=> exporter(format, liste.filter(i=> orga.choix.has(i.id))));
+
+  // Sélection
+  document.getElementById('odTous').addEventListener('change', e=>{
+    liste.forEach(i=> e.target.checked ? orga.choix.add(i.id) : orga.choix.delete(i.id));
+    vueInscrits();
+  });
+  body.querySelectorAll('[data-coche]').forEach(cb=> cb.addEventListener('change', ()=>{
+    cb.checked ? orga.choix.add(cb.dataset.coche) : orga.choix.delete(cb.dataset.coche);
+    vueInscrits();
+  }));
   body.querySelectorAll('tr[data-insc]').forEach(tr=>{
     const ouvrir = ()=> ouvrirInscrit(tr.dataset.insc);
-    tr.addEventListener('click', e=>{ if(!e.target.closest('[data-vite]')) ouvrir(); });
-    tr.addEventListener('keydown', e=>{ if(e.key === 'Enter') ouvrir(); });
+    tr.addEventListener('click', e=>{ if(!e.target.closest('[data-vite], .od-check')) ouvrir(); });
+    tr.addEventListener('keydown', e=>{ if(e.key === 'Enter' && !e.target.closest('input, button')) ouvrir(); });
   });
   body.querySelectorAll('[data-vite]').forEach(b=> b.addEventListener('click', async ()=>{
     b.disabled = true;
     await enregistrerInscrit(b.dataset.id, { statut: b.dataset.vite });
   }));
+
+  // Actions groupées
+  const ids = ()=> [...orga.choix];
+  body.querySelectorAll('[data-lot]').forEach(b=> b.addEventListener('click', ()=>{
+    const s = b.dataset.lot, n = orga.choix.size;
+    if(s === 'refusee' && !confirm(`Refuser ${n} inscription${n > 1 ? 's' : ''} ? Chaque participant est prévenu par e-mail.`)) return;
+    if(s === 'validee'){
+      const places = d.reglages.places, apres = c.validee + ids().filter(id=> (d.inscriptions.find(i=> i.id === id) || {}).statut !== 'validee').length;
+      if(places && apres > places && !confirm(`Tu dépasses les ${places} places (${apres} validées). Valider quand même ?`)) return;
+    }
+    actionLot({ statut: s });
+  }));
+  const lotCat = document.getElementById('odLotCat');
+  if(lotCat) lotCat.addEventListener('change', ()=>{
+    const v = lotCat.value; if(!v) return;
+    actionLot(v[0] === '+' ? { ajouterCat: v.slice(1) } : { retirerCat: v.slice(1) });
+  });
+  const lotDocs = body.querySelector('[data-lot-docs]');
+  if(lotDocs) lotDocs.addEventListener('click', ()=> actionLot({ docsValides: true }));
+  body.querySelector('[data-lot-ecrire]').addEventListener('click', ()=>{ orga.msgIds = ids(); orga.sous = 'messages'; dessinerTableau(); });
+  body.querySelector('[data-lot-mails]').addEventListener('click', async e=>{
+    const mails = d.inscriptions.filter(i=> orga.choix.has(i.id) && i.email).map(i=> i.email).join(', ');
+    try{ await navigator.clipboard.writeText(mails); e.currentTarget.lastChild.textContent = 'E-mails copiés'; }
+    catch{ prompt('E-mails des inscrits sélectionnés :', mails); }
+  });
+  body.querySelector('[data-lot-suppr]').addEventListener('click', async ()=>{
+    const n = orga.choix.size;
+    if(!confirm(`Supprimer définitivement ${n} inscription${n > 1 ? 's' : ''} ? Les participants ne sont pas prévenus. Cette action ne peut pas être annulée.`)) return;
+    try{
+      await D().supprimerInscrits(orga.sel, ids());
+      orga.data.inscriptions = orga.data.inscriptions.filter(i=> !orga.choix.has(i.id));
+      orga.choix.clear(); majCompteurs(); dessinerTableau();
+    }catch(e){ alert(messageErreur(e)); }
+  });
+  body.querySelector('[data-lot-vider]').addEventListener('click', ()=>{ orga.choix.clear(); vueInscrits(); });
 }
+
+/* Menus déroulants d'export (liste filtrée, ou sélection). */
+function brancherMenus(racine, surListe, surSelection){
+  racine.querySelectorAll('[data-menu]').forEach(bouton=>{
+    const menu = document.getElementById(bouton.dataset.menu);
+    bouton.addEventListener('click', e=>{
+      e.stopPropagation();
+      const ouvrir = menu.hidden;
+      racine.querySelectorAll('.od-menu-list').forEach(m=> m.hidden = true);
+      menu.hidden = !ouvrir; bouton.setAttribute('aria-expanded', String(ouvrir));
+    });
+    menu.querySelectorAll('[data-export]').forEach(b=> b.addEventListener('click', ()=>{
+      menu.hidden = true;
+      (bouton.dataset.menu === 'odExportSel' ? surSelection : surListe)(b.dataset.export);
+    }));
+  });
+}
+document.addEventListener('click', ()=> document.querySelectorAll('.od-menu-list').forEach(m=> m.hidden = true));
+
+async function actionLot(action){
+  try{
+    await D().actionLotInscrits(orga.sel, { ids: [...orga.choix], ...action });
+    orga.data = await D().tableauOrganisateur(orga.sel);
+    majCompteurs(); dessinerTableau();
+  }catch(e){ alert(messageErreur(e)); }
+}
+function majCompteurs(){
+  const ev = orga.liste.find(e=> e.id === orga.sel);
+  if(ev) ev.parStatut = compteParStatut();
+}
+
 
 async function enregistrerInscrit(id, patch){
   // Places limitées : on prévient avant de dépasser, l'organisateur reste maître.
@@ -483,22 +615,31 @@ function ouvrirInscrit(id){
   document.addEventListener('keydown', e=>{ if(e.key === 'Escape'){ fermerModale('inscritModal'); fermerModale('inscModal'); } });
 })();
 
-function exporterCsv(){
+/* Exports : la liste affichée (filtres et tri compris) ou la sélection. */
+function exporter(format, liste){
   const d = orga.data, docs = d.reglages.documents;
-  const cell = v=> `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
-  const tete = ['Nom', 'E-mail', 'Téléphone', 'Équipe / club', 'Personnes', 'Statut', 'Catégories', ...docs.map(x=> x.nom), 'Commentaire privé', 'Message', 'Demandé le'];
-  const lignes = inscritsFiltres().map(i=> [
-    i.nom, i.email, i.demande.tel, i.demande.equipe, i.demande.nb, (STATUT_INSC[i.statut] || {}).label, (i.categories || []).join(', '),
-    ...docs.map(x=>{ const dep = i.documents[x.id]; return dep ? (DOC_STATUT[dep.statut] || 'Déposé') : 'Manquant'; }),
-    i.commentaire, i.demande.message, new Date(i.createdAt).toLocaleDateString('fr-FR'),
-  ]);
-  const csv = '﻿' + [tete, ...lignes].map(l=> l.map(cell).join(';')).join('\r\n');
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-  a.download = `inscrits-${(d.event.title || 'evenement').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').slice(0, 40)}.csv`;
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(()=> URL.revokeObjectURL(a.href), 2000);
+  if(!liste.length){ alert('Aucun inscrit à exporter.'); return; }
+  if(!window.EBOK_EXPORT){ alert('Export indisponible pour le moment.'); return; }
+  const titre = d.event.title || 'Événement';
+  const nom = `inscrits-${titre.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40)}`;
+  const etatDoc = (i, x)=>{ const dep = i.documents[x.id]; return dep ? (DOC_STATUT[dep.statut] || 'Déposé') : 'Manquant'; };
+  const date = v=> new Date(v).toLocaleDateString('fr-FR');
+  if(format === 'pdf'){
+    const entetes = ['Inscrit', 'E-mail', 'Téléphone', 'Équipe / club', 'Pers.', 'Statut', 'Catégories', ...(docs.length ? ['Documents'] : []), 'Demande'];
+    const lignes = liste.map(i=> [i.nom || i.email || 'Membre', i.email || '', i.demande.tel || '', i.demande.equipe || '', String(i.demande.nb || 1), (STATUT_INSC[i.statut] || {}).label || '', (i.categories || []).join(', '),
+      ...(docs.length ? [`${docs.filter(x=> (i.documents[x.id] || {}).statut === 'valide').length}/${docs.length} validé(s)`] : []), date(i.createdAt)]);
+    const poids = [1.5, 1.9, 1.1, 1.4, 0.45, 1.15, 1.2, ...(docs.length ? [1.05] : []), 0.85];
+    const sous = `Liste des inscrits · ${liste.length} inscrit${liste.length > 1 ? 's' : ''} · ${[d.event.city, d.event.dateStart ? fmtDateRange(d.event.dateStart, d.event.dateEnd) : ''].filter(Boolean).join(' · ')} · édité le ${new Date().toLocaleDateString('fr-FR')}`;
+    window.EBOK_EXPORT.pdf(nom, titre, sous, entetes, lignes, poids);
+    return;
+  }
+  const entetes = ['Nom', 'E-mail', 'Téléphone', 'Équipe / club', 'Personnes', 'Statut', 'Catégories', ...docs.map(x=> x.nom), 'Commentaire privé', 'Message du participant', 'Demandé le'];
+  const lignes = liste.map(i=> [i.nom, i.email, i.demande.tel, i.demande.equipe, Number(i.demande.nb) || 1, (STATUT_INSC[i.statut] || {}).label, (i.categories || []).join(', '),
+    ...docs.map(x=> etatDoc(i, x)), i.commentaire, i.demande.message, date(i.createdAt)]);
+  if(format === 'xlsx') window.EBOK_EXPORT.xlsx(nom, entetes, lignes, 'Inscrits');
+  else window.EBOK_EXPORT.csv(nom, entetes, lignes);
 }
+
 
 /* ---------- Messages ---------- */
 function vueMessages(){
@@ -507,7 +648,8 @@ function vueMessages(){
     <form class="od-form" id="odMsgForm">
       <p class="od-form-intro">Un e-mail est envoyé à chaque inscrit choisi. Les réponses arrivent directement dans ta boîte mail.</p>
       <fieldset class="od-field"><legend>Destinataires</legend>
-        <div class="od-chips">${['validee', 'en_attente', 'liste_attente'].map(s=> `<label class="chip chip-check"><input type="checkbox" name="statut" value="${s}" ${s === 'validee' ? 'checked' : ''}>${STATUT_INSC[s].label} <b>${c[s]}</b></label>`).join('')}</div>
+        ${orga.msgIds ? `<p class="od-sel-msg"><b>${orga.msgIds.length} inscrit${orga.msgIds.length > 1 ? 's' : ''} sélectionné${orga.msgIds.length > 1 ? 's' : ''}</b> <button type="button" class="od-bulk-clear" id="odMsgTous">Choisir par statut à la place</button></p>` : ''}
+        <div class="od-chips" ${orga.msgIds ? 'hidden' : ''}>${['validee', 'en_attente', 'liste_attente'].map(s=> `<label class="chip chip-check"><input type="checkbox" name="statut" value="${s}" ${s === 'validee' ? 'checked' : ''}>${STATUT_INSC[s].label} <b>${c[s]}</b></label>`).join('')}</div>
         ${d.reglages.categories.length ? `<div class="od-chips od-chips-cats"><span class="field-hint">Seulement les catégories :</span>${d.reglages.categories.map(x=> `<label class="chip chip-check"><input type="checkbox" name="cat" value="${esc(x)}">${esc(x)}</label>`).join('')}</div>` : ''}
         <p class="od-count" id="odMsgCount"></p>
       </fieldset>
@@ -523,7 +665,10 @@ function vueMessages(){
     statuts: [...form.querySelectorAll('input[name=statut]:checked')].map(x=> x.value),
     categories: [...form.querySelectorAll('input[name=cat]:checked')].map(x=> x.value),
   });
+  const tous = document.getElementById('odMsgTous');
+  if(tous) tous.addEventListener('click', ()=>{ orga.msgIds = null; vueMessages(); });
   const compter = ()=>{
+    if(orga.msgIds){ const n = orga.msgIds.length; document.getElementById('odMsgCount').textContent = `${n} destinataire${n > 1 ? 's' : ''}`; return n; }
     const { statuts, categories } = choix();
     const n = d.inscriptions.filter(i=> statuts.includes(i.statut) && (!categories.length || (i.categories || []).some(x=> categories.includes(x)))).length;
     document.getElementById('odMsgCount').textContent = `${n} destinataire${n > 1 ? 's' : ''}`;
@@ -539,8 +684,9 @@ function vueMessages(){
     if(!confirm(`Envoyer ce message à ${n} inscrit${n > 1 ? 's' : ''} ?`)) return;
     btn.disabled = true;
     try{
-      const r = await D().envoyerMessageInscrits(orga.sel, { ...choix(), sujet: document.getElementById('odSujet').value, texte: document.getElementById('odTexte').value });
+      const r = await D().envoyerMessageInscrits(orga.sel, { ...choix(), ...(orga.msgIds ? { ids: orga.msgIds } : {}), sujet: document.getElementById('odSujet').value, texte: document.getElementById('odTexte').value });
       orga.data = await D().tableauOrganisateur(orga.sel);
+      orga.msgIds = null;
       vueMessages();
       const ok = document.getElementById('odMsgOk'); ok.textContent = `Message envoyé à ${r.envoyes} inscrit${r.envoyes > 1 ? 's' : ''}.`; ok.classList.remove('hidden');
     }catch(e2){ err.textContent = messageErreur(e2); err.classList.remove('hidden'); btn.disabled = false; }

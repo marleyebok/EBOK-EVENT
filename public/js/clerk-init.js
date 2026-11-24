@@ -21,7 +21,7 @@ import {
   uploadCarteInsta, getInstagram, publierInstagram,
   etatInscriptions, sInscrire, mesInscriptions, annulerInscription, deposerDocument,
   mesEvenementsOrganises, tableauOrganisateur, majInscription, majReglagesInscription,
-  envoyerMessageInscrits, repondreInteretOutils,
+  envoyerMessageInscrits, repondreInteretOutils, actionLotInscrits, supprimerInscrits,
 } from "./services.js";
 import { loadClerk } from "./clerk.js";
 
@@ -39,7 +39,7 @@ window.EBOK_DATA = {
   uploadCarteInsta, getInstagram, publierInstagram,
   etatInscriptions, sInscrire, mesInscriptions, annulerInscription, deposerDocument,
   mesEvenementsOrganises, tableauOrganisateur, majInscription, majReglagesInscription,
-  envoyerMessageInscrits, repondreInteretOutils,
+  envoyerMessageInscrits, repondreInteretOutils, actionLotInscrits, supprimerInscrits,
 };
 
 // Couche authentification exposée à app.js. Tout passe par le widget Clerk :

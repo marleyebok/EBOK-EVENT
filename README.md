@@ -33,6 +33,7 @@ EBOK-EVENT/
 │   │   ├── clerk.js          # Chargeur Clerk — ⚙️ config de l'instance
 │   │   ├── clerk-init.js     # Branchement : expose EBOK_DATA / EBOK_AUTH à app.js
 │   │   ├── organisateur.js   # Menu « Mon compte », Mes événements, tableau de bord organisateur
+│   │   ├── exports.js        # Exports Excel (.xlsx), PDF et CSV des listes d'inscrits
 │   │   ├── compte-shell.js   # Coquille de l'espace compte (sidebar, portail)
 │   │   ├── compte-profil.js  # Profil diffuseur
 │   │   └── compte-general.js # Identité & sécurité
@@ -576,7 +577,13 @@ Palette complète et code couleur par type d'événement : voir `EBOK_Event_Brie
 - **Tableau de bord** (Mes événements › J'organise) : vues, favoris, inscrits ;
   catégories et commentaire **privés** ; documents demandés (image ou PDF)
   validés ou « à refaire » ; message groupé par statut et catégorie ;
-  export CSV ; co-organisateurs invités par e-mail.
+  co-organisateurs invités par e-mail.
+- **Liste des inscrits** : tri par colonne, cases à cocher, et actions groupées
+  sur la sélection (valider, liste d'attente, refuser, ajouter / retirer une
+  catégorie, valider les documents déposés, écrire, copier les e-mails,
+  exporter, supprimer définitivement).
+- **Exports** de la liste ou de la sélection en **Excel (.xlsx)**, **PDF** et
+  CSV, fabriqués dans le navigateur sans bibliothèque (`public/js/exports.js`).
 - **Serveur** : `lib/inscriptions.js`, servi par `api/events.js?r=insc` (pas de
   nouvelle fonction Vercel : le forfait en limite le nombre). Tables
   `event.inscriptions` et `event.insc_messages`, créées automatiquement.
