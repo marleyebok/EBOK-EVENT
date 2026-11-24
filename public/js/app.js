@@ -3734,12 +3734,6 @@ function syncMenu(){
       avatar.textContent = (nom || '?').trim().slice(0, 2).toUpperCase();
     }
   }
-  // Le libellé du thème annonce ce vers quoi on bascule, pas l'état courant.
-  const clair = document.documentElement.getAttribute('data-theme') === 'light';
-  const icone = document.getElementById('menuThemeIcon');
-  const label = document.getElementById('menuThemeLabel');
-  if(icone) icone.innerHTML = ico(clair ? 'moon' : 'sun');
-  if(label) label.textContent = clair ? 'Thème sombre' : 'Thème clair';
 }
 
 /* ------------------------------------------------------------------ *
@@ -3825,12 +3819,6 @@ function initMenu(){
     fermerMenu();
     if(window.EBOK_AUTH) await window.EBOK_AUTH.signOutUser();
     showPage('home');
-  });
-  document.getElementById('menuTheme').addEventListener('click', ()=>{
-    const suivant = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-    applyTheme(suivant);
-    localStorage.setItem('ebok-theme', suivant);
-    syncMenu();
   });
 }
 
@@ -5335,23 +5323,13 @@ window.EBOK = {
 };
 
 /* =========================================================
-   THÈME (clair / sombre)
+   THÈME — le site n'a plus qu'un thème, clair (mode nuit retiré le
+   25/11/2026). On efface l'ancien choix mémorisé et on pose le thème clair
+   au cas où une page l'aurait oublié.
    ========================================================= */
-function applyTheme(theme){
-  document.documentElement.setAttribute('data-theme', theme);
-  const btn = document.getElementById('themeToggle');
-  if(btn) btn.innerHTML = ico(theme === 'light' ? 'moon' : 'sun');
-}
 function initTheme(){
-  // Clair par défaut ; le sombre reste disponible via la bascule.
-  const saved = localStorage.getItem('ebok-theme') || 'light';
-  applyTheme(saved);
-  const btn = document.getElementById('themeToggle');
-  if(btn) btn.addEventListener('click', ()=>{
-    const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-    applyTheme(next);
-    localStorage.setItem('ebok-theme', next);
-  });
+  document.documentElement.setAttribute('data-theme', 'light');
+  try{ localStorage.removeItem('ebok-theme'); }catch(e){}
 }
 
 // Écouteurs (une seule fois) + premier rendu sur les données locales.
