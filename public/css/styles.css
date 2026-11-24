@@ -3231,3 +3231,7 @@ input,select,textarea{font-family:var(--font-body);}
   .od-bulk{top:64px;}
   .od-bulk-clear{margin-left:0;}
 }
+/* Menu « Mon compte » : l'ancienne zone de compte était une rangée de boutons
+   (display:flex) ; dans le menu, son contenu s'empile. */
+.acct-menu .account-out,.acct-menu .account-logged{display:block;}
+.acct-menu .account-out.hidden,.acct-menu .account-logged.hidden{display:none !important;}
