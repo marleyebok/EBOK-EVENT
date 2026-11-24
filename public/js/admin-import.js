@@ -172,8 +172,8 @@
 
   function intituleStatut(l){
     if(l.statut === 'cours') return '⏳ Ajout en cours…';
-    if(l.statut === 'ok') return `✅ Ajouté${l.id ? ` · <button type="button" class="imp-lien" data-voir="${esc(l.id)}">voir la fiche</button>` : ''}`;
-    if(l.statut === 'echec') return `⛔ Échec : ${esc(l.message || 'erreur inconnue')}`;
+    if(l.statut === 'ok') return `Ajouté${l.id ? ` · <button type="button" class="imp-lien" data-voir="${esc(l.id)}">voir la fiche</button>` : ''}`;
+    if(l.statut === 'echec') return `Échec : ${esc(l.message || 'erreur inconnue')}`;
     return '';
   }
 
@@ -190,9 +190,9 @@
       <div class="imp-corps">
         <div class="imp-titre"><b>${esc(l.title || '(sans titre)')}</b><span class="imp-type">${esc(l.type)}</span></div>
         <div class="imp-meta">${esc(metaTexte(l))}</div>
-        ${l.erreurs.map(e => `<div class="imp-note is-erreur">⛔ ${esc(e)}</div>`).join('')}
-        ${l.doublon ? `<div class="imp-note is-doublon">⚠️ Déjà sur le site ? « ${esc(l.doublon.title)} », le même jour. Décoché par défaut.</div>` : ''}
-        ${l.alertes.map(a => `<div class="imp-note">⚠️ ${esc(a)}</div>`).join('')}
+        ${l.erreurs.map(e => `<div class="imp-note is-erreur">${esc(e)}</div>`).join('')}
+        ${l.doublon ? `<div class="imp-note is-doublon">Déjà sur le site ? « ${esc(l.doublon.title)} », le même jour. Décoché par défaut.</div>` : ''}
+        ${l.alertes.map(a => `<div class="imp-note">${esc(a)}</div>`).join('')}
         ${(bloque || l.statut === 'ok' || l.statut === 'cours') ? '' : window.EbokVerif.html('import', l, l.i)}
         <div class="imp-pied-ligne">
           ${bloque ? '' : `<label class="btn btn-ghost btn-xs imp-affiche-btn">${l.poster ? "Changer l'affiche" : "Ajouter l'affiche"}<input type="file" accept="image/*" hidden data-affiche="${l.i}" ${figee ? 'disabled' : ''}></label>`}
@@ -292,7 +292,7 @@
     msg.textContent = '';
     let brut;
     try{ brut = lireLot($('impTexte').value); }
-    catch(e){ msg.textContent = '⚠️ ' + e.message; lignes = []; dessinerApercu(); return; }
+    catch(e){ msg.textContent = e.message; lignes = []; dessinerApercu(); return; }
     // Les événements déjà sur le site : publics, plus tout ce que l'admin a chargé.
     const existants = new Map();
     for(const e of events) existants.set(e.id, e);
@@ -356,7 +356,7 @@
       majLigne(l);
     }
     enCours = false;
-    $('impMessage').innerHTML = `✅ <b>${ok}</b> événement${ok > 1 ? 's' : ''} ajouté${ok > 1 ? 's' : ''}${echecs ? `, <b>${echecs}</b> en échec (tu peux réessayer)` : ''}. ${direct ? 'Ils sont en ligne.' : 'Ils t\'attendent dans « À traiter ».'}`;
+    $('impMessage').innerHTML = `<b>${ok}</b> événement${ok > 1 ? 's' : ''} ajouté${ok > 1 ? 's' : ''}${echecs ? `, <b>${echecs}</b> en échec (tu peux réessayer)` : ''}. ${direct ? 'Ils sont en ligne.' : 'Ils t\'attendent dans « À traiter ».'}`;
     majPied();
     if(ok){
       await refreshPublicEvents();
@@ -385,7 +385,7 @@
       const t = e.target;
       if(t.id === 'impFichier' && t.files[0]){
         try{ $('impTexte').value = await t.files[0].text(); verifier(); }
-        catch(err){ $('impMessage').textContent = '⚠️ Impossible de lire ce fichier.'; }
+        catch(err){ $('impMessage').textContent = 'Impossible de lire ce fichier.'; }
         t.value = '';
       }else if(t.matches('.imp-coche input')){
         const l = lignes[Number(t.closest('.imp-ligne').dataset.i)];

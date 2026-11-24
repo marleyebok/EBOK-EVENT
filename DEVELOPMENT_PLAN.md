@@ -59,6 +59,15 @@ partagé, plus de lecture du profil du site mère. Seul reste le point ci-dessou
       volet latéral : compte, navigation, favoris, mes événements, thème,
       déconnexion
 - [x] Échappement des données d'événement dans les rendus HTML (XSS stocké)
+- [x] **Refonte visuelle (11/2026)** — titres en Impact (repli Anton), texte en
+      Archivo, dates en JetBrains Mono « tableau de marque » ; accueil avec barre
+      de recherche en langage courant (type, ville, région, mois, nom
+      d'événement), carte et filtres dans un même tableau, effet scan de la
+      carte (à l'arrivée puis à chaque filtre), À la une sur fond bordeaux à
+      petits ronds, agenda des prochains événements ; emojis remplacés par des
+      icônes au trait. Maquettes et captures : `maquettes/unslop/`.
+- [x] L'intro animée ne se joue plus d'elle-même : seulement via « Revoir
+      l'intro » en pied de page (`/?intro=1`).
 
 ---
 
@@ -113,6 +122,34 @@ droits admin se retrouvent seuls (reconnus par e-mail).
 ---
 
 ## 🔜 Prochaines étapes
+
+### 0. Outils d'organisateur — V1 *(prochain chantier, après la fusion de la refonte)*
+
+Idée du propriétaire (24/11/2026) : proposer aux organisateurs de **gérer leur
+événement sur ebok.fr**, pas seulement de l'annoncer.
+
+- [ ] **La question après publication** — sur l'écran de confirmation, une
+      fois le message « Ton événement est publié » affiché, demander :
+      « Tu veux gérer ton événement sur ebok.fr ? Inscriptions, messages aux
+      participants, documents » avec trois réponses : *Oui, ça m'intéresse* /
+      *Plus tard* / *Non merci*. Une seule question, qui ne bloque rien.
+      Enregistrer la réponse (par événement et par compte) pour **mesurer la
+      demande** avant de construire, et pouvoir prévenir les « oui » quand la
+      V1 sort. Garder le tutoiement du site.
+- [ ] **Cadrer la V1** (à décider ensemble) — périmètre proposé, du plus simple
+      au plus lourd :
+  - [ ] Liste des inscrits (formulaire d'inscription gratuit sur la fiche,
+        export CSV pour l'organisateur)
+  - [ ] Messages de l'organisateur aux inscrits (e-mail groupé, sans
+        messagerie instantanée au départ)
+  - [ ] Documents à fournir par les participants (autorisation parentale,
+        règlement…), dépôt et suivi
+  - [ ] Réservation **payante** : seulement avec un statut professionnel
+        (voir section 7) — paiement, commission, CGV, rétractation
+- [ ] **Avant de toucher aux documents** — certificats médicaux et données de
+      mineurs = données sensibles (RGPD) : base légale, durée de
+      conservation, accès restreint à l'organisateur, mise à jour de la
+      politique de confidentialité et des CGU.
 
 ### 1. Géolocalisation réelle *(prioritaire)*
 

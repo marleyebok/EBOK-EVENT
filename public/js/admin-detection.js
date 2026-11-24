@@ -59,12 +59,12 @@
     statut(enCours);
     try{
       const r = await window.EBOK_DATA.detectionAction(body);
-      statut(r.resume ? '✅ ' + r.resume : '✅ C\'est fait.');
+      statut(r.resume ? r.resume : 'C\'est fait.');
       await rendre();
       // De nouveaux événements en attente : la liste d'administration suit.
       if(r.crees && typeof renderAdminEvents === 'function') renderAdminEvents();
     }catch(e){
-      statut('⚠️ ' + (e.message && !/^http_/.test(e.message) ? e.message : 'Action impossible.'));
+      statut((e.message && !/^http_/.test(e.message) ? e.message : 'Action impossible.'));
     }
   }
 

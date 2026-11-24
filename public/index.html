@@ -28,7 +28,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="/assets/favicon-192.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/styles.css">
 <!-- Intro (plan-séquence d'ouverture) : intro-boot.js décide si elle se joue
      et l'affiche dès la première image ; le moteur est js/intro.js, en bas. -->
@@ -71,8 +71,8 @@
     <button class="navlink active" data-nav="home">Accueil</button>
     <button class="navlink" data-nav="search"><span class="nav-long">Recherche avancée</span><span class="nav-short">Recherche</span></button>
     <button class="navlink" data-nav="create"><span class="nav-long">Publier un événement</span><span class="nav-short">Publier</span></button>
-    <button class="navlink" data-nav="favoris">♥ Mes favoris</button>
-    <button class="navlink" data-nav="alertes">🔔 Alertes<span class="nav-badge hidden" data-alert-badge></span></button>
+    <button class="navlink" data-nav="favoris"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>Mes favoris</button>
+    <button class="navlink" data-nav="alertes"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>Alertes<span class="nav-badge hidden" data-alert-badge></span></button>
     <button class="navlink hidden" data-nav="profile" id="navProfile">Mon profil</button>
     <button class="navlink hidden" data-nav="admin" id="navAdmin">Admin<span class="nav-badge hidden" data-admin-badge title="À traiter"></span></button>
   </div>
@@ -92,7 +92,7 @@
   </div>
 
   <div class="topbar-right">
-    <button class="theme-toggle" id="themeToggle" aria-label="Basculer thème clair / sombre" title="Thème clair / sombre">🌙</button>
+    <button class="theme-toggle" id="themeToggle" aria-label="Basculer thème clair / sombre" title="Thème clair / sombre"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></button>
     <div class="account-area" id="accountArea">
       <!-- Déconnecté -->
       <div class="account-out" id="accountOut">
@@ -138,18 +138,18 @@
   </div>
 
   <nav class="side-menu-nav">
-    <button class="side-menu-link" data-nav="home"><span>🏠</span> Accueil</button>
-    <button class="side-menu-link" data-nav="search"><span>🔍</span> Recherche avancée</button>
-    <button class="side-menu-link" data-nav="create"><span>➕</span> Publier un événement</button>
-    <button class="side-menu-link" data-nav="favoris"><span>♥</span> Mes favoris</button>
-    <button class="side-menu-link" data-nav="alertes"><span>🔔</span> Mes alertes<span class="nav-badge hidden" data-alert-badge></span></button>
-    <button class="side-menu-link menu-auth hidden" data-menu-section="section-mes-evenements"><span>📋</span> Mes événements</button>
-    <button class="side-menu-link menu-auth hidden" data-nav="profile"><span>👤</span> Mon profil</button>
-    <button class="side-menu-link menu-admin hidden" data-nav="admin"><span>👑</span> Administration<span class="nav-badge hidden" data-admin-badge title="À traiter"></span></button>
+    <button class="side-menu-link" data-nav="home"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Accueil</button>
+    <button class="side-menu-link" data-nav="search"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>Recherche avancée</button>
+    <button class="side-menu-link" data-nav="create"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>Publier un événement</button>
+    <button class="side-menu-link" data-nav="favoris"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>Mes favoris</button>
+    <button class="side-menu-link" data-nav="alertes"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>Mes alertes<span class="nav-badge hidden" data-alert-badge></span></button>
+    <button class="side-menu-link menu-auth hidden" data-menu-section="section-mes-evenements"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>Mes événements</button>
+    <button class="side-menu-link menu-auth hidden" data-nav="profile"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Mon profil</button>
+    <button class="side-menu-link menu-admin hidden" data-nav="admin"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>Administration<span class="nav-badge hidden" data-admin-badge title="À traiter"></span></button>
   </nav>
 
   <div class="side-menu-foot">
-    <button class="side-menu-link" id="menuTheme"><span id="menuThemeIcon">🌙</span> <span id="menuThemeLabel">Thème clair</span></button>
+    <button class="side-menu-link" id="menuTheme"><span id="menuThemeIcon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></span><span id="menuThemeLabel">Thème clair</span></button>
     <button class="side-menu-link menu-auth hidden" id="menuLogout"><span>↩</span> Déconnexion</button>
   </div>
 </aside>
@@ -158,115 +158,136 @@
 
   <!-- ===================== HOME / MAP ===================== -->
   <section id="page-home" class="page active">
-    <div class="hero hero-home">
+    <!-- Accueil (refonte 2026) : le titre et la barre de recherche à gauche,
+         la carte et ses filtres à droite. La barre de recherche lit une phrase
+         (« un camp à Lyon en juillet ») ou un nom d'événement et remplit les
+         filtres de la carte (js/app.js, initHomeSearch). -->
+    <div class="home-hero">
       <div class="hero-text">
         <p class="eyebrow" id="heroCompteur" hidden></p>
         <!-- Chaque ligne du titre monte derrière un cache (.h-line) au chargement. -->
-        <h1><span class="h-line"><span class="hl">L'agenda collaboratif</span></span><span class="h-line"><span>du Basket Francophone</span></span></h1>
-        <p class="hero-sub">Tournois, camps, détections, circuit 3x3… Trouve les events près de chez toi et partage les tiens avec la communauté.</p>
+        <h1><span class="h-line"><span>Partout où</span></span><span class="h-line"><span class="hl">ça joue</span></span><span class="sr-only"> : l'agenda collaboratif du basket francophone</span></h1>
+        <p class="hero-sub">Tournois, camps, 3x3, détections : l'agenda collaboratif du basket francophone, sur une seule carte.</p>
+        <div class="home-search">
+          <form class="hs-form" id="homeSearch" role="search">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input id="homeQ" type="search" placeholder="Un camp à Lyon en juillet" aria-label="Rechercher un événement : type, ville, mois ou nom" autocomplete="off" role="combobox" aria-controls="homeSuggest" aria-expanded="false" aria-autocomplete="list">
+            <button class="btn btn-ink" type="submit">Chercher</button>
+          </form>
+          <ul class="hs-suggest" id="homeSuggest" role="listbox" aria-label="Événements" hidden></ul>
+        </div>
+        <p class="hs-understood" id="homeUnderstood" aria-live="polite"></p>
+        <div class="hs-publish">
+          <span>Tu organises un événement ?</span>
+          <button class="btn btn-ghost" data-nav="create"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>Publier un événement</button>
+        </div>
+      </div>
+
+      <div class="home-board">
+      <div class="map-layout" id="mapLayout">
+        <aside class="filter-panel">
+          <div class="filter-group fg-types">
+            <label>Type</label>
+            <div class="type-dropdown" id="typeDropdown">
+              <button type="button" class="type-dd-btn" id="typeDdBtn">
+                <span id="typeDdLabel">Tous les types</span>
+                <span class="dd-caret"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span>
+              </button>
+              <div class="type-dd-panel hidden" id="typeDdPanel">
+                <div class="check-list" id="typeFilterHome"></div>
+                <div class="type-dd-actions">
+                  <button type="button" id="typeAll">Tout sélectionner</button>
+                  <button type="button" id="typeNone">Réinitialiser</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="filter-group fg-city">
+            <label for="citySearch">Ville</label>
+            <div class="search-input-wrap">
+              <input type="text" id="citySearch" placeholder="Toutes">
+              <div class="city-suggestions hidden" id="citySuggestions"></div>
+            </div>
+          </div>
+
+          <!-- La région se choisit dans une liste (remplie par js/app.js). -->
+          <div class="filter-group fg-region">
+            <label for="regionSelect">Région</label>
+            <select id="regionSelect" class="region-select"><option value="">Toutes les régions</option></select>
+          </div>
+
+          <div class="filter-group fg-period">
+            <label for="periodSelector">Date</label>
+            <div class="period-selector" id="periodSelector">
+              <div class="period-display" id="periodDisplay">
+                <span id="periodText">Indifférent</span>
+                <span class="period-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span>
+              </div>
+              <div class="period-picker hidden" id="periodPicker">
+                <div class="picker-header">
+                  <button type="button" class="picker-nav" id="prevMonth">‹</button>
+                  <span id="pickerMonth" class="picker-month">Juin 2026</span>
+                  <button type="button" class="picker-nav" id="nextMonth">›</button>
+                </div>
+                <div class="picker-weekdays">
+                  <div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div>
+                </div>
+                <div class="picker-days" id="pickerDays"></div>
+                <div class="picker-footer">
+                  <div class="mode-toggle">
+                    <button type="button" class="mode-btn active" data-mode="range">Période</button>
+                    <button type="button" class="mode-btn" data-mode="single">Jour unique</button>
+                  </div>
+                  <div class="picker-actions">
+                    <button type="button" class="btn btn-ghost" id="pickerClear" style="font-size:12px;padding:6px 12px;">Réinitialiser</button>
+                    <button type="button" class="btn btn-primary" id="pickerApply" style="font-size:12px;padding:6px 12px;">Fermer</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <div class="map-wrap" id="homeMapView">
+          <svg id="franceMap" viewBox="0 0 560 560" xmlns="http://www.w3.org/2000/svg"></svg>
+          <div class="map-tooltip" id="mapTooltip"></div>
+          <!-- Zoom de la carte (js/app.js, initMapZoom). Au doigt : pincer. -->
+          <div class="map-zoom-ctl">
+            <button type="button" id="mapZoomIn" aria-label="Zoomer" title="Zoomer">+</button>
+            <button type="button" id="mapZoomOut" aria-label="Dézoomer" title="Dézoomer" disabled>−</button>
+            <button type="button" id="mapZoomReset" class="map-zoom-reset" aria-label="Revenir à la France entière" title="France entière" hidden>France entière</button>
+          </div>
+
+        </div>
+
+        <div class="results-grid home-list hidden" id="homeListView"></div>
+      </div>
+        <div class="content-header board-foot">
+          <span class="content-count" id="homeCount"></span>
+          <button class="btn btn-ghost btn-alert" data-new-alert="home"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>Créer une alerte</button>
+          <div class="view-toggle" role="group" aria-label="Affichage">
+            <button class="toggle-btn active" data-view="map" id="viewBtnMap"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></svg>Carte</button>
+            <button class="toggle-btn" data-view="list" id="viewBtnList"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h.01"/><path d="M3 18h.01"/><path d="M3 6h.01"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M8 6h13"/></svg>Liste</button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div id="featuredSlot">
+    <div class="home-section" id="featuredSlot">
+      <div class="section-head"><h2>À la une</h2></div>
       <div class="featured-carousel">
         <div class="carousel-wrapper">
           <div class="carousel-track" id="carouselTrack"></div>
-          <button class="carousel-nav carousel-prev" id="carouselPrev" aria-label="Événement précédent">❮</button>
-          <button class="carousel-nav carousel-next" id="carouselNext" aria-label="Événement suivant">❯</button>
         </div>
-        <div class="carousel-dots" id="carouselDots"></div>
+        <div class="carousel-dots" id="carouselDots" role="tablist" aria-label="Événements à la une"></div>
       </div>
     </div>
 
-    <div class="content-header">
-      <span class="content-count" id="homeCount"></span>
-      <button class="btn btn-ghost btn-alert" data-new-alert="home">🔔 Créer une alerte</button>
-      <div class="view-toggle">
-        <button class="toggle-btn active" data-view="map" id="viewBtnMap">🗺️ Carte</button>
-        <button class="toggle-btn" data-view="list" id="viewBtnList">☰ Liste</button>
-      </div>
-    </div>
-
-    <div class="map-layout" id="mapLayout">
-      <aside class="filter-panel">
-        <div class="panel-head"><span class="tag-dot"></span>RECHERCHE RAPIDE</div>
-
-        <div class="filter-group fg-types">
-          <label>Type d'événement</label>
-          <div class="type-dropdown" id="typeDropdown">
-            <button type="button" class="type-dd-btn" id="typeDdBtn">
-              <span id="typeDdLabel">Tous les types</span>
-              <span class="dd-caret">▾</span>
-            </button>
-            <div class="type-dd-panel hidden" id="typeDdPanel">
-              <div class="check-list" id="typeFilterHome"></div>
-              <div class="type-dd-actions">
-                <button type="button" id="typeAll">Tout sélectionner</button>
-                <button type="button" id="typeNone">Réinitialiser</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="filter-group fg-city">
-          <label for="citySearch">Ville</label>
-          <div class="search-input-wrap">
-            <input type="text" id="citySearch" placeholder="Cherche une ville...">
-            <div class="city-suggestions hidden" id="citySuggestions"></div>
-          </div>
-        </div>
-
-        <!-- La région se choisit dans une liste (remplie par js/app.js). -->
-        <div class="filter-group fg-region">
-          <label for="regionSelect">Région</label>
-          <select id="regionSelect" class="region-select"><option value="">Toutes les régions</option></select>
-        </div>
-
-        <div class="filter-group fg-period">
-          <label for="periodSelector">Date</label>
-          <div class="period-selector" id="periodSelector">
-            <div class="period-display" id="periodDisplay">
-              <span id="periodText">Indifférent</span>
-              <span class="period-icon">📅</span>
-            </div>
-            <div class="period-picker hidden" id="periodPicker">
-              <div class="picker-header">
-                <button type="button" class="picker-nav" id="prevMonth">‹</button>
-                <span id="pickerMonth" class="picker-month">Juin 2026</span>
-                <button type="button" class="picker-nav" id="nextMonth">›</button>
-              </div>
-              <div class="picker-weekdays">
-                <div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div>
-              </div>
-              <div class="picker-days" id="pickerDays"></div>
-              <div class="picker-footer">
-                <div class="mode-toggle">
-                  <button type="button" class="mode-btn active" data-mode="range">Période</button>
-                  <button type="button" class="mode-btn" data-mode="single">Jour unique</button>
-                </div>
-                <div class="picker-actions">
-                  <button type="button" class="btn btn-ghost" id="pickerClear" style="font-size:12px;padding:6px 12px;">Réinitialiser</button>
-                  <button type="button" class="btn btn-primary" id="pickerApply" style="font-size:12px;padding:6px 12px;">Fermer</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      <div class="map-wrap" id="homeMapView">
-        <svg id="franceMap" viewBox="0 0 560 560" xmlns="http://www.w3.org/2000/svg"></svg>
-        <div class="map-tooltip" id="mapTooltip"></div>
-        <!-- Zoom de la carte (js/app.js, initMapZoom). Au doigt : pincer. -->
-        <div class="map-zoom-ctl">
-          <button type="button" id="mapZoomIn" aria-label="Zoomer" title="Zoomer">+</button>
-          <button type="button" id="mapZoomOut" aria-label="Dézoomer" title="Dézoomer" disabled>−</button>
-          <button type="button" id="mapZoomReset" class="map-zoom-reset" aria-label="Revenir à la France entière" title="France entière" hidden>France entière</button>
-        </div>
-
-      </div>
-
-      <div class="results-grid home-list hidden" id="homeListView"></div>
+    <div class="home-section" id="agendaSlot">
+      <div class="section-head"><h2>Agenda</h2><span class="section-meta">les prochains événements</span></div>
+      <div class="agenda" id="homeAgenda"></div>
+      <div class="agenda-more"><button class="btn btn-ghost btn-lg" data-nav="search" id="agendaMore">Voir tous les événements</button></div>
     </div>
 
   </section>
@@ -354,7 +375,7 @@
 
     <div class="results-head">
       <span id="resultsCount">— résultats</span>
-      <button class="btn btn-ghost btn-alert" data-new-alert="search">🔔 M'alerter des nouveautés</button>
+      <button class="btn btn-ghost btn-alert" data-new-alert="search"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>M'alerter des nouveautés</button>
     </div>
     <div class="results-grid" id="resultsGrid"></div>
   </section>
@@ -388,12 +409,12 @@
             <p class="wz-help">Avec une affiche ou un lien, l'IA remplit tout pour toi. Tu n'as plus qu'à vérifier.</p>
             <div class="wz-choices">
               <button type="button" class="wz-choice" id="wzChoiceIa">
-                <span class="wz-choice-ic">⚡</span>
+                <span class="wz-choice-ic"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg></span>
                 <span class="wz-choice-t">J'ai une affiche ou un lien</span>
                 <span class="wz-choice-d">L'IA lit ton flyer ou ta page et remplit le formulaire en 20 secondes.</span>
               </button>
               <button type="button" class="wz-choice" id="wzChoiceManuel">
-                <span class="wz-choice-ic">✍️</span>
+                <span class="wz-choice-ic"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span>
                 <span class="wz-choice-t">Je remplis moi-même</span>
                 <span class="wz-choice-d">Quelques questions simples, étape par étape.</span>
               </button>
@@ -404,7 +425,7 @@
                  parcours quand on choisit « J'ai une affiche ou un lien ». -->
             <div class="ia-import hidden" id="iaImport">
               <div class="ia-import-head">
-                <h3>🤖 Assistant IA</h3>
+                <h3>Assistant IA</h3>
                 <p>Colle le lien de l'événement (site, billetterie…) ou envoie son affiche : l'IA remplit le formulaire. Tu vérifies, tu ajustes, tu publies.</p>
               </div>
               <div class="ia-import-row">
@@ -413,7 +434,7 @@
               </div>
               <div class="ia-or"><span>ou</span></div>
               <label class="ia-drop" id="ia-drop" for="ia-file">
-                <span class="ia-drop-ic">🖼️</span>
+                <span class="ia-drop-ic"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/></svg></span>
                 <span>Envoie une <b>affiche</b> ou une <b>capture d'écran</b> — l'IA lit les infos dessus</span>
               </label>
               <input type="file" id="ia-file" accept="image/*" hidden>
@@ -632,7 +653,7 @@
               <label>Photos d'éditions précédentes</label>
             <label class="dropzone dropzone-sm" id="galleryDropzone" for="c-gallery">
               <div class="dz-label">
-                <div class="dz-icon">🖼</div>
+                <div class="dz-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/></svg></div>
                 <div style="font-weight:700;margin-top:6px;font-size:13px;">Ajoute des photos</div>
                 <div style="font-size:12px;color:var(--chalk-dim);margin-top:4px;">Plusieurs fichiers possibles</div>
               </div>
@@ -689,7 +710,7 @@
             <button type="button" class="btn btn-primary" id="wzNext">Continuer →</button>
             <button type="submit" class="btn btn-primary btn-lg hidden" id="wzSubmit">Publier l'événement</button>
           </div>
-          <div class="success-banner hidden" id="createSuccess">✅ Événement envoyé — il apparaîtra sur la carte après validation.</div>
+          <div class="success-banner hidden" id="createSuccess">Événement envoyé — il apparaîtra sur la carte après validation.</div>
         </form>
 
         <aside class="wz-preview" aria-label="Aperçu de ta fiche">
@@ -704,13 +725,13 @@
   <!-- ===================== CONFIRMATION PUBLICATION ===================== -->
   <section id="page-confirm" class="page">
     <div class="confirm-card">
-      <div class="confirm-ic">✅</div>
-      <h2 id="confirmTitle">Ton événement a bien été créé !</h2>
+      <div class="confirm-ic"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></div>
+      <h2 id="confirmTitle">Ton événement a bien été créé</h2>
       <p id="confirmText" class="confirm-text">
         Il va être étudié par notre équipe, puis accepté avant publication
         <b>sous 24h</b>. Tu le retrouveras ensuite sur la carte et dans la recherche.
       </p>
-      <p class="confirm-sub" id="confirmSub">Merci de faire vivre le basket francophone 🏀</p>
+      <p class="confirm-sub" id="confirmSub">Merci de faire vivre le basket francophone.</p>
       <div class="confirm-actions">
         <button class="btn btn-primary btn-lg" data-nav="home">Retour à l'accueil</button>
         <button class="btn btn-ghost" data-nav="create">Publier un autre événement</button>
@@ -728,8 +749,8 @@
   <section id="page-favoris" class="page">
     <div class="page-head">
       <p class="eyebrow">Espace membre</p>
-      <h2>♥ Mes favoris</h2>
-      <p class="hero-sub">Les événements que tu as mis de côté avec le ♥, du plus proche au plus lointain.</p>
+      <h2>Mes favoris</h2>
+      <p class="hero-sub">Les événements que tu as mis de côté avec le cœur, du plus proche au plus lointain.</p>
     </div>
     <div class="results-grid" id="favoritesGrid"></div>
   </section>
@@ -738,7 +759,7 @@
   <section id="page-alertes" class="page">
     <div class="page-head">
       <p class="eyebrow">Espace membre</p>
-      <h2>🔔 Mes alertes</h2>
+      <h2>Mes alertes</h2>
       <p class="hero-sub">Choisis une région et un type d'événement : on te prévient par e-mail, et ici même, dès qu'un événement correspondant est publié.</p>
     </div>
 
@@ -782,7 +803,7 @@
 
     <div class="profile-section">
       <div class="profile-section-head">
-        <h3>🧢 À propos de moi</h3>
+        <h3>À propos de moi</h3>
         <button class="btn btn-ghost" id="btnEditProfile">Modifier mon profil</button>
       </div>
       <div class="about-grid" id="profileAbout"></div>
@@ -798,7 +819,7 @@
 
     <div class="profile-section hidden" id="adminLink">
       <div class="profile-section-head">
-        <h3>👑 Administration</h3>
+        <h3>Administration</h3>
       </div>
       <p class="section-hint">Les événements à vérifier, les signalements, l'import et les membres ont maintenant leur propre page.</p>
       <button class="btn btn-primary" data-nav="admin">Ouvrir l'administration</button>
@@ -816,7 +837,7 @@
     </div>
 
     <div class="admin-rules-alert hidden" id="adminRulesAlert">
-      <div class="ara-ic">🔒</div>
+      <div class="ara-ic"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
       <div class="ara-body">
         <b id="adminRulesTitle">Action refusée par la base de données.</b>
         <div class="ara-diag" id="adminRulesDiag"></div>
@@ -880,7 +901,7 @@
         <p class="maint-desc">
           Chaque lundi matin, toutes les pages surveillées sont lues par l'IA :
           les événements de basket qu'elles annoncent arrivent ici <b>en attente</b>, avec le badge
-          « 🤖 Détecté ». Rien n'est publié sans ta validation. Un événement que
+          « Détecté ». Rien n'est publié sans ta validation. Un événement que
           tu supprimes ne revient jamais.
         </p>
         <form class="det-add" id="detAddForm">
@@ -957,7 +978,7 @@
     <form id="onboardingForm">
       <!-- 1 — Pseudo -->
       <div class="ob-step" data-step="pseudo">
-        <h3>Bienvenue sur EBOK 🏀</h3>
+        <h3>Bienvenue sur EBOK</h3>
         <p class="edit-sub">Comment veux-tu qu'on t'appelle ?</p>
         <div class="field">
           <input type="text" id="ob-pseudo" placeholder="Ex. Marley B." autocomplete="nickname">
@@ -1027,23 +1048,23 @@
         </p>
         <div class="socials-grid">
           <div class="field social-field">
-            <label for="ob-instagram">📸 Instagram</label>
+            <label for="ob-instagram">Instagram</label>
             <input type="text" id="ob-instagram" placeholder="@moncompte">
           </div>
           <div class="field social-field">
-            <label for="ob-tiktok">🎵 TikTok</label>
+            <label for="ob-tiktok">TikTok</label>
             <input type="text" id="ob-tiktok" placeholder="@moncompte">
           </div>
           <div class="field social-field">
-            <label for="ob-snapchat">👻 Snapchat</label>
+            <label for="ob-snapchat">Snapchat</label>
             <input type="text" id="ob-snapchat" placeholder="moncompte">
           </div>
           <div class="field social-field">
-            <label for="ob-facebook">📘 Facebook</label>
+            <label for="ob-facebook">Facebook</label>
             <input type="text" id="ob-facebook" placeholder="Nom ou lien du profil">
           </div>
           <div class="field social-field">
-            <label for="ob-linkedin">💼 LinkedIn</label>
+            <label for="ob-linkedin">LinkedIn</label>
             <input type="text" id="ob-linkedin" placeholder="Lien de ton profil">
           </div>
         </div>
@@ -1302,7 +1323,7 @@
 
       <!-- Réservé au type « Voyage » : affiché/masqué par openEditModal(). -->
       <div id="e-voyage" class="voyage-block hidden">
-        <h4 class="voyage-title">✈️ Détails du voyage</h4>
+        <h4 class="voyage-title"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>Détails du voyage</h4>
         <div class="form-row">
           <div class="field">
             <label for="e-voy-date-depart">Date de départ</label>
@@ -1413,7 +1434,7 @@
 
       <label class="edit-featured admin-only" for="e-featured">
         <input type="checkbox" id="e-featured">
-        <span><b>★ Mettre à la une</b> — l'événement apparaît dans le bandeau de la page d'accueil.</span>
+        <span><b>Mettre à la une</b> — l'événement apparaît dans le bandeau de la page d'accueil.</span>
       </label>
 
       <div class="edit-error hidden" id="editError"></div>
