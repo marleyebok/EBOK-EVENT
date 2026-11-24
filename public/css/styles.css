@@ -2940,3 +2940,5 @@ input,select,textarea{font-family:var(--font-body);}
 .event-card::after{display:none;}
 .event-card:hover .card-media img{transform:none;}
 .event-card:hover{border-color:var(--line-strong);box-shadow:0 8px 24px rgba(28,26,23,.08);}
+
+.hs-understood:empty{min-height:0;margin:0;}
