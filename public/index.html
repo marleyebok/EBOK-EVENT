@@ -67,14 +67,13 @@
   <div class="brand" data-nav="home" aria-label="EBOK — accueil">
     <img class="brand-logo" src="/assets/logo.png" alt="EBOK — L'agenda du basket" width="414" height="108">
   </div>
+  <!-- Menu (refonte 2026) : Publier au centre, entre Rechercher et Mes
+       événements. Sur portable, ces trois entrées passent dans la barre du
+       bas (.tabbar) et il ne reste en haut que le logo et « Mon compte ». -->
   <div class="nav-links">
-    <button class="navlink active" data-nav="home">Accueil</button>
-    <button class="navlink" data-nav="search"><span class="nav-long">Recherche avancée</span><span class="nav-short">Recherche</span></button>
-    <button class="navlink" data-nav="create"><span class="nav-long">Publier un événement</span><span class="nav-short">Publier</span></button>
-    <button class="navlink" data-nav="favoris"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>Mes favoris</button>
-    <button class="navlink" data-nav="alertes"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>Alertes<span class="nav-badge hidden" data-alert-badge></span></button>
-    <button class="navlink hidden" data-nav="profile" id="navProfile">Mon profil</button>
-    <button class="navlink hidden" data-nav="admin" id="navAdmin">Admin<span class="nav-badge hidden" data-admin-badge title="À traiter"></span></button>
+    <button class="navlink" data-nav="search"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>Rechercher</button>
+    <button class="btn btn-primary nav-publier" data-nav="create"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>Publier un événement</button>
+    <button class="navlink" data-nav="mes"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>Mes événements<span class="nav-badge hidden" data-alert-badge></span></button>
   </div>
   <!-- Actions rapides du mobile : la recherche et la publication restent à
        portée de pouce, le reste passe dans le volet. -->
@@ -92,19 +91,43 @@
   </div>
 
   <div class="topbar-right">
-    <div class="account-area" id="accountArea">
-      <!-- Déconnecté -->
-      <div class="account-out" id="accountOut">
-        <button class="btn btn-ghost" id="btnLogin">Se connecter</button>
-        <button class="btn btn-primary nav-cta" id="btnSignup">S'inscrire</button>
-      </div>
-      <!-- Connecté -->
-      <div class="account-logged hidden" id="accountLogged">
-        <button class="account-name" id="accountName" data-nav="profile"></button>
-        <button class="btn btn-ghost" id="btnLogout">Déconnexion</button>
+    <div class="acct" id="accountArea">
+      <button type="button" class="btn btn-ghost acct-btn" id="acctBtn" aria-expanded="false" aria-controls="acctMenu">
+        <span class="acct-ic" id="acctIcon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><span class="acct-label">Mon compte</span><span class="acct-chev"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span>
+      </button>
+      <div class="acct-menu" id="acctMenu" role="dialog" aria-label="Mon compte" hidden>
+        <!-- Déconnecté : les deux entrées côte à côte -->
+        <div class="account-out" id="accountOut">
+          <h3>Ton compte EBOK</h3>
+          <p>Gratuit. Garde tes favoris, reçois des alertes et publie tes événements.</p>
+          <div class="acct-stack">
+            <button class="btn btn-primary" id="btnSignup">Créer un compte</button>
+            <button class="btn btn-ghost" id="btnLogin">Se connecter</button>
+          </div>
+          <ul class="acct-perks">
+            <li><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>Tes favoris sur tous tes appareils</li>
+            <li><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>Une alerte dès qu'un événement te correspond</li>
+            <li><svg class="ico ico-outils" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 18H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3"/><path d="M7 7V5.5A1.5 1.5 0 0 1 8.5 4h3A1.5 1.5 0 0 1 13 5.5V7"/><path d="M2 11.5h16"/><path d="M8.5 11.5v2h3v-2"/><path class="cle" d="M21.6 14.1a2.6 2.6 0 0 1-3.4 3.4l-3.1 3.1a1 1 0 0 1-1.4-1.4l3.1-3.1a2.6 2.6 0 0 1 3.4-3.4l-1.5 1.5.7.7.7.7z"/></svg>Gère tes événements avec les outils EBOK</li>
+          </ul>
+        </div>
+        <!-- Connecté -->
+        <div class="account-logged hidden" id="accountLogged">
+          <div class="acct-who"><span class="acct-avatar" id="acctAvatar"></span><div><b id="accountName"></b><span id="acctMail"></span></div></div>
+          <button type="button" class="acct-link" data-nav="mes"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>Mes événements</button>
+          <button type="button" class="acct-link" data-nav="profile" id="navProfile"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Mon profil</button>
+          <button type="button" class="acct-link hidden" data-nav="admin" id="navAdmin"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>Administration<span class="nav-badge hidden" data-admin-badge title="À traiter"></span></button>
+          <button type="button" class="acct-link" id="btnLogout"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>Déconnexion</button>
+        </div>
       </div>
     </div>
   </div>
+</nav>
+
+<!-- Barre du bas (portable) : les trois entrées du menu, à portée de pouce. -->
+<nav class="tabbar" aria-label="Navigation principale">
+  <button type="button" data-nav="search"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><span>Rechercher</span></button>
+  <button type="button" data-nav="create" class="tb-pub"><span class="tb-plus"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg></span><span>Publier</span></button>
+  <button type="button" data-nav="mes"><span class="tb-ic"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg><span class="nav-badge hidden" data-alert-badge></span></span><span>Mes événements</span></button>
 </nav>
 
 <!-- Volet de navigation (mobile). Construit ici plutôt qu'en JS pour rester
@@ -730,6 +753,17 @@
         <b>sous 24h</b>. Tu le retrouveras ensuite sur la carte et dans la recherche.
       </p>
       <p class="confirm-sub" id="confirmSub">Merci de faire vivre le basket francophone.</p>
+      <!-- Question posée à l'organisateur (outils d'organisateur, V1) -->
+      <div class="outils-question" id="outilsQuestion" hidden>
+        <p class="oq-title"><svg class="ico ico-outils" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 18H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3"/><path d="M7 7V5.5A1.5 1.5 0 0 1 8.5 4h3A1.5 1.5 0 0 1 13 5.5V7"/><path d="M2 11.5h16"/><path d="M8.5 11.5v2h3v-2"/><path class="cle" d="M21.6 14.1a2.6 2.6 0 0 1-3.4 3.4l-3.1 3.1a1 1 0 0 1-1.4-1.4l3.1-3.1a2.6 2.6 0 0 1 3.4-3.4l-1.5 1.5.7.7.7.7z"/></svg>Tu veux gérer ton événement avec les outils EBOK ?</p>
+        <p class="oq-sub">Inscriptions à valider, liste des participants, documents, messages aux inscrits, co-organisateurs.</p>
+        <div class="oq-actions">
+          <button type="button" class="btn btn-primary" data-outils="oui">Oui, ça m'intéresse</button>
+          <button type="button" class="btn btn-ghost" data-outils="plus_tard">Plus tard</button>
+          <button type="button" class="btn btn-ghost" data-outils="non">Non merci</button>
+        </div>
+        <p class="oq-merci" id="outilsMerci" hidden></p>
+      </div>
       <div class="confirm-actions">
         <button class="btn btn-primary btn-lg" data-nav="home">Retour à l'accueil</button>
         <button class="btn btn-ghost" data-nav="create">Publier un autre événement</button>
@@ -743,24 +777,30 @@
     <div class="event-detail" id="eventDetail"></div>
   </section>
 
-  <!-- ===================== MES FAVORIS ===================== -->
-  <section id="page-favoris" class="page">
+  <!-- ===================== MES ÉVÉNEMENTS =====================
+       Favoris, alertes, inscriptions et événements organisés, en onglets
+       (js/organisateur.js). Les anciennes pages « favoris » et « alertes »
+       sont devenues les deux premiers onglets et gardent leurs identifiants. -->
+  <section id="page-mes" class="page">
     <div class="page-head">
-      <p class="eyebrow">Espace membre</p>
-      <h2>Mes favoris</h2>
-      <p class="hero-sub">Les événements que tu as mis de côté avec le cœur, du plus proche au plus lointain.</p>
+      <p class="eyebrow">Ton espace</p>
+      <h2>Mes événements</h2>
+      <p class="hero-sub">Ce que tu as mis de côté, tes alertes, les événements où tu es inscrit et ceux que tu organises.</p>
     </div>
-    <div class="results-grid" id="favoritesGrid"></div>
-  </section>
-
-  <!-- ===================== MES ALERTES ===================== -->
-  <section id="page-alertes" class="page">
-    <div class="page-head">
-      <p class="eyebrow">Espace membre</p>
-      <h2>Mes alertes</h2>
-      <p class="hero-sub">Choisis une région et un type d'événement : on te prévient par e-mail, et ici même, dès qu'un événement correspondant est publié.</p>
+    <div class="mes-tabs" role="tablist" aria-label="Mes événements">
+      <button type="button" class="mes-tab" role="tab" data-mes="favoris" aria-selected="true"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>Favoris<span class="mes-n" id="mesNFav"></span></button>
+      <button type="button" class="mes-tab" role="tab" data-mes="alertes" aria-selected="false"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>Alertes<span class="nav-badge hidden" data-alert-badge></span></button>
+      <button type="button" class="mes-tab" role="tab" data-mes="inscriptions" aria-selected="false"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>Mes inscriptions<span class="mes-n" id="mesNInsc"></span></button>
+      <button type="button" class="mes-tab" role="tab" data-mes="organise" aria-selected="false"><svg class="ico ico-outils" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 18H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3"/><path d="M7 7V5.5A1.5 1.5 0 0 1 8.5 4h3A1.5 1.5 0 0 1 13 5.5V7"/><path d="M2 11.5h16"/><path d="M8.5 11.5v2h3v-2"/><path class="cle" d="M21.6 14.1a2.6 2.6 0 0 1-3.4 3.4l-3.1 3.1a1 1 0 0 1-1.4-1.4l3.1-3.1a2.6 2.6 0 0 1 3.4-3.4l-1.5 1.5.7.7.7.7z"/></svg>J'organise<span class="mes-n" id="mesNOrga"></span></button>
     </div>
 
+    <div class="mes-panel" id="page-favoris" data-panel="favoris" role="tabpanel">
+      <p class="section-hint">Les événements que tu as mis de côté avec le cœur, du plus proche au plus lointain.</p>
+      <div class="results-grid" id="favoritesGrid"></div>
+    </div>
+
+    <div class="mes-panel" id="page-alertes" data-panel="alertes" role="tabpanel" hidden>
+      <p class="section-hint">Choisis une région et un type d'événement : on te prévient par e-mail, et ici même, dès qu'un événement correspondant est publié.</p>
     <div class="profile-section" id="section-alertes">
       <div class="profile-section-head">
         <h3>Mes critères</h3>
@@ -775,6 +815,15 @@
       </div>
       <p class="section-hint">Les événements publiés depuis la création de tes alertes et qui leur correspondent.</p>
       <div class="results-grid" id="reperesGrid"></div>
+    </div>
+    </div>
+
+    <div class="mes-panel" id="page-inscriptions" data-panel="inscriptions" role="tabpanel" hidden>
+      <div id="mesInscriptions"></div>
+    </div>
+
+    <div class="mes-panel" id="page-organise" data-panel="organise" role="tabpanel" hidden>
+      <div class="orga" id="orgaZone"></div>
     </div>
   </section>
 
@@ -1083,6 +1132,35 @@
 </div>
 
 <!-- ===================== ALERTE ===================== -->
+<!-- Demande d'inscription à un événement (js/organisateur.js) -->
+<div class="edit-modal" id="inscModal" role="dialog" aria-modal="true" aria-labelledby="inscTitle" aria-hidden="true">
+  <div class="edit-box">
+    <button class="edit-close" data-fermer aria-label="Fermer">&times;</button>
+    <h3 id="inscTitle">S'inscrire</h3>
+    <p class="edit-sub" id="inscSub">Ta demande est envoyée à l'organisateur, qui la valide. Tu reçois un e-mail dès sa décision.</p>
+    <div class="insc-consignes hidden" id="inscConsignes"></div>
+    <form id="inscForm">
+      <div class="field" id="inscEquipeField"><label for="in-equipe">Équipe ou club <span class="field-hint">(facultatif)</span></label><input type="text" id="in-equipe" maxlength="120" placeholder="Ex. Mosson Ballers"></div>
+      <div class="form-grid">
+        <div class="field"><label for="in-nb">Nombre de personnes</label><input type="number" id="in-nb" min="1" max="50" value="1"></div>
+        <div class="field"><label for="in-tel">Téléphone <span class="field-hint">(facultatif)</span></label><input type="tel" id="in-tel" maxlength="30"></div>
+      </div>
+      <div class="field"><label for="in-message">Message à l'organisateur <span class="field-hint">(facultatif)</span></label><textarea id="in-message" rows="3" maxlength="1000" placeholder="Niveau, poste, questions…"></textarea></div>
+      <p class="insc-docs hidden" id="inscDocs"></p>
+      <p class="form-error hidden" id="inscError"></p>
+      <div class="edit-actions"><button type="button" class="btn btn-ghost" data-fermer>Annuler</button><button type="submit" class="btn btn-primary" id="inscSubmit">Envoyer ma demande</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- Fiche d'un inscrit, côté organisateur (js/organisateur.js) -->
+<div class="edit-modal" id="inscritModal" role="dialog" aria-modal="true" aria-labelledby="inscritNom" aria-hidden="true">
+  <div class="edit-box">
+    <button class="edit-close" data-fermer aria-label="Fermer">&times;</button>
+    <div id="inscritCorps"></div>
+  </div>
+</div>
+
 <div class="edit-modal" id="alertModal" aria-hidden="true">
   <div class="edit-box">
     <button class="edit-close" id="alertClose" aria-label="Fermer">&times;</button>
@@ -1541,6 +1619,8 @@
 <script src="/js/admin-stats.js"></script>
 <script src="/js/admin-signalements.js"></script>
 <script src="/js/carte-instagram.js"></script>
+<script src="/js/exports.js"></script>
+<script src="/js/organisateur.js"></script>
 <!-- Animations (Motion, motion.dev) : décoratives, chargées après le reste.
      Retirer ces deux lignes suffit à les couper. -->
 <script defer src="/js/vendor/motion.js"></script>

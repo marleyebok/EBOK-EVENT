@@ -160,6 +160,43 @@ export async function ensureSchema() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )`;
 
+  /* Inscriptions aux événements (lib/inscriptions.js). Une ligne par membre
+     et par événement : c'est une DEMANDE que l'organisateur valide.
+     - demande     : ce que le participant a saisi (équipe, nombre, téléphone, message) ;
+     - documents   : documents déposés {idDemandé: {url, nom, statut, le}} ;
+     - categories  : étiquettes posées par l'organisateur (privées) ;
+     - commentaire : note privée de l'organisateur.
+     Ni nom ni e-mail : ils sont lus chez Clerk (« zéro miroir »). */
+  await q`
+    CREATE TABLE IF NOT EXISTS event.inscriptions (
+      id          TEXT PRIMARY KEY,
+      event_id    TEXT NOT NULL,
+      user_id     TEXT NOT NULL,
+      statut      TEXT NOT NULL DEFAULT 'en_attente',
+      demande     JSONB NOT NULL DEFAULT '{}',
+      documents   JSONB NOT NULL DEFAULT '{}',
+      categories  JSONB NOT NULL DEFAULT '[]',
+      commentaire TEXT NOT NULL DEFAULT '',
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE (event_id, user_id)
+    )`;
+  await q`CREATE INDEX IF NOT EXISTS inscriptions_user_idx ON event.inscriptions (user_id)`;
+  /* Messages groupés envoyés par un organisateur à ses inscrits (historique). */
+  await q`
+    CREATE TABLE IF NOT EXISTS event.insc_messages (
+      id         TEXT PRIMARY KEY,
+      event_id   TEXT NOT NULL,
+      auteur     TEXT NOT NULL,
+      sujet      TEXT NOT NULL,
+      texte      TEXT NOT NULL,
+      filtre     JSONB NOT NULL DEFAULT '{}',
+      nb         INTEGER NOT NULL DEFAULT 0,
+      envoyes    INTEGER NOT NULL DEFAULT 0,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`;
+  await q`CREATE INDEX IF NOT EXISTS insc_messages_event_idx ON event.insc_messages (event_id)`;
+
   /* Vue de lecture : chaque fiche porte son nombre de favoris. Les favoris
      vivent dans event.profiles.favorites (un tableau JSONB par membre) ; on
      les déplie ici pour compter par événement. Écrire la jointure une seule
