@@ -123,7 +123,7 @@
   function montrerErreur(liste){
     form.querySelectorAll('.field.invalid').forEach(f => f.classList.remove('invalid'));
     liste.forEach(p => p.champ.closest('.field')?.classList.add('invalid'));
-    erreur.textContent = '⚠️ ' + liste.map(p => p.message).join(' · ');
+    erreur.textContent = liste.map(p => p.message).join(' · ');
     erreur.classList.remove('hidden');
     liste[0].champ.focus({ preventScroll: false });
   }
@@ -236,7 +236,7 @@
     const manque = etapesActives().filter(e => problemes(e).length);
 
     $('wzRecap').innerHTML = `
-      ${manque.length ? `<p class="wz-recap-warn">⚠️ Il reste à compléter : ${manque.map(e => esc(e.dataset.title)).join(', ')}.</p>` : ''}
+      ${manque.length ? `<p class="wz-recap-warn">Il reste à compléter : ${manque.map(e => esc(e.dataset.title)).join(', ')}.</p>` : ''}
       <div class="wz-recap-card" id="wzRecapCard"></div>
       ${sections.filter(([cle]) => actives.has(cle)).map(([cle, titre, lignes]) => {
         const contenu = lignes.map(([l, v]) => ligne(l, v)).join('');

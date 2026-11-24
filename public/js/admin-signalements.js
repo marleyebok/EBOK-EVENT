@@ -66,7 +66,7 @@
       statut('');
       await rendre();
     }catch(e){
-      statut('⚠️ Action impossible. Réessaie dans un instant.');
+      statut('Action impossible. Réessaie dans un instant.');
     }
   }
 

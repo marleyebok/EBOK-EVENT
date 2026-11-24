@@ -168,9 +168,9 @@ function eventCardHtml(ev){
         <span class="card-type-badge" style="background:${typeColor(ev.type)}">${esc(ev.type)}</span>
         ${isPast(ev) ? `<span class="card-past-badge">Terminé</span>` : ``}
         ${ev.dispo && DISPO_META[ev.dispo] ? `<span class="dispo-badge ${DISPO_META[ev.dispo].cls}">${DISPO_META[ev.dispo].label}</span>` : ``}
-        <button class="fav-btn ${favorites.has(ev.id) ? 'active' : ''}" data-fav="${esc(ev.id)}" aria-label="Enregistrer en favori" title="Mettre de côté">♥</button>
+        <button class="fav-btn ${favorites.has(ev.id) ? 'active' : ''}" data-fav="${esc(ev.id)}" aria-label="Enregistrer en favori" title="Mettre de côté">${ico('heart')}</button>
         <span class="fav-count ${Number(ev.favCount) > 0 ? '' : 'hidden'}" data-fav-count="${esc(ev.id)}" title="Personnes intéressées">${Number(ev.favCount) || ''}</span>
-        ${currentIsAdmin ? `<button class="edit-btn" data-edit="${esc(ev.id)}" aria-label="Modifier cet événement" title="Modifier">✏️</button>` : ``}
+        ${currentIsAdmin ? `<button class="edit-btn" data-edit="${esc(ev.id)}" aria-label="Modifier cet événement" title="Modifier">${ico('edit')}</button>` : ``}
       </div>
       <div class="card-body">
         <h4>${esc(ev.title)}</h4>
@@ -267,7 +267,7 @@ function buildMap(){
       </g>
       ${abroadCount ? `<circle class="world-badge-bg" cx="102" cy="30" r="12"/>
       <text class="world-badge" x="102" y="34" text-anchor="middle">${abroadCount}</text>` : ''}
-      <text class="inset-label" x="64" y="112" text-anchor="middle">MONDE</text>
+      <text class="inset-label" x="64" y="112" text-anchor="middle">Monde</text>
     </g>`;
 
   // Encarts outre-mer (DROM) : cadre + territoire cliquable + libellé.
@@ -276,7 +276,7 @@ function buildMap(){
   const overseas = (typeof FRANCE_INSETS !== 'undefined') ? `
     <g class="overseas-layer">
       <line class="overseas-sep" x1="12" y1="${OVERSEAS_BAND_TOP-16}" x2="${MAP_W-12}" y2="${OVERSEAS_BAND_TOP-16}"/>
-      <text class="overseas-caption" x="12" y="${OVERSEAS_BAND_TOP-6}">OUTRE-MER</text>
+      <text class="overseas-caption" x="12" y="${OVERSEAS_BAND_TOP-6}">Outre-mer</text>
       ${FRANCE_INSETS.map(ins=> `<rect class="inset-frame" x="${ins.box.x}" y="${ins.box.y}" width="${ins.box.w}" height="${ins.box.h}" rx="8"/>`).join('')}
       <g id="insetLayer">
         ${FRANCE_INSETS.map(ins=> `<path class="region inset-region" data-region="${ins.name}" tabindex="0" role="button" aria-label="Territoire ${ins.name}" d="${ins.d}"><title>${ins.name}</title></path>`).join('')}
@@ -419,18 +419,25 @@ function renderMapOverlay(){
   updateMapUnit();
   const visible = (x, y)=> x > -60 && x < MAP_W + 60 && y > -60 && y < MAP_H + 60;
 
-  cityLayer.innerHTML = Object.entries(CITY_LABELS).map(([name, [cx, cy]])=>{
-    const [x, y] = mapPt(cx, cy);
-    if(!visible(x, y)) return '';
-    return `<circle class="city-dot-halo" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="6"></circle>
-     <circle class="city-dot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3"></circle>
-     <text class="city-name" x="${(x + 8).toFixed(1)}" y="${(y + 3.5).toFixed(1)}">${name}</text>`;
-  }).join('');
-
   // Les événements à l'étranger n'ont pas de place sur la carte des régions :
   // ils sont repris par la vignette mondiale.
   const shown = events.filter(ev=> !isAbroad(ev) && (!mapVisibleIds || mapVisibleIds.has(ev.id)));
   mapClusters = clusterEvents(shown);
+  // Libellés des villes : si une bulle ou une épingle est posée sur la ville,
+  // le nom passe à droite de la bulle au lieu d'être caché dessous.
+  const rayonGroupe = g=> g.items.length > 1 ? Math.min(12 + 3 * Math.sqrt(g.items.length), 30) * mapUnit : 8 * mapUnit;
+  cityLayer.innerHTML = Object.entries(CITY_LABELS).map(([name, [cx, cy]])=>{
+    const [x, y] = mapPt(cx, cy);
+    if(!visible(x, y)) return '';
+    const g = mapClusters.find(g=> Math.hypot(g.x - x, g.y - y) < rayonGroupe(g) + 10);
+    if(g){
+      const r = rayonGroupe(g);
+      return `<text class="city-name" x="${(g.x + r + 5).toFixed(1)}" y="${(g.y + 4).toFixed(1)}">${name}</text>`;
+    }
+    return `<circle class="city-dot-halo" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="6"></circle>
+     <circle class="city-dot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3"></circle>
+     <text class="city-name" x="${(x + 8).toFixed(1)}" y="${(y + 3.5).toFixed(1)}">${name}</text>`;
+  }).join('');
   const auMax = mapView.k >= MAP_MAX_ZOOM - 0.01;
 
   pinLayer.innerHTML = mapClusters.map((g, i)=>{
@@ -749,7 +756,7 @@ function initHomeFilters(){
   // Barre de recherche ville/région avec autocomplétion
   // Suggestions : les villes seulement. La région se choisit dans sa liste.
   const cities = [...new Set(events.map(e=> e.city).filter(Boolean))].sort();
-  fillRegionSelect('regionSelect', 'Toutes les régions');
+  fillRegionSelect('regionSelect', 'Toutes');
   const regionSelect = document.getElementById('regionSelect');
   if(regionSelect) regionSelect.addEventListener('change', ()=>{
     homeRegion = regionSelect.value;
@@ -983,6 +990,14 @@ function initHomeFilters(){
   
   renderPicker();
   updatePeriodDisplay();
+  // La barre de recherche de l'accueil pose une période (un mois, l'été).
+  setHomePeriod = (debut, fin)=>{
+    selectionMode = 'range';
+    document.querySelectorAll('.mode-btn').forEach(b=> b.classList.toggle('active', b.dataset.mode === 'range'));
+    periodStart = debut || ''; periodEnd = fin || '';
+    if(periodStart) pickerMonth = new Date(periodStart + 'T00:00');
+    updatePeriodDisplay(); renderPicker();
+  };
 
   const typeWrap = document.getElementById('typeFilterHome');
   typeWrap.classList.add('type-list');
@@ -1044,6 +1059,8 @@ let homeView = 'map';
 let homeCity = '';
 let homeRegion = '';       // région choisie dans la liste de la recherche rapide
 let homeRadius = 200;
+let homeNom = [];          // mots d'un nom d'événement tapés dans la barre de recherche
+let setHomePeriod = ()=>{}; // posé par initHomeFilters (le calendrier vit dans sa portée)
 
 // Variables du calendrier de période
 let periodStart = '';
@@ -1103,7 +1120,7 @@ function setGeoUI(active){
   const btn = document.getElementById('geoBtn');
   if(!btn) return;
   btn.classList.toggle('active', active);
-  btn.textContent = active ? '📍 Autour de moi — activé' : '📍 Me localiser';
+  btn.innerHTML = ico('pin') + (active ? 'Autour de moi — activé' : 'Me localiser');
 }
 function showGeoStatus(msg, isError){
   const status = document.getElementById('geoStatus');
@@ -1185,6 +1202,7 @@ function computeHomeFilteredEvents(){
       if(!inCity && !inLieu) return false;
     }
     if(homeRegion && ev.region !== homeRegion) return false;
+    if(homeNom.length && !nomCorrespond(ev, homeNom)) return false;
     // "Partout" (curseur au max, >= 200) = aucune limite de distance.
     if(homeRadius < 200 && getEventDistance(ev) > homeRadius) return false;
     return true;
@@ -1198,6 +1216,7 @@ function applyMapFilters(){
   // donc ce qui correspond aux filtres.
   mapVisibleIds = new Set(filteredIds);
   renderMapOverlay();
+  scannerCarteSiFiltresChanges();
   document.getElementById('homeCount').textContent = `${filtered.length} événement${filtered.length>1?'s':''}`;
   if(homeView === 'list') renderHomeList(filtered);
 }
@@ -1224,6 +1243,237 @@ function setHomeView(view){
   if(view==='list') renderHomeList(computeHomeFilteredEvents());
 }
 document.getElementById('viewBtnMap').addEventListener('click', ()=> setHomeView('map'));
+
+/* =========================================================
+   TABLEAU DE MARQUE — la date d'un événement façon panneau de score
+   ========================================================= */
+const MOIS_COURTS = ['JANV','FÉVR','MARS','AVR','MAI','JUIN','JUIL','AOÛT','SEPT','OCT','NOV','DÉC'];
+const JOURS_COURTS = ['DIM','LUN','MAR','MER','JEU','VEN','SAM'];
+function tableauDeMarque(ev, grand){
+  const a = parseDay(ev.dateStart), b = parseDay(ev.dateEnd || ev.dateStart);
+  if(!a || isNaN(a)) return '';
+  const p = n => String(n).padStart(2, '0');
+  const cls = 'score' + (grand ? ' score-big' : '');
+  const label = esc(fmtDateRange(ev.dateStart, ev.dateEnd));
+  if(!b || isNaN(b) || +a === +b){
+    return `<span class="${cls}" aria-label="${label}"><span class="sc-d">${JOURS_COURTS[a.getDay()]}</span><span class="sc-n">${p(a.getDate())}</span><span class="sc-m">${MOIS_COURTS[a.getMonth()]}</span></span>`;
+  }
+  const mois = MOIS_COURTS[a.getMonth()] + (a.getMonth() !== b.getMonth() ? ' · ' + MOIS_COURTS[b.getMonth()] : '');
+  return `<span class="${cls}" aria-label="${label}"><span class="sc-d">${JOURS_COURTS[a.getDay()]} → ${JOURS_COURTS[b.getDay()]}</span><span class="sc-n">${p(a.getDate())}<i>–</i>${p(b.getDate())}</span><span class="sc-m">${mois}</span></span>`;
+}
+
+/* =========================================================
+   AGENDA DE L'ACCUEIL — les prochains événements, par date
+   ========================================================= */
+const AGENDA_MAX = 8;
+function renderAgenda(){
+  const box = document.getElementById('homeAgenda');
+  if(!box) return;
+  const avenir = events.filter(ev=> ev && ev.dateStart && !isPast(ev))
+    .sort((a, b)=> String(a.dateStart).localeCompare(String(b.dateStart)));
+  const more = document.getElementById('agendaMore');
+  if(more) more.textContent = avenir.length > AGENDA_MAX ? `Voir les ${avenir.length} événements à venir` : 'Rechercher un événement';
+  if(!avenir.length){
+    box.innerHTML = `<div class="agenda-empty"><p>Aucun événement à venir pour l'instant.</p><button class="btn btn-primary" data-nav="create">${ico('plus')}Publier un événement</button></div>`;
+    box.querySelector('[data-nav]').addEventListener('click', ()=> showPage('create'));
+    return;
+  }
+  box.innerHTML = avenir.slice(0, AGENDA_MAX).map(ev=>`<button type="button" class="ag-row" data-open="${esc(ev.id)}">
+      ${tableauDeMarque(ev)}
+      <span class="ag-main"><span class="ag-title">${esc(ev.title)}</span><span class="ag-where">${ico('pin')}${esc(ev.city || '')}${ev.region ? ' · ' + esc(ev.region) : ''}</span></span>
+      <span class="ag-type"><span class="ag-dot" style="background:${safeColor(typeColor(ev.type))}"></span>${esc(ev.type || '')}</span>
+      <span class="ag-meta">${esc([niveauEvent(ev.niveau), ageLabel(ev.age), ev.sexe].filter(Boolean).join(' · '))}</span>
+      <span class="ag-go">${ico('chevronRight')}</span>
+    </button>`).join('');
+  box.querySelectorAll('[data-open]').forEach(b=> b.addEventListener('click', ()=> openEvent(b.dataset.open)));
+}
+
+/* =========================================================
+   BARRE DE RECHERCHE DE L'ACCUEIL
+   ---------------------------------------------------------
+   Lit une phrase libre (« je cherche un camp à Lyon en juillet ») ou un nom
+   d'événement (« Ligue C », « Tony Parker ») et remplit les filtres de la
+   carte : type, ville, région, période. Les mots qui ne sont ni un type, ni
+   une ville, ni un mois sont cherchés dans les noms d'événements.
+   Tout se fait ici, sans service extérieur.
+   ========================================================= */
+const normTxt = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const MOTS_VIDES = new Set(('je j cherche cherches chercher recherche trouver veux voudrais un une des le la les l a au aux en de du d pour sur mois '
+  + 'cet cette ce et pres chez dans vers moi on nous qui avec basket basketball evenement evenements event events prochain prochaine').split(' '));
+const TYPE_MOTS = [
+  [/^3 ?x ?3$|^3x3$/, 'Circuit 3x3'], [/^camps?$/, 'Camp'], [/^stages?$/, 'Stage'], [/^tournois?$/, 'Tournoi'],
+  [/^detections?$|^recrutement$|^scouting$/, 'Détections'], [/^clinics?$|^coachs?$/, 'Clinic Coachs'],
+  [/^voyages?$|^sejours?$/, 'Voyage'], [/^shows?$|^streetball$/, 'Show'], [/^all ?stars?$|^allstar$/, 'All-Star Game'],
+  [/^handi(basket)?$|^handisport$/, 'Handibasket'], [/^gala$|^pro$/, 'Match Pro'],
+];
+const MOIS_LONGS = ['janvier','fevrier','mars','avril','mai','juin','juillet','aout','septembre','octobre','novembre','decembre'];
+function motsDe(q){ return normTxt(q).replace(/3\s*x\s*3/g, '3x3').replace(/all[\s-]star/g, 'allstar').split(/[^a-z0-9]+/).filter(w=> w && !MOTS_VIDES.has(w)); }
+function nomCorrespond(ev, mots){
+  const foin = normTxt([ev.title, ev.city, ev.lieu].filter(Boolean).join(' '));
+  return mots.every(w=> foin.includes(w));
+}
+function moisVersPeriode(m){
+  const now = new Date(), an = now.getFullYear() + (m < now.getMonth() ? 1 : 0);
+  const fin = new Date(an, m + 1, 0).getDate();
+  return [`${an}-${String(m + 1).padStart(2, '0')}-01`, `${an}-${String(m + 1).padStart(2, '0')}-${fin}`];
+}
+function lirePhrase(q){
+  const mots = motsDe(q), f = { types: [], city: '', region: '', periode: null, libellePeriode: '' }, reste = [];
+  const villes = [...new Set(events.map(e=> e.city).filter(Boolean))];
+  const lr = listeRegions(), regions = [...lr.metro, ...lr.outreMer];
+  const n = ' ' + mots.join(' ') + ' ';
+  // Villes et régions en plusieurs mots (« la rochelle », « ile de france ») : on les cherche dans la phrase entière.
+  const ville = villes.map(v=> [v, ' ' + normTxt(v).replace(/[-'’]/g, ' ') + ' ']).filter(([, nv])=> n.includes(nv)).sort((a, b)=> b[1].length - a[1].length)[0];
+  if(ville) f.city = ville[0];
+  const region = regions.map(r=> [r, ' ' + normTxt(r).replace(/[-'’]/g, ' ') + ' ']).filter(([, nr])=> n.includes(nr))[0];
+  if(region) f.region = region[0];
+  const pris = new Set([...(ville ? ville[1].trim().split(' ') : []), ...(region ? region[1].trim().split(' ') : [])]);
+  for(const w of mots){
+    if(pris.has(w)) continue;
+    const type = TYPE_MOTS.find(([re])=> re.test(w));
+    if(type){ if(TYPE_COLORS[type[1]] && !f.types.includes(type[1])) f.types.push(type[1]); continue; }
+    const m = MOIS_LONGS.indexOf(w);
+    if(m >= 0){ f.periode = moisVersPeriode(m); f.libellePeriode = MOIS_LONGS[m].replace('fevrier', 'février').replace('aout', 'août').replace('decembre', 'décembre'); continue; }
+    if(w === 'ete'){
+      const now = new Date(), an = now.getFullYear() + (now.getMonth() > 7 ? 1 : 0);
+      f.periode = [`${an}-06-01`, `${an}-08-31`]; f.libellePeriode = 'cet été'; continue;
+    }
+    reste.push(w);
+  }
+  return { f, reste };
+}
+function poserTypesAccueil(types){
+  document.querySelectorAll('#typeFilterHome .type-chip').forEach(c=>{
+    const on = types.includes(c.dataset.type);
+    c.classList.toggle('active', on);
+    c.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  updateTypeLabel();
+}
+function initHomeSearch(){
+  const form = document.getElementById('homeSearch'), input = document.getElementById('homeQ');
+  const box = document.getElementById('homeSuggest'), msg = document.getElementById('homeUnderstood');
+  if(!form || !input || !box) return;
+  const AIDE = msg ? msg.textContent : '';
+  let sel = -1, props = [];
+  const fermer = ()=>{ box.hidden = true; input.setAttribute('aria-expanded', 'false'); input.removeAttribute('aria-activedescendant'); sel = -1; };
+  const dateCourte = ev=>{ const a = parseDay(ev.dateStart); return a && !isNaN(a) ? `${String(a.getDate()).padStart(2, '0')} ${MOIS_COURTS[a.getMonth()]}` : ''; };
+  function suggerer(){
+    const mots = motsDe(input.value);
+    props = mots.join('').length >= 2 ? events.filter(ev=> nomCorrespond(ev, mots))
+      .sort((a, b)=> (isPast(a) - isPast(b)) || String(a.dateStart).localeCompare(String(b.dateStart))).slice(0, 5) : [];
+    sel = -1;
+    if(!props.length){ fermer(); return; }
+    box.innerHTML = props.map((ev, i)=> `<li role="option" id="hsOpt${i}" data-i="${i}" aria-selected="false">
+        <span class="hs-d">${dateCourte(ev)}</span><span class="hs-t">${esc(ev.title)}</span><span class="hs-c">${esc(ev.city || '')}</span></li>`).join('');
+    box.hidden = false; input.setAttribute('aria-expanded', 'true');
+  }
+  input.addEventListener('input', suggerer);
+  input.addEventListener('keydown', e=>{
+    const items = [...box.querySelectorAll('[role=option]')];
+    if(e.key === 'Escape'){ if(!box.hidden){ e.preventDefault(); fermer(); } return; }
+    if(box.hidden || !items.length) return;
+    if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+      e.preventDefault();
+      sel = (sel + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+      items.forEach((li, i)=> li.setAttribute('aria-selected', i === sel ? 'true' : 'false'));
+      input.setAttribute('aria-activedescendant', 'hsOpt' + sel);
+    }else if(e.key === 'Enter' && sel >= 0){
+      e.preventDefault(); const ev = props[sel]; fermer(); openEvent(ev.id);
+    }
+  });
+  // Une suggestion ouvre directement la fiche de l'événement.
+  box.addEventListener('mousedown', e=>{
+    const li = e.target.closest('[data-i]'); if(!li) return;
+    e.preventDefault(); const ev = props[+li.dataset.i]; fermer(); openEvent(ev.id);
+  });
+  input.addEventListener('blur', ()=> setTimeout(fermer, 120));
+  input.addEventListener('search', ()=>{ if(!input.value) form.requestSubmit(); });
+
+  form.addEventListener('submit', e=>{
+    e.preventDefault(); fermer();
+    const q = input.value.trim();
+    const { f, reste } = lirePhrase(q);
+    // Les mots restants : un nom d'événement s'ils en désignent un.
+    homeNom = reste.length && events.some(ev=> nomCorrespond(ev, reste)) ? reste : [];
+    poserTypesAccueil(f.types);
+    homeCity = f.city;
+    const cs = document.getElementById('citySearch'); if(cs) cs.value = f.city;
+    homeRegion = f.region;
+    setRegionValue('regionSelect', f.region);
+    setHomePeriod(f.periode ? f.periode[0] : '', f.periode ? f.periode[1] : '');
+    syncRegionSelection();
+    if(homeView !== 'map') setHomeView('map');
+    applyMapFilters();
+    const n = computeHomeFilteredEvents().length, pl = n > 1 ? 's' : '';
+    const crit = [...f.types, f.city, f.region, f.libellePeriode].filter(Boolean).map(esc);
+    let texte = AIDE;
+    if(q && homeNom.length){
+      const un = n === 1 ? computeHomeFilteredEvents()[0] : null;
+      texte = un ? `Trouvé : <b>${esc(un.title)}</b> · ${esc(un.city || '')}`
+                 : `Nom contenant <b>« ${esc(homeNom.join(' '))} »</b>${crit.length ? ' · <b>' + crit.join(' · ') + '</b>' : ''} · ${n} résultat${pl}`;
+    }else if(q && crit.length){
+      texte = `Compris : <b>${crit.join(' · ')}</b> · ${n} résultat${pl}`
+        + (reste.length ? ` · aucun événement ne s'appelle « ${esc(reste.join(' '))} »` : '');
+    }else if(q){
+      texte = `Aucun type, ville, mois ou nom d'événement reconnu. Essaie « tournoi à Paris en juillet » ou un nom d'événement.`;
+    }
+    if(msg) msg.innerHTML = texte;
+    // Sur téléphone, la carte est sous la barre : on l'amène à l'écran.
+    if(window.innerWidth <= 980){
+      const carte = document.getElementById('homeMapView');
+      if(carte) carte.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+    }
+  });
+  // Un filtre touché à la main efface le nom recherché.
+  const oublierNom = ()=>{ if(homeNom.length){ homeNom = []; if(msg) msg.textContent = AIDE; applyMapFilters(); } };
+  ['regionSelect'].forEach(id=>{ const el = document.getElementById(id); if(el) el.addEventListener('change', oublierNom); });
+  const cs = document.getElementById('citySearch'); if(cs) cs.addEventListener('input', oublierNom);
+  document.querySelectorAll('#typeFilterHome .type-chip').forEach(c=> c.addEventListener('click', oublierNom));
+}
+
+/* =========================================================
+   EFFET SCAN DE LA CARTE
+   ---------------------------------------------------------
+   Quand les filtres changent, une ligne bordeaux balaie la carte de haut
+   en bas et les épingles retenues s'allument à son passage. Rien si le
+   visiteur a demandé moins d'animations, ni pour un simple zoom.
+   ========================================================= */
+let dernierFiltre = null, scanAnim = 0;
+function signatureFiltres(){
+  const types = [...document.querySelectorAll('#typeFilterHome .type-chip.active')].map(c=> c.dataset.type).join(',');
+  return [types, homeCity, homeRegion, periodStart, periodEnd, homeRadius, homeNom.join(' ')].join('|');
+}
+function scannerCarteSiFiltresChanges(){
+  const sig = signatureFiltres();
+  if(sig === dernierFiltre) return;
+  dernierFiltre = sig;
+  scannerCarte();
+}
+function scannerCarte(){
+  const svg = document.getElementById('franceMap'), wrap = document.getElementById('homeMapView');
+  if(!svg || !wrap || wrap.classList.contains('hidden')) return;
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  cancelAnimationFrame(scanAnim);
+  const H = 90, NS = 'http://www.w3.org/2000/svg';
+  let g = document.getElementById('mapScan');
+  if(!g){
+    g = document.createElementNS(NS, 'g'); g.id = 'mapScan'; g.setAttribute('class', 'map-scan'); g.setAttribute('aria-hidden', 'true');
+    g.innerHTML = `<defs><linearGradient id="mapScanTrail" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B32A3B" stop-opacity="0"/><stop offset="1" stop-color="#B32A3B" stop-opacity=".16"/></linearGradient></defs>
+      <rect x="0" y="0" width="${MAP_W}" height="${H}" fill="url(#mapScanTrail)"/><rect class="map-scan-line" x="0" y="${H - 1.5}" width="${MAP_W}" height="1.5"/>`;
+  }
+  svg.appendChild(g);   // toujours au-dessus des épingles
+  svg.classList.add('scanning');
+  const fin = MAP_H, t0 = performance.now(), D = 1100;
+  const pas = now=>{
+    const k = Math.min(1, (now - t0) / D), y = -H + (fin + H) * (1 - Math.pow(1 - k, 3));
+    g.setAttribute('transform', `translate(0 ${y.toFixed(1)})`);
+    svg.querySelectorAll('#pinLayer .pin:not(.lit)').forEach(p=>{ if(+p.dataset.sy <= y + H) p.classList.add('lit'); });
+    if(k < 1) scanAnim = requestAnimationFrame(pas);
+    else { svg.classList.remove('scanning'); g.remove(); }
+  };
+  scanAnim = requestAnimationFrame(pas);
+}
 document.getElementById('viewBtnList').addEventListener('click', ()=> setHomeView('list'));
 
 /* =========================================================
@@ -1282,7 +1532,7 @@ function renderResults(){
 
   // Sans repère visible, une liste restreinte au monde passerait pour un bug.
   const abroadNote = searchAbroad
-    ? `<div class="abroad-note">🌍 Événements <b>hors de France</b> uniquement
+    ? `<div class="abroad-note">${ico('globe')}Événements <b>hors de France</b> uniquement
          <button type="button" id="abroadClear">Voir tout</button></div>`
     : '';
 
@@ -1361,7 +1611,7 @@ function alerteCtaHtml(nbResultats){
   const phrase = `Dès qu'un nouvel événement${quoi ? ` <b>${esc(quoi)}</b>` : ''} est publié${c.regions.length ? ' en' : ' dans'} <b>${esc(ou)}</b>, on t'envoie un e-mail.`;
   const action = deja
     ? `<span class="alerte-cta-ok">✓ Tu as déjà une alerte pour cette recherche. <button type="button" class="alerte-cta-lien" data-alerte-gerer>Mes alertes</button></span>`
-    : `<button type="button" class="btn btn-primary alerte-cta-btn" data-alerte-cta>🔔 ${currentUser ? 'Créer l’alerte' : 'Créer l’alerte, c’est gratuit'}</button>
+    : `<button type="button" class="btn btn-primary alerte-cta-btn" data-alerte-cta>${ico('bell')}${currentUser ? 'Créer l’alerte' : 'Créer l’alerte, c’est gratuit'}</button>
        ${currentUser ? '' : '<span class="alerte-cta-aide">Compte créé en 30 secondes, avec Google ou ton e-mail.</span>'}`;
   return `<div class="alerte-cta" role="region" aria-label="Alerte e-mail">
     <div class="alerte-cta-texte"><h4>${titre}</h4><p>${phrase}</p></div>
@@ -1387,7 +1637,7 @@ async function creerAlerteDepuisRecherche(btn){
   }
   if(btn){ btn.disabled = true; btn.textContent = 'Création…'; }
   const ok = await enregistrerAlerte(criteres);
-  if(!ok && btn){ btn.disabled = false; btn.textContent = '🔔 Créer l’alerte'; }
+  if(!ok && btn){ btn.disabled = false; btn.innerHTML = ico('bell') + 'Créer l’alerte'; }
 }
 
 async function enregistrerAlerte(criteres){
@@ -1395,7 +1645,7 @@ async function enregistrerAlerte(criteres){
   try{
     const creee = await window.EBOK_DATA.createAlert({ nom: '', criteres });
     if(creee) mesAlertes.unshift(creee);
-    afficherBandeau(`🔔 Alerte créée : ${resumeCriteres(criteres)}. Tu recevras un e-mail à chaque nouvel événement.`, 'Mes alertes', ()=> showPage('alertes'));
+    afficherBandeau(`Alerte créée : ${resumeCriteres(criteres)}. Tu recevras un e-mail à chaque nouvel événement.`, 'Mes alertes', ()=> showPage('alertes'));
     if(document.getElementById('page-search').classList.contains('active')) renderResults();
     renderAlertes();
     return true;
@@ -1495,7 +1745,7 @@ function renderRegionMap(regionName, results){
 
   wrap.classList.remove('hidden');
   wrap.innerHTML = `
-    <div class="rmap-title">🗺️ ${esc(regionName)} — ${inView.length} événement${inView.length > 1 ? 's' : ''}</div>
+    <div class="rmap-title">${esc(regionName)} — ${inView.length} événement${inView.length > 1 ? 's' : ''}</div>
     <div class="region-panel">
       <div class="rmap-col">
         <svg class="rmap-svg" viewBox="${vbX} ${vbY} ${vbW} ${vbH}" role="img" aria-label="Carte de ${esc(regionName)}">
@@ -1637,7 +1887,7 @@ function initCreatePage(){
     createPickedLocation = pick;
     if(val_pays('c-pays') === DEFAULT_COUNTRY) setRegionValue('c-region', pick.region);
     const hint = document.getElementById('c-ville-hint');
-    if(hint){ hint.textContent = '📍 ' + pick.city + (pick.region ? ' · ' + pick.region : '') + ' — localisé sur la carte.'; hint.style.color = 'var(--green)'; }
+    if(hint){ hint.textContent = pick.city + (pick.region ? ' · ' + pick.region : '') + ' — localisé sur la carte.'; hint.style.color = 'var(--green)'; }
   });
 
   input.addEventListener('change', async ()=>{
@@ -1786,14 +2036,14 @@ function initCreatePage(){
         const tooBig = /longer than|exceeds the maximum|invalid-argument|maximum allowed size/i.test(code + ' ' + msg);
         let banner;
         if(tooBig){
-          banner = "⚠️ Enregistrement impossible : l'affiche ou les photos sont trop lourdes. Réessaie avec une image plus légère.";
+          banner = "Enregistrement impossible : l'affiche ou les photos sont trop lourdes. Réessaie avec une image plus légère.";
         }else if(code.includes('permission-denied') || code.includes('unauthenticated')){
           // Le serveur refuse : le compte n'a pas le droit d'écrire cet événement.
-          banner = "⚠️ Publication refusée par la base de données. Vérifie que tu es bien connecté à ton compte, puis réessaie. Si tu publies en tant qu'admin, il se peut que ton email ne soit pas encore reconnu comme administrateur.";
+          banner = "Publication refusée par la base de données. Vérifie que tu es bien connecté à ton compte, puis réessaie. Si tu publies en tant qu'admin, il se peut que ton email ne soit pas encore reconnu comme administrateur.";
         }else if(code.includes('unavailable') || code.includes('network') || /network|offline/i.test(msg)){
-          banner = "⚠️ Connexion à la base impossible. Vérifie ta connexion internet et réessaie.";
+          banner = "Connexion à la base impossible. Vérifie ta connexion internet et réessaie.";
         }else{
-          banner = "⚠️ Enregistrement impossible. Réessaie dans un instant." + (code ? " (code : " + code + ")" : "");
+          banner = "Enregistrement impossible. Réessaie dans un instant." + (code ? " (code : " + code + ")" : "");
         }
         showCreateBanner(banner);
         return;
@@ -1844,13 +2094,13 @@ function showConfirm(mode){
   const text  = document.getElementById('confirmText');
   const sub   = document.getElementById('confirmSub');
   if(mode === 'approved'){
-    if(title) title.textContent = 'Ton événement est publié ! 🎉';
+    if(title) title.textContent = 'Ton événement est publié';
     if(text)  text.innerHTML = 'Il est déjà visible sur la carte et dans la recherche.';
-    if(sub)   sub.textContent = 'Merci de faire vivre le basket francophone 🏀';
+    if(sub)   sub.textContent = 'Merci de faire vivre le basket francophone.';
   }else{
     if(title) title.textContent = 'Ton événement a bien été créé !';
     if(text)  text.innerHTML = 'Il va être étudié par notre équipe, puis accepté avant publication <b>sous 24h</b>. Tu le retrouveras ensuite sur la carte et dans la recherche, ainsi que dans « Mes événements ».';
-    if(sub)   sub.textContent = 'Merci de faire vivre le basket francophone 🏀';
+    if(sub)   sub.textContent = 'Merci de faire vivre le basket francophone.';
   }
   showPage('confirm');
 }
@@ -2136,7 +2386,7 @@ function miniMapHtml(ev){
   const shapes = FRANCE_REGIONS.map(r=> `<path d="${r.d}"/>`).join('');
   const c = TYPE_COLORS[ev.type] || '#607D8B';
   return `<div class="event-mini-map">
-    <div class="mini-map-title">📍 ${esc(ev.city || ev.region || 'France')}</div>
+    <div class="mini-map-title">${ico('pin')}${esc(ev.city || ev.region || 'France')}</div>
     <svg class="mini-france" viewBox="192 122 396 512" role="img" aria-label="Localisation de l'événement sur la carte de France">
       <g class="mini-regions">${shapes}</g>
       <circle class="mini-pin-halo" cx="${ev.x}" cy="${ev.y}" r="15" fill="${c}"></circle>
@@ -2176,6 +2426,22 @@ const ICONES = {
   ticket: '<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>',
   flag: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>',
   chevron: '<polyline points="6 9 12 15 18 9"/>',
+  chevronRight: '<path d="m9 18 6-6-6-6"/>',
+  search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+  heart: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
+  bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
+  moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+  user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  shield: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
+  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
+  edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  trash: '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+  alert: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
+  map: '<path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/>',
 };
 function ico(nom){
   return `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${ICONES[nom] || ''}</svg>`;
@@ -2461,8 +2727,8 @@ async function openEvent(id, opts){
       <p class="ev-when">
         <strong>${fmtDateRange(ev.dateStart, ev.dateEnd)}</strong>
         <span>${esc([ev.city, ev.region].filter(Boolean).join(', '))}</span>
-        ${peutModifier(ev) ? `<button class="edit-inline" data-edit="${esc(ev.id)}" title="Modifier cet événement">✏️ Modifier</button>` : ``}
-        ${currentIsAdmin ? `<button class="edit-inline" data-insta="${esc(ev.id)}" title="Générer la carte Instagram de cet événement">📸 Carte Insta</button>` : ``}
+        ${peutModifier(ev) ? `<button class="edit-inline" data-edit="${esc(ev.id)}" title="Modifier cet événement">${ico('edit')}Modifier</button>` : ``}
+        ${currentIsAdmin ? `<button class="edit-inline" data-insta="${esc(ev.id)}" title="Générer la carte Instagram de cet événement">${ico('instagram')}Carte Insta</button>` : ``}
       </p>
 
       <!-- Bloc 2 : ce qu'on fait avec l'organisateur -->
@@ -2735,7 +3001,7 @@ function initPostersMaintenance(){
       if(!r) return;
       say(r.restant
         ? `${r.restant} fiche${r.restant > 1 ? 's' : ''} à héberger. Clique sur « Héberger les affiches » pour lancer.`
-        : '✅ Rien à faire : toutes les affiches sont déjà hébergées.');
+        : 'Rien à faire : toutes les affiches sont déjà hébergées.');
     }catch(err){
       say(messageForPosters(err), 'ko');
     }finally{ setBusy(false); }
@@ -2757,7 +3023,7 @@ function initPostersMaintenance(){
         if(!r.relancer) break;
       }
       const allege = libere > 1024 ? `${(libere/1024).toFixed(1)} Mo` : `${libere} Ko`;
-      say(`✅ Terminé — ${total} affiche${total > 1 ? 's' : ''} hébergée${total > 1 ? 's' : ''}, ${allege} retirés de la base.`
+      say(`Terminé — ${total} affiche${total > 1 ? 's' : ''} hébergée${total > 1 ? 's' : ''}, ${allege} retirés de la base.`
         + (ko ? ` ${ko} échec${ko > 1 ? 's' : ''} (voir la console).` : ''), 'ok');
       await refreshPublicEvents();
       renderAll();
@@ -2772,14 +3038,14 @@ function initPostersMaintenance(){
 function messageForPosters(err){
   const code = String((err && (err.code || err.message)) || '');
   if(/stockage_mal_configure/.test(code)){
-    return "⚠️ La valeur de BLOB_READ_WRITE_TOKEN n'a pas la forme attendue : elle doit commencer par « vercel_blob_rw_ », sans guillemets ni nom de variable. Corrige-la dans Vercel, puis redéploie.";
+    return "La valeur de BLOB_READ_WRITE_TOKEN n'a pas la forme attendue : elle doit commencer par « vercel_blob_rw_ », sans guillemets ni nom de variable. Corrige-la dans Vercel, puis redéploie.";
   }
   if(/stockage_indisponible|503/.test(code)){
-    return "⚠️ Aucun stockage de fichiers connecté : ajoute un Blob store dans Vercel → Storage, puis redéploie.";
+    return "Aucun stockage de fichiers connecté : ajoute un Blob store dans Vercel → Storage, puis redéploie.";
   }
-  if(/admin|403/.test(code)) return "⚠️ Action réservée à l'administrateur.";
+  if(/admin|403/.test(code)) return "Action réservée à l'administrateur.";
   console.warn('[EBOK] hébergement des affiches :', err);
-  return "⚠️ L'hébergement a échoué. Réessaie dans un instant.";
+  return "L'hébergement a échoué. Réessaie dans un instant.";
 }
 
 let featuredTimer = null;   // défilement automatique du carrousel "à la une"
@@ -2798,28 +3064,27 @@ function renderFeatured(){
 
   // Slides — bannière immersive : affiche floutée en fond + affiche nette à
   // gauche + texte clair sur voile sombre (rendu premium, jamais "blanc").
+  // Diapositive : l'affiche posée comme une vraie affiche, le texte sur le
+  // bordeaux, la date en tableau de marque.
   track.innerHTML = featured.map(ev=>{
-    const c = TYPE_COLORS[ev.type] || '#607D8B';
-    const bg = safeImg(ev.poster)
-      ? `background-image:url("${encodeURI(safeImg(ev.poster))}")`
-      : `background:radial-gradient(120% 120% at 20% 0%, ${c}, #101014 70%)`;
     const poster = safeImg(ev.poster)
       ? `<img src="${esc(safeImg(ev.poster))}" alt="Affiche ${esc(ev.title)}">`
-      : `<div class="fx-poster-ph" style="--c:${c}">${esc((ev.type||'').slice(0,12).toUpperCase())}</div>`;
-    const meta = [fmtDateRange(ev.dateStart, ev.dateEnd), niveauEvent(ev.niveau), ev.sexe].filter(Boolean).join(' · ');
+      : `<div class="fx-poster-ph"><span class="ph-type">${esc(ev.type || 'Événement')}</span><span class="ph-title">${esc(ev.title)}</span><span class="ph-when">${esc(fmtDateRange(ev.dateStart, ev.dateEnd))}<br>${esc(ev.city || '')}</span></div>`;
+    const meta = [ev.type, niveauEvent(ev.niveau), ev.sexe, ageLabel(ev.age)].filter(Boolean).join(' · ');
+    const lieu = ev.lieu || ev.city || '';
+    const ou = [ev.lieu && ev.city && !String(ev.lieu).includes(ev.city) ? ev.city : '', ev.region].filter(Boolean).join(' · ');
+    const phrase = String(ev.description || '').split(/(?<=[.!?])\s/)[0] || '';
+    const resume = phrase.length > 180 ? phrase.slice(0, 177) + '…' : phrase;
     return `<div class="carousel-item">
-      <div class="fx-bg ${safeImg(ev.poster) ? 'blur' : ''}" style="${bg}"></div>
-      <div class="fx-scrim"></div>
       <div class="fx-content">
         <div class="fx-poster" data-open="${esc(ev.id)}" role="button" tabindex="0" aria-label="Voir l'événement ${esc(ev.title)}">${poster}</div>
         <div class="fx-text">
-          <span class="featured-tag">★ À la une</span>
-          <span class="featured-cat"><span class="dot" style="background:${c}"></span>${esc(ev.type || 'Événement')}</span>
+          <p class="fx-meta">${esc(meta)}</p>
           <h3>${esc(ev.title)}</h3>
-          <p class="featured-place">📍 ${esc(ev.city || '')}${ev.region ? ' · ' + esc(ev.region) : ''}</p>
-          <p class="featured-meta">📅 ${esc(meta)}</p>
+          <div class="fx-row">${tableauDeMarque(ev, true)}<div class="fx-where"><strong>${esc(lieu)}</strong>${ou ? `<span>${esc(ou)}</span>` : ''}</div></div>
+          ${resume ? `<p class="fx-desc">${esc(resume)}</p>` : ''}
           <div class="featured-actions">
-            <button class="btn btn-primary" data-open="${esc(ev.id)}">Voir l'événement</button>
+            <button class="btn btn-chalk" data-open="${esc(ev.id)}">Voir l'événement</button>
           </div>
         </div>
       </div>
@@ -2828,7 +3093,7 @@ function renderFeatured(){
 
   // Points
   dotsContainer.innerHTML = featured.map((_, i)=>
-    `<button class="carousel-dot ${i===0 ? 'active' : ''}" data-slide="${i}" aria-label="Aller à l'événement ${i+1}"></button>`).join('');
+    `<button class="carousel-dot ${i===0 ? 'active' : ''}" data-slide="${i}" role="tab" aria-label="${esc(featured[i].title)}"></button>`).join('');
 
   const prev = document.getElementById('carouselPrev');
   const next = document.getElementById('carouselNext');
@@ -3080,13 +3345,13 @@ async function renderFavorites(){
   const grid = document.getElementById('favoritesGrid');
   if(!currentUser && window.EBOK_AUTH){
     grid.innerHTML = `<div class="empty-state"><h4>Retrouve tes événements en un clic</h4>
-      <p>Connecte-toi, puis clique sur le ♥ d'un événement pour le mettre de côté.</p>
+      <p>Connecte-toi, puis clique sur le cœur d'un événement pour le mettre de côté.</p>
       <button class="btn btn-primary" data-auth="login">Se connecter</button></div>`;
     return;
   }
   const ids = [...favorites];
   if(!ids.length){
-    grid.innerHTML = `<div class="empty-state"><h4>Aucun favori</h4><p>Clique sur le ♥ d'un événement pour le mettre de côté.</p></div>`;
+    grid.innerHTML = `<div class="empty-state"><h4>Aucun favori</h4><p>Clique sur le cœur d'un événement pour le mettre de côté.</p></div>`;
     return;
   }
   // Événements connus localement + récupération des éventuels manquants.
@@ -3099,7 +3364,7 @@ async function renderFavorites(){
     if(ev) list.push(ev);
   }
   if(!list.length){
-    grid.innerHTML = `<div class="empty-state"><h4>Aucun favori</h4><p>Clique sur le ♥ d'un événement pour le mettre de côté.</p></div>`;
+    grid.innerHTML = `<div class="empty-state"><h4>Aucun favori</h4><p>Clique sur le cœur d'un événement pour le mettre de côté.</p></div>`;
     return;
   }
   // À venir d'abord (le plus proche en tête), terminés ensuite.
@@ -3446,7 +3711,7 @@ function syncMenu(){
   const clair = document.documentElement.getAttribute('data-theme') === 'light';
   const icone = document.getElementById('menuThemeIcon');
   const label = document.getElementById('menuThemeLabel');
-  if(icone) icone.textContent = clair ? '🌙' : '☀️';
+  if(icone) icone.innerHTML = ico(clair ? 'moon' : 'sun');
   if(label) label.textContent = clair ? 'Thème sombre' : 'Thème clair';
 }
 
@@ -3754,7 +4019,7 @@ function initOnboarding(){
     onboardingVille = pick;
     const hint = document.getElementById('ob-ville-hint');
     if(hint){
-      hint.textContent = '📍 ' + pick.city + (pick.region ? ' · ' + pick.region : '');
+      hint.textContent = pick.city + (pick.region ? ' · ' + pick.region : '');
       hint.style.color = 'var(--green)';
     }
   });
@@ -3964,7 +4229,7 @@ function renderAlertes(){
       <div class="alert-actions">
         <button class="btn btn-ghost" data-alert-toggle="${esc(a.id)}">${a.actif ? 'Suspendre' : 'Réactiver'}</button>
         <button class="btn btn-ghost" data-alert-edit="${esc(a.id)}">Modifier</button>
-        <button class="btn btn-ghost alert-del" data-alert-del="${esc(a.id)}" aria-label="Supprimer">🗑</button>
+        <button class="btn btn-ghost alert-del" data-alert-del="${esc(a.id)}" aria-label="Supprimer">${ico('trash')}</button>
       </div>
     </div>`).join('');
 }
@@ -4395,7 +4660,7 @@ function adminRowHtml(ev){
   const metaFull = meta ? `${esc(meta)} · ${creatorLabel(ev)}` : creatorLabel(ev);
   const classes = (pending || relire) ? ' is-pending' : '';
   return `<div class="admin-item${classes}">
-    <button class="star-toggle ${feat ? 'on' : ''}" data-feature="${esc(ev.id)}" aria-pressed="${feat}" title="${feat ? 'Retirer de la une' : 'Mettre à la une'}">★</button>
+    <button class="star-toggle ${feat ? 'on' : ''}" data-feature="${esc(ev.id)}" aria-pressed="${feat}" title="${feat ? 'Retirer de la une' : 'Mettre à la une'}">${ico('star')}</button>
     <div class="admin-item-body">
       <div class="admin-item-title admin-title-link" data-open="${esc(ev.id)}">
         <span class="status-dot ${pending ? 'status-pending' : 'status-approved'}">${pending ? 'En attente' : 'En ligne'}</span>
@@ -4403,9 +4668,9 @@ function adminRowHtml(ev){
         <b>${esc(ev.title)}</b>
       </div>
       <div class="admin-item-meta">${metaFull}</div>
-      ${relire ? `<div class="admin-item-det">✏️ Modifié par l'organisateur : vérifie les changements.</div>` : ''}
-      ${ev.detection && ev.detection.auto ? `<div class="admin-item-det">🤖 Détecté${ev.detection.sourceNom ? ' sur ' + esc(ev.detection.sourceNom) : ''} · <a href="${esc(safeUrl(ev.detection.lien || ev.detection.sourceUrl))}" target="_blank" rel="noopener">vérifier à la source ↗</a></div>` : ''}
-      ${ev.importe ? `<div class="admin-item-det">📥 Importé${ev.importe.url ? ` · <a href="${esc(safeUrl(ev.importe.url))}" target="_blank" rel="noopener">vérifier à la source ↗</a>` : ''}</div>` : ''}
+      ${relire ? `<div class="admin-item-det">${ico('edit')}Modifié par l'organisateur : vérifie les changements.</div>` : ''}
+      ${ev.detection && ev.detection.auto ? `<div class="admin-item-det">Détecté${ev.detection.sourceNom ? ' sur ' + esc(ev.detection.sourceNom) : ''} · <a href="${esc(safeUrl(ev.detection.lien || ev.detection.sourceUrl))}" target="_blank" rel="noopener">vérifier à la source ↗</a></div>` : ''}
+      ${ev.importe ? `<div class="admin-item-det">${ico('download')}Importé${ev.importe.url ? ` · <a href="${esc(safeUrl(ev.importe.url))}" target="_blank" rel="noopener">vérifier à la source ↗</a>` : ''}</div>` : ''}
       ${(window.EbokVerif && (pending || relire || (ev.importe && Array.isArray(ev.importe.doutes) && ev.importe.doutes.length))) ? window.EbokVerif.html('event', ev, ev.id) : ''}
     </div>
     <div class="admin-item-actions">
@@ -4535,11 +4800,11 @@ async function runImport(payload, pending){
     // Le modèle retenu est affiché : c'est l'information à me transmettre quand
     // l'extraction se trompe, et elle change d'un import à l'autre.
     const modele = (data.event && data.event.modele) ? ` (${data.event.modele})` : '';
-    status.textContent = `✅ Infos récupérées${modele} — vérifie et publie.`;
+    status.textContent = `Infos récupérées${modele} — vérifie et publie.`;
     // Parcours en étapes : direction le récapitulatif pour tout relire.
     if(typeof window.wizardApresImport === 'function') window.wizardApresImport();
   }catch(err){
-    status.textContent = '⚠️ ' + (err.message || 'Import impossible.');
+    status.textContent = (err.message || 'Import impossible.');
   }finally{
     btn.disabled = false;
   }
@@ -4553,8 +4818,8 @@ function importFromUrl(){
 
 async function importFromImage(file){
   const status = document.getElementById('ia-status');
-  if(!/^image\//.test(file.type)){ status.textContent = '⚠️ Choisis un fichier image.'; return; }
-  if(file.size > 15 * 1024 * 1024){ status.textContent = '⚠️ Image trop lourde (max 15 Mo).'; return; }
+  if(!/^image\//.test(file.type)){ status.textContent = 'Choisis un fichier image.'; return; }
+  if(file.size > 15 * 1024 * 1024){ status.textContent = 'Image trop lourde (max 15 Mo).'; return; }
   status.textContent = '⏳ Préparation de l’affiche…';
   let image;
   try{
@@ -4564,7 +4829,7 @@ async function importFromImage(file){
     // que pour les aperçus de la galerie.
     image = await compressImage(file, 1600, 0.85);
   }catch(err){
-    status.textContent = '⚠️ ' + (err?.message || 'Image illisible.');
+    status.textContent = (err?.message || 'Image illisible.');
     return;
   }
   runImport({ image }, '⏳ Lecture de l’affiche par l’IA (10–20 s)…');
@@ -4610,7 +4875,7 @@ function prefillCreateFromImport(ev, poster){
   showPage('create');
   const banner = document.getElementById('createSuccess');
   if(banner){
-    banner.textContent = '🤖 Formulaire pré-rempli par l’IA — vérifie les infos (surtout les dates) puis publie.';
+    banner.textContent = 'Formulaire pré-rempli par l’IA — vérifie les infos (surtout les dates) puis publie.';
     banner.classList.remove('hidden');
   }
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -4650,7 +4915,7 @@ function showAdminRulesAlert(err){
       (code || message
         ? `Erreur : <span class="bad">${esc(code || '—')}</span>${message ? ' · ' + esc(message.slice(0,140)) : ''}`
         : '') +
-      (emailKnownAdmin ? '' : `<br><span class="bad">⚠️ Cet email n'est pas l'email admin (marley.ebok@gmail.com) : reconnecte-toi avec le bon compte.</span>`);
+      (emailKnownAdmin ? '' : `<br><span class="bad">Cet email n'est pas l'email admin (marley.ebok@gmail.com) : reconnecte-toi avec le bon compte.</span>`);
   }
 
   // Les étapes "règles" ne concernent que les refus de droits.
@@ -4710,7 +4975,7 @@ function mineCardHtml(ev){
   const opt = (v,l)=> `<option value="${v}" ${cur===v?'selected':''}>${l}</option>`;
   // Étoile "à la une" réservée à l'admin (met/enlève l'événement en avant).
   const starBtn = currentIsAdmin
-    ? `<button class="star-toggle card-star ${feat ? 'on' : ''}" data-feature="${esc(ev.id)}" aria-pressed="${feat}" title="${feat ? 'Retirer de la une' : 'Mettre à la une'}">★</button>`
+    ? `<button class="star-toggle card-star ${feat ? 'on' : ''}" data-feature="${esc(ev.id)}" aria-pressed="${feat}" title="${feat ? 'Retirer de la une' : 'Mettre à la une'}">${ico('star')}</button>`
     : '';
   return `<div class="mine-card-wrap">
     <span class="status-pill ${pending ? 'status-pending' : 'status-approved'}">${pending ? 'En attente' : 'En ligne'}</span>
@@ -4997,7 +5262,7 @@ function renderCompteur(){
   if(!el) return;
   const n = events.filter(ev => ev && ev.dateEnd && !isPast(ev)).length;
   el.hidden = n < COMPTEUR_SEUIL;
-  el.textContent = `🏀 ${n} events à venir`;
+  el.textContent = `${n} événements à venir`;
 }
 
 function renderAll(){
@@ -5005,6 +5270,7 @@ function renderAll(){
   buildMap();
   renderFeatured();
   applyMapFilters();
+  renderAgenda();
   renderResults();
 }
 
@@ -5047,7 +5313,7 @@ window.EBOK = {
 function applyTheme(theme){
   document.documentElement.setAttribute('data-theme', theme);
   const btn = document.getElementById('themeToggle');
-  if(btn) btn.textContent = theme === 'light' ? '☀️' : '🌙';
+  if(btn) btn.innerHTML = ico(theme === 'light' ? 'moon' : 'sun');
 }
 function initTheme(){
   // Clair par défaut ; le sombre reste disponible via la bascule.
@@ -5071,6 +5337,8 @@ fillRegionSelect('c-region', 'Choisis une région');
 fillRegionSelect('e-region', 'Choisis une région');
 renderFeatured();
 initHomeFilters();
+initHomeSearch();
+renderAgenda();
 initSearchPage();
 initCreatePage();
 initAuth();

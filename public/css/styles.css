@@ -2600,3 +2600,343 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .ci-ig{margin:8px 0 0;font-size:12.5px;line-height:1.45;color:var(--chalk-dim);}
 .ci-etat a{color:var(--accent-text);font-weight:700;}
 .carte-insta .edit-actions{flex-wrap:wrap;}
+
+/* =========================================================
+   REFONTE 2026 — BASE VISUELLE
+   ---------------------------------------------------------
+   Dernière couche de la feuille : elle redéfinit les jetons (couleurs,
+   polices, rayons) et calme les composants communs. Direction : le
+   playground et la salle municipale — fonds craie, encre bitume, un seul
+   accent bordeaux, titres en Impact (Anton quand l'appareil n'a pas Impact),
+   texte en Archivo, dates et chiffres en JetBrains Mono.
+   Méthode « unslop » (Damir Sokolovsky, @heydamir, CC BY 4.0).
+   ========================================================= */
+:root{
+  --asphalt:#161513; --asphalt-2:#1C1A18; --asphalt-3:#262421;
+  --chalk:#EFE9DE; --chalk-dim:#AAA398; --chalk-mute:#8A847A;
+  --line:rgba(239,233,222,0.08); --line-strong:rgba(239,233,222,0.16);
+  --bordeaux:#5E1420; --score:#0F0E0D;
+  --font-display:Impact,'Anton','Arial Narrow',sans-serif;
+  --font-body:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+  --radius:14px; --r-ctl:8px;
+  --ease:cubic-bezier(.22,1,.36,1);
+}
+:root[data-theme="light"]{
+  --asphalt:#F4F0E7; --asphalt-2:#FBF9F4; --asphalt-3:#ECE6DA;
+  --chalk:#1C1A17; --chalk-dim:#5A5248; --chalk-mute:#776F64;
+  --line:rgba(28,26,23,0.09); --line-strong:rgba(28,26,23,0.16);
+  --score:#1C1A17;
+}
+body,[data-theme="light"] body{background-image:none;font-size:15px;line-height:1.5;}
+h1,h2,h3{font-family:var(--font-display);font-weight:400;letter-spacing:.005em;}
+:focus-visible{outline:2px solid var(--accent-text);outline-offset:2px;}
+
+/* Libellés : casse normale, plus de majuscules espacées */
+.about-k,.account-badge-admin,.admin-table thead th,.badge,.card-past-badge,.card-type-badge,
+.curieux-counter .cc-label,.dash-section-label,.dispo-badge,.eyebrow,.featured-cat,.featured-tag,
+.field label,.filter-group label,.ia-admin-tag,.ia-or,.info-cell .k,.legal-date,.mine-dispo label,
+.mini-map-title,.mode-btn,.new-flag,.ob-progress-txt,.picker-month,.practical-item .k,.practical-title,
+.gallery-title,.rep-title,.rmap-title,.rpv-badge,.rpv-head,.side-menu-title,.status-dot,.status-pill,
+.tt-type,.viewer-counter .vc-label,.voyage-title,.wz-preview-label,.wz-progress-step,.wz-progress-title{
+  text-transform:none;letter-spacing:0;
+}
+.eyebrow{font-family:var(--font-mono);font-size:13px;font-weight:500;color:var(--chalk-mute);}
+.field label,.filter-group label{font-family:var(--font-mono);font-size:12px;font-weight:400;color:var(--chalk-mute);}
+
+/* Barre du haut : pleine largeur, filet fin, onglet actif souligné */
+:root .topbar{
+  top:0;margin:0;padding:0 32px;height:64px;border:0;border-bottom:1px solid var(--line);border-radius:0;
+  background:color-mix(in srgb, var(--asphalt) 94%, transparent);
+  box-shadow:none;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+}
+.brand-logo{height:32px;width:auto;}
+.nav-pill{display:none !important;}
+.nav-links{gap:4px;}
+.navlink{
+  display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:var(--r-ctl);
+  font-weight:500;font-size:15px;color:var(--chalk-dim);transition:background-color .15s var(--ease),color .15s var(--ease);
+}
+.navlink:hover{background:var(--asphalt-3);color:var(--chalk);}
+.navlink.active,.nav-links.pill-on .navlink.active,.nav-links.pill-on .navlink.active:hover{
+  background:none;color:var(--chalk);border-radius:0;box-shadow:inset 0 -2px 0 var(--accent);
+}
+.navlink .ico,.side-menu-link .ico{width:18px;height:18px;color:var(--chalk-mute);}
+.nav-badge{font-family:var(--font-mono);font-weight:500;}
+
+/* Boutons : un rayon de contrôle, graisses calmes, pas de reflet */
+.btn{border-radius:var(--r-ctl);font-weight:600;transition:background-color .15s var(--ease),border-color .15s var(--ease),color .15s var(--ease),transform .12s var(--ease);}
+.btn:active,.toggle-btn:active,.icon-btn:active{transform:scale(.97);}
+.btn-primary::after,.btn-primary::before{display:none !important;}
+.btn-primary{box-shadow:none;}
+.btn-ghost{background:var(--asphalt-2);border-color:var(--line-strong);}
+.btn-ghost:hover{background:var(--asphalt-3);}
+.btn .ico{width:18px;height:18px;}
+.theme-toggle,.icon-btn{width:36px;height:36px;border-radius:var(--r-ctl);background:none;border:1px solid var(--line-strong);color:var(--chalk-dim);transition:background-color .15s var(--ease);}
+.theme-toggle:hover,.icon-btn:hover{background:var(--asphalt-3);border-color:var(--line-strong);}
+.theme-toggle .ico,.icon-btn .ico{width:18px;height:18px;}
+.icon-btn svg{stroke-width:1.5;}
+.icon-btn-cta{background:var(--accent);border-color:var(--accent);color:#fff;}
+.icon-btn-cta:hover{background:var(--accent-2);}
+
+/* Icônes au trait */
+.ico{width:1em;height:1em;flex:none;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.15em;}
+
+/* Panneaux et cartes : surface + filet, ombres neutres et discrètes */
+.filter-panel,.event-card,.form-card,.adm-panel,.dash-card{border-radius:var(--radius);}
+[data-theme="light"] .filter-panel,[data-theme="light"] .event-card{box-shadow:0 1px 2px rgba(28,26,23,.05);}
+.event-card{transition:border-color .15s var(--ease),box-shadow .2s var(--ease);}
+.event-card:hover{transform:none;}
+.card-type-badge{font-family:var(--font-mono);font-size:11px;font-weight:500;border-radius:4px;}
+.card-body h4{font-weight:600;}
+.card-meta{font-size:13px;}
+
+/* Champs */
+input,select,textarea{font-family:var(--font-body);}
+
+/* Pied de page */
+.site-footer h3,.site-footer h4{font-family:var(--font-display);font-weight:400;}
+
+@media(max-width:950px){ :root .topbar{padding:0 16px;height:60px;} }
+@media(max-width:640px){ .brand-logo{height:28px;} }
+@media(prefers-reduced-motion: reduce){ .navlink,.btn,.event-card{transition:none;} }
+
+/* =========================================================
+   REFONTE 2026 — ACCUEIL
+   ---------------------------------------------------------
+   Titre + barre de recherche à gauche, carte et filtres à droite dans un
+   même tableau ; puis « À la une » sur fond bordeaux, et l'agenda.
+   ========================================================= */
+.home-hero{
+  display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:48px;align-items:center;
+  padding:40px 0 56px;min-height:calc(100vh - 64px);
+}
+.home-hero .hero-text h1{font-size:clamp(56px, 6.2vw, 88px);line-height:.96;text-transform:uppercase;margin:0;}
+.home-hero .hero-text h1 .hl{color:var(--accent);}
+.home-hero .eyebrow{margin:0 0 16px;}
+.home-hero .hero-sub{font-size:18px;line-height:28px;color:var(--chalk-dim);max-width:30rem;margin:20px 0 0;}
+
+/* Barre de recherche */
+.home-search{position:relative;margin-top:28px;}
+.hs-form{
+  display:flex;align-items:center;gap:8px;height:60px;padding:0 6px 0 16px;
+  background:var(--asphalt-2);border:1px solid var(--line-strong);border-radius:12px;
+  box-shadow:0 1px 2px rgba(28,26,23,.05),0 8px 24px rgba(28,26,23,.06);
+  transition:border-color .15s var(--ease),box-shadow .15s var(--ease);
+}
+.hs-form:focus-within{border-color:var(--chalk);box-shadow:0 0 0 3px color-mix(in srgb, var(--chalk) 10%, transparent);}
+.hs-form > .ico{width:18px;height:18px;color:var(--chalk-mute);}
+.hs-form input{flex:1;min-width:0;height:100%;border:0;background:none;outline:none;color:var(--chalk);font-size:17px;}
+.hs-form input::placeholder{color:var(--chalk-mute);}
+.hs-form input::-webkit-search-cancel-button{-webkit-appearance:none;}
+.hs-form .btn{height:48px;padding:0 20px;font-size:16px;}
+.btn-ink{background:var(--chalk);color:var(--asphalt);border-color:var(--chalk);}
+.btn-ink:hover{background:color-mix(in srgb, var(--chalk) 86%, var(--asphalt));}
+.btn-chalk{background:#F4F0E7;color:#1C1A17;border-color:#F4F0E7;}
+.btn-chalk:hover{background:#FFFFFF;}
+.btn-lg{height:48px;padding:0 20px;font-size:16px;}
+.hs-suggest{
+  position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:30;margin:0;padding:6px;list-style:none;
+  background:var(--asphalt-2);border:1px solid var(--line-strong);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.14);
+}
+.hs-suggest[hidden]{display:none;}
+.hs-suggest li{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:8px;cursor:pointer;}
+.hs-suggest li:hover,.hs-suggest li[aria-selected="true"]{background:var(--asphalt-3);}
+.hs-d{flex:none;width:64px;font:500 12px/16px var(--font-mono);color:var(--accent-text);font-variant-numeric:tabular-nums;}
+.hs-t{font-weight:500;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hs-c{margin-left:auto;font:400 12px var(--font-mono);color:var(--chalk-mute);white-space:nowrap;}
+.hs-understood{font:400 12px/18px var(--font-mono);color:var(--chalk-mute);margin:10px 0 0;min-height:18px;}
+.hs-understood b{font-weight:500;color:var(--chalk);}
+.hs-publish{display:flex;align-items:center;gap:12px;margin-top:28px;padding-top:20px;border-top:1px solid var(--line);color:var(--chalk-dim);}
+.hs-publish .btn{display:inline-flex;align-items:center;gap:8px;}
+
+/* Le tableau : filtres, carte, pied */
+.home-board{
+  background:var(--asphalt-2);border:1px solid var(--line);border-radius:16px;min-width:0;
+  box-shadow:0 8px 24px rgba(28,26,23,.06);
+}
+.home-board .map-layout{display:block;}
+.home-board .filter-panel{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0;padding:12px;
+  background:none;border:0;border-bottom:1px solid var(--line);border-radius:16px 16px 0 0;box-shadow:none;
+}
+.home-board .filter-panel .filter-group{margin:0;min-width:0;max-width:none;flex:none;}
+.home-board .filter-group label{margin-bottom:4px;}
+.home-board .type-dropdown,.home-board .type-dd-btn,.home-board .search-input-wrap,.home-board #citySearch,
+.home-board .region-select,.home-board .period-selector,.home-board .period-display{width:100%;min-width:0;}
+.home-board .type-dd-btn,.home-board #citySearch,.home-board .region-select,.home-board .period-display{
+  height:40px;padding:0 12px;border-radius:var(--r-ctl);background:var(--asphalt-3);border:1px solid transparent;
+  font-size:14px;font-weight:500;color:var(--chalk);box-shadow:none;
+}
+.home-board .type-dd-btn:hover,.home-board .period-display:hover,.home-board .region-select:hover{border-color:var(--line-strong);}
+.home-board .type-dd-btn,.home-board .period-display{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.home-board #typeDdLabel,.home-board #periodText{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.home-board .dd-caret,.home-board .period-icon{display:flex;color:var(--chalk-mute);font-size:14px;}
+.home-board #citySearch::placeholder{color:var(--chalk);opacity:1;}
+.home-board .map-wrap{border:0;border-radius:0;background:none;min-height:0;padding:8px 8px 0;}
+.home-board #franceMap{max-width:100%;}
+.home-board .results-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding:16px;}
+.content-header.board-foot{display:flex;align-items:center;gap:12px;margin:0;padding:12px 16px;border-top:1px solid var(--line);flex-wrap:wrap;}
+.board-foot .content-count{margin-right:auto;font:500 13px var(--font-mono);color:var(--chalk);}
+.board-foot .btn{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;}
+.view-toggle{background:var(--asphalt-3);border:0;border-radius:var(--r-ctl);padding:4px;gap:4px;}
+.toggle-btn{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:4px;font-weight:500;font-size:14px;color:var(--chalk-dim);}
+.toggle-btn.active{background:var(--asphalt-2);color:var(--chalk);box-shadow:0 1px 2px rgba(0,0,0,.08);}
+.toggle-btn .ico{width:16px;height:16px;}
+
+/* La carte : régions comme des lignes peintes, bulles bordeaux */
+.region-base-layer{display:none;}
+.region,[data-theme="light"] .region{fill:#2A2724;stroke:var(--asphalt-2);stroke-width:2;transition:fill .2s var(--ease);}
+[data-theme="light"] .region{fill:#E7DFCF;}
+.region:hover,.region:focus,.region.hovered{transform:none;filter:none;fill:#36322D;stroke:var(--asphalt-2);}
+[data-theme="light"] .region:hover,[data-theme="light"] .region:focus,[data-theme="light"] .region.hovered{fill:#DDD1BC;}
+.map-wrap,[data-theme="light"] .map-wrap{background:none;}
+.city-name{font-family:var(--font-mono);font-weight:500;}
+.cluster-halo{display:none;}
+.cluster-core{fill:var(--accent);stroke:var(--asphalt-2);stroke-width:2;}
+.cluster-count{font-family:var(--font-mono);font-weight:500;fill:#FFFFFF;}
+.pin:hover{transform:scale(1.2);}
+.pin-cluster:hover{transform:scale(1.08);}
+.pin circle.core{stroke:var(--asphalt-2);}
+.overseas-caption{letter-spacing:0;text-transform:none;}
+.map-zoom-ctl button{border-radius:var(--r-ctl);box-shadow:none;}
+.pins-intro .pin{animation:none !important;}
+/* Effet scan : les épingles attendent le passage de la ligne */
+#franceMap.scanning #pinLayer .pin{opacity:0;}
+#franceMap.scanning #pinLayer .pin.lit{opacity:1;transition:opacity .25s var(--ease);}
+.map-scan-line{fill:var(--accent);}
+.map-scan{pointer-events:none;}
+
+/* Sections sous le tableau */
+.home-section{padding:56px 0 0;}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:20px;}
+.section-head h2{font-size:40px;line-height:1.05;text-transform:uppercase;margin:0;}
+.section-meta{font:400 13px var(--font-mono);color:var(--chalk-mute);}
+
+/* À la une : fond bordeaux, affiche posée, petits ronds */
+.featured-carousel{margin:0;}
+.carousel-wrapper,.carousel-wrapper:hover{border-radius:20px;background:var(--bordeaux);border:1px solid rgba(179,42,59,.55);box-shadow:none;}
+.carousel-item{background:var(--bordeaux);min-height:0;perspective:none;}
+.fx-bg,.fx-scrim{display:none;}
+.fx-content{display:grid;grid-template-columns:300px minmax(0,1fr);gap:56px;align-items:center;min-height:520px;padding:48px 56px;}
+.fx-poster{
+  width:100%;flex:none;aspect-ratio:3/4;border:0;border-radius:6px;overflow:hidden;cursor:pointer;
+  background:#4A0F19;box-shadow:0 18px 40px rgba(0,0,0,.35),0 2px 6px rgba(0,0,0,.3);
+  transform:rotate(-2deg) !important;transition:none;
+}
+.fx-poster-ph{
+  display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;text-align:left;
+  padding:24px;background:#4A0F19;box-shadow:inset 0 0 0 1px rgba(244,240,231,.14);font-family:var(--font-body);
+}
+.ph-type{font:400 12px/16px var(--font-mono);color:rgba(244,240,231,.7);}
+.ph-title{font-family:var(--font-display);font-size:34px;line-height:1.02;text-transform:uppercase;color:#F4F0E7;}
+.ph-when{font:500 13px/20px var(--font-mono);color:#F2C2C8;}
+.fx-text{gap:0;color:#F4F0E7;}
+.fx-meta{font:400 13px/20px var(--font-mono);color:rgba(244,240,231,.7);margin:0 0 12px;}
+.fx-text h3{font-size:clamp(40px, 4.6vw, 68px);line-height:1;color:#F4F0E7;text-shadow:none;text-transform:uppercase;margin:0 0 24px;}
+.fx-row{display:flex;align-items:center;gap:24px;margin:0 0 24px;}
+.fx-where{display:flex;flex-direction:column;gap:4px;min-width:0;}
+.fx-where strong{font-weight:500;font-size:17px;line-height:1.3;}
+.fx-where span{font-size:14px;color:rgba(244,240,231,.7);}
+.fx-desc{color:rgba(244,240,231,.85);max-width:34rem;margin:0 0 28px;font-size:16px;line-height:25px;}
+.featured-actions{margin:0;}
+.featured-actions .btn{height:48px;padding:0 22px;font-size:16px;}
+.carousel-dots{padding:20px 0 0;gap:8px;}
+.carousel-dot{width:8px;height:8px;padding:0;border:0;border-radius:4px;background:color-mix(in srgb, var(--chalk) 22%, transparent);transition:width .3s var(--ease),background-color .2s var(--ease);}
+.carousel-dot:hover{background:color-mix(in srgb, var(--chalk) 38%, transparent);}
+.carousel-dot.active{width:32px;height:8px;border-radius:4px;background:color-mix(in srgb, var(--accent) 25%, transparent);border:0;}
+
+/* Tableau de marque (dates) — la signature d'EBOK */
+.score{
+  flex:none;width:76px;display:flex;flex-direction:column;align-items:center;padding:6px 0 8px;border-radius:8px;
+  background:var(--score);color:#F4F0E7;font-family:var(--font-mono);font-variant-numeric:tabular-nums;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+}
+.sc-d{font-size:10px;line-height:14px;color:#A39A8C;}
+.sc-n{font-size:24px;line-height:28px;font-weight:500;white-space:nowrap;}
+.sc-n i{font-style:normal;color:#776F64;margin:0 1px;}
+.sc-m{font-size:11px;line-height:14px;color:#F2C2C8;}
+.score-big{width:112px;padding:10px 0 12px;}
+.score-big .sc-n{font-size:36px;line-height:40px;}
+.score-big .sc-d,.score-big .sc-m{font-size:12px;line-height:16px;}
+.carousel-item .score{background:rgba(0,0,0,.3);box-shadow:inset 0 0 0 1px rgba(244,240,231,.12);}
+
+/* Agenda */
+.agenda{background:var(--asphalt-2);border:1px solid var(--line);border-radius:16px;overflow:hidden;}
+.ag-row{
+  display:grid;grid-template-columns:76px minmax(0,1fr) 160px 240px 18px;gap:24px;align-items:center;width:100%;
+  padding:12px 20px;margin:0;border:0;border-top:1px solid var(--line);background:none;color:var(--chalk);
+  font:inherit;text-align:left;cursor:pointer;transition:background-color .15s var(--ease);
+}
+.ag-row:first-child{border-top:0;}
+.ag-row:hover{background:var(--asphalt);}
+.ag-main{display:flex;flex-direction:column;gap:4px;min-width:0;}
+.ag-title{font-weight:600;font-size:17px;line-height:22px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ag-where{display:flex;align-items:center;gap:6px;color:var(--chalk-dim);font-size:14px;}
+.ag-where .ico,.ag-go .ico{color:var(--chalk-mute);width:16px;height:16px;}
+.ag-type{display:flex;align-items:center;gap:8px;font-weight:500;font-size:14px;}
+.ag-dot{width:8px;height:8px;border-radius:50%;flex:none;}
+.ag-meta{font:400 12px/16px var(--font-mono);color:var(--chalk-mute);}
+.ag-go{display:flex;}
+.agenda-more{display:flex;justify-content:center;padding:24px 0 8px;}
+.agenda-empty{padding:40px 20px;text-align:center;color:var(--chalk-dim);display:flex;flex-direction:column;align-items:center;gap:16px;}
+.agenda-empty .btn{display:inline-flex;align-items:center;gap:8px;}
+
+@media(max-width:1080px){
+  .home-hero{grid-template-columns:1fr;min-height:0;padding:32px 0 40px;gap:32px;}
+  .fx-content{grid-template-columns:220px minmax(0,1fr);gap:40px;padding:40px;}
+  .ag-row{grid-template-columns:76px minmax(0,1fr) 18px;}
+  .ag-type,.ag-meta{display:none;}
+}
+@media(max-width:640px){
+  .home-hero .hero-text h1{font-size:52px;}
+  .home-hero .hero-sub{font-size:17px;line-height:26px;margin-top:16px;}
+  .hs-form{height:56px;padding-left:12px;}
+  .hs-form input{font-size:16px;}
+  .hs-form .btn{padding:0 14px;}
+  .hs-c{display:none;}
+  .hs-publish{flex-direction:column;align-items:stretch;gap:8px;}
+  .hs-publish .btn{justify-content:center;}
+  .home-board .filter-panel{grid-template-columns:1fr 1fr;}
+  .home-board .map-wrap{padding:4px 0 0;}
+  .home-board .results-grid{grid-template-columns:1fr;}
+  .board-foot .content-count{flex-basis:100%;}
+  .board-foot .view-toggle{margin-left:auto;}
+  .home-section{padding-top:40px;}
+  .section-head h2{font-size:32px;}
+  .fx-content{grid-template-columns:1fr;gap:28px;padding:32px 20px 36px;min-height:0;}
+  .fx-poster{max-width:220px;margin:0 auto;}
+  .fx-text h3{font-size:40px;}
+  .ag-row{gap:16px;padding:12px 16px;}
+  .ag-title{font-size:16px;white-space:normal;}
+}
+@media(prefers-reduced-motion: reduce){
+  .hs-form,.ag-row,.carousel-dot,.region{transition:none;}
+}
+
+/* ---------- Refonte 2026 : icônes posées à la place des emojis ---------- */
+.side-menu-link{display:flex;align-items:center;gap:12px;}
+.side-menu-link > .ico,#menuThemeIcon .ico{width:18px;height:18px;color:var(--chalk-mute);}
+#menuThemeIcon{display:inline-flex;}
+.btn-alert,.alerte-cta-btn,.edit-inline,.admin-item-det,.abroad-note,.mini-map-title,.voyage-title,[data-new-alert]{display:inline-flex;align-items:center;gap:8px;}
+.admin-item-det,.abroad-note{display:flex;}
+.wz-choice-ic{display:flex;align-items:center;justify-content:center;}
+.wz-choice-ic .ico{width:24px;height:24px;color:var(--accent-text);}
+.ia-drop-ic .ico,.dz-icon .ico{width:28px;height:28px;color:var(--chalk-mute);}
+.confirm-ic{display:flex;align-items:center;justify-content:center;}
+.confirm-ic .ico{width:36px;height:36px;stroke-width:2;color:var(--green);}
+.ara-ic .ico{width:22px;height:22px;}
+.fav-btn .ico{width:18px;height:18px;}
+.fav-btn.active .ico{fill:currentColor;}
+.edit-btn .ico,.alert-del .ico{width:16px;height:16px;}
+.star-toggle .ico{width:18px;height:18px;}
+.star-toggle.on .ico{fill:currentColor;}
+.dash-ic{display:inline-flex;align-items:center;justify-content:center;}
+.dash-ic .ico{width:18px;height:18px;}
+.dash-logo-img{height:28px;width:auto;display:block;}
+
+/* ---------- Refonte 2026 : cartes d'événements plus calmes ---------- */
+.card-type-badge{background:rgba(28,26,23,.82) !important;color:#F4F0E7 !important;padding:3px 8px;}
+.event-card::after{display:none;}
+.event-card:hover .card-media img{transform:none;}
+.event-card:hover{border-color:var(--line-strong);box-shadow:0 8px 24px rgba(28,26,23,.08);}

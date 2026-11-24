@@ -233,10 +233,10 @@
       if(!el.files || !el.files[0]) return;
       etat(ligne, 'Envoi de l\'affiche…', 'is-cours');
       try{ valeurs = { poster: await hostPoster(await compressImage(el.files[0], 1200, 0.8)) }; }
-      catch(e){ etat(ligne, '⚠️ Affiche illisible', 'is-echec'); return; }
+      catch(e){ etat(ligne, 'Affiche illisible', 'is-echec'); return; }
     }else{
       const r = nettoyer(champ, el, o, src);
-      if(r.erreur){ etat(ligne, '⚠️ ' + r.erreur, 'is-echec'); return; }
+      if(r.erreur){ etat(ligne, r.erreur, 'is-echec'); return; }
       valeurs = { [champ]: r.v };
       // Une date de début qui dépasse la fin emmène la fin avec elle.
       if(champ === 'dateStart' && src.lire(o, 'dateEnd') < r.v) valeurs.dateEnd = r.v;
@@ -246,7 +246,7 @@
       await src.enregistrer(o, valeurs, doutesApres(src, o, champ, null));
       etat(ligne, '✓ Enregistré', 'is-fait');
     }catch(e){
-      etat(ligne, '⚠️ Non enregistré, réessaie', 'is-echec');
+      etat(ligne, 'Non enregistré, réessaie', 'is-echec');
     }
   }
 
@@ -261,7 +261,7 @@
       if(!ctx.bloc.querySelector('.vf-ligne')) ctx.bloc.remove();
     }catch(e){
       bouton.disabled = false;
-      etat(ligne, '⚠️ Non enregistré, réessaie', 'is-echec');
+      etat(ligne, 'Non enregistré, réessaie', 'is-echec');
     }
   }
 
