@@ -1059,7 +1059,7 @@ function updateTypeLabel(){
   const active = document.querySelectorAll('#typeFilterHome .type-chip.active');
   const label = document.getElementById('typeDdLabel');
   if(!label) return;
-  if(active.length === 0 || active.length === chips.length) label.textContent = 'Tous les types';
+  if(active.length === 0 || active.length === chips.length) label.textContent = 'Tous';
   else if(active.length === 1) label.textContent = active[0].dataset.type;
   else label.textContent = `${active.length} types`;
 }
@@ -1312,7 +1312,7 @@ const MOTS_VIDES = new Set(('je j cherche cherches chercher recherche trouver ve
 const TYPE_MOTS = [
   [/^3 ?x ?3$|^3x3$/, 'Circuit 3x3'], [/^camps?$/, 'Camp'], [/^stages?$/, 'Stage'], [/^tournois?$/, 'Tournoi'],
   [/^detections?$|^recrutement$|^scouting$/, 'Détections'], [/^clinics?$|^coachs?$/, 'Clinic Coachs'],
-  [/^voyages?$|^sejours?$/, 'Voyage'], [/^shows?$|^streetball$/, 'Show'], [/^all ?stars?$|^allstar$/, 'All-Star Game'],
+  [/^voyages?$|^sejours?$/, 'Voyage'], [/^shows?$|^streetball$|^all ?stars?$|^allstar$/, 'Show'],
   [/^handi(basket)?$|^handisport$/, 'Handibasket'], [/^gala$|^pro$/, 'Match Pro'],
 ];
 const MOIS_LONGS = ['janvier','fevrier','mars','avril','mai','juin','juillet','aout','septembre','octobre','novembre','decembre'];
@@ -3669,7 +3669,7 @@ const NIVEAUX_EVENT = [NIVEAU_TOUT, "Loisir", "Départemental", "Régional", "Na
 const NIVEAUX_ANCIENS = { "Tous niveaux": NIVEAU_TOUT, "Tout niveau": NIVEAU_TOUT, "Amateur": "Départemental",
   "Débutant": "Départemental", "Confirmé": "Régional", "Semi-pro": "National", "Semi-pro / Pro": "Pros", "Pro": "Pros" };
 function niveauEvent(v){ return NIVEAUX_ANCIENS[v] || v || NIVEAU_TOUT; }
-const INTEREST_OPTIONS = ["Tournois", "Camps", "Stages", "Circuit 3x3", "Détections", "All-Star Game", "Clinic Coachs", "Show", "Voyage", "Match Pro", "Handibasket"];
+const INTEREST_OPTIONS = ["Tournois", "Camps", "Stages", "Circuit 3x3", "Détections", "Clinic Coachs", "Show", "Voyage", "Match Pro", "Handibasket"];
 const MAX_INTERESTS = 3;
 /* Niveaux de pratique, du plus accessible au plus élevé. Posés aux joueurs à
    l'inscription (voir la modale de bienvenue). */

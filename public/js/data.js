@@ -28,7 +28,6 @@ const TYPE_COLORS = {
   "Camp":"#1F8F6B",
   "Stage":"#1B8AA0",
   "Voyage":"#C9961A",
-  "All-Star Game":"#C2412F",
   "Show":"#7759C2",
   "Détections":"#D97A10",
   "Clinic Coachs":"#2F6DB5",
@@ -73,7 +72,7 @@ let events = [
   {
     id:"asg-idf",
     title:"All-Star Game Île-de-France",
-    type:"All-Star Game",
+    type:"Show",
     city:"Paris",
     lieu:"COSEC Binet, Paris 19e",
     region:"Île-de-France",
