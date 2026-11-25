@@ -2578,6 +2578,10 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
 .ebok-bandeau button{flex:none;background:none;border:0;color:inherit;font:700 14.5px var(--font-body);text-decoration:underline;cursor:pointer;padding:6px;}
 .ebok-bandeau .ebok-bandeau-x{text-decoration:none;font-size:20px;line-height:1;opacity:.6;}
 @media(prefers-reduced-motion: reduce){ .ebok-bandeau{transition:none;} }
+/* Le bandeau prend la largeur de son texte (left:50% la réduisait de moitié) et passe au-dessus de la barre du bas sur portable. */
+.ebok-bandeau{width:max-content;box-sizing:border-box;}
+.ebok-bandeau span{min-width:0;}
+@media(max-width:950px){ .ebok-bandeau{bottom:calc(76px + env(safe-area-inset-bottom));} }
 
 /* ---- Carte Instagram (admin) : js/carte-instagram.js ---- */
 .carte-insta .ci-box{max-width:900px;}
