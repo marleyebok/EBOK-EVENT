@@ -3445,3 +3445,80 @@ input,select,textarea{font-family:var(--font-body);}
   .home-hero .content-header.board-foot{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;}
   .home-hero .board-foot .btn-alert{grid-column:1 / -1;grid-row:2;justify-content:center;}
 }
+
+/* =========================================================
+   SITE v2 (unslop, 25/11/2026) — règles communes à toutes les pages
+   ---------------------------------------------------------
+   La police « machine à écrire » est réservée aux chiffres (dates, compteurs).
+   Titres de section sans filet rouge, états vides sur fond calme, onglets
+   soulignés partout, tableau de marque des dates au trait.
+   ========================================================= */
+.eyebrow{font:500 14px/20px var(--font-body);color:var(--chalk-mute);letter-spacing:0;}
+.field label,.filter-group label{font:500 13px/16px var(--font-body);text-transform:none;letter-spacing:0;color:var(--chalk-mute);}
+.ev-h::after,.adm-h::after{display:none;}
+.ev-h,.adm-h{margin-bottom:16px;}
+
+/* États vides : une surface, pas de pointillés, titre en texte courant */
+.empty-state{border:1px solid var(--line);background:var(--asphalt-2);border-radius:16px;padding:40px 24px;}
+.empty-state h4{font:600 18px/24px var(--font-body);text-transform:none;margin-bottom:8px;}
+.empty-state p{color:var(--chalk-dim);}
+.gallery-empty,.dash-empty{border-style:solid;}
+
+/* Tableau de marque des dates : au trait, le mois en bordeaux */
+.score{background:none;color:var(--chalk);box-shadow:inset 0 0 0 1px var(--line-strong);border-radius:10px;}
+.score .sc-d{color:var(--chalk-mute);}
+.score .sc-n i{color:var(--chalk-mute);}
+.score .sc-m{color:var(--accent-text);}
+.carousel-item .score{background:rgba(0,0,0,.22);color:#F4F0E7;box-shadow:inset 0 0 0 1px rgba(244,240,231,.18);}
+.carousel-item .score .sc-d{color:rgba(244,240,231,.65);}
+.carousel-item .score .sc-m{color:#F2C2C8;}
+
+/* Vignette sans affiche : papier neutre, le type écrit à l'encre */
+.card-noposter{
+  width:100%;height:100%;display:flex;align-items:center;justify-content:center;gap:8px;
+  background:var(--asphalt-3);color:var(--chalk-dim);font:500 15px var(--font-body);
+}
+.card-noposter .ag-dot{width:8px;height:8px;border-radius:50%;}
+
+/* Onglets de l'administration : soulignés, comme « Mes événements » */
+.adm-tabs{width:auto;padding:0;gap:4px;background:none;border:0;border-bottom:1px solid var(--line-strong);border-radius:0;}
+.adm-tab{min-height:44px;padding:0 14px;border-radius:0;font:500 15px var(--font-body);box-shadow:inset 0 -2px 0 transparent;}
+.adm-tab[aria-selected="true"]{background:none;color:var(--chalk);box-shadow:inset 0 -2px 0 var(--accent);}
+.adm-tab[aria-selected="true"] .adm-count{background:var(--accent);color:#FFFFFF;}
+
+/* Profil incomplet : une surface calme, sans dégradé */
+.onboarding-nudge{background:var(--asphalt-2);border:1px solid var(--line-strong);border-left:3px solid var(--accent);}
+
+/* Publier : la question est dans la carte, la barre n'affiche que l'étape */
+.wz-progress-title{display:none;}
+.wz-choice{background:var(--asphalt-2);border:1px solid var(--line-strong);transition:border-color .15s var(--ease),background-color .15s var(--ease);}
+.wz-choice:hover,.wz-choice.selected{transform:none;border-color:var(--chalk-mute);}
+.wz-choice.selected{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 5%, var(--asphalt-2));}
+
+/* Fiche : boutons sans lien, plus discrets (filet fin, pas de pointillés) */
+.ev-act.is-off,.ev-act.is-off:hover{border:1px solid rgba(255,255,255,.28);color:rgba(255,255,255,.6);}
+.ev-ticket-bottom::before{border-top:1px dashed rgba(255,255,255,.32);}
+
+/* Recherche : deux champs par ligne sur téléphone */
+@media(max-width:640px){
+  .search-form{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:16px;}
+  .search-form > .field:first-child{grid-column:1 / -1;}
+  .search-form > :not(.field){grid-column:1 / -1;}
+}
+
+/* Mes événements, tableau de bord, formulaires : le texte en police courante,
+   la police à chasse fixe gardée pour les chiffres seulement. */
+.st-pill,.doc-etat,.tag,.orga-item-txt em,.od-meta,.od-stat span,.od-table th,.od-count,
+.od-histo-item summary span,.od-person span,.ins-ok,.od-bulk-clear,.fm-sensible,.insc-sur-mesure legend,.orga-load{
+  font-family:var(--font-body);letter-spacing:0;
+}
+.st-pill,.doc-etat{font-size:13px;}
+.od-table th{font-size:13px;font-weight:500;}
+.tag{font-size:12px;}
+.wz-preview-label,.wz-progress-step{font-family:var(--font-body);font-weight:500;}
+
+/* Cartes de résultats : titre en texte courant, lisible en petit */
+.card-body h4{font:600 17px/1.3 var(--font-body);text-transform:none;letter-spacing:0;}
+.card-noposter-ville{font:400 26px/1 var(--font-display);text-transform:uppercase;color:var(--chalk-mute);letter-spacing:.01em;}
+.card-type-badge{font:500 12px/1 var(--font-body);padding:5px 8px;}
+.content-count{font-family:var(--font-body);font-variant-numeric:tabular-nums;}

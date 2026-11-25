@@ -172,7 +172,7 @@
         <div class="card-media">
           ${affiche
             ? `<img src="${esc(affiche)}" alt="Aperçu de l'affiche">`
-            : `<div class="wz-card-noposter" style="background:linear-gradient(135deg, ${couleur}33, var(--asphalt-3));color:${couleur}">${esc(type.toUpperCase())}</div>`}
+            : `<div class="wz-card-noposter card-noposter"><span class="ag-dot" style="background:${couleur}"></span>${esc(type)}</div>`}
           <span class="card-type-badge" style="background:${couleur}">${esc(type)}</span>
           ${dispo && DISPO_META[dispo] ? `<span class="dispo-badge ${DISPO_META[dispo].cls}">${DISPO_META[dispo].label}</span>` : ''}
         </div>

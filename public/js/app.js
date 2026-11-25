@@ -173,7 +173,7 @@ function eventCardHtml(ev){
   return `
     <div class="event-card" data-id="${esc(ev.id)}">
       <div class="card-media">
-        ${safeImg(ev.poster) ? `<img src="${esc(safeImg(ev.poster))}" alt="Affiche ${esc(ev.title)}">` : `<div style="width:100%;height:100%;background:linear-gradient(135deg, ${typeColor(ev.type)}33, var(--asphalt-3));display:flex;align-items:center;justify-content:center;font-family:var(--font-display);color:${typeColor(ev.type)};font-size:15px;">${esc(String(ev.type || '').toUpperCase())}</div>`}
+        ${safeImg(ev.poster) ? `<img src="${esc(safeImg(ev.poster))}" alt="Affiche ${esc(ev.title)}">` : `<div class="card-noposter"><span class="card-noposter-ville">${esc(ev.city || ev.type || '')}</span></div>`}
         <span class="card-type-badge" style="background:${typeColor(ev.type)}">${esc(ev.type)}</span>
         ${isPast(ev) ? `<span class="card-past-badge">Terminé</span>` : ``}
         ${ev.dispo && DISPO_META[ev.dispo] ? `<span class="dispo-badge ${DISPO_META[ev.dispo].cls}">${DISPO_META[ev.dispo].label}</span>` : ``}
@@ -2705,8 +2705,8 @@ async function openEvent(id, opts){
     ['Dates', fmtDateRange(ev.dateStart, ev.dateEnd)],
     ['Horaires', infos.horaires],
     ['Lieu', infos.adresse || ev.lieu || ev.city, lieuSous],
-    ['Public', [ev.sexe, ageLabel(ev.age)].filter(Boolean).join(', ')],
-    ['Niveau', niveauEvent(ev.niveau)],
+    ['Public', [ev.sexe, ageList(ev.age).join(', ')].filter(Boolean).join(', ')],
+    ['Niveau', ev.niveau && niveauEvent(ev.niveau) !== NIVEAU_TOUT ? niveauEvent(ev.niveau) : ''],
     ['Tarif', ev.tarif],
     ['Places', placesValue],
     ['Buvette', infos.buvette],
@@ -2803,10 +2803,10 @@ async function openEvent(id, opts){
         <dl class="ev-rows">${feuilleHtml}</dl>
       </section>
 
-      <div class="gallery-block">
+      ${gallery.length ? `<div class="gallery-block">
         <h3 class="ev-h">Photos d'éditions précédentes</h3>
         ${galleryHtml}
-      </div>
+      </div>` : ''}
 
       <div class="curieux-counter">
         <span class="cc-eye">${ico('eye')}</span>
@@ -4569,7 +4569,7 @@ async function renderMyEvents(){
   const grid = document.getElementById('mineGrid');
   await fillEventsGrid(grid,
     async ()=>{ mineList = await window.EBOK_DATA.getEventsByUser(currentUser.uid); return mineList; },
-    "Aucun événement publié pour l'instant. Clique sur « Publier un événement » pour commencer !");
+    "Aucun événement publié pour l'instant. Clique sur « Publier un événement » pour commencer.");
 }
 
 /* ---- Administration : tableau de gestion des événements ---- */
