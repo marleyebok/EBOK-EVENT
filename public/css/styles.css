@@ -3577,3 +3577,13 @@ input,select,textarea{font-family:var(--font-body);}
 .fm-oblig-off{cursor:default;}
 .fm-accord{margin:0 0 14px;}
 @media(max-width:640px){ .fm-presets{grid-template-columns:1fr;} }
+
+/* Accueil : trois filtres (type, ville, date) sur une ligne ; la région se
+   choisit en cliquant sur la carte ou en l'écrivant dans la recherche. */
+.home-hero .filter-panel{grid-template-columns:repeat(3,minmax(0,1fr));}
+.home-hero .fg-period .period-picker{right:0;left:auto;}
+@media(max-width:560px){
+  .home-hero .filter-panel{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .home-hero .fg-period{grid-column:1 / -1;}
+  .home-hero .fg-period .period-picker{left:0;right:auto;}
+}

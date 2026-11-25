@@ -1059,7 +1059,7 @@ function updateTypeLabel(){
   const active = document.querySelectorAll('#typeFilterHome .type-chip.active');
   const label = document.getElementById('typeDdLabel');
   if(!label) return;
-  if(active.length === 0 || active.length === chips.length) label.textContent = 'Tous les types';
+  if(active.length === 0 || active.length === chips.length) label.textContent = 'Tous';
   else if(active.length === 1) label.textContent = active[0].dataset.type;
   else label.textContent = `${active.length} types`;
 }
