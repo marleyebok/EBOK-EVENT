@@ -57,7 +57,6 @@ const FM_GROUPES = [
     connu:       { label: "Comment as-tu connu l'événement ?", type: 'choix' },
   }],
 ];
-const FM_TYPES = Object.assign({}, ...FM_GROUPES.map(g=> g[1]));
 
 /* Modèles par type d'événement : les questions pré-cochées (* = obligatoire),
    les questions libres, l'inscription d'équipe et la logistique. Synthèse des

@@ -1,7 +1,7 @@
 {
-  "name": "ebok-event",
+  "name": "ebok",
   "version": "0.2.0",
-  "description": "EBOK Event — l'agenda collaboratif du basket français (Neon + Clerk)",
+  "description": "EBOK — l'agenda collaboratif du basket français (Neon + Clerk)",
   "private": true,
   "type": "module",
   "scripts": {
@@ -17,7 +17,7 @@
     "evenements",
     "france"
   ],
-  "author": "EBOK Event",
+  "author": "EBOK",
   "license": "UNLICENSED",
   "dependencies": {
     "@clerk/backend": "^1.21.0",

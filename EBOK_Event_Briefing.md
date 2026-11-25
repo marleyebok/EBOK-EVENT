@@ -1,8 +1,8 @@
-# 🏀 EBOK Event — Briefing Complet du Projet
+# 🏀 EBOK — Briefing complet du projet
 
 ## 📋 Vue d'ensemble
 
-**EBOK Event** est un **agenda collaboratif du basketball français** — plateforme web permettant aux organisateurs de publier des événements basket (tournois, camps, 3x3, clinics, détections, etc.) et aux joueurs de les découvrir et s'y inscrire.
+**EBOK** est un **agenda collaboratif du basketball français** — plateforme web permettant aux organisateurs de publier des événements basket (tournois, camps, 3x3, clinics, détections, etc.) et aux joueurs de les découvrir et s'y inscrire.
 
 **Slogan :** "L'agenda collaboratif du Basket Français"  
 **Mode :** Sombre uniquement (identité streetball/urbain)  
@@ -46,7 +46,7 @@ Streetball/urbain : asphalte, terrains éclairés la nuit, énergie jeune. Pas d
 5. (Implicite) Topbar globale + Navigation
 
 ### Navigation
-- Topbar sticky avec logo `EBOK Event` (orange), nav links, bouton "+ Espace diffuseur"
+- Topbar sticky avec logo `EBOK`, nav links, bouton "+ Espace diffuseur"
 - Tous les boutons utilisent `data-nav="page-name"` pour routing JS pur
 
 ---
@@ -252,7 +252,7 @@ function isPast(ev) { return ev.dateEnd < TODAY; }
 
 ## 💰 Monétisation (Implémentée en UI, pas b## 💰 Monétisation — *en pause*
 
-**Décision du 9/11/2026 :** EBOK Event démarre **sans statut professionnel**,
+**Décision du 9/11/2026 :** EBOK démarre **sans statut professionnel**,
 édité par un particulier, **100 % gratuit**. Aucune offre payante n'est
 affichée ni vendue (CGU, article 7) : les anciennes formules (mise en avant
 29 €, mise en avant + mailing 59 €, posts Instagram) ont été retirées du site.

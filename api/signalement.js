@@ -70,7 +70,7 @@ function empreinteVisiteur(req) {
   const transmise = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
   const ip = transmise || req.socket?.remoteAddress || "inconnue";
   const ua = String(req.headers["user-agent"] || "");
-  const secret = process.env.CLERK_SECRET_KEY || process.env.DATABASE_URL || "ebok-event";
+  const secret = process.env.CLERK_SECRET_KEY || process.env.DATABASE_URL || "ebok";
   return createHash("sha256").update(`${jour}|${secret}|${ip}|${ua}`).digest("hex").slice(0, 32);
 }
 

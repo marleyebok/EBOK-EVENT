@@ -14,7 +14,7 @@
 
 ## 📍 Où en est le projet
 
-EBOK Event est **en ligne et fonctionnel**, avec un vrai backend. Ce n'est plus
+EBOK est **en ligne et fonctionnel**, avec un vrai backend. Ce n'est plus
 un MVP statique.
 
 **Pile technique**
@@ -32,9 +32,8 @@ un MVP statique.
 > décrivaient une architecture Firebase qui n'a pas été retenue. Si tu croises
 > encore ce mot quelque part, c'est une coquille à corriger.
 
-**Produit autonome.** EBOK Event ne dépend plus d'EBOK Basketball ni des autres
-applications : plus de barre de navigation commune, plus de pied de page
-partagé, plus de lecture du profil du site mère. Seul reste le point ci-dessous.
+**Produit autonome.** EBOK ne dépend d'aucune autre application : pas de
+barre de navigation ni de pied de page partagés, pas de profil externe.
 
 ---
 
@@ -94,7 +93,7 @@ La marque devient **EBOK** (« L'agenda du basket ») et le site passe de
 ## 🎯 Chantier en cours : passer Clerk en production
 
 - [x] ~~Instance Clerk dédiée~~ — créée le 15/09/2026
-      (`normal-shiner-4060.clerk.accounts.dev`). EBOK Event ne partage plus
+      (`normal-shiner-4060.clerk.accounts.dev`). EBOK ne partage plus
       l'instance d'ebok.fr.
 - [ ] **Passer cette instance en production** sur le domaine `event.ebok.fr` —
       clé `pk_live_…` posée dans le code (domaine technique `clerk.ebok.fr`) ;
@@ -424,7 +423,7 @@ communautaire, mais dépend de la géolocalisation.
       LinkedIn (ton plus pro, pour clubs et partenaires), dans le ton de la
       marque. D'abord des brouillons à valider ; publication automatique
       ensuite, une fois les accès API Instagram (Meta) et LinkedIn obtenus.
-      Pré-requis : comptes Instagram et LinkedIn d'EBOK Event créés.
+      Pré-requis : comptes Instagram et LinkedIn d'EBOK créés.
 
 - [ ] **Vidéos tutos** *(idée notée le 10/11/2026)* — deux courtes vidéos
       pas à pas, au format vertical : « chercher un événement » et « créer un
@@ -441,7 +440,7 @@ communautaire, mais dépend de la géolocalisation.
 
 ### 7. Offres payantes — *seulement avec un statut professionnel*
 
-> 🧭 **Décision du 9/11/2026 : démarrage sans statut professionnel.** EBOK Event
+> 🧭 **Décision du 9/11/2026 : démarrage sans statut professionnel.** EBOK
 > est édité par un particulier, à titre non professionnel et **entièrement
 > gratuit** (CGU, article 7). Toute mention de vente a été retirée du site.
 > Rien de ce qui suit ne doit être remis en ligne avant d'avoir créé une
@@ -589,9 +588,8 @@ dans le code — le reste est à faire.
       « Suivez-nous » du pied de page apparaît alors toute seule. Une adresse
       laissée vide masque sa ligne, les deux vides masquent la rubrique.
 
-> 🚫 **Règle :** aucun lien ni aucune mention renvoyant vers les anciennes
-> applications EBOK (forum, mercato, playbook…). EBOK se présente comme un
-> produit seul, sur `ebok.fr` (depuis le 10/11/2026). Les redirections après
+> 🚫 **Règle :** aucun lien ni aucune mention renvoyant vers un autre site.
+> EBOK se présente comme un produit seul, sur `ebok.fr` (depuis le 10/11/2026). Les redirections après
 > connexion sont verrouillées côté code (`redirectionOptions()` dans
 > `public/js/clerk.js`) pour qu'un réglage du tableau de bord Clerk ne puisse
 > pas envoyer un visiteur ailleurs.
