@@ -10,20 +10,85 @@
    Le serveur (lib/formulaire.js) revérifie tout.
    ========================================================= */
 
-const FM_TYPES = {
-  naissance:   { label: 'Date de naissance', type: 'date' },
-  categorie:   { label: 'Catégorie', type: 'choix' },
-  taille:      { label: 'Taille (cm)', type: 'nombre' },
-  poste:       { label: 'Poste', type: 'choix' },
-  niveau:      { label: 'Niveau', type: 'choix' },
-  club:        { label: 'Club actuel', type: 'texte' },
-  licence:     { label: 'Numéro de licence', type: 'texte' },
-  maillot:     { label: 'Taille de maillot', type: 'choix' },
-  allergies:   { label: 'Allergies ou intolérances', type: 'texte', sensible: true },
-  regime:      { label: 'Régime alimentaire', type: 'multi', sensible: true },
-  responsable: { label: 'Responsable légal (pour un mineur)', type: 'contact' },
-  urgence:     { label: "Contact en cas d'urgence", type: 'contact' },
+/* Questions types, groupées comme dans l'éditeur. Elles reprennent ce qui
+   revient dans les formulaires d'inscription réels (Google Forms, Tally,
+   sites de clubs) des camps, stages, tournois, voyages et détections. */
+const FM_GROUPES = [
+  ['Le joueur', {
+    naissance:   { label: 'Date de naissance', type: 'date' },
+    sexe:        { label: 'Sexe', type: 'choix' },
+    categorie:   { label: 'Catégorie', type: 'choix' },
+    taille:      { label: 'Taille (cm)', type: 'nombre' },
+    poste:       { label: 'Poste', type: 'choix' },
+    niveau:      { label: 'Niveau', type: 'choix' },
+    annees:      { label: 'Années de pratique du basket', type: 'nombre' },
+    club:        { label: 'Club actuel', type: 'texte' },
+    licencie:    { label: 'Licencié(e) en club ?', type: 'choix' },
+    licence:     { label: 'Numéro de licence', type: 'texte' },
+    maillot:     { label: 'Taille de tenue (t-shirt, maillot)', type: 'choix' },
+  }],
+  ['Profil et projet', {
+    clubPrecedent: { label: 'Club(s) des saisons précédentes', type: 'texte' },
+    selections:  { label: 'Déjà retenu(e) en sélection départementale ou régionale ?', type: 'ouinon' },
+    coach:       { label: 'Coach actuel', type: 'contact' },
+    motivation:  { label: 'Ton projet basket, tes motivations', type: 'texte' },
+    video:       { label: 'Lien vers une vidéo (highlights ou match)', type: 'texte' },
+  }],
+  ['Santé', {
+    allergies:   { label: 'Allergies ou intolérances', type: 'texte', sensible: true },
+    regime:      { label: 'Régime alimentaire', type: 'multi', sensible: true },
+    traitement:  { label: 'Traitement médical en cours', type: 'texte', sensible: true },
+    blessures:   { label: 'Blessures récentes ou antécédents', type: 'texte', sensible: true },
+  }],
+  ['Parents et autorisations', {
+    responsable: { label: 'Responsable légal (pour un mineur)', type: 'contact' },
+    urgence:     { label: "Contact en cas d'urgence", type: 'contact' },
+    autorisation:{ label: "J'autorise mon enfant à participer (responsable légal)", type: 'accord' },
+    sortieSeul:  { label: 'Autorisé(e) à repartir seul(e) en fin de journée ?', type: 'ouinon' },
+    image:       { label: "Photos et vidéos autorisées (droit à l'image) ?", type: 'ouinon' },
+    reglement:   { label: "J'ai lu et j'accepte le règlement et les conditions d'annulation", type: 'accord' },
+  }],
+  ['Voyage et infos pratiques', {
+    adresse:     { label: 'Adresse postale', type: 'texte' },
+    passeport:   { label: 'Passeport', type: 'choix' },
+    nbPersonnes: { label: 'Nombre de personnes (toi compris)', type: 'nombre' },
+    voyageurs:   { label: 'Noms et prénoms des autres participants', type: 'texte' },
+    nbEquipes:   { label: "Nombre d'équipes engagées", type: 'nombre' },
+    connu:       { label: "Comment as-tu connu l'événement ?", type: 'choix' },
+  }],
+];
+const FM_TYPES = Object.assign({}, ...FM_GROUPES.map(g=> g[1]));
+
+/* Modèles par type d'événement : les questions pré-cochées (* = obligatoire),
+   les questions libres, l'inscription d'équipe et la logistique. Synthèse des
+   questions les plus fréquentes dans les formulaires analysés. */
+const FM_MODELES = {
+  camp: { nom: 'Camp',
+    questions: ['naissance*', 'sexe*', 'categorie', 'licencie', 'club', 'niveau', 'poste', 'maillot*', 'allergies', 'regime', 'traitement', 'responsable*', 'urgence*', 'autorisation', 'image*', 'reglement'],
+    repas: true, hebergement: true },
+  stage: { nom: 'Stage',
+    questions: ['naissance*', 'categorie*', 'licencie*', 'club', 'niveau', 'maillot', 'allergies', 'responsable*', 'urgence', 'autorisation', 'sortieSeul*', 'image*', 'reglement'],
+    libres: [{ label: 'Jours de présence', type: 'multi', options: ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'], obligatoire: true }],
+    repas: true },
+  tournoi: { nom: 'Tournoi',
+    questions: ['club*', 'categorie*', 'niveau', 'nbEquipes', 'licence', 'image', 'reglement'],
+    equipes: { min: 5, max: 12 } },
+  voyage: { nom: 'Voyage',
+    questions: ['naissance*', 'sexe*', 'adresse*', 'passeport*', 'nbPersonnes', 'voyageurs', 'club', 'maillot', 'allergies', 'regime', 'traitement', 'responsable', 'urgence*', 'connu', 'reglement'],
+    libres: [{ label: 'Paiement souhaité', type: 'choix', options: ['En une fois', 'En plusieurs fois'], obligatoire: false }] },
+  detection: { nom: 'Détection',
+    questions: ['naissance*', 'sexe', 'categorie*', 'poste*', 'taille*', 'club*', 'niveau*', 'licence', 'annees', 'clubPrecedent', 'selections', 'coach', 'motivation*', 'video', 'maillot', 'blessures', 'responsable', 'image', 'reglement'] },
 };
+/* Type d'événement EBOK → modèle proposé d'office. */
+function fmModelePour(type){
+  const t = String(type || '').toLowerCase();
+  if(t.startsWith('camp')) return 'camp';
+  if(t.startsWith('stage')) return 'stage';
+  if(t.startsWith('tournoi') || t.includes('3x3')) return 'tournoi';
+  if(t.startsWith('voyage')) return 'voyage';
+  if(t.startsWith('détection') || t.startsWith('detection')) return 'detection';
+  return '';
+}
 const FM_LIBRES = { texte: 'Réponse libre', choix: 'Choix unique', multi: 'Choix multiples', ouinon: 'Oui / non' };
 const PAIEMENT = { a_payer: 'À payer', partiel: 'Partiel', paye: 'Payé', offert: 'Offert' };
 const euros = n=> (Number(n) || 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: (Number(n) % 1 ? 2 : 0) });
@@ -46,18 +111,38 @@ function fmLigneLibre(q = { id: fmId(), label: '', type: 'texte', options: [], o
     </div>`;
 }
 
-function fmEditeur(reg){
+function fmEditeur(reg, typeEvenement){
+  // Premier passage (aucune question, aucun modèle choisi) : on part du
+  // modèle du type d'événement ; l'organisateur décoche ce qui ne lui sert pas.
+  let modele = reg.modele || '';
+  let auto = false;
+  if(!modele && !reg.questions.length){
+    const m = fmModelePour(typeEvenement);
+    if(m){ reg = fmAppliquerModele(reg, m); modele = m; auto = true; }
+  }
   const choisis = new Map(reg.questions.filter(q=> q.preset).map(q=> [q.preset, q]));
   const libres = reg.questions.filter(q=> !q.preset);
   const ligneTarif = (t = {}, cls)=> `<div class="fm-tarif ${cls}" data-tid="${esc(t.id || '')}"><input type="text" class="fm-t-nom" maxlength="80" placeholder="${cls === 'is-opt' ? 'Ex. Navette depuis la gare' : 'Ex. Semaine complète'}" value="${esc(t.nom || '')}" aria-label="Nom"><label class="fm-prix"><input type="number" class="fm-t-prix" min="0" step="0.5" value="${t.prix != null ? t.prix : ''}" placeholder="0" aria-label="Prix">€</label><button type="button" class="btn btn-ghost btn-sm" data-retirer-t aria-label="Retirer">${ico('trash')}</button></div>`;
   return `
     <fieldset class="od-field"><legend>Formulaire d'inscription</legend>
-      <p class="field-hint">Coche les questions à poser. Le nom, l'e-mail, le téléphone et le message sont toujours demandés.</p>
-      <div class="fm-presets">${Object.entries(FM_TYPES).map(([k, p])=> `
+      <div class="fm-modeles" role="group" aria-label="Partir d'un modèle">
+        <span class="fm-modeles-l">Partir d'un modèle</span>
+        ${Object.entries(FM_MODELES).map(([k, m])=> `<button type="button" class="fm-modele ${modele === k ? 'is-on' : ''}" data-modele="${k}" aria-pressed="${modele === k}">${esc(m.nom)}</button>`).join('')}
+        <button type="button" class="fm-modele ${modele === 'vide' ? 'is-on' : ''}" data-modele="vide" aria-pressed="${modele === 'vide'}">Vide</button>
+        <input type="hidden" id="fmModele" value="${esc(modele)}">
+      </div>
+      <p class="field-hint fm-modele-note" id="fmModeleNote" aria-live="polite">${auto
+        ? `Modèle « ${esc(FM_MODELES[modele].nom)} » pré-rempli à partir des formulaires d'inscription les plus courants. Décoche ce qui ne te sert pas, ajoute tes questions en bas, puis enregistre.`
+        : `Coche les questions à poser.`} Le nom, l'e-mail, le téléphone et le message sont toujours demandés.</p>
+      ${FM_GROUPES.map(([titre, qs])=> `
+      <h4 class="fm-groupe">${esc(titre)}</h4>
+      <div class="fm-presets">${Object.entries(qs).map(([k, p])=> `
         <div class="fm-preset">
-          <label><input type="checkbox" data-preset="${k}" ${choisis.has(k) ? 'checked' : ''}>${esc(p.label)}${p.sensible ? ' <span class="fm-sensible" title="Donnée sensible : le participant donne son accord explicite">sensible</span>' : ''}</label>
-          <label class="fm-oblig"><input type="checkbox" data-preset-oblig="${k}" ${choisis.get(k) && choisis.get(k).obligatoire ? 'checked' : ''}>Obligatoire</label>
-        </div>`).join('')}</div>
+          <label><input type="checkbox" data-preset="${k}" ${choisis.has(k) ? 'checked' : ''}>${esc(p.label)}${p.sensible ? ' <span class="fm-sensible" title="Donnée sensible : jamais obligatoire, le participant donne son accord explicite">sensible</span>' : ''}</label>
+          ${p.sensible ? '<span class="fm-oblig fm-oblig-off">Facultatif</span>'
+            : p.type === 'accord' ? '<span class="fm-oblig fm-oblig-off">Case à cocher</span>'
+            : `<label class="fm-oblig"><input type="checkbox" data-preset-oblig="${k}" ${choisis.get(k) && choisis.get(k).obligatoire ? 'checked' : ''}>Obligatoire</label>`}
+        </div>`).join('')}</div>`).join('')}
       <h4 class="ins-h">Tes questions</h4>
       <div id="fmLibres">${libres.map(q=> fmLigneLibre(q)).join('')}</div>
       <button type="button" class="btn btn-ghost btn-sm" id="fmAjoutQ">${ico('plus')}Ajouter une question</button>
@@ -92,7 +177,48 @@ function fmEditeur(reg){
       <label class="od-switch od-switch-flat"><input type="checkbox" id="fmRappel" ${reg.rappelVeille ? 'checked' : ''}><span><b>Rappel automatique la veille</b><em>Un e-mail aux inscrits validés la veille de l'événement.</em></span></label>
     </fieldset>`;
 }
+/* Renvoie une copie des réglages avec les questions et options du modèle. */
+function fmAppliquerModele(reg, cle){
+  const m = FM_MODELES[cle];
+  if(!m) return { ...reg, questions: [], modele: cle };
+  const questions = m.questions.map(x=> ({ preset: x.replace('*', ''), obligatoire: x.endsWith('*') }))
+    .concat((m.libres || []).map(q=> ({ id: fmId(), ...q })));
+  return {
+    ...reg, modele: cle, questions,
+    equipes: m.equipes ? { active: true, min: m.equipes.min, max: m.equipes.max } : { ...reg.equipes, active: false },
+    logistique: { ...reg.logistique, repas: !!m.repas, hebergement: !!m.hebergement },
+  };
+}
+function fmModeleDansEditeur(racine, cle){
+  const r = fmAppliquerModele({ questions: [], equipes: { active: false, min: 1, max: 5 }, logistique: {} }, cle);
+  const choisis = new Map(r.questions.filter(q=> q.preset).map(q=> [q.preset, q]));
+  racine.querySelectorAll('[data-preset]').forEach(c=>{
+    const q = choisis.get(c.dataset.preset);
+    c.checked = !!q;
+    const ob = racine.querySelector(`[data-preset-oblig="${c.dataset.preset}"]`);
+    if(ob) ob.checked = !!(q && q.obligatoire);
+  });
+  const libres = racine.querySelector('#fmLibres');
+  libres.innerHTML = r.questions.filter(q=> !q.preset).map(q=> fmLigneLibre(q)).join('');
+  racine.querySelector('#fmEquipe').checked = r.equipes.active;
+  if(r.equipes.active){ racine.querySelector('#fmMin').value = r.equipes.min; racine.querySelector('#fmMax').value = r.equipes.max; }
+  racine.querySelector('#fmRepas').checked = !!r.logistique.repas;
+  racine.querySelector('#fmHeberg').checked = !!r.logistique.hebergement;
+  racine.querySelector('#fmModele').value = cle;
+  racine.querySelectorAll('[data-modele]').forEach(b=>{ const on = b.dataset.modele === cle; b.classList.toggle('is-on', on); b.setAttribute('aria-pressed', on); });
+  const n = r.questions.length;
+  racine.querySelector('#fmModeleNote').textContent = cle === 'vide'
+    ? "Formulaire vide : coche les questions à poser ou ajoute les tiennes. Le nom, l'e-mail, le téléphone et le message sont toujours demandés."
+    : `Modèle « ${FM_MODELES[cle].nom} » appliqué : ${n} question${n > 1 ? 's' : ''}. Décoche ce qui ne te sert pas, ajoute tes questions en bas, puis enregistre.`;
+}
 function fmBrancherEditeur(racine){
+  racine.querySelectorAll('[data-modele]').forEach(b=> b.addEventListener('click', ()=>{
+    const deja = racine.querySelectorAll('[data-preset]:checked, #fmLibres .fm-q').length;
+    const nom = b.dataset.modele === 'vide' ? 'un formulaire vide' : `le modèle « ${FM_MODELES[b.dataset.modele].nom} »`;
+    if(deja && !confirm(`Remplacer les questions actuelles par ${nom} ?`)) return;
+    fmModeleDansEditeur(racine, b.dataset.modele);
+    fmBrancherEditeur.brancher && fmBrancherEditeur.brancher();
+  }));
   const libres = racine.querySelector('#fmLibres');
   const brancher = ()=>{
     libres.querySelectorAll('.fm-q').forEach(q=>{
@@ -104,6 +230,7 @@ function fmBrancherEditeur(racine){
     racine.querySelectorAll('[data-retirer-t]').forEach(b=> b.onclick = ()=> b.closest('.fm-tarif').remove());
   };
   brancher();
+  fmBrancherEditeur.brancher = brancher;
   racine.querySelector('#fmAjoutQ').addEventListener('click', ()=>{
     libres.insertAdjacentHTML('beforeend', fmLigneLibre());
     brancher(); libres.lastElementChild.querySelector('input').focus();
@@ -117,7 +244,10 @@ function fmBrancherEditeur(racine){
 }
 function fmLireEditeur(racine){
   const virgules = id=> racine.querySelector(id).value.split(',').map(x=> x.trim()).filter(Boolean);
-  const presets = [...racine.querySelectorAll('[data-preset]:checked')].map(c=> ({ preset: c.dataset.preset, obligatoire: racine.querySelector(`[data-preset-oblig="${c.dataset.preset}"]`).checked }));
+  const presets = [...racine.querySelectorAll('[data-preset]:checked')].map(c=>{
+    const ob = racine.querySelector(`[data-preset-oblig="${c.dataset.preset}"]`);
+    return { preset: c.dataset.preset, obligatoire: !!(ob && ob.checked) };
+  });
   const libres = [...racine.querySelectorAll('#fmLibres .fm-q')].map(q=> ({
     id: q.dataset.qid, label: q.querySelector('.fm-q-label').value, type: q.querySelector('.fm-q-type').value,
     options: q.querySelector('.fm-q-options').value.split('\n').map(x=> x.trim()).filter(Boolean), obligatoire: q.querySelector('.fm-q-oblig').checked,
@@ -125,6 +255,7 @@ function fmLireEditeur(racine){
   const tarifs = sel=> [...racine.querySelectorAll(sel)].map(r=> ({ id: r.dataset.tid, nom: r.querySelector('.fm-t-nom').value, prix: r.querySelector('.fm-t-prix').value })).filter(t=> t.nom.trim());
   return {
     questions: [...presets, ...libres],
+    modele: racine.querySelector('#fmModele').value,
     equipes: { active: racine.querySelector('#fmEquipe').checked, min: racine.querySelector('#fmMin').value, max: racine.querySelector('#fmMax').value },
     tarifs: tarifs('#fmTarifs .fm-tarif'), options: tarifs('#fmOptions .fm-tarif'),
     logistique: { repas: racine.querySelector('#fmRepas').checked, formules: virgules('#fmFormules'), hebergement: racine.querySelector('#fmHeberg').checked, chambres: virgules('#fmChambres'), groupes: virgules('#fmGroupes') },
@@ -143,6 +274,7 @@ function fmChamp(q){
     case 'choix': return `<div class="field"><label for="${id}">${esc(q.label)}${oblig}</label><select id="${id}" data-q="${esc(q.id)}" ${req}><option value="">Choisis</option>${q.options.map(o=> `<option>${esc(o)}</option>`).join('')}</select></div>`;
     case 'multi': return `<fieldset class="field fm-multi" data-q="${esc(q.id)}" data-type="multi"><legend>${esc(q.label)}${oblig}</legend><div class="fm-cases">${q.options.map(o=> `<label class="chip chip-check"><input type="checkbox" value="${esc(o)}">${esc(o)}</label>`).join('')}</div></fieldset>`;
     case 'ouinon': return `<fieldset class="field" data-q="${esc(q.id)}" data-type="ouinon"><legend>${esc(q.label)}${oblig}</legend><div class="fm-cases"><label class="chip chip-check"><input type="radio" name="${id}" value="oui">Oui</label><label class="chip chip-check"><input type="radio" name="${id}" value="non">Non</label></div></fieldset>`;
+    case 'accord': return `<label class="fm-consent fm-accord" data-q="${esc(q.id)}" data-type="accord"><input type="checkbox" required><span>${esc(q.label)} <span class="fm-req" aria-hidden="true">*</span></span></label>`;
     case 'contact': return `<fieldset class="field fm-contact" data-q="${esc(q.id)}" data-type="contact"><legend>${esc(q.label)}${oblig}</legend><div class="form-grid-3"><input type="text" data-c="nom" placeholder="Nom et prénom" aria-label="Nom et prénom"><input type="tel" data-c="tel" placeholder="Téléphone" aria-label="Téléphone"><input type="email" data-c="email" placeholder="E-mail" aria-label="E-mail"></div></fieldset>`;
     default: return `<div class="field"><label for="${id}">${esc(q.label)}${oblig}</label><input type="text" id="${id}" data-q="${esc(q.id)}" maxlength="500" ${req}></div>`;
   }
@@ -167,8 +299,11 @@ function fmChamps(etat){
   const lg = etat.logistique || {};
   if(lg.repas) parts.push(`<div class="field"><label for="fmRepasChoix">Formule de repas</label><select id="fmRepasChoix"><option value="">Choisis</option>${lg.formules.map(f=> `<option>${esc(f)}</option>`).join('')}</select></div>`);
   if(lg.hebergement) parts.push(`<fieldset class="field"><legend>Hébergement</legend><div class="fm-cases"><label class="chip chip-check"><input type="radio" name="fmHeb" value="pensionnaire">Pensionnaire (dort sur place)</label><label class="chip chip-check"><input type="radio" name="fmHeb" value="externe">Externe</label></div></fieldset>`);
-  if((etat.questions || []).some(q=> q.sensible)){
-    parts.push(`<label class="fm-consent"><input type="checkbox" id="fmConsent"><span>J'accepte que mes réponses sur les <b>allergies</b> et le <b>régime alimentaire</b> soient transmises à l'organisateur, uniquement pour organiser les repas et la sécurité pendant l'événement. Elles sont supprimées au plus tard un an après. <a href="/confidentialite#inscriptions" target="_blank" rel="noopener">En savoir plus</a></span></label>`);
+  const sensibles = (etat.questions || []).filter(q=> q.sensible);
+  if(sensibles.length){
+    const noms = sensibles.map(q=> `<b>${esc(q.label.toLowerCase())}</b>`);
+    const liste = noms.length > 1 ? noms.slice(0, -1).join(', ') + ' et ' + noms[noms.length - 1] : noms[0];
+    parts.push(`<label class="fm-consent"><input type="checkbox" id="fmConsent"><span>Si j'y réponds, j'accepte que mes réponses (${liste}) soient transmises à l'organisateur, uniquement pour organiser les repas, la santé et la sécurité pendant l'événement. Elles sont supprimées au plus tard un an après. <a href="/confidentialite#inscriptions" target="_blank" rel="noopener">En savoir plus</a></span></label>`);
   }
   return parts.join('');
 }
@@ -190,6 +325,7 @@ function fmLire(racine){
   racine.querySelectorAll('[data-q]').forEach(el=>{
     const t = el.dataset.type;
     if(t === 'multi'){ const v = [...el.querySelectorAll('input:checked')].map(i=> i.value); if(v.length) reponses[el.dataset.q] = v; }
+    else if(t === 'accord'){ if(el.querySelector('input').checked) reponses[el.dataset.q] = 'oui'; }
     else if(t === 'ouinon'){ const v = el.querySelector('input:checked'); if(v) reponses[el.dataset.q] = v.value; }
     else if(t === 'contact'){ const c = {}; el.querySelectorAll('[data-c]').forEach(i=> c[i.dataset.c] = i.value.trim()); if(c.nom || c.tel || c.email) reponses[el.dataset.q] = c; }
     else if(el.value !== '') reponses[el.dataset.q] = el.value;
@@ -210,6 +346,7 @@ function fmValeur(q, v){
   if(v == null || v === '') return '';
   if(q.type === 'multi') return (Array.isArray(v) ? v : [v]).join(', ');
   if(q.type === 'ouinon') return v === 'oui' ? 'Oui' : 'Non';
+  if(q.type === 'accord') return v === 'oui' ? 'Oui, accepté' : '';
   if(q.type === 'date'){ const d = new Date(v + 'T00:00'); if(isNaN(d)) return v; const age = Math.floor((Date.now() - d) / 31557600000); return `${d.toLocaleDateString('fr-FR')} (${age} ans)`; }
   if(q.type === 'contact') return [v.nom, v.tel, v.email].filter(Boolean).join(' · ');
   return String(v);

@@ -309,7 +309,7 @@
   async function creer(l, direct){
     // Même chemin que le formulaire de publication : position et région
     // d'après la ville, affiche hébergée sur le stockage.
-    const coords = await resolveCoords(l.address, l.city, l.region);
+    const coords = await resolveCoords(l.address, l.city, l.region, l.pays);
     const poster = l.poster ? await hostPoster(l.poster) : '';
     const ev = {
       id: 'evt-' + Date.now() + '-' + l.i,

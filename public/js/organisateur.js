@@ -879,7 +879,7 @@ function vueReglages(){
         <button type="button" class="btn btn-ghost btn-sm" id="rgAddDoc">${ico('plus')}Ajouter un document</button>
         <p class="field-hint od-legal">Droit à l'image, autorisation parentale, règlement signé… Ne demande pas de certificat médical ni de donnée de santé : prévois plutôt une attestation, et vérifie le document original sur place.</p>
       </fieldset>
-      ${fmEditeur(reg)}
+      ${fmEditeur(reg, (orga.liste.find(x=> x.id === orga.sel) || events.find(x=> x.id === orga.sel) || {}).type)}
       <p class="form-error hidden" id="rgErr"></p>
       <div class="edit-actions"><span class="ins-ok hidden" id="rgOk">Réglages enregistrés</span><button type="submit" class="btn btn-primary">Enregistrer</button></div>
     </form>`;

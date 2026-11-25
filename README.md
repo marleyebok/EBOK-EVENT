@@ -596,13 +596,22 @@ Palette complète et code couleur par type d'événement : voir `EBOK_Event_Brie
   Google (`noindex`), mais la fiche et les inscriptions restent accessibles par
   le lien. Repasser en public déclenche les alertes. La validation par l'équipe
   EBOK reste nécessaire.
-- **Formulaire sur mesure** (Réglages) : questions types à cocher (date de
-  naissance, catégorie, taille, poste, niveau, club, licence, maillot,
-  allergies, régime, responsable légal, contact d'urgence) et questions libres
-  (texte, choix unique, choix multiples, oui / non), chacune obligatoire ou
-  non. Allergies et régime sont des **données sensibles** : jamais
-  obligatoires, accord explicite du participant enregistré avec sa date.
-  Logique serveur dans `lib/formulaire.js`, interface dans `public/js/formulaire.js`.
+- **Formulaire sur mesure** (Réglages) : une trentaine de questions types à
+  cocher, rangées par thème (le joueur, profil et projet, santé, parents et
+  autorisations, voyage et infos pratiques), et des questions libres (texte,
+  choix unique, choix multiples, oui / non), chacune obligatoire ou non. Les
+  cases d'accord (autorisation parentale, règlement) sont toujours
+  obligatoires. Allergies, régime, traitement médical et blessures sont des
+  **données sensibles** : jamais obligatoires, accord explicite du participant
+  enregistré avec sa date.
+- **Modèles par type d'événement** : Camp, Stage, Tournoi, Voyage, Détection
+  (ou Vide). Ils pré-cochent les questions qui reviennent le plus dans les
+  vrais formulaires d'inscription (synthèse de 23 formulaires Google Forms,
+  Tally et sites de clubs, novembre 2026) et règlent équipe, repas et
+  hébergement. Le modèle du type de l'événement s'applique tout seul à la
+  première ouverture ; l'organisateur décoche, ajoute ses questions,
+  enregistre. Logique serveur dans `lib/formulaire.js`, interface et modèles
+  dans `public/js/formulaire.js`.
 - **Équipes** : nom d'équipe + membres (minimum / maximum réglables).
 - **Tarifs et options** : le participant choisit, le montant dû s'affiche ;
   l'organisateur suit le paiement (à payer, partiel, payé, offert, reçu) ;
