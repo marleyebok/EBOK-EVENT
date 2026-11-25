@@ -130,15 +130,39 @@ droits admin se retrouvent seuls (reconnus par e-mail).
 > inscriptions, J'organise), inscription depuis la fiche **validée par
 > l'organisateur**, tableau de bord (statuts, catégories, commentaire privé,
 > documents, messages groupés, réglages ; sélection, tri et actions groupées ;
-> exports Excel, PDF et CSV), co-organisateurs, question
+> exports Excel, PDF et CSV), événement **privé** (accessible par lien seulement),
+> co-organisateurs, question
 > « outils EBOK » après publication (réponse visible dans l'administration).
 > Voir README › Outils d'organisateur.
 >
-> Reste à faire : documents **privés** côté stockage (aujourd'hui adresse
-> impossible à deviner, pas d'accès signé) ; suppression automatique des
-> documents quelques mois après l'événement ; relecture juridique (CGU,
-> politique de confidentialité : EBOK sous-traitant des organisateurs) ;
-> rappel automatique la veille ; statistiques de clics par contact.
+> ✅ Fait aussi (24/11/2026, phase 2) : **formulaire sur mesure** (questions
+> types à cocher + questions libres texte / choix unique / choix multiples /
+> oui-non), **inscription d'équipe** (nom + membres, minimum et maximum),
+> **tarifs et options** avec suivi du paiement **informatif** (EBOK n'encaisse
+> rien), **logistique des camps** (formule de repas, régime, pensionnaire ou
+> externe, chambres / dortoirs, groupes), **pointage le jour J** en option
+> (liste à cocher ou QR code scanné par l'organisateur), **rappel la veille**,
+> et RGPD : accord explicite pour allergies / régime, effacement à
+> l'annulation et à la suppression de l'événement, purge automatique
+> (documents 90 jours, inscriptions et messages 365 jours après l'événement),
+> CGU art. 4 bis (EBOK sous-traitant, art. 28) et politique de confidentialité
+> (§ « Inscriptions »).
+>
+> Reste à faire :
+> - documents **privés** côté stockage (aujourd'hui adresse impossible à
+>   deviner, pas d'accès signé) ;
+> - relecture juridique des textes (CGU art. 4 bis, confidentialité) ;
+> - encadrants (rôle dans l'équipe d'un événement) et **évaluations /
+>   détection** des joueurs ;
+> - **sessions et planning** (créneaux, terrains) ; tournois : **poules,
+>   matchs, résultats** ;
+> - **formulaire intégrable** (iframe sur le site de l'organisateur) ;
+> - **après l'événement** : questionnaire de satisfaction, photos,
+>   réinscription en un clic à l'édition suivante ;
+> - **statistiques organisateur** (demandes, taux de validation, présence,
+>   clics par contact) ;
+> - à terme, un **tableau de bord selon le type d'événement** : tournoi
+>   (poules, résultats), camp (repas, groupes, logement), etc.
 
 Idée du propriétaire (24/11/2026) : proposer aux organisateurs de **gérer leur
 événement sur ebok.fr**, pas seulement de l'annoncer.

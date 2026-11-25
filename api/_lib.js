@@ -182,6 +182,9 @@ export async function ensureSchema() {
       UNIQUE (event_id, user_id)
     )`;
   await q`CREATE INDEX IF NOT EXISTS inscriptions_user_idx ON event.inscriptions (user_id)`;
+  /* Gestion par l'organisateur : paiement (informatif), groupe, chambre,
+     présence le jour J, rappels déjà envoyés. */
+  await q`ALTER TABLE event.inscriptions ADD COLUMN IF NOT EXISTS gestion JSONB NOT NULL DEFAULT '{}'`;
   /* Messages groupés envoyés par un organisateur à ses inscrits (historique). */
   await q`
     CREATE TABLE IF NOT EXISTS event.insc_messages (

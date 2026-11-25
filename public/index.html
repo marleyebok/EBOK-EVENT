@@ -1141,8 +1141,9 @@
     <div class="insc-consignes hidden" id="inscConsignes"></div>
     <form id="inscForm">
       <div class="field" id="inscEquipeField"><label for="in-equipe">Équipe ou club <span class="field-hint">(facultatif)</span></label><input type="text" id="in-equipe" maxlength="120" placeholder="Ex. Mosson Ballers"></div>
+      <div id="inscSurMesure" class="insc-sur-mesure"></div>
       <div class="form-grid">
-        <div class="field"><label for="in-nb">Nombre de personnes</label><input type="number" id="in-nb" min="1" max="50" value="1"></div>
+        <div class="field" id="inscNbField"><label for="in-nb">Nombre de personnes</label><input type="number" id="in-nb" min="1" max="50" value="1"></div>
         <div class="field"><label for="in-tel">Téléphone <span class="field-hint">(facultatif)</span></label><input type="tel" id="in-tel" maxlength="30"></div>
       </div>
       <div class="field"><label for="in-message">Message à l'organisateur <span class="field-hint">(facultatif)</span></label><textarea id="in-message" rows="3" maxlength="1000" placeholder="Niveau, poste, questions…"></textarea></div>
@@ -1619,7 +1620,9 @@
 <script src="/js/admin-stats.js"></script>
 <script src="/js/admin-signalements.js"></script>
 <script src="/js/carte-instagram.js"></script>
+<script defer src="/js/vendor/qrcode.js"></script>
 <script src="/js/exports.js"></script>
+<script src="/js/formulaire.js"></script>
 <script src="/js/organisateur.js"></script>
 <!-- Animations (Motion, motion.dev) : décoratives, chargées après le reste.
      Retirer ces deux lignes suffit à les couper. -->

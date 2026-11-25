@@ -582,6 +582,33 @@ Palette complète et code couleur par type d'événement : voir `EBOK_Event_Brie
   sur la sélection (valider, liste d'attente, refuser, ajouter / retirer une
   catégorie, valider les documents déposés, écrire, copier les e-mails,
   exporter, supprimer définitivement).
+- **Événement privé** (réglage du tableau de bord) : non répertorié — absent de
+  la carte, de la recherche, de l'agenda, des alertes, du plan du site et de
+  Google (`noindex`), mais la fiche et les inscriptions restent accessibles par
+  le lien. Repasser en public déclenche les alertes. La validation par l'équipe
+  EBOK reste nécessaire.
+- **Formulaire sur mesure** (Réglages) : questions types à cocher (date de
+  naissance, catégorie, taille, poste, niveau, club, licence, maillot,
+  allergies, régime, responsable légal, contact d'urgence) et questions libres
+  (texte, choix unique, choix multiples, oui / non), chacune obligatoire ou
+  non. Allergies et régime sont des **données sensibles** : jamais
+  obligatoires, accord explicite du participant enregistré avec sa date.
+  Logique serveur dans `lib/formulaire.js`, interface dans `public/js/formulaire.js`.
+- **Équipes** : nom d'équipe + membres (minimum / maximum réglables).
+- **Tarifs et options** : le participant choisit, le montant dû s'affiche ;
+  l'organisateur suit le paiement (à payer, partiel, payé, offert, reçu).
+  **Informatif seulement : EBOK n'encaisse rien.**
+- **Logistique des camps** : formule de repas (pension complète, demi-pension,
+  externe…), pensionnaire ou externe, chambres / dortoirs et groupes
+  attribués par l'organisateur (fiche d'un inscrit ou action groupée).
+- **Jour J** (option) : liste à cocher, et si activé un **QR code** dans « Mes
+  inscriptions » que l'organisateur scanne avec l'appareil photo de son
+  téléphone (`/?pointage=…&e=…`, refusé à tout autre compte).
+- **Tâche quotidienne** (`api/detection.js`, 9 h UTC) : rappel la veille aux
+  inscrits validés (une seule fois), purge des documents 90 jours et des
+  inscriptions / messages 365 jours après la fin de l'événement. La détection
+  d'événements, elle, ne tourne que le lundi. Annuler une demande efface ses
+  réponses, documents et suivi ; supprimer un événement efface ses inscriptions.
 - **Exports** de la liste ou de la sélection en **Excel (.xlsx)**, **PDF** et
   CSV, fabriqués dans le navigateur sans bibliothèque (`public/js/exports.js`).
 - **Serveur** : `lib/inscriptions.js`, servi par `api/events.js?r=insc` (pas de
@@ -594,4 +621,6 @@ Palette complète et code couleur par type d'événement : voir `EBOK_Event_Brie
   mais tout le reste fonctionne.
 - **Documents** : déposés sur Vercel Blob dans `documents/`, à une adresse
   impossible à deviner, et listés seulement à l'organisateur et à ses
-  co-organisateurs. Pas de certificat médical (données de santé).
+  co-organisateurs. Pas de certificat médical (données de santé). Côté
+  juridique : CGU art. 4 bis (EBOK sous-traitant des organisateurs) et
+  politique de confidentialité, § « Inscriptions ».

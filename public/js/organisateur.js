@@ -40,6 +40,11 @@ function messageErreur(e){
   if(c === 'fermees') return "Les inscriptions ne sont pas ouvertes pour cet événement.";
   if(c === 'deja_inscrit') return 'Tu as déjà une demande pour cet événement : retrouve-la dans Mes événements.';
   if(c === 'aucun_destinataire') return 'Aucun inscrit ne correspond à ces critères.';
+  if(c === 'reponse_manquante') return e.question ? `Réponds à la question « ${e.question} ».` : 'Une réponse obligatoire manque.';
+  if(c === 'consentement') return 'Coche la case d\'accord pour transmettre tes réponses sur les allergies et le régime, ou laisse ces questions vides.';
+  if(c === 'equipe_incomplete') return `Ton équipe doit compter au moins ${e.min || 1} joueurs.`;
+  if(c === 'nom_equipe') return 'Donne un nom à ton équipe.';
+  if(c === 'tarif') return 'Choisis un tarif.';
   if(c === 'trop_lourd') return 'Fichier trop lourd (8 Mo au maximum).';
   if(c === 'type_non_supporte') return 'Format non accepté : envoie une image ou un PDF.';
   if(/^stockage/.test(c)) return "Le dépôt de fichiers n'est pas disponible pour le moment.";
@@ -146,12 +151,14 @@ async function renderMesInscriptions(){
         ${actif ? `<button type="button" class="btn btn-ghost btn-sm" data-annuler="${esc(i.id)}">Annuler</button>` : ''}
       </div>
       ${i.consignes ? `<p class="mi-consignes">${esc(i.consignes)}</p>` : ''}
+      ${suiviParticipant(i)}
       ${docsHtml}
       <p class="mi-err hidden" data-err="${esc(i.id)}"></p>
     </div>`;
   }).join('')}</div>
   <p class="section-hint">Les documents déposés ne sont visibles que par l'organisateur de l'événement et ses co-organisateurs.</p>`;
   box.querySelectorAll('[data-open]').forEach(b=> b.addEventListener('click', ()=> openEvent(b.dataset.open)));
+  box.querySelectorAll('[data-qr]').forEach(el=> dessinerQr(el, el.dataset.qr));
   box.querySelectorAll('[data-annuler]').forEach(b=> b.addEventListener('click', async ()=>{
     if(!confirm('Annuler ta demande d\'inscription ?')) return;
     b.disabled = true;
@@ -167,6 +174,23 @@ async function renderMesInscriptions(){
     try{ await D().deposerDocument(inp.dataset.up, inp.dataset.doc, f); renderMesInscriptions(); }
     catch(e){ err.textContent = messageErreur(e); err.classList.remove('hidden'); lab.classList.remove('is-busy'); lab.firstChild.textContent = 'Déposer'; }
   }));
+}
+
+function suiviParticipant(i){
+  const s = i.suivi || {}, l = [];
+  if(s.du) l.push(`<span>Montant : <b>${euros(s.du)}</b>${s.paiement ? ` · ${esc(PAIEMENT[s.paiement.statut] || '')}${s.paiement.statut === 'partiel' && s.paiement.recu ? ` (${euros(s.paiement.recu)} reçus)` : ''}` : ' · à régler avec l\'organisateur'}</span>`);
+  if(s.groupe) l.push(`<span>Groupe : <b>${esc(s.groupe)}</b></span>`);
+  if(s.chambre) l.push(`<span>Chambre : <b>${esc(s.chambre)}</b></span>`);
+  if(s.present) l.push('<span class="doc-ok">Présence pointée</span>');
+  const qr = i.qr ? `<div class="mi-qr"><div class="mi-qr-img" data-qr="${esc(`${location.origin}/?pointage=${encodeURIComponent(i.id)}&e=${encodeURIComponent(i.event.id)}`)}"></div><p>Ton QR code d'entrée : montre-le à l'accueil le jour J.</p></div>` : '';
+  return (l.length ? `<p class="mi-suivi">${l.join('')}</p>` : '') + qr;
+}
+/* QR code de pointage (bibliothèque qrcode-generator, js/vendor/qrcode.js). */
+function dessinerQr(el, texte){
+  if(typeof qrcode !== 'function'){ setTimeout(()=> dessinerQr(el, texte), 300); return; }
+  const q = qrcode(0, 'M'); q.addData(texte); q.make();
+  el.innerHTML = q.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+  const svg = el.querySelector('svg'); if(svg){ svg.setAttribute('role', 'img'); svg.setAttribute('aria-label', 'QR code de pointage'); }
 }
 
 /* =========================================================
@@ -193,22 +217,30 @@ function brancherInscriptionFiche(ev){
     }
   }).catch(()=>{});
 }
-function ouvrirInscription(ev){
+async function ouvrirInscription(ev){
   if(!currentUser){ openAuth('signup'); return; }
   inscEvenement = ev;
+  // Le formulaire vient du serveur (réglages nettoyés), jamais de la fiche brute.
+  let etat = null;
+  try{ etat = await D().etatInscriptions(ev.id); }catch(e){ /* formulaire de base */ }
+  const zone = document.getElementById('inscSurMesure');
+  zone.innerHTML = etat ? fmChamps(etat) : '';
+  fmBrancherChamps(zone);
+  const equipeEbok = !!(etat && etat.equipes && etat.equipes.active);
+  document.getElementById('inscNbField').classList.toggle('hidden', equipeEbok);
   const reg = ev.inscription || {};
   document.getElementById('inscTitle').textContent = `S'inscrire · ${ev.title}`;
   const cons = document.getElementById('inscConsignes');
   cons.textContent = reg.consignes || '';
   cons.classList.toggle('hidden', !reg.consignes);
-  document.getElementById('inscEquipeField').classList.toggle('hidden', reg.champEquipe === false);
+  document.getElementById('inscEquipeField').classList.toggle('hidden', reg.champEquipe === false || equipeEbok);
   const docs = document.getElementById('inscDocs');
   const liste = (reg.documents || []).map(d=> d.nom).filter(Boolean);
   docs.textContent = liste.length ? `Documents demandés, à déposer ensuite dans Mes événements : ${liste.join(', ')}.` : '';
   docs.classList.toggle('hidden', !liste.length);
   document.getElementById('inscError').classList.add('hidden');
-  document.getElementById('inscForm').reset();
   document.getElementById('inscForm').hidden = false;
+  document.getElementById('inscSub').textContent = "Ta demande est envoyée à l'organisateur, qui la valide. Tu reçois un e-mail dès sa décision.";
   ouvrirModale('inscModal');
   setTimeout(()=> document.getElementById(reg.champEquipe === false ? 'in-nb' : 'in-equipe').focus(), 50);
 }
@@ -223,11 +255,13 @@ function ouvrirInscription(ev){
     const btn = document.getElementById('inscSubmit'), err = document.getElementById('inscError');
     btn.disabled = true; btn.textContent = 'Envoi…'; err.classList.add('hidden');
     try{
+      const surMesure = fmLire(document.getElementById('inscSurMesure'));
       const r = await D().sInscrire(inscEvenement.id, {
         equipe: document.getElementById('in-equipe').value,
         nb: document.getElementById('in-nb').value,
         tel: document.getElementById('in-tel').value,
         message: document.getElementById('in-message').value,
+        ...surMesure,
       });
       document.getElementById('inscForm').hidden = true;
       document.getElementById('inscSub').innerHTML = r.statut === 'liste_attente'
@@ -271,7 +305,7 @@ async function renderOrga(){
     const etat = ev.status === 'approved' ? '<span class="st-pill st-ok"><i></i>En ligne</span>' : '<span class="st-pill st-wait"><i></i>En attente de validation</span>';
     return `<button type="button" class="orga-item" data-sel="${esc(ev.id)}" aria-pressed="${ev.id === orga.sel}">
       ${tableauDeMarque(ev)}
-      <span class="orga-item-txt"><b>${esc(ev.title)}</b>${etat}${attente ? `<em>${attente} demande${attente > 1 ? 's' : ''} à traiter</em>` : ''}${ev.role === 'coorg' ? '<em class="is-coorg">Co-organisateur</em>' : ''}</span>
+      <span class="orga-item-txt"><b>${esc(ev.title)}</b>${etat}${attente ? `<em>${attente} demande${attente > 1 ? 's' : ''} à traiter</em>` : ''}${ev.visibilite === 'prive' ? '<em class="is-coorg">Privé · accessible par lien</em>' : ''}${ev.role === 'coorg' ? '<em class="is-coorg">Co-organisateur</em>' : ''}</span>
     </button>`;
   }).join('')}
     <button type="button" class="orga-item orga-new" data-go-create>${ico('plus')}Publier un événement</button>
@@ -305,7 +339,8 @@ function dessinerTableau(){
   const dash = document.getElementById('orgaDash');
   const d = orga.data, ev = orga.liste.find(e=> e.id === orga.sel) || {};
   const reg = d.reglages, c = compteParStatut();
-  const sous = [['inscrits', `Inscrits <span class="mes-n">${d.inscriptions.filter(i=> i.statut !== 'annulee').length || ''}</span>`], ['messages', 'Messages'], ['reglages', 'Réglages'], ['equipe', 'Co-organisateurs']];
+  const sous = [['inscrits', `Inscrits <span class="mes-n">${d.inscriptions.filter(i=> i.statut !== 'annulee').length || ''}</span>`], ...(reg.pointage && reg.pointage.active ? [['jourj', 'Jour J']] : []), ['messages', 'Messages'], ['reglages', 'Réglages'], ['equipe', 'Co-organisateurs']];
+  if(orga.sous === 'jourj' && !(reg.pointage && reg.pointage.active)) orga.sous = 'inscrits';
   dash.innerHTML = `
     <div class="od-head">
       <div><span class="od-meta">${esc([ev.type, ev.lieu || ev.city].filter(Boolean).join(' · '))}</span><h3>${esc(d.event.title)}</h3></div>
@@ -313,6 +348,16 @@ function dessinerTableau(){
         <button type="button" class="btn btn-ghost" data-od="modifier">${ico('edit')}Modifier la fiche</button>
         <button type="button" class="btn btn-ghost" data-od="voir">Voir la fiche</button>
       </div>
+    </div>
+    <div class="od-vis" role="group" aria-label="Visibilité de l'événement">
+      <div class="od-vis-seg">
+        <button type="button" class="chip" data-vis="public" aria-pressed="${d.visibilite !== 'prive'}">${ico('globe')}Public</button>
+        <button type="button" class="chip" data-vis="prive" aria-pressed="${d.visibilite === 'prive'}">${ico('lock')}Privé</button>
+      </div>
+      <p class="od-vis-txt">${d.visibilite === 'prive'
+        ? "<b>Privé :</b> absent de la carte, de la recherche, de l'agenda et des alertes. Seules les personnes qui ont le lien voient la fiche et peuvent s'inscrire."
+        : '<b>Public :</b> visible sur la carte, dans la recherche, l\'agenda et les alertes.'}</p>
+      <button type="button" class="btn btn-ghost btn-sm" data-od="lien">${ico('link')}Copier le lien</button>
     </div>
     ${d.event.status !== 'approved' ? `<p class="od-note">Ton événement attend la validation de l'équipe EBOK. Tu peux déjà préparer les inscriptions : elles s'ouvriront sur la fiche dès sa mise en ligne.</p>` : ''}
     ${!reg.active ? `<div class="od-banner">${ICO_OUTILS}<span>Les inscriptions ne sont pas ouvertes sur ta fiche.</span><button type="button" class="btn btn-primary btn-sm" data-od="ouvrir">Ouvrir les inscriptions</button></div>` : ''}
@@ -327,9 +372,32 @@ function dessinerTableau(){
   dash.querySelectorAll('[data-sous]').forEach(b=> b.addEventListener('click', ()=>{ orga.sous = b.dataset.sous; dessinerTableau(); }));
   dash.querySelector('[data-od="voir"]').addEventListener('click', ()=> openEvent(orga.sel));
   dash.querySelector('[data-od="modifier"]').addEventListener('click', modifierFiche);
+  dash.querySelectorAll('[data-vis]').forEach(b=> b.addEventListener('click', ()=> changerVisibilite(b.dataset.vis)));
+  dash.querySelector('[data-od="lien"]').addEventListener('click', async e=>{
+    const lien = `${location.origin}/evenement/${orga.sel}`;
+    const btn = e.currentTarget;
+    try{ await navigator.clipboard.writeText(lien); btn.lastChild.textContent = 'Lien copié'; setTimeout(()=>{ btn.lastChild.textContent = 'Copier le lien'; }, 2000); }
+    catch{ prompt('Lien de la fiche :', lien); }
+  });
   const ouvrir = dash.querySelector('[data-od="ouvrir"]');
   if(ouvrir) ouvrir.addEventListener('click', ()=>{ orga.sous = 'reglages'; dessinerTableau(); });
-  ({ inscrits: vueInscrits, messages: vueMessages, reglages: vueReglages, equipe: vueEquipe })[orga.sous]();
+  ({ inscrits: vueInscrits, jourj: vueJourJ, messages: vueMessages, reglages: vueReglages, equipe: vueEquipe })[orga.sous]();
+}
+
+async function changerVisibilite(vis){
+  if((orga.data.visibilite || 'public') === vis) return;
+  if(vis === 'prive' && !confirm("Rendre l'événement privé ? Il disparaît de la carte, de la recherche et de l'agenda ; il reste accessible par son lien.")) return;
+  try{
+    const r = await D().majReglagesInscription(orga.sel, { visibilite: vis });
+    orga.data.visibilite = r.visibilite;
+    const ev = orga.liste.find(x=> x.id === orga.sel); if(ev) ev.visibilite = r.visibilite;
+    // La carte et l'agenda suivent tout de suite.
+    if(r.visibilite === 'prive'){
+      const i = events.findIndex(x=> x.id === orga.sel);
+      if(i >= 0){ events.splice(i, 1); if(typeof renderAll === 'function') renderAll(); }
+    }
+    renderOrga();
+  }catch(e){ alert(messageErreur(e)); }
 }
 
 async function modifierFiche(){
@@ -398,6 +466,17 @@ function vueInscrits(){
     return `<th class="${cls || ''}" aria-sort="${actif ? (orga.tri.sens > 0 ? 'ascending' : 'descending') : 'none'}"><button type="button" class="od-sort" data-tri="${col}">${libelle}<span class="od-sort-ic">${actif ? (orga.tri.sens > 0 ? '↑' : '↓') : ''}</span></button></th>`;
   };
   const docs = d.reglages.documents.length;
+  const lg = d.reglages.logistique;
+  const avecSuivi = d.reglages.tarifs.length || lg.groupes.length || lg.chambres.length || d.reglages.pointage.active;
+  const suivi = i=>{
+    const g = i.gestion || {}, l = [];
+    if(d.reglages.tarifs.length){ const s = (g.paiement && g.paiement.statut) || 'a_payer'; l.push(`<span class="st-pill ${s === 'paye' || s === 'offert' ? 'st-ok' : s === 'partiel' ? 'st-list' : 'st-wait'}"><i></i>${PAIEMENT[s]}</span>`); }
+    if(g.groupe) l.push(`<span class="tag">${esc(g.groupe)}</span>`);
+    if(g.chambre) l.push(`<span class="tag">${esc(g.chambre)}</span>`);
+    if(g.present) l.push('<span class="doc-etat doc-ok">Présent</span>');
+    return l.join(' ');
+  };
+  const optionsSel = (id, libelle, liste)=> liste.length ? `<select class="od-select od-select-sm" id="${id}" aria-label="${libelle}"><option value="">${libelle}…</option>${liste.map(x=> `<option value="${esc(x)}">${esc(x)}</option>`).join('')}<option value="__vide">Retirer</option></select>` : '';
   body.innerHTML = `
     <div class="od-tools">
       <div class="od-chips" role="group" aria-label="Filtrer par statut">
@@ -418,6 +497,8 @@ function vueInscrits(){
       <button type="button" class="btn btn-sm btn-ghost" data-lot="refusee">Refuser</button>
       ${d.reglages.categories.length ? `<select class="od-select od-select-sm" id="odLotCat" aria-label="Catégorie"><option value="">Catégorie…</option>${d.reglages.categories.map(x=> `<option value="+${esc(x)}">Ajouter « ${esc(x)} »</option>`).join('')}${d.reglages.categories.map(x=> `<option value="-${esc(x)}">Retirer « ${esc(x)} »</option>`).join('')}</select>` : ''}
       ${docs ? `<button type="button" class="btn btn-sm btn-ghost" data-lot-docs>Valider les documents déposés</button>` : ''}
+      ${d.reglages.tarifs.length ? `<select class="od-select od-select-sm" id="odLotPaie" aria-label="Paiement"><option value="">Paiement…</option>${Object.entries(PAIEMENT).map(([k, l])=> `<option value="${k}">${l}</option>`).join('')}</select>` : ''}
+      ${optionsSel('odLotGroupe', 'Groupe', lg.groupes)}${optionsSel('odLotChambre', 'Chambre', lg.chambres)}
       <button type="button" class="btn btn-sm btn-ghost" data-lot-ecrire>${ico('send')}Écrire</button>
       <button type="button" class="btn btn-sm btn-ghost" data-lot-mails>${ico('mail')}Copier les e-mails</button>
       ${menuExport('odExportSel', 'Exporter')}
@@ -427,7 +508,7 @@ function vueInscrits(){
     <div class="od-table-wrap"><table class="od-table">
       <thead><tr>
         <th class="od-check"><input type="checkbox" id="odTous" aria-label="Tout sélectionner" ${tousCoches ? 'checked' : ''}></th>
-        ${th('nom', 'Inscrit')}${th('date', 'Demande le', 'hide-m')}${th('statut', 'Statut')}${th('categories', 'Catégories', 'hide-m')}${docs ? th('documents', 'Documents', 'hide-m') : ''}
+        ${th('nom', 'Inscrit')}${th('date', 'Demande le', 'hide-m')}${th('statut', 'Statut')}${th('categories', 'Catégories', 'hide-m')}${docs ? th('documents', 'Documents', 'hide-m') : ''}${avecSuivi ? '<th class="hide-m">Suivi</th>' : ''}
         <th class="od-th-act"><span class="sr-only">Actions</span></th></tr></thead>
       <tbody>${liste.map(i=> `<tr data-insc="${esc(i.id)}" tabindex="0" class="${orga.choix.has(i.id) ? 'is-sel' : ''}">
         <td class="od-check"><input type="checkbox" data-coche="${esc(i.id)}" aria-label="Sélectionner ${esc(i.nom || i.email || 'cet inscrit')}" ${orga.choix.has(i.id) ? 'checked' : ''}></td>
@@ -436,6 +517,7 @@ function vueInscrits(){
         <td>${pastille(i.statut)}</td>
         <td class="hide-m">${(i.categories || []).map(x=> `<span class="tag">${esc(x)}</span>`).join('')}</td>
         ${docs ? `<td class="hide-m">${docsResume(i)}</td>` : ''}
+        ${avecSuivi ? `<td class="hide-m od-suivi">${suivi(i)}</td>` : ''}
         <td class="od-act">${i.statut === 'en_attente' || i.statut === 'liste_attente' ? `<button type="button" class="btn btn-sm btn-primary" data-vite="validee" data-id="${esc(i.id)}">Valider</button>` : ''}</td>
       </tr>`).join('') || `<tr><td colspan="7" class="od-vide">Aucun inscrit ne correspond.</td></tr>`}</tbody>
     </table></div>
@@ -486,6 +568,9 @@ function vueInscrits(){
   if(lotCat) lotCat.addEventListener('change', ()=>{
     const v = lotCat.value; if(!v) return;
     actionLot(v[0] === '+' ? { ajouterCat: v.slice(1) } : { retirerCat: v.slice(1) });
+  });
+  [['odLotPaie', v=> ({ gestion: { paiement: { statut: v } } })], ['odLotGroupe', v=> ({ gestion: { groupe: v === '__vide' ? '' : v } })], ['odLotChambre', v=> ({ gestion: { chambre: v === '__vide' ? '' : v } })]].forEach(([id, f])=>{
+    const s = document.getElementById(id); if(s) s.addEventListener('change', ()=>{ if(s.value) actionLot(f(s.value)); });
   });
   const lotDocs = body.querySelector('[data-lot-docs]');
   if(lotDocs) lotDocs.addEventListener('click', ()=> actionLot({ docsValides: true }));
@@ -568,7 +653,9 @@ function ouvrirInscrit(id){
       <dt>Personnes</dt><dd>${esc(String(i.demande.nb || 1))}</dd>
       <dt>Demande le</dt><dd>${new Date(i.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</dd>
       ${i.demande.message ? `<dt>Message</dt><dd class="ins-msg">${esc(i.demande.message)}</dd>` : ''}
+      ${fmReponsesHtml(reg, i.demande)}
     </dl>
+    ${gestionHtml(reg, i)}
     <h4 class="ins-h">Décision</h4>
     <div class="ins-statuts" role="group" aria-label="Statut de l'inscription">
       ${['en_attente', 'validee', 'liste_attente', 'refusee'].map(s=> `<button type="button" class="chip" data-statut="${s}" aria-pressed="${i.statut === s}">${STATUT_INSC[s].label}</button>`).join('')}
@@ -601,6 +688,16 @@ function ouvrirInscrit(id){
   corps.querySelectorAll('[data-docstat]').forEach(b=> b.addEventListener('click', async ()=>{
     if(await enregistrerInscrit(i.id, { docs: { [b.dataset.doc]: b.dataset.docstat } })) ouvrirInscrit(i.id), ok();
   }));
+  const gSave = document.getElementById('gestSave');
+  if(gSave) gSave.addEventListener('click', async ()=>{
+    const v = id=> { const el = document.getElementById(id); return el ? el.value : undefined; };
+    const gestion = {};
+    if(document.getElementById('gPaie')) gestion.paiement = { statut: v('gPaie'), recu: v('gRecu') };
+    if(document.getElementById('gGroupe')) gestion.groupe = v('gGroupe');
+    if(document.getElementById('gChambre')) gestion.chambre = v('gChambre');
+    if(document.getElementById('gPresent')) gestion.present = document.getElementById('gPresent').checked;
+    if(await enregistrerInscrit(i.id, { gestion })) ouvrirInscrit(i.id), ok();
+  });
   document.getElementById('inscritSave').addEventListener('click', async ()=>{
     if(await enregistrerInscrit(i.id, { commentaire: document.getElementById('inscritCom').value })) ouvrirInscrit(i.id), ok();
   });
@@ -616,6 +713,24 @@ function ouvrirInscrit(id){
 })();
 
 /* Exports : la liste affichée (filtres et tri compris) ou la sélection. */
+/* Bloc « Suivi » de la fiche d'un inscrit : paiement, groupe, chambre, présence. */
+function gestionHtml(reg, i){
+  const g = i.gestion || {}, du = fmDu(reg, i.demande), lg = reg.logistique, champs = [];
+  if(du || reg.tarifs.length){
+    const p = g.paiement || { statut: 'a_payer', recu: 0 };
+    champs.push(`<div class="field"><label for="gPaie">Paiement <span class="field-hint">(dû : ${euros(du)})</span></label><select id="gPaie">${Object.entries(PAIEMENT).map(([k, l])=> `<option value="${k}" ${p.statut === k ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+      <div class="field"><label for="gRecu">Reçu (€)</label><input type="number" id="gRecu" min="0" step="0.5" value="${p.recu || ''}"></div>`);
+  }
+  const choix = (id, label, liste, val)=> liste.length
+    ? `<div class="field"><label for="${id}">${label}</label><select id="${id}"><option value="">—</option>${liste.map(x=> `<option ${val === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></div>`
+    : `<div class="field"><label for="${id}">${label}</label><input type="text" id="${id}" maxlength="60" value="${esc(val || '')}"></div>`;
+  if(lg.groupes.length || g.groupe) champs.push(choix('gGroupe', 'Groupe', lg.groupes, g.groupe));
+  if(lg.hebergement || lg.chambres.length || g.chambre) champs.push(choix('gChambre', 'Chambre / dortoir', lg.chambres, g.chambre));
+  if(reg.pointage.active) champs.push(`<label class="od-switch od-switch-flat"><input type="checkbox" id="gPresent" ${g.present ? 'checked' : ''}><span><b>Présent</b>${g.present && g.present.le ? `<em>Pointé le ${new Date(g.present.le).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</em>` : ''}</span></label>`);
+  if(!champs.length) return '';
+  return `<h4 class="ins-h">Suivi</h4><div class="form-grid gest-grid">${champs.join('')}</div><button type="button" class="btn btn-ghost btn-sm" id="gestSave">Enregistrer le suivi</button>`;
+}
+
 function exporter(format, liste){
   const d = orga.data, docs = d.reglages.documents;
   if(!liste.length){ alert('Aucun inscrit à exporter.'); return; }
@@ -633,13 +748,52 @@ function exporter(format, liste){
     window.EBOK_EXPORT.pdf(nom, titre, sous, entetes, lignes, poids);
     return;
   }
-  const entetes = ['Nom', 'E-mail', 'Téléphone', 'Équipe / club', 'Personnes', 'Statut', 'Catégories', ...docs.map(x=> x.nom), 'Commentaire privé', 'Message du participant', 'Demandé le'];
-  const lignes = liste.map(i=> [i.nom, i.email, i.demande.tel, i.demande.equipe, Number(i.demande.nb) || 1, (STATUT_INSC[i.statut] || {}).label, (i.categories || []).join(', '),
+  const reg = d.reglages, qs = reg.questions;
+  const g = i=> i.gestion || {};
+  const entetes = ['Nom', 'E-mail', 'Téléphone', 'Équipe / club', 'Personnes', 'Joueurs', 'Statut', 'Catégories', ...qs.map(q=> q.label),
+    ...(reg.tarifs.length ? ['Tarif', 'Options', 'Montant dû', 'Paiement', 'Reçu'] : []),
+    ...(reg.logistique.repas ? ['Repas'] : []), ...(reg.logistique.hebergement ? ['Hébergement'] : []), 'Groupe', 'Chambre', ...(reg.pointage.active ? ['Présent'] : []),
+    ...docs.map(x=> x.nom), 'Commentaire privé', 'Message du participant', 'Demandé le'];
+  const lignes = liste.map(i=> [i.nom, i.email, i.demande.tel, i.demande.equipe, Number(i.demande.nb) || 1, (i.demande.membres || []).map(m=> m.nom).join(', '), (STATUT_INSC[i.statut] || {}).label, (i.categories || []).join(', '),
+    ...qs.map(q=> fmValeur(q, (i.demande.reponses || {})[q.id])),
+    ...(reg.tarifs.length ? [(reg.tarifs.find(t=> t.id === i.demande.tarif) || {}).nom || '', reg.options.filter(o=> (i.demande.options || []).includes(o.id)).map(o=> o.nom).join(', '), fmDu(reg, i.demande), PAIEMENT[(g(i).paiement || {}).statut || 'a_payer'], (g(i).paiement || {}).recu || 0] : []),
+    ...(reg.logistique.repas ? [i.demande.repas || ''] : []), ...(reg.logistique.hebergement ? [i.demande.hebergement === 'pensionnaire' ? 'Pensionnaire' : i.demande.hebergement === 'externe' ? 'Externe' : ''] : []),
+    g(i).groupe || '', g(i).chambre || '', ...(reg.pointage.active ? [g(i).present ? 'Oui' : 'Non'] : []),
     ...docs.map(x=> etatDoc(i, x)), i.commentaire, i.demande.message, date(i.createdAt)]);
   if(format === 'xlsx') window.EBOK_EXPORT.xlsx(nom, entetes, lignes, 'Inscrits');
   else window.EBOK_EXPORT.csv(nom, entetes, lignes);
 }
 
+
+/* ---------- Jour J : pointage ---------- */
+function vueJourJ(){
+  const body = document.getElementById('odBody'), d = orga.data;
+  const valides = d.inscriptions.filter(i=> i.statut === 'validee');
+  const presents = valides.filter(i=> i.gestion && i.gestion.present).length;
+  const q = (orga.jourQ || '').toLowerCase();
+  const liste = valides.filter(i=> !q || [i.nom, i.email, i.demande.equipe, (i.demande.membres || []).map(m=> m.nom).join(' ')].join(' ').toLowerCase().includes(q))
+    .sort((a, b)=> (a.nom || a.email || '').localeCompare(b.nom || b.email || '', 'fr'));
+  body.innerHTML = `
+    <div class="jj-head"><p class="jj-compte"><b>${presents}</b> / ${valides.length} présent${presents > 1 ? 's' : ''}</p>
+      ${d.reglages.pointage.qr ? `<p class="field-hint">Avec le QR code : scanne-le avec l'appareil photo de ton téléphone (connecté à ton compte EBOK) ; la page s'ouvre et pointe l'inscrit.</p>` : ''}</div>
+    <label class="od-search">${ico('search')}<input type="search" id="jjQ" placeholder="Chercher un nom, une équipe" value="${esc(orga.jourQ || '')}"></label>
+    <div class="jj-list">${liste.map(i=> `<label class="jj-row ${i.gestion && i.gestion.present ? 'is-on' : ''}">
+        <input type="checkbox" data-pointer="${esc(i.id)}" ${i.gestion && i.gestion.present ? 'checked' : ''}>
+        <span class="jj-nom"><b>${esc(i.nom || i.email || 'Membre')}</b><span>${esc([i.demande.equipe, (i.gestion || {}).groupe, (i.gestion || {}).chambre].filter(Boolean).join(' · '))}</span></span>
+        ${i.gestion && i.gestion.paiement && i.gestion.paiement.statut !== 'paye' && i.gestion.paiement.statut !== 'offert' && fmDu(d.reglages, i.demande) ? `<span class="st-pill st-wait"><i></i>${esc(PAIEMENT[i.gestion.paiement.statut])}</span>` : ''}
+      </label>`).join('') || '<p class="od-vide">Aucun inscrit validé.</p>'}</div>`;
+  const qIn = document.getElementById('jjQ');
+  qIn.addEventListener('input', ()=>{ orga.jourQ = qIn.value; const pos = qIn.selectionStart; vueJourJ(); const n = document.getElementById('jjQ'); n.focus(); n.setSelectionRange(pos, pos); });
+  body.querySelectorAll('[data-pointer]').forEach(cb=> cb.addEventListener('change', async ()=>{
+    cb.disabled = true;
+    try{
+      await D().pointerInscrit(orga.sel, cb.dataset.pointer, cb.checked);
+      const i = d.inscriptions.find(x=> x.id === cb.dataset.pointer);
+      if(i) i.gestion = { ...(i.gestion || {}), present: cb.checked ? { le: new Date().toISOString() } : null };
+      vueJourJ();
+    }catch(e){ cb.checked = !cb.checked; cb.disabled = false; alert(messageErreur(e)); }
+  }));
+}
 
 /* ---------- Messages ---------- */
 function vueMessages(){
@@ -714,9 +868,11 @@ function vueReglages(){
         <button type="button" class="btn btn-ghost btn-sm" id="rgAddDoc">${ico('plus')}Ajouter un document</button>
         <p class="field-hint od-legal">Droit à l'image, autorisation parentale, règlement signé… Ne demande pas de certificat médical ni de donnée de santé : prévois plutôt une attestation, et vérifie le document original sur place.</p>
       </fieldset>
+      ${fmEditeur(reg)}
       <p class="form-error hidden" id="rgErr"></p>
       <div class="edit-actions"><span class="ins-ok hidden" id="rgOk">Réglages enregistrés</span><button type="submit" class="btn btn-primary">Enregistrer</button></div>
     </form>`;
+  fmBrancherEditeur(body);
   const docs = document.getElementById('rgDocs');
   const brancher = ()=> docs.querySelectorAll('[data-retirer]').forEach(b=> b.onclick = ()=> b.closest('.od-doc-row').remove());
   brancher();
@@ -731,6 +887,7 @@ function vueReglages(){
       consignes: document.getElementById('rgConsignes').value,
       categories: document.getElementById('rgCats').value.split(',').map(x=> x.trim()).filter(Boolean),
       documents: [...docs.querySelectorAll('.od-doc-row')].map(r=> ({ id: r.dataset.docid || '', nom: r.querySelector('.od-doc-nom').value, aide: r.querySelector('.od-doc-aide').value })).filter(x=> x.nom.trim()),
+      ...fmLireEditeur(body),
     };
     try{
       const r = await D().majReglagesInscription(orga.sel, { inscription });
@@ -807,6 +964,30 @@ function poserQuestionOutils(eventId){
         : 'Noté. Ton événement reste visible comme d\'habitude.';
     }
   }));
+})();
+
+/* Pointage par QR code : l'organisateur scanne le code d'un inscrit avec
+   l'appareil photo de son téléphone ; le lien /?pointage=ID&e=EVENT s'ouvre
+   ici et pointe l'inscrit (le serveur vérifie que c'est bien l'organisateur). */
+(function(){
+  const p = new URLSearchParams(location.search);
+  const id = p.get('pointage'), ev = p.get('e');
+  if(!id || !ev) return;
+  history.replaceState(null, '', '/');
+  let essais = 0;
+  const tenter = async ()=>{
+    if((!currentUser || !D().pointerInscrit) && essais++ < 40){ setTimeout(tenter, 250); return; }
+    if(!currentUser){ afficherBandeau('Connecte-toi avec ton compte organisateur pour pointer cet inscrit, puis scanne à nouveau le QR code.', 'Se connecter', ()=> openAuth('login')); return; }
+    try{
+      const r = await D().pointerInscrit(ev, id, true);
+      const qui = r.nom || r.equipe || 'Inscrit';
+      const alerte = r.statut !== 'validee' ? ` Attention : inscription « ${(STATUT_INSC[r.statut] || {}).label || r.statut} ».` : '';
+      afficherBandeau(r.deja ? `${qui} était déjà pointé pour ${r.event}.${alerte}` : `${qui} est pointé présent pour ${r.event}.${alerte}`, 'Ouvrir le Jour J', ()=>{ orga.sel = ev; orga.sous = 'jourj'; window.mesOnglet = 'organise'; showPage('mes'); });
+    }catch(e){
+      afficherBandeau(e.code === 'prive' ? "Ce QR code concerne un événement que tu n'organises pas." : messageErreur(e));
+    }
+  };
+  tenter();
 })();
 
 /* Lien direct depuis un e-mail : /?mes=inscriptions ou /?mes=organise */
