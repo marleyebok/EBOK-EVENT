@@ -1,6 +1,6 @@
 # EBOK — repères pour Claude
 
-L'agenda collaboratif du basket français, en ligne sur `ebok.fr` (depuis le 10/11/2026 ; `event.ebok.fr` redirige vers `ebok.fr`). La marque s'appelle **EBOK** (anciennement « EBOK Event »).
+L'agenda collaboratif du basket français, en ligne sur `ebok.fr` (depuis le 10/11/2026 ; `event.ebok.fr` redirige vers `ebok.fr`). La marque s'appelle **EBOK**.
 Échanges avec le propriétaire **en français**.
 
 - `README.md` : comment ça marche (architecture, variables d'environnement, déploiement).
@@ -8,8 +8,7 @@ L'agenda collaboratif du basket français, en ligne sur `ebok.fr` (depuis le 10/
 - `EBOK_Event_Briefing.md` : référence produit et design.
 - `BASCULE_EBOK_FR.md` : marche à suivre du passage à ebok.fr (Clerk, Google, tests).
 - `IMPORT_LOT.md` : **format du lot d'événements** que l'admin colle dans Administration → Importer. À lire dès qu'il envoie des liens, affiches ou un calendrier à ajouter au site : préparer le lot selon ce fichier, sans rien inventer.
-- `ANCIENS_SITES.md` : **les anciens sites EBOK (l'ancien site principal, Mercato, Forum, Playbook…) ont été mis hors ligne le 9/11/2026** — ce qui a été fait et comment les remettre en ligne. À consulter dès qu'il est question d'un de ces sites.
 
 Pile : HTML/CSS/JS pur sans build (`public/`), fonctions Vercel (`api/`), Neon, Clerk, Vercel Blob.
-Seul EBOK est développé : ne pas réintroduire de lien ou de dépendance vers un autre site EBOK.
+EBOK est un produit à part entière : aucune mention, aucun lien ni aucune dépendance vers un autre site EBOK, nulle part (site, code, documentation).
 Événement sans lieu précis (national, « partout en France ») : on l'épingle sur Paris et on le précise dans le lieu et la description.

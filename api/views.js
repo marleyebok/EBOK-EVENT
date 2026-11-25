@@ -63,7 +63,7 @@ function empreinteVisiteur(req, jour) {
   const ua = String(req.headers["user-agent"] || "");
   // Secret côté serveur : sans lui, l'empreinte serait devinable à partir d'une
   // IP. CLERK_SECRET_KEY n'est jamais exposée au navigateur.
-  const secret = process.env.CLERK_SECRET_KEY || process.env.DATABASE_URL || "ebok-event";
+  const secret = process.env.CLERK_SECRET_KEY || process.env.DATABASE_URL || "ebok";
   return createHash("sha256").update(`${jour}|${secret}|${ip}|${ua}`).digest("hex").slice(0, 32);
 }
 

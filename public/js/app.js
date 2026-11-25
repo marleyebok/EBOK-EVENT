@@ -5,7 +5,6 @@
    ========================================================= */
 function isPast(ev){ return ev.dateEnd < TODAY; }
 
-const sessionCounters = {};
 let currentGallery = [];
 
 // Libellés/couleurs de disponibilité des places.
@@ -304,17 +303,6 @@ function buildMap(){
       }).join('')}
     </g>` : '';
 
-  // Marqueur de position de l'utilisateur + cercle de rayon (géolocalisation).
-  let geoMarker = '';
-  if(userLoc){
-    const [ux, uy] = projGeo(userLoc.lat, userLoc.lng);
-    const rpx = homeRadius < 200 ? (homeRadius * MAP_PROJ.scale / KM_PER_LAT) : 0;
-    geoMarker = `
-      ${rpx > 0 ? `<circle class="geo-radius" cx="${ux}" cy="${uy}" r="${rpx.toFixed(1)}"/>` : ''}
-      <circle class="geo-user-halo" cx="${ux}" cy="${uy}" r="9"/>
-      <circle class="geo-user" cx="${ux}" cy="${uy}" r="4.5"/>`;
-  }
-
   // Le fond (régions, encarts) est dans un groupe qui se zoome ; les noms de
   // villes et les épingles sont dessinés par-dessus, à taille constante, et
   // recalculés à chaque changement de vue (renderMapOverlay).
@@ -324,7 +312,6 @@ function buildMap(){
       <g class="region-layer" id="regionLayer">${tops}</g>
       ${overseas}
       ${worldInset}
-      <g class="geo-layer">${geoMarker}</g>
     </g>
     <g class="city-layer" id="cityLayer"></g>
     <g class="pin-layer" id="pinLayer"></g>`;
@@ -762,16 +749,9 @@ function hideTooltip(){ const tt = document.getElementById('mapTooltip'); if(tt)
 
 function initHomeFilters(){
 
-  // Barre de recherche ville/région avec autocomplétion
-  // Suggestions : les villes seulement. La région se choisit dans sa liste.
+  // Ville : autocomplétion sur les villes des événements. La région se
+  // choisit sur la carte ou dans la phrase de recherche.
   const cities = [...new Set(events.map(e=> e.city).filter(Boolean))].sort();
-  fillRegionSelect('regionSelect', 'Toutes');
-  const regionSelect = document.getElementById('regionSelect');
-  if(regionSelect) regionSelect.addEventListener('change', ()=>{
-    homeRegion = regionSelect.value;
-    syncRegionSelection();
-    applyMapFilters();
-  });
   const citySearch = document.getElementById('citySearch');
   const citySuggestions = document.getElementById('citySuggestions');
   
@@ -819,17 +799,6 @@ function initHomeFilters(){
       applyMapFilters();
     }
   });
-
-  // Rayon slider (retiré de la recherche rapide — reste géré si présent ailleurs).
-  const radiusSlider = document.getElementById('radiusFilter');
-  if(radiusSlider){
-    radiusSlider.addEventListener('input', (e)=>{
-      homeRadius = parseInt(e.target.value, 10);
-      updateRadiusLabel();
-      updateGeoCircle();
-      applyMapFilters();
-    });
-  }
 
   // Calendrier de période (date début / date fin). Il s'ouvrait sur juin 2026,
   // codé en dur : on part du mois courant.
@@ -1067,7 +1036,6 @@ function updateTypeLabel(){
 let homeView = 'map';
 let homeCity = '';
 let homeRegion = '';       // région choisie dans la liste de la recherche rapide
-let homeRadius = 200;
 let homeNom = [];          // mots d'un nom d'événement tapés dans la barre de recherche
 let setHomePeriod = ()=>{}; // posé par initHomeFilters (le calendrier vit dans sa portée)
 
@@ -1078,17 +1046,6 @@ let periodEnd = '';
 // Centre approximatif de la France dans le repère de la carte (secours)
 const FRANCE_CENTER = {x: 305, y: 300};
 
-// Position de l'utilisateur (géolocalisation ou dernière position mémorisée).
-let userLoc = null;
-
-/* Point de référence pour le rayon : la position de l'utilisateur en
-   priorité, sinon la ville sélectionnée dans les filtres. */
-function currentRef(){
-  if(userLoc) return userLoc;
-  if(homeCity && CITY_LATLON[homeCity]) return { lat: CITY_LATLON[homeCity][0], lng: CITY_LATLON[homeCity][1] };
-  return null;
-}
-
 // Distance réelle entre deux points géographiques (formule de Haversine), en km.
 function haversine(aLat, aLng, bLat, bLng){
   const R = 6371, toRad = x => x * Math.PI / 180;
@@ -1097,96 +1054,10 @@ function haversine(aLat, aLng, bLat, bLng){
   return 2 * R * Math.asin(Math.sqrt(s));
 }
 
-/* Distance (km) entre le point de référence et un événement. Renvoie 0
-   s'il n'y a pas de référence (le rayon ne filtre alors rien). */
-function getEventDistance(ev){
-  const ref = currentRef();
-  if(!ref || typeof ev.lat !== 'number') return 0;
-  return haversine(ref.lat, ref.lng, ev.lat, ev.lng);
-}
-
 // Projette une position lat/lon dans le repère de la carte métropole.
 function projGeo(lat, lng){
   const P = MAP_PROJ;
   return [ P.pad + (lng * P.cosLat - P.minX) * P.scale, P.pad + (-lat - P.minY) * P.scale ];
-}
-const KM_PER_LAT = 110.574; // km par degré de latitude (pour le cercle de rayon)
-
-/* ---- Géolocalisation "autour de moi" ---- */
-function updateRadiusLabel(){
-  const el = document.getElementById('radiusValue');
-  if(el) el.textContent = homeRadius >= 200 ? 'Partout' : `${homeRadius} km`;
-}
-function updateGeoCircle(){
-  if(!userLoc) return;
-  const c = document.querySelector('.geo-radius');
-  if(homeRadius >= 200){ if(c) c.setAttribute('r', 0); return; }
-  const r = (homeRadius * MAP_PROJ.scale / KM_PER_LAT).toFixed(1);
-  if(c) c.setAttribute('r', r);
-  else buildMap();   // le cercle n'existait pas encore : on redessine
-}
-function setGeoUI(active){
-  const btn = document.getElementById('geoBtn');
-  if(!btn) return;
-  btn.classList.toggle('active', active);
-  btn.innerHTML = ico('pin') + (active ? 'Autour de moi — activé' : 'Me localiser');
-}
-function showGeoStatus(msg, isError){
-  const status = document.getElementById('geoStatus');
-  if(!status) return;
-  status.textContent = msg;
-  status.classList.toggle('geo-status-error', !!isError);
-  status.classList.remove('hidden');
-}
-function initGeoloc(){
-  const btn = document.getElementById('geoBtn');
-  const status = document.getElementById('geoStatus');
-  if(!btn) return;
-
-  // Restaure la dernière position mémorisée.
-  const saved = localStorage.getItem('ebok-userloc');
-  if(saved){ try{ userLoc = JSON.parse(saved); }catch(e){ userLoc = null; } }
-  if(userLoc) setGeoUI(true);
-
-  btn.addEventListener('click', ()=>{
-    if(userLoc){                       // désactiver
-      userLoc = null;
-      localStorage.removeItem('ebok-userloc');
-      setGeoUI(false);
-      status.classList.add('hidden');
-      buildMap(); applyMapFilters();
-      return;
-    }
-    if(!('geolocation' in navigator)){
-      showGeoStatus("Géolocalisation non disponible sur ce navigateur.", true);
-      return;
-    }
-    showGeoStatus("Localisation en cours…", false);
-    btn.disabled = true;
-    navigator.geolocation.getCurrentPosition(
-      pos=>{
-        btn.disabled = false;
-        userLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        localStorage.setItem('ebok-userloc', JSON.stringify(userLoc));
-        if(homeRadius >= 200){        // rayon "Partout" → on passe à 100 km pour que le filtre serve
-          homeRadius = 100;
-          const slider = document.getElementById('radiusFilter');
-          if(slider) slider.value = 100;
-          updateRadiusLabel();
-        }
-        setGeoUI(true);
-        showGeoStatus(`Position trouvée — événements à moins de ${homeRadius} km.`, false);
-        buildMap(); applyMapFilters();
-      },
-      err=>{
-        btn.disabled = false;
-        showGeoStatus(err.code === 1
-          ? "Accès à la position refusé. Autorise la localisation dans ton navigateur."
-          : "Localisation impossible. Réessaie.", true);
-      },
-      { enableHighAccuracy:false, timeout:10000, maximumAge:600000 }
-    );
-  });
 }
 
 /* Tri d'affichage commun aux listes d'événements : du plus récent au plus
@@ -1212,8 +1083,6 @@ function computeHomeFilteredEvents(){
     }
     if(homeRegion && ev.region !== homeRegion) return false;
     if(homeNom.length && !nomCorrespond(ev, homeNom)) return false;
-    // "Partout" (curseur au max, >= 200) = aucune limite de distance.
-    if(homeRadius < 200 && getEventDistance(ev) > homeRadius) return false;
     return true;
   });
 }
@@ -1409,7 +1278,6 @@ function initHomeSearch(){
     homeCity = f.city;
     const cs = document.getElementById('citySearch'); if(cs) cs.value = f.city;
     homeRegion = f.region;
-    setRegionValue('regionSelect', f.region);
     setHomePeriod(f.periode ? f.periode[0] : '', f.periode ? f.periode[1] : '');
     syncRegionSelection();
     if(homeView !== 'map') setHomeView('map');
@@ -1436,7 +1304,6 @@ function initHomeSearch(){
   });
   // Un filtre touché à la main efface le nom recherché.
   const oublierNom = ()=>{ if(homeNom.length){ homeNom = []; if(msg) msg.textContent = AIDE; applyMapFilters(); } };
-  ['regionSelect'].forEach(id=>{ const el = document.getElementById(id); if(el) el.addEventListener('change', oublierNom); });
   const cs = document.getElementById('citySearch'); if(cs) cs.addEventListener('input', oublierNom);
   document.querySelectorAll('#typeFilterHome .type-chip').forEach(c=> c.addEventListener('click', oublierNom));
 }
@@ -1451,7 +1318,7 @@ function initHomeSearch(){
 let dernierFiltre = null, scanAnim = 0, scanAttente = 0;
 function signatureFiltres(){
   const types = [...document.querySelectorAll('#typeFilterHome .type-chip.active')].map(c=> c.dataset.type).join(',');
-  return [types, homeCity, homeRegion, periodStart, periodEnd, homeRadius, homeNom.join(' ')].join('|');
+  return [types, homeCity, homeRegion, periodStart, periodEnd, homeNom.join(' ')].join('|');
 }
 const SCAN_DUREE = 2000;          // durée d'un balayage (ms)
 const SCAN_DELAI_ACCUEIL = 1500;  // attente avant le premier balayage, à l'arrivée sur l'accueil
@@ -3006,20 +2873,14 @@ async function attendreDonnees(ms){
 }
 
 async function loadAndAnimateViews(id){
-  const modeDemo = !document.querySelector('script[src$="clerk-init.js"]');
   let count = null;
-  if(modeDemo){
-    sessionCounters[id] = (sessionCounters[id] || VIEW_SEEDS[id] || 0) + 1;
-    count = sessionCounters[id];
-  }else{
-    // La couche données est un module chargé après app.js : on l'attend un peu.
-    const data = await attendreDonnees(8000);
-    if(data && typeof data.incrementViews === 'function'){
-      try{
-        const c = await data.incrementViews(id);
-        if(typeof c === 'number' && !isNaN(c)) count = c;
-      }catch(e){ console.warn('[EBOK] Compteur de curieux indisponible', e); }
-    }
+  // La couche données est un module chargé après app.js : on l'attend un peu.
+  const data = await attendreDonnees(8000);
+  if(data && typeof data.incrementViews === 'function'){
+    try{
+      const c = await data.incrementViews(id);
+      if(typeof c === 'number' && !isNaN(c)) count = c;
+    }catch(e){ console.warn('[EBOK] Compteur de curieux indisponible', e); }
   }
   // Pas de chiffre fiable : on masque le compteur plutôt que d'en inventer un.
   document.querySelectorAll('.viewer-counter, .curieux-counter').forEach(el=>{
@@ -5282,10 +5143,6 @@ let editPosterData = null;        // nouvelle affiche (dataURL) si remplacée
 let editPickedLocation = null;    // ville revalidée dans la liste (coords + région)
 
 function setFieldVal(id, v){ const el = document.getElementById(id); if(el) el.value = (v == null ? '' : v); }
-function showEditError(msg){
-  const e = document.getElementById('editError');
-  if(!e) return; e.textContent = msg; e.classList.remove('hidden');
-}
 function closeEditModal(){
   const modal = document.getElementById('editModal');
   modal.classList.remove('open');
@@ -5560,7 +5417,6 @@ function initTheme(){
 
 // Écouteurs (une seule fois) + premier rendu sur les données locales.
 initTheme();           // applique le thème mémorisé avant le rendu
-initGeoloc();          // restaure une éventuelle position avant le 1er dessin
 loadFavorites();       // favoris locaux (mode démo) avant le 1er dessin
 buildMap();
 initMapZoom();

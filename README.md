@@ -1,4 +1,4 @@
-# 🏀 EBOK (anciennement EBOK Event)
+# 🏀 EBOK — ebok.fr
 
 **L'agenda collaboratif du basket français.** Tournois, camps, 3x3, détections, clinics, matchs pro… repérés sur une carte de France interactive.
 
@@ -70,11 +70,19 @@ EBOK-EVENT/
 
 Le code était initialement dans **un seul fichier HTML monolithique** ; il a été découpé en modules HTML / CSS / JS pour être maintenable, sans changer le comportement.
 
-> **EBOK Event est un produit autonome.** Il ne dépend d'aucune autre application
+> **EBOK est un produit autonome.** Il ne dépend d'aucune autre application
 > et n'en mentionne aucune. Les comptes ont leur propre instance Clerk — voir
 > « L'instance Clerk » plus bas.
 
 ---
+
+## 🌐 Domaine ebok.fr — à ne jamais faire
+
+- **Résilier le domaine `ebok.fr`** ou supprimer sa zone DNS chez OVH :
+  le site et la boîte `contact@ebok.fr` en dépendent.
+- Supprimer chez OVH les enregistrements **MX / SPF / TXT** de l'e-mail, ni
+  l'enregistrement **`event`** (l'ancienne adresse `event.ebok.fr` redirige
+  vers `ebok.fr`, voir `vercel.json`).
 
 ## 🚀 Lancer en local
 
@@ -112,7 +120,7 @@ n'est pas configurée, le site fonctionne sur les **données de démo** de
 `data.js` (aucune casse).
 
 > Le schéma `event` est **entièrement isolé** : la base peut être partagée avec
-> d'autres projets sans aucune conséquence pour EBOK Event. Les comptes ont
+> d'autres projets sans aucune conséquence pour EBOK. Les comptes ont
 > leur propre instance Clerk — voir « L'instance Clerk ».
 
 ### Variables d'environnement (Vercel → Settings → Environment Variables)
@@ -356,7 +364,7 @@ variable d'env `ADMIN_EMAILS` sur Vercel (aucune modif de code).
 
 ### L'instance Clerk
 
-EBOK Event a sa **propre instance Clerk**, indépendante. Le site pointe dessus
+EBOK a sa **propre instance Clerk**, indépendante. Le site pointe dessus
 via `PUBLISHABLE_KEY` dans `public/js/clerk.js` (une seule ligne : le domaine de
 l'instance est décodé de la clé, il n'y a pas de seconde valeur à garder
 synchronisée). Le serveur utilise la clé secrète correspondante, dans la
