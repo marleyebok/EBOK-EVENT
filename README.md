@@ -596,7 +596,8 @@ Palette complète et code couleur par type d'événement : voir `EBOK_Event_Brie
   Logique serveur dans `lib/formulaire.js`, interface dans `public/js/formulaire.js`.
 - **Équipes** : nom d'équipe + membres (minimum / maximum réglables).
 - **Tarifs et options** : le participant choisit, le montant dû s'affiche ;
-  l'organisateur suit le paiement (à payer, partiel, payé, offert, reçu).
+  l'organisateur suit le paiement (à payer, partiel, payé, offert, reçu) ;
+  un bouton « Paiement reçu » le passe à « Payé » (montant dû) en un clic.
   **Informatif seulement : EBOK n'encaisse rien.**
 - **Logistique des camps** : formule de repas (pension complète, demi-pension,
   externe…), pensionnaire ou externe, chambres / dortoirs et groupes

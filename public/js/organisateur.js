@@ -668,8 +668,8 @@ function ouvrirInscrit(id){
     ${reg.documents.length ? `<h4 class="ins-h">Documents</h4><div class="ins-docs">${reg.documents.map(dm=>{
       const dep = i.documents[dm.id];
       return `<div class="ins-doc"><span>${esc(dm.nom)}</span>${dep
-        ? `<a href="${esc(dep.url)}" target="_blank" rel="noopener">${ico('external')}Ouvrir</a><span class="doc-etat ${dep.statut === 'valide' ? 'doc-ok' : dep.statut === 'a_refaire' ? 'doc-miss' : 'doc-wait'}">${esc(DOC_STATUT[dep.statut] || 'Déposé')}</span>
-           <button type="button" class="btn btn-sm btn-ghost" data-docstat="valide" data-doc="${esc(dm.id)}">Valider</button><button type="button" class="btn btn-sm btn-ghost" data-docstat="a_refaire" data-doc="${esc(dm.id)}">À refaire</button>`
+        ? `<a href="${esc(dep.url)}" target="_blank" rel="noopener">${ico('external')}Ouvrir</a><div class="ins-doc-act"><span class="doc-etat ${dep.statut === 'valide' ? 'doc-ok' : dep.statut === 'a_refaire' ? 'doc-miss' : 'doc-wait'}">${esc(DOC_STATUT[dep.statut] || 'Déposé')}</span>
+           ${dep.statut === 'valide' ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-docstat="valide" data-doc="${esc(dm.id)}">Valider</button>`}${dep.statut === 'a_refaire' ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-docstat="a_refaire" data-doc="${esc(dm.id)}">À refaire</button>`}</div>`
         : '<span class="doc-etat doc-miss">Pas encore déposé</span>'}</div>`;
     }).join('')}</div>` : ''}
     <h4 class="ins-h">Commentaire privé</h4>
@@ -688,6 +688,13 @@ function ouvrirInscrit(id){
   corps.querySelectorAll('[data-docstat]').forEach(b=> b.addEventListener('click', async ()=>{
     if(await enregistrerInscrit(i.id, { docs: { [b.dataset.doc]: b.dataset.docstat } })) ouvrirInscrit(i.id), ok();
   }));
+  const gPaieOk = document.getElementById('gPaieOk');
+  if(gPaieOk) gPaieOk.addEventListener('click', async ()=>{
+    gPaieOk.disabled = true;
+    const du = fmDu(orga.data.reglages, i.demande);
+    if(await enregistrerInscrit(i.id, { gestion: { paiement: { statut: 'paye', recu: du } } })) ouvrirInscrit(i.id), ok();
+    else gPaieOk.disabled = false;
+  });
   const gSave = document.getElementById('gestSave');
   if(gSave) gSave.addEventListener('click', async ()=>{
     const v = id=> { const el = document.getElementById(id); return el ? el.value : undefined; };
@@ -718,6 +725,9 @@ function gestionHtml(reg, i){
   const g = i.gestion || {}, du = fmDu(reg, i.demande), lg = reg.logistique, champs = [];
   if(du || reg.tarifs.length){
     const p = g.paiement || { statut: 'a_payer', recu: 0 };
+    const regle = p.statut === 'paye' || p.statut === 'offert';
+    // Un clic suffit pour le cas le plus courant : le paiement est arrivé.
+    champs.push(`<div class="gest-paie"><span class="st-pill ${regle ? 'st-ok' : p.statut === 'partiel' ? 'st-list' : 'st-wait'}"><i></i>${PAIEMENT[p.statut] || PAIEMENT.a_payer}${p.recu ? ` · ${euros(p.recu)}` : ''}</span>${regle ? '' : `<button type="button" class="btn btn-primary btn-sm" id="gPaieOk">Paiement reçu</button>`}</div>`);
     champs.push(`<div class="field"><label for="gPaie">Paiement <span class="field-hint">(dû : ${euros(du)})</span></label><select id="gPaie">${Object.entries(PAIEMENT).map(([k, l])=> `<option value="${k}" ${p.statut === k ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
       <div class="field"><label for="gRecu">Reçu (€)</label><input type="number" id="gRecu" min="0" step="0.5" value="${p.recu || ''}"></div>`);
   }
