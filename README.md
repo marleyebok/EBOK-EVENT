@@ -320,6 +320,15 @@ fiches consultées, favoris ajoutés et retirés) sont dans `event.stats_jour` ;
 `ensureSchema()`. Visiteurs, fiches consultées et favoris sont mesurés **depuis la mise en ligne** de
 cette fonction : l'onglet l'indique.
 
+**Statistiques d'un événement (organisateur).** Onglet « Statistiques » du tableau de bord
+(`public/js/organisateur.js`, `vueStats`), lu par `GET /api/events?r=insc&event=ID&stats=1&jours=7|30|90`
+(propriétaire, co-organisateur ou admin ; `statsEvenement` dans `lib/stats.js`). Vues et favoris
+ajoutés jour par jour par événement dans `event.evenements_jour` (le total des vues reste dans
+`event.views`) ; demandes d'inscription lues dans `event.inscriptions` ; clics dans
+`event.clics_jour`. Sur la fiche, les coordonnées ne s'affichent qu'au clic sur « Contacter »
+(compté `contact`), puis chaque canal utilisé est compté à part (`telephone`, `email`,
+`instagram`) : ce sont des détails du contact, exclus du total « Clics vers toi ».
+
 ### Confier un événement à son organisateur
 
 Quand l'admin publie un événement pour un organisateur, le bouton **Organisateur** de la

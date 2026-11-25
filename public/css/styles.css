@@ -3315,3 +3315,16 @@ input,select,textarea{font-family:var(--font-body);}
 }
 #inscModal input[type=checkbox],#inscModal input[type=radio]{width:16px;height:16px;padding:0;background:none;border:0;flex:none;}
 #inscModal .chip-check input{width:1px;height:1px;}
+
+/* Statistiques d'un événement (tableau de bord organisateur) : mêmes
+   graphiques que l'administration, quatre tuiles au plus. */
+.od-st-tuiles{grid-template-columns:repeat(4,minmax(0,1fr));}
+.od-st-canaux{margin:0 0 18px;padding:18px;background:var(--asphalt-2);border:1px solid var(--line);border-radius:14px;}
+.od-st-canaux h4 .st-vs{font-size:14px;}
+@media(max-width:640px){
+  .od-st-tuiles{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .od-st-canaux{padding:14px 12px;}
+}
+.od-st-canaux .od-st-sous{padding-left:18px;}
+.od-st-canaux .od-st-sous .st-rang-nom{color:var(--chalk-dim);font-size:13.5px;}
+.od-body .st-plan{padding-right:18px;}

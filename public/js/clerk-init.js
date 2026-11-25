@@ -20,7 +20,7 @@ import {
   getStats,
   uploadCarteInsta, getInstagram, publierInstagram,
   etatInscriptions, sInscrire, mesInscriptions, annulerInscription, deposerDocument,
-  mesEvenementsOrganises, tableauOrganisateur, majInscription, majReglagesInscription,
+  mesEvenementsOrganises, tableauOrganisateur, statsOrganisateur, majInscription, majReglagesInscription,
   envoyerMessageInscrits, repondreInteretOutils, actionLotInscrits, supprimerInscrits, pointerInscrit,
 } from "./services.js";
 import { loadClerk } from "./clerk.js";
@@ -38,7 +38,7 @@ window.EBOK_DATA = {
   getStats,
   uploadCarteInsta, getInstagram, publierInstagram,
   etatInscriptions, sInscrire, mesInscriptions, annulerInscription, deposerDocument,
-  mesEvenementsOrganises, tableauOrganisateur, majInscription, majReglagesInscription,
+  mesEvenementsOrganises, tableauOrganisateur, statsOrganisateur, majInscription, majReglagesInscription,
   envoyerMessageInscrits, repondreInteretOutils, actionLotInscrits, supprimerInscrits, pointerInscrit,
 };
 
