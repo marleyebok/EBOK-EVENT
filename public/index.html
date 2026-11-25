@@ -327,7 +327,14 @@
     <form class="search-form" id="searchForm">
       <div class="field">
         <label for="f-lieu">Ville</label>
-        <input type="text" id="f-lieu" placeholder="Ville, salle ou pays">
+        <div class="ac-wrap">
+          <input type="text" id="f-lieu" placeholder="Ville, salle ou pays" autocomplete="off">
+          <div class="ac-list hidden" id="f-lieu-ac" role="listbox"></div>
+        </div>
+        <div class="rayon hidden" id="f-rayon-wrap">
+          <label for="f-rayon">Dans un rayon de <output id="f-rayon-val" for="f-rayon">30 km</output></label>
+          <input type="range" id="f-rayon" min="5" max="100" step="5" value="30">
+        </div>
       </div>
       <div class="field">
         <label for="f-region">Région</label>

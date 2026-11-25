@@ -3541,3 +3541,26 @@ input,select,textarea{font-family:var(--font-body);}
 @media(max-width:700px){
   .carousel-arrows .carousel-nav{width:40px;height:40px;}
 }
+
+/* Recherche : rayon autour de la ville choisie (5 à 100 km). */
+.rayon{margin-top:12px;display:flex;flex-direction:column;gap:8px;}
+.rayon label{margin:0;font-size:13px;color:var(--chalk-dim);}
+.rayon output{font-family:var(--font-mono);font-variant-numeric:tabular-nums;color:var(--chalk);font-weight:500;}
+.rayon input[type=range]{
+  -webkit-appearance:none;appearance:none;width:100%;height:24px;background:transparent;margin:0;cursor:pointer;
+}
+.rayon input[type=range]::-webkit-slider-runnable-track{
+  height:4px;border-radius:2px;
+  background:linear-gradient(to right, var(--accent) var(--p,26%), var(--line-strong) var(--p,26%));
+}
+.rayon input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:var(--line-strong);}
+.rayon input[type=range]::-moz-range-progress{height:4px;border-radius:2px;background:var(--accent);}
+.rayon input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:20px;height:20px;margin-top:-8px;border-radius:50%;
+  background:var(--accent);border:3px solid var(--asphalt-2);box-shadow:0 0 0 1px var(--accent);
+}
+.rayon input[type=range]::-moz-range-thumb{
+  width:14px;height:14px;border-radius:50%;background:var(--accent);border:3px solid var(--asphalt-2);box-shadow:0 0 0 1px var(--accent);
+}
+.rayon input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:4px;}
+.search-form .rayon input[type=range]{border:0;padding:0;background:transparent;box-shadow:none;height:24px;min-height:0;border-radius:0;}
