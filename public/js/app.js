@@ -2474,6 +2474,7 @@ const ICONES = {
   shield: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
   logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
   edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  copy: '<rect x="8" y="8" width="14" height="14" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
   trash: '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
   alert: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
   check: '<path d="M20 6 9 17l-5-5"/>',
@@ -2769,7 +2770,7 @@ async function openEvent(id, opts){
       <p class="ev-when">
         <strong>${fmtDateRange(ev.dateStart, ev.dateEnd)}</strong>
         <span>${esc([ev.city, ev.region].filter(Boolean).join(', '))}</span>
-        ${peutModifier(ev) ? `<button class="edit-inline" data-edit="${esc(ev.id)}" title="Modifier cet événement">${ico('edit')}Modifier</button>` : ``}
+        ${peutModifier(ev) ? `<button class="edit-inline" data-edit="${esc(ev.id)}" title="Modifier cet événement">${ico('edit')}Modifier</button><button class="edit-inline" data-dupliquer="${esc(ev.id)}" title="Créer une copie pour une autre date ou un autre lieu">${ico('copy')}Dupliquer</button>` : ``}
         ${currentIsAdmin ? `<button class="edit-inline" data-insta="${esc(ev.id)}" title="Générer la carte Instagram de cet événement">${ico('instagram')}Carte Insta</button>` : ``}
       </p>
 
@@ -3177,38 +3178,77 @@ function renderFeatured(){
   const wrapper = slot.querySelector('.carousel-wrapper');
   if(wrapper){ wrapper.onmouseenter = stopAuto; wrapper.onmouseleave = startAuto; }
 
-  // Balayage au doigt : la piste suit le doigt, puis passe à la diapositive
-  // voisine si le geste est assez franc, sinon revient. Un geste vertical
-  // laisse la page défiler. (Propriétés on… : la fonction est rappelée à
-  // chaque mise à jour des événements, un écouteur s'empilerait.)
+  // Glisser (doigt, souris ou stylet) : la piste suit le geste, puis passe
+  // à la diapositive voisine si le geste est assez franc, sinon revient. Un
+  // geste vertical laisse la page défiler. (Propriétés on… : la fonction est
+  // rappelée à chaque mise à jour des événements, un écouteur s'empilerait.)
   if(wrapper){
-    let x0 = 0, y0 = 0, dx = 0, sens = null;   // sens : null = indécis, true = horizontal
-    wrapper.ontouchstart = e=>{
-      if(single || e.touches.length !== 1){ sens = false; return; }
-      x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = 0; sens = null;
+    let x0 = 0, y0 = 0, dx = 0, sens = null, actif = false, glisse = false;
+    wrapper.onpointerdown = e=>{
+      if(single || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      actif = true; x0 = e.clientX; y0 = e.clientY; dx = 0; sens = null; glisse = false;
       stopAuto();
     };
-    wrapper.ontouchmove = e=>{
-      if(sens === false || e.touches.length !== 1) return;
-      const mx = e.touches[0].clientX - x0, my = e.touches[0].clientY - y0;
+    wrapper.onpointermove = e=>{
+      if(!actif || sens === false) return;
+      const mx = e.clientX - x0, my = e.clientY - y0;
       if(sens === null){
         if(Math.abs(mx) < 8 && Math.abs(my) < 8) return;
         sens = Math.abs(mx) > Math.abs(my);
         if(!sens) return;
         track.style.transition = 'none';
+        wrapper.classList.add('is-dragging');
+        try { wrapper.setPointerCapture(e.pointerId); } catch(_){}
       }
-      dx = mx;
-      if(e.cancelable) e.preventDefault();
+      dx = mx; glisse = true;
       track.style.transform = `translateX(calc(-${currentSlide * 100}% + ${dx}px))`;
     };
-    wrapper.ontouchend = wrapper.ontouchcancel = ()=>{
+    wrapper.onpointerup = wrapper.onpointercancel = ()=>{
+      if(!actif) return;
+      actif = false;
+      wrapper.classList.remove('is-dragging');
       if(sens === true){
         track.style.transition = '';
         const seuil = Math.min(70, wrapper.clientWidth * 0.18);
         goToSlide(Math.abs(dx) > seuil ? currentSlide + (dx < 0 ? 1 : -1) : currentSlide);
       }
       sens = null;
-      startAuto();
+      if(!wrapper.matches(':hover')) startAuto();
+    };
+    // Après un glisser à la souris, le relâchement ne doit pas ouvrir la fiche.
+    wrapper.addEventListener('click', e=>{
+      if(glisse){ e.stopPropagation(); e.preventDefault(); glisse = false; }
+    }, { capture: true });
+    wrapper.ondragstart = e=> e.preventDefault();   // pas de « fantôme » d'image
+
+    // Pavé tactile / molette horizontale : un balayage = une diapositive.
+    let cumul = 0, verrou = 0;
+    wrapper.onwheel = e=>{
+      if(single || Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+      e.preventDefault();
+      if(Date.now() < verrou) return;
+      cumul += e.deltaX;
+      if(Math.abs(cumul) > 40){
+        goToSlide(currentSlide + (cumul > 0 ? 1 : -1));
+        cumul = 0; verrou = Date.now() + 600;
+      }
+    };
+  }
+
+  // Clavier : flèches gauche/droite quand le focus est dans le carrousel.
+  const carrousel = slot.querySelector('.featured-carousel');
+  if(carrousel) carrousel.onkeydown = e=>{
+    if(single || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
+    e.preventDefault();
+    goToSlide(currentSlide + (e.key === 'ArrowRight' ? 1 : -1)); startAuto();
+  };
+  const fleches = slot.querySelector('.carousel-arrows');
+  if(fleches){
+    fleches.style.display = single ? 'none' : '';
+    fleches.onkeydown = e=>{
+      if(e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      e.preventDefault();
+      goToSlide(currentSlide + (e.key === 'ArrowRight' ? 1 : -1)); startAuto();
     };
   }
 
@@ -3378,6 +3418,42 @@ document.addEventListener('click', (e)=>{
   const btn = e.target.closest && e.target.closest('[data-edit]');
   if(btn){ e.preventDefault(); e.stopPropagation(); openEditModal(btn.dataset.edit); }
 }, true);
+
+// Dupliquer un événement (admin, diffuseur, co-organisateur).
+document.addEventListener('click', (e)=>{
+  const btn = e.target.closest && e.target.closest('[data-dupliquer]');
+  if(btn){ e.preventDefault(); e.stopPropagation(); dupliquerEvenement(btn.dataset.dupliquer); }
+}, true);
+
+/* Crée une copie de l'événement (même affiche, mêmes infos, mêmes réglages
+   d'inscription) puis ouvre sa fenêtre de modification : il ne reste qu'à
+   changer ce qui diffère (dates, lieu, public…). La copie est « en attente »
+   côté serveur : elle n'apparaît nulle part tant que l'admin ne l'a pas
+   validée. */
+async function dupliquerEvenement(id){
+  const D = window.EBOK_DATA;
+  if(!D || !D.dupliquerEvent){ alert('La duplication demande la connexion au service.'); return; }
+  if(!currentUser){ openAuth('login'); return; }
+  const source = adminList.find(e=> e.id === id) || mineList.find(e=> e.id === id) || events.find(e=> e.id === id);
+  const nom = source && source.title ? `« ${source.title} »` : 'cet événement';
+  if(!confirm(`Dupliquer ${nom} ?\n\nUne copie est créée avec la même affiche, les mêmes infos et les mêmes réglages d'inscription. Tu changes ensuite les dates, le lieu ou le public. La copie reste invisible tant que l'équipe EBOK ne l'a pas validée.`)) return;
+  let copie;
+  try{ copie = await D.dupliquerEvent(id); }
+  catch(err){ alert('Duplication impossible : ' + (err && err.message ? err.message : 'réessaie dans un instant.')); return; }
+  if(!copie || !copie.id){ alert('Duplication impossible pour le moment.'); return; }
+  // Un co-organisateur n'est pas propriétaire : le serveur l'a autorisé, on le note pour l'édition.
+  if(!peutModifier(copie)) copie.__coorg = true;
+  mineList.push(copie);
+  if(currentIsAdmin) adminList.push(copie);
+  openEditModal(copie.id);
+  const sous = document.getElementById('editSub');
+  if(sous) sous.textContent = currentIsAdmin
+    ? "Copie créée, en attente. Change ce qui diffère (dates, lieu, public…), enregistre, puis valide-la."
+    : "Copie créée. Change ce qui diffère (dates, lieu, public…) puis enregistre : l'équipe EBOK la validera.";
+  // « J'organise » ouvert : la copie devient l'événement sélectionné.
+  if(typeof orga !== 'undefined' && window.mesOnglet === 'organise') orga.sel = copie.id;
+  rafraichirVues();
+}
 
 // Carte Instagram (admin) : bouton sur la fiche et dans la liste Administration.
 document.addEventListener('click', (e)=>{
@@ -4732,6 +4808,7 @@ function adminRowHtml(ev){
     <div class="admin-item-actions">
       <button class="btn btn-ghost btn-xs" data-open="${esc(ev.id)}">Voir</button>
       <button class="btn btn-ghost btn-xs" data-edit="${esc(ev.id)}">Modifier</button>
+      <button class="btn btn-ghost btn-xs" data-dupliquer="${esc(ev.id)}" title="Créer une copie pour une autre date ou un autre lieu">Dupliquer</button>
       <button class="btn btn-ghost btn-xs" data-insta="${esc(ev.id)}" title="Générer la carte Instagram">Carte Insta</button>
       <button class="btn btn-ghost btn-xs" data-affil="${esc(ev.id)}">Organisateur</button>
       ${pending ? `<button class="btn btn-approve btn-xs" data-approve="${esc(ev.id)}">Valider</button>` : ''}
@@ -5046,6 +5123,7 @@ function mineCardHtml(ev){
     <div class="mine-card-actions">
       <button class="btn btn-ghost" data-open="${esc(ev.id)}">Voir</button>
       <button class="btn btn-ghost" data-edit="${esc(ev.id)}">Modifier</button>
+      <button class="btn btn-ghost" data-dupliquer="${esc(ev.id)}" title="Créer une copie pour une autre date ou un autre lieu">Dupliquer</button>
       ${(currentIsAdmin && pending) ? `<button class="btn btn-approve" data-approve="${esc(ev.id)}">Valider</button>` : ''}
       <button class="btn btn-danger" data-del="${esc(ev.id)}">Supprimer</button>
     </div>
@@ -5068,6 +5146,9 @@ async function handleDispoChange(id, dispo){
    ouverte, et les compteurs de l'administration. */
 function rafraichirVues(){
   if(document.getElementById('page-profile').classList.contains('active')) renderProfile();
+  // « J'organise » ouvert : la liste et le tableau suivent (dates, titre, copie…).
+  const mes = document.getElementById('page-mes');
+  if(typeof renderOrga === 'function' && mes && mes.classList.contains('active') && window.mesOnglet === 'organise') renderOrga();
   if(!currentIsAdmin) return;
   if(document.getElementById('page-admin').classList.contains('active')) renderAdminEvents();
   else if(typeof majPastilleAdmin === 'function') majPastilleAdmin(true);

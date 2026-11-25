@@ -128,6 +128,11 @@ export async function createEvent(eventData) {
   return (await api("/api/events", { method: "POST", body: eventData })).id;
 }
 
+/** Duplique un événement (copie « en attente », même affiche et mêmes infos). */
+export async function dupliquerEvent(id) {
+  return (await api("/api/events?dupliquer=" + encodeURIComponent(id), { method: "POST", body: {} })).event;
+}
+
 /** Met à jour un événement existant. */
 export async function updateEvent(id, patch) {
   await api("/api/events?id=" + encodeURIComponent(id), { method: "PATCH", body: patch });

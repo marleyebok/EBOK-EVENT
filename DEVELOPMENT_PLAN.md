@@ -267,6 +267,12 @@ adjoindre des statistiques exploitables par un organisateur.
       nécessaire pour mesurer — c'est un choix séparé, justifié seulement pour
       le téléphone et l'e-mail.
 - [x] **Modification d'un événement depuis le tableau de bord**
+- [x] **Dupliquer un événement** *(25/11/2026)* — bouton « Dupliquer » pour
+      l'organisateur (tableau de bord, fiche, profil) et pour l'admin
+      (liste Administration, fiche). Copie « en attente » avec la même affiche,
+      les mêmes infos, les mêmes réglages d'inscription et la même équipe, sans
+      les inscrits ; la fenêtre de modification s'ouvre pour changer dates,
+      lieu ou public. Route `POST /api/events?dupliquer=ID`.
 
 ### 3 bis. Alertes e-mail ✅
 

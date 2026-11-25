@@ -7,6 +7,8 @@
  *   GET    /api/events?mine=1     → mes événements (tous statuts) — auth
  *   GET    /api/events?all=1      → tous les événements (tous statuts) — admin
  *   POST   /api/events {...}      → créer (statut "pending") — auth
+ *   POST   /api/events?dupliquer=X → copier un événement (diffuseur, co-organisateur
+ *                                    ou admin) : la copie est créée « en attente »
  *   PATCH  /api/events?id=X {...} → modifier (diffuseur ou admin ; les champs
  *                                    status / featured ne bougent qu'en admin)
  *   DELETE /api/events?id=X       → supprimer (diffuseur ou admin)
@@ -155,6 +157,32 @@ export default async function handler(req, res) {
         WHERE status = 'approved' AND COALESCE(data->>'visibilite', 'public') <> 'prive'
         ORDER BY created_at DESC LIMIT 1000`;
       return json(res, 200, { events: rows.map(toEvent) });
+    }
+
+    // Dupliquer : même affiche, mêmes infos, mêmes réglages d'inscription et
+    // même équipe ; on change ensuite les dates, le lieu, le public… La copie
+    // est toujours « en attente » : invisible tant que l'admin ne l'a pas
+    // validée, pour qu'une fiche aux anciennes dates n'apparaisse jamais.
+    if (req.method === "POST" && (req.query || {}).dupliquer) {
+      if (!uid) return json(res, 401, { error: "auth" });
+      const srcId = String(req.query.dupliquer);
+      const rows = await sql()`SELECT * FROM event.events WHERE id = ${srcId}`;
+      const src = rows[0];
+      if (!src) return json(res, 404, { error: "introuvable" });
+      const admin = await isAdminUid(uid);
+      if (!admin && src.user_id !== uid && !(await roleSur(src, uid))) return json(res, 403, { error: "prive" });
+      const data = { ...(src.data || {}) };
+      // Ce qui appartient à l'original seulement : relecture, provenance,
+      // réponse au questionnaire, galerie de l'édition (gardée : ce sont les
+      // photos des éditions précédentes, justement).
+      for (const k of ["aRelire", "interetOutils", "detection", "importe", "dupliqueDe"]) delete data[k];
+      data.dupliqueDe = srcId;
+      const eid = newId();
+      await sql()`
+        INSERT INTO event.events (id, status, user_id, featured, data)
+        VALUES (${eid}, 'pending', ${src.user_id || uid}, false, ${JSON.stringify(data)}::jsonb)`;
+      const lues = await sql()`SELECT * FROM event.events_lecture WHERE id = ${eid}`;
+      return json(res, 200, { id: eid, event: toEvent(lues[0]) });
     }
 
     if (req.method === "POST") {

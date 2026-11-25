@@ -1994,7 +1994,7 @@ main{max-width:1240px;margin:0 auto;padding:0 32px 80px;}
    diapositive, un geste vertical fait défiler la page. */
 .fx-poster[data-open]{cursor:pointer;}
 .fx-poster[data-open]:focus-visible{outline:2px solid #fff;outline-offset:3px;}
-.carousel-wrapper{touch-action:pan-y;}
+.carousel-wrapper{touch-action:pan-y;user-select:none;-webkit-user-select:none;}
 
 /* =========================================================
    FICHE ÉVÉNEMENT — trois blocs, trois formes
@@ -3522,3 +3522,22 @@ input,select,textarea{font-family:var(--font-body);}
 .card-noposter-ville{font:400 26px/1 var(--font-display);text-transform:uppercase;color:var(--chalk-mute);letter-spacing:.01em;}
 .card-type-badge{font:500 12px/1 var(--font-body);padding:5px 8px;}
 .content-count{font-family:var(--font-body);font-variant-numeric:tabular-nums;}
+
+/* À la une : flèches dans l'en-tête de section (elles recouvraient l'affiche
+   quand elles étaient posées sur la diapositive). */
+#featuredSlot .section-head{align-items:center;}
+.carousel-arrows{display:flex;gap:8px;}
+.carousel-arrows .carousel-nav{
+  position:static;transform:none;width:44px;height:44px;border-radius:999px;
+  background:transparent;backdrop-filter:none;color:var(--chalk);
+  border:1px solid var(--line-strong);transition:background-color .2s var(--ease),border-color .2s var(--ease);
+}
+.carousel-arrows .carousel-nav:hover{background:var(--asphalt-2);border-color:var(--chalk-mute);}
+.carousel-arrows .carousel-nav:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.carousel-arrows .carousel-nav .ico{width:20px;height:20px;}
+.carousel-wrapper{cursor:grab;}
+.carousel-wrapper.is-dragging{cursor:grabbing;}
+.carousel-wrapper .btn,.carousel-wrapper .fx-poster{cursor:pointer;}
+@media(max-width:700px){
+  .carousel-arrows .carousel-nav{width:40px;height:40px;}
+}
