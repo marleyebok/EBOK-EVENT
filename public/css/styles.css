@@ -3564,3 +3564,16 @@ input,select,textarea{font-family:var(--font-body);}
 }
 .rayon input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:4px;}
 .search-form .rayon input[type=range]{border:0;padding:0;background:transparent;box-shadow:none;height:24px;min-height:0;border-radius:0;}
+
+/* Formulaire sur mesure : modèles par type d'événement, questions groupées. */
+.fm-modeles{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:4px 0 8px;}
+.fm-modeles-l{font-size:13px;color:var(--chalk-dim);margin-right:4px;}
+.fm-modele{height:34px;padding:0 14px;border-radius:999px;border:1px solid var(--line-strong);background:transparent;color:var(--chalk);font:500 14px var(--font-body);cursor:pointer;transition:background-color .15s var(--ease),border-color .15s var(--ease);}
+.fm-modele:hover{border-color:var(--chalk-mute);}
+.fm-modele.is-on{background:var(--accent);border-color:var(--accent);color:#fff;}
+.fm-modele:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.fm-modele-note{margin:0 0 6px;}
+.fm-groupe{margin:16px 0 0;font:600 13px var(--font-body);color:var(--chalk-dim);}
+.fm-oblig-off{cursor:default;}
+.fm-accord{margin:0 0 14px;}
+@media(max-width:640px){ .fm-presets{grid-template-columns:1fr;} }

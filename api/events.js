@@ -21,6 +21,7 @@
 import { ensureSchema, hasDb, sql, json, readBody, newId, ms, sessionUid, isAdminUid, clerkUser } from "./_lib.js";
 import { correspond, message, envoyer } from "../lib/alertes.js";
 import { inscriptions, roleSur, effacerInscriptions } from "../lib/inscriptions.js";
+import { regionDeVille, enFrance } from "../lib/geo.js";
 
 /* Champs gérés par les outils d'organisateur (lib/inscriptions.js) : jamais
    renvoyés au public (les e-mails des co-organisateurs sont privés) et jamais
@@ -195,6 +196,12 @@ export default async function handler(req, res) {
       const featured = admin ? Boolean(body.featured) : false;
       const eid = newId();
       const data = dataBlob(body);
+      // Ville en France sans région : on la déduit (sinon la fiche manque
+      // sur la carte régionale et dans les filtres par région).
+      if (data.city && !data.region && enFrance(data.pays)) {
+        const g = await regionDeVille(data.city);
+        if (g) data.region = g.region;
+      }
       await sql()`
         INSERT INTO event.events (id, status, user_id, featured, data)
         VALUES (${eid}, ${status}, ${uid}, ${featured}, ${JSON.stringify(data)}::jsonb)`;
@@ -240,6 +247,16 @@ export default async function handler(req, res) {
       if (!admin) {
         delete rest.aRelire;
         if (Object.keys(rest).some((k) => k !== "dispo" && k !== "placesTotal")) rest.aRelire = true;
+      }
+      // Même filet qu'à la création : nouvelle ville sans région donnée, ou
+      // fiche restée sans région → on la déduit de la ville.
+      {
+        const apres = { ...row.data, ...rest };
+        const villeChangee = aLaCle("city") && rest.city !== (row.data || {}).city && !aLaCle("region");
+        if (apres.city && enFrance(apres.pays) && (!apres.region || villeChangee)) {
+          const g = await regionDeVille(apres.city);
+          if (g) rest.region = g.region;
+        }
       }
 
       await sql()`

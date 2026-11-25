@@ -1964,6 +1964,7 @@ function initCreatePage(){
     const hint = document.getElementById('c-ville-hint');
     if(hint){ hint.textContent = pick.city + (pick.region ? ' · ' + pick.region : '') + ' — localisé sur la carte.'; hint.style.color = 'var(--green)'; }
   });
+  brancherRegionAuto('c-ville', 'c-region', 'c-pays');
 
   input.addEventListener('change', async ()=>{
     const file = input.files[0];
@@ -2031,7 +2032,8 @@ function initCreatePage(){
       coords = createPickedLocation;
       if(!region && paysChoisi === DEFAULT_COUNTRY) region = createPickedLocation.region || '';
     }else{
-      coords = await resolveCoords(val('c-adresse'), city, region);
+      coords = await resolveCoords(val('c-adresse'), city, region, paysChoisi);
+      if(!region && paysChoisi === DEFAULT_COUNTRY) region = coords.region || '';
     }
     const pays = val('c-pays') || DEFAULT_COUNTRY;
     const {x, y}    = coords;
@@ -2261,19 +2263,59 @@ function guessCoords(city, region){
    gratuite, sans clé, France). Renvoie {x, y, lat, lng} projetés sur la
    carte, ou null si rien trouvé / hors ligne. */
 async function geocodeCoords(address, city, region){
-  const q = [address, city, region].filter(Boolean).join(', ').trim();
+  const q = [address, city].filter(Boolean).join(', ').trim();
   if(!q) return null;
   try{
-    const url = `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(q)}&limit=1`;
+    const url = `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(q)}&limit=5`;
     const res = await fetch(url);
     if(!res.ok) return null;
     const data = await res.json();
-    const f = data.features && data.features[0];
-    if(!f || !f.geometry || !Array.isArray(f.geometry.coordinates)) return null;
+    // Le résultat doit être dans la ville demandée : sinon « Anderlecht »
+    // devient une rue homonyme à La Réunion et l'épingle part au bout du monde.
+    const v = normalizeCity(city);
+    const f = (data.features || []).find(x=> x.geometry && Array.isArray(x.geometry.coordinates) &&
+      (!v || normalizeCity((x.properties || {}).city) === v || normalizeCity((x.properties || {}).name) === v));
+    if(!f) return null;
     const [lng, lat] = f.geometry.coordinates;
     const [x, y] = projGeo(lat, lng);
-    return { x: Math.round(x), y: Math.round(y), lat, lng };
+    return { x: Math.round(x), y: Math.round(y), lat, lng, region: regionDuContexte(f.properties) };
   }catch(e){ return null; }
+}
+/* « 34, Hérault, Occitanie » → « Occitanie » (si c'est bien une région du site). */
+function regionDuContexte(p){
+  const ctx = String((p && p.context) || '').split(',').map(s=> s.trim());
+  const r = ctx[ctx.length - 1];
+  return (typeof FRANCE_REGIONS !== 'undefined' && FRANCE_REGIONS.some(x=> x.name === r)) || ['Guadeloupe', 'Martinique', 'Guyane', 'La Réunion', 'Mayotte'].includes(r) ? r : '';
+}
+
+/* Région d'une ville française : base locale d'abord, puis la Base Adresse
+   Nationale (communes du même nom uniquement). '' si inconnue. */
+async function regionPourVille(city){
+  if(!String(city || '').trim()) return '';
+  await ensureCitiesLoaded();
+  const local = cityCoordsLocal(city);
+  if(local && local.region) return local.region;
+  try{
+    const liste = await searchCitiesBAN(city);
+    const c = liste.find(x=> normalizeCity(x.city) === normalizeCity(city));
+    return c && (typeof FRANCE_REGIONS === 'undefined' || FRANCE_REGIONS.some(r=> r.name === c.region) || ['Guadeloupe', 'Martinique', 'Guyane', 'La Réunion', 'Mayotte'].includes(c.region)) ? c.region : '';
+  }catch(e){ return ''; }
+}
+
+/* Ville saisie à la main (sans passer par la liste de suggestions) : la
+   région se remplit d'elle-même, en France uniquement. */
+function brancherRegionAuto(villeId, regionId, paysId){
+  const ville = document.getElementById(villeId), region = document.getElementById(regionId);
+  if(!ville || !region) return;
+  let seq = 0;
+  ville.addEventListener('change', async ()=>{
+    const pays = paysId && document.getElementById(paysId) ? document.getElementById(paysId).value : '';
+    if(pays && pays !== DEFAULT_COUNTRY) return;
+    const mon = ++seq;
+    const r = await regionPourVille(ville.value);
+    if(mon !== seq || !r) return;
+    setRegionValue(regionId, r);
+  });
 }
 
 /* Cherche une ville dans la base LOCALE par nom exact (insensible aux
@@ -2293,13 +2335,17 @@ function cityCoordsLocal(cityName){
 
 /* Résout les coordonnées : géocodage précis (adresse) d'abord, puis base
    locale des villes, puis repli approximatif sur guessCoords. */
-async function resolveCoords(address, city, region){
-  const geo = await geocodeCoords(address, city, region);
-  if(geo) return geo;
+async function resolveCoords(address, city, region, pays){
+  // Hors de France, ces sources ne connaissent pas le lieu et le
+  // replaceraient en métropole : pas de coordonnées, le pays suffit.
+  if(pays && pays !== DEFAULT_COUNTRY) return guessCoords(city, region);
   await ensureCitiesLoaded();
   const local = cityCoordsLocal(city);
+  const geo = await geocodeCoords(address, city, region);
+  if(geo){ if(!geo.region && local) geo.region = local.region; return geo; }
   if(local) return local;
-  return guessCoords(city, region);
+  const r = await regionPourVille(city);
+  return { ...guessCoords(city, region), region: r };
 }
 
 /* =========================================================
@@ -5018,6 +5064,11 @@ function prefillCreateFromImport(ev, poster){
   const paysEl = document.getElementById('c-pays');
   if(paysEl && ev.pays && Array.from(paysEl.options).some(o=> o.value === ev.pays)) paysEl.value = ev.pays;
   lierPaysRegion('c-pays', 'c-region');
+  // Région non lue sur l'affiche : on la déduit de la ville (en France).
+  if(!ev.region && ev.city){
+    const villeEl = document.getElementById('c-ville');
+    if(villeEl) villeEl.dispatchEvent(new Event('change'));
+  }
   set('c-adresse', ev.address);
   set('c-date-debut', ev.dateStart);
   set('c-date-fin', ev.dateEnd);
@@ -5318,6 +5369,7 @@ function initEditModal(){
     editPickedLocation = pick;
     if(val_pays('e-pays') === DEFAULT_COUNTRY) setRegionValue('e-region', pick.region);
   });
+  brancherRegionAuto('e-city', 'e-region', 'e-pays');
 
   const fileInput = document.getElementById('e-poster-file');
   fileInput.addEventListener('change', async ()=>{
@@ -5391,9 +5443,10 @@ function initEditModal(){
         if(loc.lat != null){ patch.lat = loc.lat; patch.lng = loc.lng; }
         if(loc.region) patch.region = loc.region;   // région officielle
       }else{
-        const c = await resolveCoords(gv('e-address'), patch.city, patch.region);
+        const c = await resolveCoords(gv('e-address'), patch.city, patch.region, patch.pays);
         patch.x = c.x; patch.y = c.y;
         if(c.lat != null){ patch.lat = c.lat; patch.lng = c.lng; }
+        if(c.region) patch.region = c.region;
       }
     }
     if(editPosterData){ patch.poster = await hostPoster(editPosterData); }

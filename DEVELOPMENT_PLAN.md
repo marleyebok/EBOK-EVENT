@@ -273,6 +273,17 @@ adjoindre des statistiques exploitables par un organisateur.
       les mêmes infos, les mêmes réglages d'inscription et la même équipe, sans
       les inscrits ; la fenêtre de modification s'ouvre pour changer dates,
       lieu ou public. Route `POST /api/events?dupliquer=ID`.
+- [x] **Modèles de formulaire d'inscription** *(25/11/2026)* — Camp, Stage,
+      Tournoi, Voyage, Détection, tirés de l'analyse de 23 formulaires réels ;
+      20 nouvelles questions types (sexe, licencié, années de pratique,
+      clubs précédents, sélections, coach, motivations, vidéo, traitement,
+      blessures, autorisation parentale, départ seul, droit à l'image,
+      règlement, adresse, passeport, voyageurs, équipes engagées…).
+- [x] **Région déduite de la ville** *(25/11/2026)* — à la saisie (publication,
+      modification, import IA) et côté serveur à chaque création ou
+      modification (`lib/geo.js`, Base Adresse Nationale), en France
+      uniquement. Le géocodage vérifie le nom de la commune et n'est plus
+      tenté hors de France (fini les épingles d'Anderlecht à La Réunion).
 
 ### 3 bis. Alertes e-mail ✅
 
