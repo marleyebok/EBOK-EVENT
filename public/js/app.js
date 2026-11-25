@@ -3056,7 +3056,7 @@ function renderFeatured(){
   const slot = document.getElementById('featuredSlot');
   if(featuredTimer){ clearInterval(featuredTimer); featuredTimer = null; }
   if(!track || !slot) return;
-  if(featured.length === 0){ slot.style.display = 'none'; return; }
+  if(featured.length === 0){ slot.style.display = 'none'; track.innerHTML = ''; if(dotsContainer) dotsContainer.innerHTML = ''; return; }
   slot.style.display = '';
 
   let currentSlide = 0;
