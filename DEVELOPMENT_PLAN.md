@@ -167,7 +167,7 @@ droits admin se retrouvent seuls (reconnus par e-mail).
 Idée du propriétaire (24/11/2026) : proposer aux organisateurs de **gérer leur
 événement sur ebok.fr**, pas seulement de l'annoncer.
 
-- [ ] **La question après publication** — sur l'écran de confirmation, une
+- [x] **La question après publication** — sur l'écran de confirmation, une
       fois le message « Ton événement est publié » affiché, demander :
       « Tu veux gérer ton événement sur ebok.fr ? Inscriptions, messages aux
       participants, documents » avec trois réponses : *Oui, ça m'intéresse* /
@@ -177,20 +177,20 @@ Idée du propriétaire (24/11/2026) : proposer aux organisateurs de **gérer leu
       V1 sort. Garder le tutoiement du site.
 - [ ] **Cadrer la V1** (à décider ensemble) — périmètre proposé, du plus simple
       au plus lourd :
-  - [ ] Liste des inscrits (formulaire d'inscription gratuit sur la fiche,
+  - [x] Liste des inscrits (formulaire d'inscription gratuit sur la fiche,
         export CSV pour l'organisateur)
-  - [ ] Messages de l'organisateur aux inscrits (e-mail groupé, sans
+  - [x] Messages de l'organisateur aux inscrits (e-mail groupé, sans
         messagerie instantanée au départ)
-  - [ ] Documents à fournir par les participants (autorisation parentale,
+  - [x] Documents à fournir par les participants (autorisation parentale,
         règlement…), dépôt et suivi
   - [ ] Réservation **payante** : seulement avec un statut professionnel
         (voir section 7) — paiement, commission, CGV, rétractation
-- [ ] **Co-organisateurs** — le propriétaire d'un événement invite d'autres
+- [x] **Co-organisateurs** — le propriétaire d'un événement invite d'autres
       comptes (par e-mail) à le gérer avec lui. Rôles proposés : *propriétaire*
       (tout, dont supprimer l'événement et gérer l'équipe) et *co-organisateur*
       (inscrits, messages, documents, modification de la fiche). Droits vérifiés
       côté serveur, invitation révocable, trace de qui a fait quoi.
-- [ ] **Menu simplifié + page « Mes événements »** (maquette :
+- [x] **Menu simplifié + page « Mes événements »** (maquette :
       `maquettes/unslop/mes-evenements.html`) — barre du haut : Rechercher,
       bouton « Publier un événement » **au centre**, Mes événements (pastille
       des alertes), puis bouton « Mon compte » à droite ; sur portable, barre
@@ -203,7 +203,7 @@ Idée du propriétaire (24/11/2026) : proposer aux organisateurs de **gérer leu
       déconnexion. Page en quatre
       onglets : Favoris, Alertes, Mes inscriptions, J'organise (tableau de bord
       par événement : vues, favoris, inscrits, documents, co-organisateurs).
-- [ ] **Avant de toucher aux documents** — certificats médicaux et données de
+- [x] **Avant de toucher aux documents** — certificats médicaux et données de
       mineurs = données sensibles (RGPD) : base légale, durée de
       conservation, accès restreint à l'organisateur, mise à jour de la
       politique de confidentialité et des CGU.
@@ -236,7 +236,7 @@ Le filtre « autour de moi » repose encore sur un rayon approximatif.
       devient public. Le total est calculé par la vue `event.events_lecture` et
       voyage avec la fiche : pas de requête supplémentaire. Masqué à zéro, et
       il bouge dès le clic sans attendre le serveur.
-- [ ] Afficher aussi le total dans le tableau de bord du diffuseur
+- [x] Afficher aussi le total dans le tableau de bord du diffuseur
 
 ### 3. Tableau de bord diffuseur & mesure d'audience
 
@@ -252,14 +252,21 @@ adjoindre des statistiques exploitables par un organisateur.
 - [ ] **Remettre à zéro les compteurs déjà gonflés** — décidé : on repart de
       zéro. Requête prête dans `scripts/reset-compteurs.sql`, à exécuter dans
       la console Neon (SQL Editor).
-- [ ] **Statistiques par événement** — vues, et clics sur chaque canal de contact
-- [ ] **Comptage des clics sur les contacts.** Décision prise : **téléphone et
+- [x] **Statistiques par événement** — onglet « Statistiques » du tableau de
+      bord organisateur (25/11/2026) : vues, favoris ajoutés, demandes
+      d'inscription et clics vers l'organisateur, jour par jour sur 7, 30 ou
+      90 jours, avec l'évolution par rapport à la période d'avant, le détail
+      par canal et le taux « sur 100 personnes qui ont vu ta fiche ». Mesure
+      jour par jour à partir de la mise en ligne (le total des vues remonte
+      plus loin).
+- [x] **Comptage des clics sur les contacts.** *(fait le 25/11/2026 : appel,
+      e-mail et Instagram comptés séparément)* Décision prise : **téléphone et
       e-mail sont masqués et révélés au clic** (ce qui bloque au passage les
       robots collecteurs de spam) ; **les réseaux sociaux restent affichés en
       lien direct**, mais tous les clics sont comptés. Cacher n'est pas
       nécessaire pour mesurer — c'est un choix séparé, justifié seulement pour
       le téléphone et l'e-mail.
-- [ ] **Modification d'un événement depuis le tableau de bord**
+- [x] **Modification d'un événement depuis le tableau de bord**
 
 ### 3 bis. Alertes e-mail ✅
 

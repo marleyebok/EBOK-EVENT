@@ -339,7 +339,7 @@ function dessinerTableau(){
   const dash = document.getElementById('orgaDash');
   const d = orga.data, ev = orga.liste.find(e=> e.id === orga.sel) || {};
   const reg = d.reglages, c = compteParStatut();
-  const sous = [['inscrits', `Inscrits <span class="mes-n">${d.inscriptions.filter(i=> i.statut !== 'annulee').length || ''}</span>`], ...(reg.pointage && reg.pointage.active ? [['jourj', 'Jour J']] : []), ['messages', 'Messages'], ['reglages', 'Réglages'], ['equipe', 'Co-organisateurs']];
+  const sous = [['inscrits', `Inscrits <span class="mes-n">${d.inscriptions.filter(i=> i.statut !== 'annulee').length || ''}</span>`], ...(reg.pointage && reg.pointage.active ? [['jourj', 'Jour J']] : []), ['messages', 'Messages'], ['stats', 'Statistiques'], ['reglages', 'Réglages'], ['equipe', 'Co-organisateurs']];
   if(orga.sous === 'jourj' && !(reg.pointage && reg.pointage.active)) orga.sous = 'inscrits';
   dash.innerHTML = `
     <div class="od-head">
@@ -381,7 +381,7 @@ function dessinerTableau(){
   });
   const ouvrir = dash.querySelector('[data-od="ouvrir"]');
   if(ouvrir) ouvrir.addEventListener('click', ()=>{ orga.sous = 'reglages'; dessinerTableau(); });
-  ({ inscrits: vueInscrits, jourj: vueJourJ, messages: vueMessages, reglages: vueReglages, equipe: vueEquipe })[orga.sous]();
+  ({ inscrits: vueInscrits, jourj: vueJourJ, messages: vueMessages, stats: vueStats, reglages: vueReglages, equipe: vueEquipe })[orga.sous]();
 }
 
 async function changerVisibilite(vis){
@@ -668,8 +668,8 @@ function ouvrirInscrit(id){
     ${reg.documents.length ? `<h4 class="ins-h">Documents</h4><div class="ins-docs">${reg.documents.map(dm=>{
       const dep = i.documents[dm.id];
       return `<div class="ins-doc"><span>${esc(dm.nom)}</span>${dep
-        ? `<a href="${esc(dep.url)}" target="_blank" rel="noopener">${ico('external')}Ouvrir</a><span class="doc-etat ${dep.statut === 'valide' ? 'doc-ok' : dep.statut === 'a_refaire' ? 'doc-miss' : 'doc-wait'}">${esc(DOC_STATUT[dep.statut] || 'Déposé')}</span>
-           <button type="button" class="btn btn-sm btn-ghost" data-docstat="valide" data-doc="${esc(dm.id)}">Valider</button><button type="button" class="btn btn-sm btn-ghost" data-docstat="a_refaire" data-doc="${esc(dm.id)}">À refaire</button>`
+        ? `<a href="${esc(dep.url)}" target="_blank" rel="noopener">${ico('external')}Ouvrir</a><div class="ins-doc-act"><span class="doc-etat ${dep.statut === 'valide' ? 'doc-ok' : dep.statut === 'a_refaire' ? 'doc-miss' : 'doc-wait'}">${esc(DOC_STATUT[dep.statut] || 'Déposé')}</span>
+           ${dep.statut === 'valide' ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-docstat="valide" data-doc="${esc(dm.id)}">Valider</button>`}${dep.statut === 'a_refaire' ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-docstat="a_refaire" data-doc="${esc(dm.id)}">À refaire</button>`}</div>`
         : '<span class="doc-etat doc-miss">Pas encore déposé</span>'}</div>`;
     }).join('')}</div>` : ''}
     <h4 class="ins-h">Commentaire privé</h4>
@@ -688,6 +688,13 @@ function ouvrirInscrit(id){
   corps.querySelectorAll('[data-docstat]').forEach(b=> b.addEventListener('click', async ()=>{
     if(await enregistrerInscrit(i.id, { docs: { [b.dataset.doc]: b.dataset.docstat } })) ouvrirInscrit(i.id), ok();
   }));
+  const gPaieOk = document.getElementById('gPaieOk');
+  if(gPaieOk) gPaieOk.addEventListener('click', async ()=>{
+    gPaieOk.disabled = true;
+    const du = fmDu(orga.data.reglages, i.demande);
+    if(await enregistrerInscrit(i.id, { gestion: { paiement: { statut: 'paye', recu: du } } })) ouvrirInscrit(i.id), ok();
+    else gPaieOk.disabled = false;
+  });
   const gSave = document.getElementById('gestSave');
   if(gSave) gSave.addEventListener('click', async ()=>{
     const v = id=> { const el = document.getElementById(id); return el ? el.value : undefined; };
@@ -718,6 +725,9 @@ function gestionHtml(reg, i){
   const g = i.gestion || {}, du = fmDu(reg, i.demande), lg = reg.logistique, champs = [];
   if(du || reg.tarifs.length){
     const p = g.paiement || { statut: 'a_payer', recu: 0 };
+    const regle = p.statut === 'paye' || p.statut === 'offert';
+    // Un clic suffit pour le cas le plus courant : le paiement est arrivé.
+    champs.push(`<div class="gest-paie"><span class="st-pill ${regle ? 'st-ok' : p.statut === 'partiel' ? 'st-list' : 'st-wait'}"><i></i>${PAIEMENT[p.statut] || PAIEMENT.a_payer}${p.recu ? ` · ${euros(p.recu)}` : ''}</span>${regle ? '' : `<button type="button" class="btn btn-primary btn-sm" id="gPaieOk">Paiement reçu</button>`}</div>`);
     champs.push(`<div class="field"><label for="gPaie">Paiement <span class="field-hint">(dû : ${euros(du)})</span></label><select id="gPaie">${Object.entries(PAIEMENT).map(([k, l])=> `<option value="${k}" ${p.statut === k ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
       <div class="field"><label for="gRecu">Reçu (€)</label><input type="number" id="gRecu" min="0" step="0.5" value="${p.recu || ''}"></div>`);
   }
@@ -902,6 +912,141 @@ function vueReglages(){
 }
 
 /* ---------- Co-organisateurs ---------- */
+/* =========================================================
+   STATISTIQUES DE L'ÉVÉNEMENT
+   ---------------------------------------------------------
+   Vues de la fiche, favoris ajoutés, demandes d'inscription et clics vers
+   l'organisateur, jour par jour sur 7, 30 ou 90 jours, comparés à la période
+   d'avant. Mêmes graphiques que l'onglet Statistiques de l'administration
+   (classes st-*). Chiffres anonymes : un visiteur compte une fois par jour.
+   ========================================================= */
+const STATS_MESURES = [
+  { cle: 'vues', libelle: 'Vues de la fiche', graphique: 'Vues de la fiche', depuis: 'vuesDepuis' },
+  { cle: 'favoris', libelle: 'Favoris ajoutés', graphique: 'Favoris ajoutés', depuis: 'vuesDepuis' },
+  { cle: 'demandes', libelle: "Demandes d'inscription", graphique: "Demandes d'inscription" },
+  { cle: 'clics', libelle: 'Clics vers toi', graphique: 'Clics vers toi', depuis: 'clicsDepuis' },
+];
+const STATS_CANAUX = [
+  { cle: 'inscription', libelle: "S'inscrire (lien externe)" },
+  { cle: 'billetterie', libelle: 'Billetterie' },
+  { cle: 'site', libelle: 'Site officiel' },
+  { cle: 'contact', libelle: 'Coordonnées affichées' },
+  { cle: 'telephone', libelle: 'dont appel', sous: true },
+  { cle: 'email', libelle: 'dont e-mail', sous: true },
+  { cle: 'instagram', libelle: 'dont Instagram', sous: true },
+];
+const statsEtat = { jours: 30, mesure: 'vues', donnees: null, pour: null };
+
+async function vueStats(){
+  const body = document.getElementById('odBody');
+  if(statsEtat.pour !== orga.sel){ statsEtat.donnees = null; statsEtat.pour = orga.sel; statsEtat.mesure = 'vues'; }
+  if(!statsEtat.donnees) body.innerHTML = '<p class="od-empty">Chargement des statistiques…</p>';
+  else body.querySelector('.st-cadre')?.classList.add('is-chargement');
+  try{
+    statsEtat.donnees = await D().statsOrganisateur(orga.sel, statsEtat.jours);
+  }catch(e){
+    body.innerHTML = `<p class="form-error">${esc(messageErreur(e))}</p>`;
+    return;
+  }
+  if(orga.sous !== 'stats') return;
+  dessinerStats();
+}
+
+function dessinerStats(){
+  const body = document.getElementById('odBody'), d = statsEtat.donnees;
+  const nb = n => (Number(n) || 0).toLocaleString('fr-FR');
+  const somme = l => l.reduce((a, b)=> a + b, 0);
+  const date = iso => new Date(iso + 'T12:00:00');
+  const jourLong = iso => date(iso).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const jourCourt = iso => date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  const evolution = (c, a, couvert)=>{
+    if(!couvert) return '<span class="st-vs">mesure en cours de démarrage</span>';
+    if(c === 0 && a === 0) return '<span class="st-delta is-egal">stable</span>';
+    if(a === 0) return `<span class="st-delta is-hausse">+${nb(c)}</span> <span class="st-vs">vs période d'avant</span>`;
+    const p = Math.round((c - a) / a * 100);
+    if(p === 0) return '<span class="st-delta is-egal">stable</span> <span class="st-vs">vs période d\'avant</span>';
+    return `<span class="st-delta ${p > 0 ? 'is-hausse' : 'is-baisse'}">${p > 0 ? '+' : '−'}${Math.abs(p)} %</span> <span class="st-vs">vs période d'avant</span>`;
+  };
+  const couvert = m => !m.depuis || (d[m.depuis] && d[m.depuis] <= d.debutPrecedent);
+  const reg = orga.data.reglages || {};
+  const mesures = STATS_MESURES.filter(m => m.cle !== 'demandes' || reg.active || somme(d.serie.demandes) || d.precedent.demandes);
+  if(!mesures.some(m => m.cle === statsEtat.mesure)) statsEtat.mesure = 'vues';
+  const m = mesures.find(x => x.cle === statsEtat.mesure);
+  const serie = d.serie[m.cle], n = serie.length;
+  const max = Math.max(...serie, 0);
+  const haut = (()=>{ const b = [2, 4, 6, 8, 10, 12, 16, 20, 24, 30, 40, 50, 60, 80]; for(let p = 1; p <= 1e9; p *= 10) for(const x of b) if(x * p >= max) return x * p; return max; })();
+  const tuiles = mesures.map(x=>{
+    const total = somme(d.serie[x.cle]);
+    const sous = x.cle === 'vues' ? `${nb(d.totaux.vues)} depuis la mise en ligne`
+      : x.cle === 'favoris' && d.totaux.favoris ? `Dans les favoris de ${nb(d.totaux.favoris)} personne${d.totaux.favoris > 1 ? 's' : ''}` : '';
+    return `<button type="button" class="st-tuile ${x.cle === m.cle ? 'is-actif' : ''}" data-mesure="${x.cle}" aria-pressed="${x.cle === m.cle}">
+      <span class="st-tuile-libelle">${x.libelle}</span>
+      <span class="st-tuile-valeur">${nb(total)}</span>
+      <span class="st-tuile-sous">${sous}</span>
+      <span class="st-tuile-evo">${evolution(total, d.precedent[x.cle], couvert(x))}</span>
+    </button>`;
+  }).join('');
+  const fentes = serie.map((v, i)=> `<div class="st-fente" tabindex="0" role="img" data-i="${i}" aria-label="${jourLong(d.points[i])} : ${nb(v)}"><span class="st-barre" style="height:${haut ? v / haut * 100 : 0}%"></span></div>`).join('');
+  const axeX = d.points.map((p, i)=>{
+    const lib = n <= 7 ? date(p).toLocaleDateString('fr-FR', { weekday: 'short' }) + ' ' + date(p).getDate()
+      : (i % (n > 30 ? 15 : 5) === (n - 1) % (n > 30 ? 15 : 5) ? jourCourt(p) : '');
+    return `<span>${lib}</span>`;
+  }).join('');
+  const depuis = m.depuis && d[m.depuis] && d[m.depuis] > d.debut
+    ? `<p class="st-note-mesure">Le suivi jour par jour a commencé le ${date(d[m.depuis]).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} : les jours d'avant sont à zéro faute de mesure.</p>` : '';
+  const clics = STATS_CANAUX.map(c => ({ ...c, n: d.boutons[c.cle] || 0 }));
+  const maxClic = Math.max(...clics.map(c => c.n), 1);
+  const totalClics = somme(clics.filter(c => !c.sous).map(c => c.n));
+  const vuesPeriode = somme(d.serie.vues), clicsPeriode = somme(d.serie.clics);
+  const taux = vuesPeriode >= 20 ? Math.round(clicsPeriode / vuesPeriode * 100) : null;
+  body.innerHTML = `
+    <div class="st-cadre">
+      <div class="st-filtre" role="group" aria-label="Période">
+        ${[7, 30, 90].map(j => `<button type="button" class="st-periode ${statsEtat.jours === j ? 'is-actif' : ''}" data-jours="${j}" aria-pressed="${statsEtat.jours === j}">${j} jours</button>`).join('')}
+      </div>
+      <div class="st-tuiles od-st-tuiles">${tuiles}</div>
+      <div class="st-graphique">
+        <div class="st-graphique-tete"><h4>${m.graphique}, ${d.duree} derniers jours</h4></div>
+        ${depuis}
+        <div class="st-plan" style="--n:${n}">
+          <div class="st-axe-y" aria-hidden="true"><span>${nb(haut)}</span><span>${nb(haut / 2)}</span><span>0</span></div>
+          <div class="st-zone">
+            <div class="st-grille" aria-hidden="true"><i></i><i></i><i></i></div>
+            <div class="st-barres" role="group" aria-label="${m.graphique}">${fentes}</div>
+            <div class="st-axe-x" aria-hidden="true">${axeX}</div>
+            <div class="st-tip" role="status" hidden></div>
+            ${max === 0 ? '<p class="st-vide">Rien sur cette période pour le moment.</p>' : ''}
+          </div>
+        </div>
+      </div>
+      <section class="st-classement od-st-canaux">
+        <h4>Par où ils te contactent <span class="st-vs">· ${d.duree} derniers jours · ${nb(totalClics)} clic${totalClics > 1 ? 's' : ''}</span></h4>
+        ${taux !== null ? `<p class="st-note-mesure">Sur 100 personnes qui ont vu ta fiche, <b>${taux}</b> ont cliqué vers toi.</p>` : ''}
+        <ol>${clics.map(c => `<li${c.sous ? ' class="od-st-sous"' : ''}><span class="st-rang-nom">${c.libelle}</span><span class="st-rang-piste" aria-hidden="true"><i style="width:${c.n / maxClic * 100}%"></i></span><b class="st-rang-n">${c.n ? nb(c.n) : '–'}</b></li>`).join('')}</ol>
+      </section>
+      <p class="st-note">Chiffres anonymes : une personne ne compte qu'une fois par jour, et les robots sont écartés. Le téléphone et l'e-mail ne s'affichent qu'au clic sur « Contacter », ce qui protège aussi tes coordonnées des robots collecteurs.</p>
+    </div>`;
+  body.querySelectorAll('[data-jours]').forEach(b=> b.addEventListener('click', ()=>{ statsEtat.jours = Number(b.dataset.jours); vueStats(); }));
+  body.querySelectorAll('[data-mesure]').forEach(b=> b.addEventListener('click', ()=>{ statsEtat.mesure = b.dataset.mesure; dessinerStats(); }));
+  const tip = body.querySelector('.st-tip'), zone = body.querySelector('.st-zone');
+  const montrer = f=>{
+    const i = Number(f.dataset.i);
+    body.querySelectorAll('.st-fente.is-survol').forEach(x=> x.classList.remove('is-survol'));
+    f.classList.add('is-survol');
+    tip.innerHTML = `<strong>${nb(serie[i])}</strong><span>${esc(jourLong(d.points[i]))}</span>`;
+    tip.hidden = false;
+    const zr = zone.getBoundingClientRect(), fr = f.getBoundingClientRect();
+    const x = Math.min(Math.max(fr.left - zr.left + fr.width / 2 - tip.offsetWidth / 2, 0), zr.width - tip.offsetWidth);
+    tip.style.left = x + 'px'; tip.style.top = '-8px';
+  };
+  const cacher = ()=>{ tip.hidden = true; body.querySelectorAll('.st-fente.is-survol').forEach(x=> x.classList.remove('is-survol')); };
+  body.querySelectorAll('.st-fente').forEach(f=>{
+    f.addEventListener('mouseenter', ()=> montrer(f)); f.addEventListener('focus', ()=> montrer(f));
+    f.addEventListener('mouseleave', cacher); f.addEventListener('blur', cacher);
+    f.addEventListener('click', ()=> montrer(f));
+  });
+}
+
 function vueEquipe(){
   const body = document.getElementById('odBody'), d = orga.data, proprio = d.role === 'proprietaire';
   body.innerHTML = `

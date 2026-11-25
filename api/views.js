@@ -33,7 +33,7 @@
  */
 import { createHash } from "node:crypto";
 import { ensureSchema, hasDb, sql, json, sessionUid, isAdminUid } from "./_lib.js";
-import { compterStat, enregistrerVisite, enregistrerClic, calculerStats, jourParis } from "../lib/stats.js";
+import { compterStat, compterEvenement, enregistrerVisite, enregistrerClic, calculerStats, jourParis } from "../lib/stats.js";
 
 /* Au-delà, on cesse de compter pour ce visiteur : un humain ne consulte pas
    150 fiches dans la journée, un script oui. Les visites continuent d'être
@@ -176,6 +176,7 @@ export default async function handler(req, res) {
         ON CONFLICT (event_id) DO UPDATE SET count = event.views.count + 1
         RETURNING count`;
       await compterStat("vues_fiches");
+      await compterEvenement(id, "vues");
       return json(res, 200, { count: rows[0].count, compte: true });
     }
 

@@ -36,6 +36,9 @@
     { cle: 'billetterie', libelle: 'Billetterie' },
     { cle: 'site', libelle: 'Site officiel' },
     { cle: 'contact', libelle: 'Contacter' },
+    { cle: 'telephone', libelle: 'Appel' },
+    { cle: 'email', libelle: 'E-mail' },
+    { cle: 'instagram', libelle: 'Instagram' },
   ];
   const PERIODES = {
     semaine: { libelle: 'Semaine', duree: '7 derniers jours', avant: 'semaine précédente', ici: 'cette semaine' },

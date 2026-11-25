@@ -346,6 +346,10 @@ export async function mesEvenementsOrganises() {
 export async function tableauOrganisateur(eventId) {
   return api(`${INSC}&event=${e(eventId)}`);
 }
+/** Statistiques d'un événement sur 7, 30 ou 90 jours (vues, favoris, demandes, clics). */
+export async function statsOrganisateur(eventId, jours) {
+  return api(`${INSC}&event=${e(eventId)}&stats=1&jours=${e(jours)}`);
+}
 export async function majInscription(id, patch) {
   return (await api(`${INSC}&id=${e(id)}`, { method: "PATCH", body: patch })).inscription;
 }

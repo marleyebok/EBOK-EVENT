@@ -2679,10 +2679,10 @@ async function openEvent(id, opts){
     const l = [];
     if(org.tel){
       const t = String(org.tel).replace(/\s/g,'');
-      l.push(`<a class="ev-coord-row" href="tel:${encodeURIComponent(t)}">${ico('phone')}<span>${esc(org.tel)}</span><em>Appeler</em></a>`);
+      l.push(`<a class="ev-coord-row" href="tel:${encodeURIComponent(t)}" data-clic="telephone">${ico('phone')}<span>${esc(org.tel)}</span><em>Appeler</em></a>`);
     }
-    if(org.email) l.push(`<a class="ev-coord-row" href="mailto:${encodeURIComponent(org.email)}">${ico('mail')}<span>${esc(org.email)}</span><em>Écrire</em></a>`);
-    if(org.insta) l.push(`<a class="ev-coord-row" href="https://instagram.com/${encodeURIComponent(org.insta)}" target="_blank" rel="noopener noreferrer">${ico('instagram')}<span>@${esc(org.insta)}</span><em>Ouvrir</em></a>`);
+    if(org.email) l.push(`<a class="ev-coord-row" href="mailto:${encodeURIComponent(org.email)}" data-clic="email">${ico('mail')}<span>${esc(org.email)}</span><em>Écrire</em></a>`);
+    if(org.insta) l.push(`<a class="ev-coord-row" href="https://instagram.com/${encodeURIComponent(org.insta)}" target="_blank" rel="noopener noreferrer" data-clic="instagram">${ico('instagram')}<span>@${esc(org.insta)}</span><em>Ouvrir</em></a>`);
     return `<div class="ev-coord-list">${l.join('')}</div>`;
   };
 
@@ -2858,7 +2858,11 @@ async function openEvent(id, opts){
       const zone = document.getElementById('evCoord');
       const dedans = document.getElementById('evCoordIn');
       const ouvrir = !zone.classList.contains('is-open');
-      if(ouvrir && !dedans.firstChild) dedans.innerHTML = coordonneesHtml();
+      if(ouvrir && !dedans.firstChild){
+        dedans.innerHTML = coordonneesHtml();
+        // Chaque canal utilisé est compté (statistiques de l'organisateur).
+        dedans.querySelectorAll('[data-clic]').forEach(a=> a.addEventListener('click', ()=> compterClic(ev.id, a.dataset.clic)));
+      }
       if(ouvrir) compterClic(ev.id, 'contact');
       zone.classList.toggle('is-open', ouvrir);
       btnContact.setAttribute('aria-expanded', String(ouvrir));
