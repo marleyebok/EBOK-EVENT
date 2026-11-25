@@ -179,34 +179,27 @@
 
   <!-- ===================== HOME / MAP ===================== -->
   <section id="page-home" class="page active">
-    <!-- Accueil (refonte 2026) : le titre et la barre de recherche à gauche,
-         la carte et ses filtres à droite. La barre de recherche lit une phrase
-         (« un camp à Lyon en juillet ») ou un nom d'événement et remplit les
-         filtres de la carte (js/app.js, initHomeSearch). -->
+    <!-- Accueil (refonte 2026, v2) : un seul tableau. À gauche le titre, la
+         recherche et les filtres ; à droite la carte, qui est l'image de la
+         page. La barre de recherche lit une phrase (« un camp à Lyon en
+         juillet ») ou un nom d'événement et remplit les filtres de la carte
+         (js/app.js, initHomeSearch). -->
     <div class="home-hero">
       <div class="hero-text">
         <p class="eyebrow" id="heroCompteur" hidden></p>
         <!-- Chaque ligne du titre monte derrière un cache (.h-line) au chargement. -->
         <h1><span class="h-line"><span>Partout où</span></span><span class="h-line"><span class="hl">ça joue</span></span><span class="sr-only"> : l'agenda collaboratif du basket francophone</span></h1>
-        <p class="hero-sub">Tournois, camps, 3x3, détections : l'agenda collaboratif du basket francophone, sur une seule carte.</p>
+        <p class="hero-sub">Tournois, camps, stages, détections et 3x3 : tout le basket francophone sur une seule carte, publié par ceux qui l'organisent.</p>
         <div class="home-search">
           <form class="hs-form" id="homeSearch" role="search">
             <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            <input id="homeQ" type="search" placeholder="Un camp à Lyon en juillet" aria-label="Rechercher un événement : type, ville, mois ou nom" autocomplete="off" role="combobox" aria-controls="homeSuggest" aria-expanded="false" aria-autocomplete="list">
+            <input id="homeQ" type="search" placeholder="Camp à Lyon en juillet" aria-label="Rechercher un événement : type, ville, mois ou nom" autocomplete="off" role="combobox" aria-controls="homeSuggest" aria-expanded="false" aria-autocomplete="list">
             <button class="btn btn-ink" type="submit">Chercher</button>
           </form>
           <ul class="hs-suggest" id="homeSuggest" role="listbox" aria-label="Événements" hidden></ul>
         </div>
         <p class="hs-understood" id="homeUnderstood" aria-live="polite"></p>
-        <div class="hs-publish">
-          <span>Tu organises un événement ?</span>
-          <button class="btn btn-ghost" data-nav="create"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>Publier un événement</button>
-        </div>
-      </div>
-
-      <div class="home-board">
-      <div class="map-layout" id="mapLayout">
-        <aside class="filter-panel">
+        <aside class="filter-panel" aria-label="Filtres de la carte">
           <div class="filter-group fg-types">
             <label>Type</label>
             <div class="type-dropdown" id="typeDropdown">
@@ -269,7 +262,11 @@
             </div>
           </div>
         </aside>
+        <p class="hs-publish">Tu organises un événement ? <button type="button" class="link-btn" data-nav="create">Publie-le gratuitement</button></p>
+      </div>
 
+      <div class="home-board">
+      <div class="map-layout" id="mapLayout">
         <div class="map-wrap" id="homeMapView">
           <svg id="franceMap" viewBox="0 0 560 560" xmlns="http://www.w3.org/2000/svg"></svg>
           <div class="map-tooltip" id="mapTooltip"></div>
@@ -284,6 +281,7 @@
 
         <div class="results-grid home-list hidden" id="homeListView"></div>
       </div>
+        <ul class="map-legend" id="mapLegend" aria-label="Couleurs des épingles"></ul>
         <div class="content-header board-foot">
           <span class="content-count" id="homeCount"></span>
           <button class="btn btn-ghost btn-alert" data-new-alert="home"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>Créer une alerte</button>
@@ -306,7 +304,7 @@
     </div>
 
     <div class="home-section" id="agendaSlot">
-      <div class="section-head"><h2>Agenda</h2><span class="section-meta">les prochains événements</span></div>
+      <div class="section-head"><h2>Agenda</h2><span class="section-meta">Les prochains événements</span></div>
       <div class="agenda" id="homeAgenda"></div>
       <div class="agenda-more"><button class="btn btn-ghost btn-lg" data-nav="search" id="agendaMore">Voir tous les événements</button></div>
     </div>

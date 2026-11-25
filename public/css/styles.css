@@ -3328,3 +3328,197 @@ input,select,textarea{font-family:var(--font-body);}
 .od-st-canaux .od-st-sous{padding-left:18px;}
 .od-st-canaux .od-st-sous .st-rang-nom{color:var(--chalk-dim);font-size:13.5px;}
 .od-body .st-plan{padding-right:18px;}
+
+/* =========================================================
+   ACCUEIL v2 (unslop, 25/11/2026)
+   ---------------------------------------------------------
+   Direction : la feuille de match et le gymnase. Papier crème, encre,
+   bordeaux du maillot. Un seul tableau en haut de page : le texte, la
+   recherche et les filtres à gauche, la carte à droite, qui est l'image de
+   la page. Deux moments de couleur seulement : les épingles de la carte et
+   l'événement « À la une ». Signature : le tableau de marque des dates.
+   ========================================================= */
+.home-hero{
+  display:grid;grid-template-columns:minmax(0,480px) minmax(0,1fr);gap:0;align-items:stretch;
+  min-height:0;margin:24px 0 0;padding:0;
+  background:var(--asphalt-2);border:1px solid var(--line);border-radius:24px;
+  box-shadow:0 1px 2px rgba(28,26,23,.04),0 12px 32px rgba(28,26,23,.05);
+}
+.home-hero .hero-text{display:flex;flex-direction:column;justify-content:center;padding:48px 40px 40px 48px;min-width:0;}
+.home-hero .hero-text h1{font-size:clamp(56px, 4.8vw, 68px);line-height:.94;}
+.home-hero .hero-sub{font-size:17px;line-height:26px;max-width:none;margin:20px 0 0;}
+.home-hero .home-search{margin-top:28px;}
+.home-hero .hs-form{height:56px;border-radius:12px;box-shadow:none;background:var(--asphalt);}
+.home-hero .hs-form .btn{height:44px;}
+.home-hero .hs-understood{margin:8px 0 0;min-height:18px;}
+
+/* Filtres : sous la recherche, en grille 2 × 2, dans la même colonne */
+.home-hero .filter-panel{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0 0;padding:0;
+  background:none;border:0;border-radius:0;box-shadow:none;
+}
+.home-hero .filter-panel .filter-group{margin:0;min-width:0;max-width:none;flex:none;}
+.home-hero .filter-group label{display:block;margin:0 0 4px;font:500 13px/16px var(--font-body);color:var(--chalk-mute);}
+.home-hero .type-dropdown,.home-hero .type-dd-btn,.home-hero .search-input-wrap,.home-hero #citySearch,
+.home-hero .region-select,.home-hero .period-selector,.home-hero .period-display{width:100%;min-width:0;}
+.home-hero .type-dd-btn,.home-hero #citySearch,.home-hero .region-select,.home-hero .period-display{
+  height:40px;padding:0 12px;border-radius:var(--r-ctl);background:var(--asphalt);border:1px solid var(--line);
+  font-size:14px;font-weight:500;color:var(--chalk);box-shadow:none;transition:border-color .15s var(--ease);
+}
+.home-hero .type-dd-btn:hover,.home-hero .period-display:hover,.home-hero .region-select:hover,.home-hero #citySearch:hover{border-color:var(--line-strong);}
+.home-hero .type-dd-btn,.home-hero .period-display{display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;}
+.home-hero #typeDdLabel,.home-hero #periodText{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.home-hero .dd-caret,.home-hero .period-icon{display:flex;color:var(--chalk-mute);font-size:14px;}
+.home-hero #citySearch::placeholder{color:var(--chalk);opacity:1;}
+.home-hero .period-picker{left:auto;right:0;}
+.home-hero .fg-types .type-dd-panel{min-width:260px;}
+
+/* Lien organisateur : discret, la barre du haut porte déjà « Publier » */
+.hs-publish{display:block;margin:28px 0 0;padding:20px 0 0;border-top:1px solid var(--line);font-size:14px;color:var(--chalk-dim);}
+.link-btn{
+  display:inline;padding:0;border:0;background:none;font:inherit;font-weight:600;color:var(--accent-text);
+  text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px;cursor:pointer;
+}
+.link-btn:hover{text-decoration-thickness:2px;}
+
+/* La carte : à droite, sur le même papier, séparée par un filet */
+.home-hero .home-board{
+  display:flex;flex-direction:column;min-width:0;background:none;border:0;border-left:1px solid var(--line);
+  border-radius:0 24px 24px 0;box-shadow:none;
+}
+.home-hero .map-layout{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;}
+.home-hero .map-wrap{padding:16px 16px 0;}
+.home-hero .results-grid{grid-template-columns:1fr;gap:12px;padding:16px;max-height:720px;overflow:auto;}
+.map-legend{display:flex;flex-wrap:wrap;gap:8px 16px;margin:0;padding:8px 20px 12px;list-style:none;font-size:13px;color:var(--chalk-dim);}
+.map-legend li{display:inline-flex;align-items:center;gap:8px;}
+.map-legend[hidden]{display:none;}
+.home-hero .content-header.board-foot{padding:12px 16px 12px 20px;}
+.board-foot .content-count{font:500 14px var(--font-body);font-variant-numeric:tabular-nums;}
+
+/* Sections : titre Impact, méta en texte courant (plus de machine à écrire) */
+.home-section{padding:64px 0 0;}
+.section-meta{font:400 14px var(--font-body);color:var(--chalk-mute);}
+.fx-meta{font:500 14px/20px var(--font-body);color:rgba(244,240,231,.72);}
+
+/* Agenda : le tableau de marque allégé, filet au lieu du bloc noir */
+.agenda{border-radius:20px;}
+.ag-row{grid-template-columns:88px minmax(0,1fr) auto 150px 16px;gap:24px;padding:16px 24px;}
+.ag-meta:empty{display:none;}
+.ag-row .score{
+  width:88px;padding:6px 0 8px;background:none;color:var(--chalk);border-radius:10px;
+  box-shadow:inset 0 0 0 1px var(--line-strong);
+}
+.ag-row .sc-d{color:var(--chalk-mute);}
+.ag-row .sc-n{font-size:22px;line-height:28px;}
+.ag-row .sc-n i{color:var(--chalk-mute);}
+.ag-row .sc-m{color:var(--accent-text);}
+.ag-row:hover .score{box-shadow:inset 0 0 0 1px var(--chalk-mute);}
+.ag-meta{font:400 13px/18px var(--font-body);color:var(--chalk-mute);}
+.ag-title{font-size:17px;}
+
+/* Pied de page : plus de filet rouge sous les titres */
+.footer-col h4::after{display:none;}
+.footer-col h4{margin:0 0 16px;}
+.site-footer{margin-top:80px;}
+
+@media(max-width:1080px){
+  .home-hero{grid-template-columns:1fr;margin-top:16px;}
+  .home-hero .hero-text{padding:32px 24px 24px;}
+  .home-hero .home-board{border-left:0;border-top:1px solid var(--line);border-radius:0 0 24px 24px;}
+  .ag-row{grid-template-columns:88px minmax(0,1fr) 16px;}
+}
+@media(max-width:640px){
+  .home-hero{margin:8px 0 0;border-radius:20px;}
+  .home-hero .hero-text{padding:28px 20px 20px;}
+  .home-hero .hero-text h1{font-size:52px;}
+  .home-hero .hero-sub{font-size:16px;line-height:24px;}
+  .home-hero .home-board{border-radius:0 0 20px 20px;}
+  .home-hero .map-wrap{padding:8px 8px 0;}
+  .map-legend{padding:8px 16px 12px;gap:6px 14px;}
+  .home-hero .content-header.board-foot{padding:12px 16px;}
+  .ag-row{padding:12px 16px;gap:16px;grid-template-columns:76px minmax(0,1fr) 16px;}
+  .ag-row .score{width:76px;}
+  .ag-row .sc-n{font-size:20px;}
+  .home-section{padding-top:48px;}
+}
+@media(max-width:640px){
+  .home-hero .content-header.board-foot{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;}
+  .home-hero .board-foot .btn-alert{grid-column:1 / -1;grid-row:2;justify-content:center;}
+}
+
+/* =========================================================
+   SITE v2 (unslop, 25/11/2026) — règles communes à toutes les pages
+   ---------------------------------------------------------
+   La police « machine à écrire » est réservée aux chiffres (dates, compteurs).
+   Titres de section sans filet rouge, états vides sur fond calme, onglets
+   soulignés partout, tableau de marque des dates au trait.
+   ========================================================= */
+.eyebrow{font:500 14px/20px var(--font-body);color:var(--chalk-mute);letter-spacing:0;}
+.field label,.filter-group label{font:500 13px/16px var(--font-body);text-transform:none;letter-spacing:0;color:var(--chalk-mute);}
+.ev-h::after,.adm-h::after{display:none;}
+.ev-h,.adm-h{margin-bottom:16px;}
+
+/* États vides : une surface, pas de pointillés, titre en texte courant */
+.empty-state{border:1px solid var(--line);background:var(--asphalt-2);border-radius:16px;padding:40px 24px;}
+.empty-state h4{font:600 18px/24px var(--font-body);text-transform:none;margin-bottom:8px;}
+.empty-state p{color:var(--chalk-dim);}
+.gallery-empty,.dash-empty{border-style:solid;}
+
+/* Tableau de marque des dates : au trait, le mois en bordeaux */
+.score{background:none;color:var(--chalk);box-shadow:inset 0 0 0 1px var(--line-strong);border-radius:10px;}
+.score .sc-d{color:var(--chalk-mute);}
+.score .sc-n i{color:var(--chalk-mute);}
+.score .sc-m{color:var(--accent-text);}
+.carousel-item .score{background:rgba(0,0,0,.22);color:#F4F0E7;box-shadow:inset 0 0 0 1px rgba(244,240,231,.18);}
+.carousel-item .score .sc-d{color:rgba(244,240,231,.65);}
+.carousel-item .score .sc-m{color:#F2C2C8;}
+
+/* Vignette sans affiche : papier neutre, le type écrit à l'encre */
+.card-noposter{
+  width:100%;height:100%;display:flex;align-items:center;justify-content:center;gap:8px;
+  background:var(--asphalt-3);color:var(--chalk-dim);font:500 15px var(--font-body);
+}
+.card-noposter .ag-dot{width:8px;height:8px;border-radius:50%;}
+
+/* Onglets de l'administration : soulignés, comme « Mes événements » */
+.adm-tabs{width:auto;padding:0;gap:4px;background:none;border:0;border-bottom:1px solid var(--line-strong);border-radius:0;}
+.adm-tab{min-height:44px;padding:0 14px;border-radius:0;font:500 15px var(--font-body);box-shadow:inset 0 -2px 0 transparent;}
+.adm-tab[aria-selected="true"]{background:none;color:var(--chalk);box-shadow:inset 0 -2px 0 var(--accent);}
+.adm-tab[aria-selected="true"] .adm-count{background:var(--accent);color:#FFFFFF;}
+
+/* Profil incomplet : une surface calme, sans dégradé */
+.onboarding-nudge{background:var(--asphalt-2);border:1px solid var(--line-strong);border-left:3px solid var(--accent);}
+
+/* Publier : la question est dans la carte, la barre n'affiche que l'étape */
+.wz-progress-title{display:none;}
+.wz-choice{background:var(--asphalt-2);border:1px solid var(--line-strong);transition:border-color .15s var(--ease),background-color .15s var(--ease);}
+.wz-choice:hover,.wz-choice.selected{transform:none;border-color:var(--chalk-mute);}
+.wz-choice.selected{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 5%, var(--asphalt-2));}
+
+/* Fiche : boutons sans lien, plus discrets (filet fin, pas de pointillés) */
+.ev-act.is-off,.ev-act.is-off:hover{border:1px solid rgba(255,255,255,.28);color:rgba(255,255,255,.6);}
+.ev-ticket-bottom::before{border-top:1px dashed rgba(255,255,255,.32);}
+
+/* Recherche : deux champs par ligne sur téléphone */
+@media(max-width:640px){
+  .search-form{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:16px;}
+  .search-form > .field:first-child{grid-column:1 / -1;}
+  .search-form > :not(.field){grid-column:1 / -1;}
+}
+
+/* Mes événements, tableau de bord, formulaires : le texte en police courante,
+   la police à chasse fixe gardée pour les chiffres seulement. */
+.st-pill,.doc-etat,.tag,.orga-item-txt em,.od-meta,.od-stat span,.od-table th,.od-count,
+.od-histo-item summary span,.od-person span,.ins-ok,.od-bulk-clear,.fm-sensible,.insc-sur-mesure legend,.orga-load{
+  font-family:var(--font-body);letter-spacing:0;
+}
+.st-pill,.doc-etat{font-size:13px;}
+.od-table th{font-size:13px;font-weight:500;}
+.tag{font-size:12px;}
+.wz-preview-label,.wz-progress-step{font-family:var(--font-body);font-weight:500;}
+
+/* Cartes de résultats : titre en texte courant, lisible en petit */
+.card-body h4{font:600 17px/1.3 var(--font-body);text-transform:none;letter-spacing:0;}
+.card-noposter-ville{font:400 26px/1 var(--font-display);text-transform:uppercase;color:var(--chalk-mute);letter-spacing:.01em;}
+.card-type-badge{font:500 12px/1 var(--font-body);padding:5px 8px;}
+.content-count{font-family:var(--font-body);font-variant-numeric:tabular-nums;}
