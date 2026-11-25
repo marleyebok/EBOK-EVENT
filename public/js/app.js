@@ -3178,38 +3178,77 @@ function renderFeatured(){
   const wrapper = slot.querySelector('.carousel-wrapper');
   if(wrapper){ wrapper.onmouseenter = stopAuto; wrapper.onmouseleave = startAuto; }
 
-  // Balayage au doigt : la piste suit le doigt, puis passe à la diapositive
-  // voisine si le geste est assez franc, sinon revient. Un geste vertical
-  // laisse la page défiler. (Propriétés on… : la fonction est rappelée à
-  // chaque mise à jour des événements, un écouteur s'empilerait.)
+  // Glisser (doigt, souris ou stylet) : la piste suit le geste, puis passe
+  // à la diapositive voisine si le geste est assez franc, sinon revient. Un
+  // geste vertical laisse la page défiler. (Propriétés on… : la fonction est
+  // rappelée à chaque mise à jour des événements, un écouteur s'empilerait.)
   if(wrapper){
-    let x0 = 0, y0 = 0, dx = 0, sens = null;   // sens : null = indécis, true = horizontal
-    wrapper.ontouchstart = e=>{
-      if(single || e.touches.length !== 1){ sens = false; return; }
-      x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = 0; sens = null;
+    let x0 = 0, y0 = 0, dx = 0, sens = null, actif = false, glisse = false;
+    wrapper.onpointerdown = e=>{
+      if(single || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      actif = true; x0 = e.clientX; y0 = e.clientY; dx = 0; sens = null; glisse = false;
       stopAuto();
     };
-    wrapper.ontouchmove = e=>{
-      if(sens === false || e.touches.length !== 1) return;
-      const mx = e.touches[0].clientX - x0, my = e.touches[0].clientY - y0;
+    wrapper.onpointermove = e=>{
+      if(!actif || sens === false) return;
+      const mx = e.clientX - x0, my = e.clientY - y0;
       if(sens === null){
         if(Math.abs(mx) < 8 && Math.abs(my) < 8) return;
         sens = Math.abs(mx) > Math.abs(my);
         if(!sens) return;
         track.style.transition = 'none';
+        wrapper.classList.add('is-dragging');
+        try { wrapper.setPointerCapture(e.pointerId); } catch(_){}
       }
-      dx = mx;
-      if(e.cancelable) e.preventDefault();
+      dx = mx; glisse = true;
       track.style.transform = `translateX(calc(-${currentSlide * 100}% + ${dx}px))`;
     };
-    wrapper.ontouchend = wrapper.ontouchcancel = ()=>{
+    wrapper.onpointerup = wrapper.onpointercancel = ()=>{
+      if(!actif) return;
+      actif = false;
+      wrapper.classList.remove('is-dragging');
       if(sens === true){
         track.style.transition = '';
         const seuil = Math.min(70, wrapper.clientWidth * 0.18);
         goToSlide(Math.abs(dx) > seuil ? currentSlide + (dx < 0 ? 1 : -1) : currentSlide);
       }
       sens = null;
-      startAuto();
+      if(!wrapper.matches(':hover')) startAuto();
+    };
+    // Après un glisser à la souris, le relâchement ne doit pas ouvrir la fiche.
+    wrapper.addEventListener('click', e=>{
+      if(glisse){ e.stopPropagation(); e.preventDefault(); glisse = false; }
+    }, { capture: true });
+    wrapper.ondragstart = e=> e.preventDefault();   // pas de « fantôme » d'image
+
+    // Pavé tactile / molette horizontale : un balayage = une diapositive.
+    let cumul = 0, verrou = 0;
+    wrapper.onwheel = e=>{
+      if(single || Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+      e.preventDefault();
+      if(Date.now() < verrou) return;
+      cumul += e.deltaX;
+      if(Math.abs(cumul) > 40){
+        goToSlide(currentSlide + (cumul > 0 ? 1 : -1));
+        cumul = 0; verrou = Date.now() + 600;
+      }
+    };
+  }
+
+  // Clavier : flèches gauche/droite quand le focus est dans le carrousel.
+  const carrousel = slot.querySelector('.featured-carousel');
+  if(carrousel) carrousel.onkeydown = e=>{
+    if(single || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
+    e.preventDefault();
+    goToSlide(currentSlide + (e.key === 'ArrowRight' ? 1 : -1)); startAuto();
+  };
+  const fleches = slot.querySelector('.carousel-arrows');
+  if(fleches){
+    fleches.style.display = single ? 'none' : '';
+    fleches.onkeydown = e=>{
+      if(e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      e.preventDefault();
+      goToSlide(currentSlide + (e.key === 'ArrowRight' ? 1 : -1)); startAuto();
     };
   }
 
