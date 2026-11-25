@@ -1528,9 +1528,45 @@ function initSearchPage(){
   document.getElementById('resetSearch').addEventListener('click', ()=>{
     document.getElementById('searchForm').reset();
     searchAbroad = false;
+    choisirVilleRecherche(null);
     renderResults();
   });
+
+  // Ville + rayon : une ville choisie dans la liste (ou tapée en entier)
+  // devient un point de départ ; on garde les événements à moins de X km.
+  attachCityAutocomplete('f-lieu', 'f-lieu-ac', pick=>{ choisirVilleRecherche(pick); renderResults(); });
+  const lieu = document.getElementById('f-lieu');
+  let attente = null;
+  lieu.addEventListener('input', ()=>{
+    if(searchCity && normalizeCity(lieu.value) !== normalizeCity(searchCity.city)) choisirVilleRecherche(null);
+    clearTimeout(attente);
+    attente = setTimeout(villeExacte, 400);
+  });
+  const rayon = document.getElementById('f-rayon');
+  rayon.addEventListener('input', ()=>{ afficherRayon(); renderResults(); });
   renderResults();
+}
+
+let searchCity = null;   // { city, lat, lng } : centre du rayon de recherche
+function choisirVilleRecherche(pick){
+  searchCity = pick && typeof pick.lat === 'number' ? { city: pick.city, lat: pick.lat, lng: pick.lng } : null;
+  document.getElementById('f-rayon-wrap').classList.toggle('hidden', !searchCity);
+  afficherRayon();
+}
+function afficherRayon(){
+  const r = document.getElementById('f-rayon');
+  document.getElementById('f-rayon-val').textContent = r.value + ' km';
+  r.style.setProperty('--p', ((r.value - r.min) / (r.max - r.min) * 100) + '%');
+}
+/* Nom de ville tapé en entier sans passer par la liste : on le reconnaît
+   dans la base locale pour proposer le rayon quand même. */
+async function villeExacte(){
+  const champ = document.getElementById('f-lieu');
+  const q = normalizeCity(champ.value);
+  if(searchCity || q.length < 2) return;
+  await ensureCitiesLoaded();
+  const c = searchCitiesLocal(champ.value).find(v=> normalizeCity(v.city) === q);
+  if(c && normalizeCity(champ.value) === q){ choisirVilleRecherche(c); renderResults(); }
 }
 
 function renderResults(){
@@ -1543,11 +1579,14 @@ function renderResults(){
   const age = document.getElementById('f-age').value;
   const niveau = document.getElementById('f-niveau').value;
   const afficheOnly = document.getElementById('f-affiche').checked;
+  const rayonKm = searchCity ? Number(document.getElementById('f-rayon').value) : 0;
 
   let results = events.filter(ev=>{
     if(searchAbroad && !isAbroad(ev)) return false;
     if(regionChoisie && ev.region !== regionChoisie) return false;
-    if(lieu && !(String(ev.city || '').toLowerCase().includes(lieu)
+    if(rayonKm && typeof ev.lat === 'number' && typeof ev.lng === 'number'){
+      if(haversine(searchCity.lat, searchCity.lng, ev.lat, ev.lng) > rayonKm) return false;
+    }else if(lieu && !(String(ev.city || '').toLowerCase().includes(lieu)
       || String(ev.lieu || '').toLowerCase().includes(lieu) || eventCountry(ev).toLowerCase().includes(lieu))) return false;
     if(type !== 'all' && ev.type !== type) return false;
     if(dStart && ev.dateEnd < dStart) return false;
