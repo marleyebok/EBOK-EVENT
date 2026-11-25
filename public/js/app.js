@@ -47,6 +47,15 @@ function ageLabel(age){
   return list.length ? list.join(', ') : 'Non renseigné';
 }
 
+/* Public, niveau et âges d'un événement pour les listes : seulement ce que
+   l'organisateur a vraiment renseigné (ni « Non renseigné », ni le niveau
+   par défaut), pour que chaque mot affiché apprenne quelque chose. */
+function publicCourt(ev){
+  const niv = ev.niveau && niveauEvent(ev.niveau) !== NIVEAU_TOUT ? niveauEvent(ev.niveau) : '';
+  const ages = ageList(ev.age).join(', ');
+  return [ages, niv, ev.sexe].filter(Boolean);
+}
+
 /* Remplit un conteneur de cases à cocher (les 11 tranches) et coche `selected`. */
 function renderAgeChoices(containerId, selected){
   const box = document.getElementById(containerId);
@@ -176,7 +185,7 @@ function eventCardHtml(ev){
         <h4>${esc(ev.title)}</h4>
         <div class="card-meta">
           <b>${esc(ev.city)}</b> · ${fmtDateRange(ev.dateStart, ev.dateEnd)}<br>
-          ${esc(ev.sexe)} · ${esc(ageLabel(ev.age))} · ${esc(niveauEvent(ev.niveau))}
+          ${esc(publicCourt(ev).join(' · '))}
         </div>
       </div>
     </div>`;
@@ -742,7 +751,7 @@ function showTooltip(pin){
   if(!ev) return;
   tt.innerHTML = `<div class="tt-type" style="color:${typeColor(ev.type)}">${esc(ev.type)}</div>
     <div class="tt-title">${esc(ev.title)}</div>
-    <div class="tt-meta">${esc(ev.lieu)}<br>${fmtDateRange(ev.dateStart,ev.dateEnd)}<br>${esc(ev.sexe)} · ${esc(ageLabel(ev.age))} · ${esc(niveauEvent(ev.niveau))}</div>`;
+    <div class="tt-meta">${esc(ev.lieu)}<br>${fmtDateRange(ev.dateStart,ev.dateEnd)}${publicCourt(ev).length ? '<br>' + esc(publicCourt(ev).join(' · ')) : ''}</div>`;
   tt.classList.add('show');
 }
 function hideTooltip(){ const tt = document.getElementById('mapTooltip'); if(tt) tt.classList.remove('show'); }
@@ -1282,7 +1291,7 @@ function renderAgenda(){
       ${tableauDeMarque(ev)}
       <span class="ag-main"><span class="ag-title">${esc(ev.title)}</span><span class="ag-where">${ico('pin')}${esc(ev.city || '')}${ev.region ? ' · ' + esc(ev.region) : ''}</span></span>
       <span class="ag-type"><span class="ag-dot" style="background:${safeColor(typeColor(ev.type))}"></span>${esc(ev.type || '')}</span>
-      <span class="ag-meta">${esc([niveauEvent(ev.niveau), ageLabel(ev.age), ev.sexe].filter(Boolean).join(' · '))}</span>
+      <span class="ag-meta">${esc(publicCourt(ev).join(' · '))}</span>
       <span class="ag-go">${ico('chevronRight')}</span>
     </button>`).join('');
   box.querySelectorAll('[data-open]').forEach(b=> b.addEventListener('click', ()=> openEvent(b.dataset.open)));
@@ -3113,7 +3122,7 @@ function renderFeatured(){
     const poster = safeImg(ev.poster)
       ? `<img src="${esc(safeImg(ev.poster))}" alt="Affiche ${esc(ev.title)}">`
       : `<div class="fx-poster-ph"><span class="ph-type">${esc(ev.type || 'Événement')}</span><span class="ph-title">${esc(ev.title)}</span><span class="ph-when">${esc(fmtDateRange(ev.dateStart, ev.dateEnd))}<br>${esc(ev.city || '')}</span></div>`;
-    const meta = [ev.type, niveauEvent(ev.niveau), ev.sexe, ageLabel(ev.age)].filter(Boolean).join(' · ');
+    const meta = [ev.type, ...publicCourt(ev)].filter(Boolean).join(' · ');
     const lieu = ev.lieu || ev.city || '';
     const ou = [ev.lieu && ev.city && !String(ev.lieu).includes(ev.city) ? ev.city : '', ev.region].filter(Boolean).join(' · ');
     const phrase = String(ev.description || '').split(/(?<=[.!?])\s/)[0] || '';
@@ -5312,8 +5321,21 @@ function renderCompteur(){
   el.textContent = `${n} événements à venir`;
 }
 
+/* Légende de la carte : les types des événements à venir, du plus fréquent
+   au moins fréquent, avec la couleur de leur épingle. */
+function renderLegende(){
+  const el = document.getElementById('mapLegend');
+  if(!el) return;
+  const n = {};
+  for(const ev of events) if(ev && ev.type && !isPast(ev)) n[ev.type] = (n[ev.type] || 0) + 1;
+  const types = Object.keys(n).sort((a, b)=> n[b] - n[a] || a.localeCompare(b, 'fr'));
+  el.innerHTML = types.map(t=> `<li><span class="ag-dot" style="background:${safeColor(typeColor(t))}"></span>${esc(t)}</li>`).join('');
+  el.hidden = !types.length;
+}
+
 function renderAll(){
   renderCompteur();
+  renderLegende();
   buildMap();
   renderFeatured();
   applyMapFilters();

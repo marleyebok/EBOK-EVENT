@@ -21,18 +21,21 @@ const VIEW_SEEDS = {
 };
 
 const TYPE_COLORS = {
-  "Tournoi":"#FF5722",
+  /* Couleurs de maillot, posées sur le papier crème : mêmes familles qu'avant
+     (on reconnaît toujours un tournoi orange), saturation calmée pour que la
+     carte reste lisible et que le bordeaux de la marque garde la vedette. */
+  "Tournoi":"#D9531E",
   "Camp":"#1F8F6B",
-  "Stage":"#00ACC1",
-  "Voyage":"#FFC93C",
-  "All-Star Game":"#E8483A",
-  "Show":"#9D6FFF",
-  "Détections":"#FF9800",
-  "Clinic Coachs":"#2196F3",
-  "Circuit 3x3":"#4CAF50",
-  "Handibasket":"#9C27B0",
-  "Match Pro":"#F44336",
-  "Divers":"#607D8B"
+  "Stage":"#1B8AA0",
+  "Voyage":"#C9961A",
+  "All-Star Game":"#C2412F",
+  "Show":"#7759C2",
+  "Détections":"#D97A10",
+  "Clinic Coachs":"#2F6DB5",
+  "Circuit 3x3":"#3C8F45",
+  "Handibasket":"#8A3E9C",
+  "Match Pro":"#A8283A",
+  "Divers":"#6B7680"
 };
 
 // `let` (et non `const`) : la liste peut être remplacée au chargement
