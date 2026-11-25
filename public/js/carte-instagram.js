@@ -97,7 +97,7 @@
   const TAGS_TYPE = {
     'Camp':'campbasket', 'Stage':'stagebasket', 'Détections':'detectionbasket', 'Circuit 3x3':'3x3basketball',
     'Tournoi':'tournoibasket', 'Voyage':'voyagebasket', 'Clinic Coachs':'coachbasket',
-    'Handibasket':'handibasket', 'Match Pro':'basketpro', 'All-Star Game':'allstargame', 'Show':'basketshow'
+    'Handibasket':'handibasket', 'Match Pro':'basketpro', 'Show':'basketshow'
   };
   function legende(d){
     const ligneInfos = [d.lieu && `📍 ${d.lieu}`, d.dates && `📅 ${d.dates}`, d.tarif && `💶 ${d.tarif}`].filter(Boolean).join(' · ');
