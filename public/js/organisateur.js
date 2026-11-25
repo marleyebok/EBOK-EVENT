@@ -346,6 +346,7 @@ function dessinerTableau(){
       <div><span class="od-meta">${esc([ev.type, ev.lieu || ev.city].filter(Boolean).join(' · '))}</span><h3>${esc(d.event.title)}</h3></div>
       <div class="od-actions">
         <button type="button" class="btn btn-ghost" data-od="modifier">${ico('edit')}Modifier la fiche</button>
+        <button type="button" class="btn btn-ghost" data-dupliquer="${esc(orga.sel)}" title="Créer une copie pour une autre date ou un autre lieu">${ico('copy')}Dupliquer</button>
         <button type="button" class="btn btn-ghost" data-od="voir">Voir la fiche</button>
       </div>
     </div>

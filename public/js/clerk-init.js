@@ -10,7 +10,7 @@
    ========================================================= */
 import {
   getAllEvents, getAllEventsForAdmin, getEvent, getEventsByUser,
-  createEvent, updateEvent, approveEvent, deleteEvent, incrementViews,
+  createEvent, updateEvent, dupliquerEvent, approveEvent, deleteEvent, incrementViews,
   getFavorites, toggleFavorite, updateUserProfile, getAllUsers,
   openSignIn, signOutUser, getSession, hostStoredPosters,
   uploadImage,
@@ -28,7 +28,7 @@ import { loadClerk } from "./clerk.js";
 // Couche données exposée à app.js (mêmes clés qu'avant).
 window.EBOK_DATA = {
   getAllEvents, getAllEventsForAdmin, getEvent, getEventsByUser,
-  createEvent, updateEvent, approveEvent, deleteEvent, incrementViews,
+  createEvent, updateEvent, dupliquerEvent, approveEvent, deleteEvent, incrementViews,
   getFavorites, toggleFavorite, updateUserProfile, getAllUsers,
   uploadImage,
   hostStoredPosters,
