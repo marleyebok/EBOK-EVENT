@@ -1013,9 +1013,12 @@ function initHomeFilters(){
     updateTypeLabel();
     applyMapFilters();
   };
-  document.getElementById('typeAll').addEventListener('click', ()=> setAllTypes(true));
   // "Réinitialiser" : aucune pastille cochée = aucune restriction (tous les types affichés).
   document.getElementById('typeNone').addEventListener('click', ()=> setAllTypes(false));
+  // "OK" : valide le choix et referme la liste.
+  const fermerTypes = ()=>{ ddPanel.classList.add('hidden'); ddBtn.classList.remove('open'); ddBtn.focus(); };
+  document.getElementById('typeOk').addEventListener('click', fermerTypes);
+  ddPanel.addEventListener('keydown', e=>{ if(e.key === 'Escape') fermerTypes(); });
 
   updateTypeLabel();
   applyMapFilters();
@@ -5351,21 +5354,8 @@ function renderCompteur(){
   el.textContent = `${n} événements à venir`;
 }
 
-/* Légende de la carte : les types des événements à venir, du plus fréquent
-   au moins fréquent, avec la couleur de leur épingle. */
-function renderLegende(){
-  const el = document.getElementById('mapLegend');
-  if(!el) return;
-  const n = {};
-  for(const ev of events) if(ev && ev.type && !isPast(ev)) n[ev.type] = (n[ev.type] || 0) + 1;
-  const types = Object.keys(n).sort((a, b)=> n[b] - n[a] || a.localeCompare(b, 'fr'));
-  el.innerHTML = types.map(t=> `<li><span class="ag-dot" style="background:${safeColor(typeColor(t))}"></span>${esc(t)}</li>`).join('');
-  el.hidden = !types.length;
-}
-
 function renderAll(){
   renderCompteur();
-  renderLegende();
   buildMap();
   renderFeatured();
   applyMapFilters();
