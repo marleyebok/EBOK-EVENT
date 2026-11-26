@@ -148,6 +148,14 @@ export default async function handler(req, res) {
 
   try {
     // --- Tâche planifiée --------------------------------------------------
+    // Auto-contrôle du stockage privé des documents (même secret que les tâches).
+    if (req.method === "GET" && tache === "sante") {
+      const secret = process.env.CRON_SECRET;
+      if (!secret || (req.headers.authorization || "") !== `Bearer ${secret}`) return json(res, 401, { error: "cron" });
+      const { testerStockageDocs } = await import("../lib/documents.js");
+      return json(res, 200, { documents: await testerStockageDocs() });
+    }
+
     if (req.method === "GET" && (tache === "cron" || tache === "source")) {
       const secret = process.env.CRON_SECRET;
       // Sans secret configuré, on refuse : une tâche qui coûte (IA) ne doit

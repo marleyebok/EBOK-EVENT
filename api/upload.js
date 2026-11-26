@@ -13,7 +13,7 @@
  */
 import { put } from "@vercel/blob";
 import { json, sessionUid, blobTokenState } from "./_lib.js";
-import { jetonDocs, DOC_TAILLE_MAX } from "../lib/documents.js";
+import { accesDocs, DOC_TAILLE_MAX } from "../lib/documents.js";
 
 export const config = { api: { bodyParser: false } };
 
@@ -65,12 +65,12 @@ export default async function handler(req, res) {
 
     // Documents d'inscription : store PRIVÉ (Paris) quand il est branché ;
     // ils ne sont lisibles que par l'API, qui vérifie qui les demande.
-    const prive = dossierDocs && jetonDocs();
+    const prive = dossierDocs ? accesDocs() : null;
     const { url } = await put(`event/${uid}/${folder}/${Date.now()}_${name}`, buf, {
       access: prive ? "private" : "public",
       addRandomSuffix: true,
       contentType,
-      ...(prive ? { token: jetonDocs() } : {}),
+      ...(prive || {}),
     });
     return json(res, 200, { url });
   } catch (e) {

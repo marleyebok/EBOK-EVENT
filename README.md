@@ -136,7 +136,7 @@ n'est pas configurée, le site fonctionne sur les **données de démo** de
 | `BLOB_READ_WRITE_TOKEN` | Stockage des affiches — **injectée automatiquement** en connectant un Blob store (Vercel → Storage) | 🔒 oui |
 | `ADMIN_EMAILS` | *(optionnel)* emails admin additionnels, séparés par virgules | non |
 | `AI_IMPORTS_PAR_JOUR` | *(optionnel)* imports IA autorisés par organisateur et par jour (défaut 5 ; l'admin n'a pas de limite) | non |
-| `DOCS_READ_WRITE_TOKEN` | jeton du store Vercel Blob **privé** `ebok-documents` (Paris) pour les documents d'inscription. À brancher dans Vercel → Storage → ebok-documents → Connect Project, préfixe `DOCS`. Sans lui, les documents retombent sur le store public | 🔒 oui |
+| `DOCS_STORE_ID` | identifiant du store Vercel Blob **privé** `ebok-documents` (Paris), créé en le branchant au projet avec le préfixe `DOCS` (Vercel → Storage → ebok-documents → Connect Project). Authentification automatique (OIDC) ; un jeton `DOCS_READ_WRITE_TOKEN` est aussi accepté. Sans lui, les documents retombent sur le store public. Auto-contrôle : `GET /api/detection?tache=sante` avec le secret des tâches | non |
 | `CRON_SECRET` | **obligatoire** : sans lui, les tâches planifiées sont refusées. Protège la tâche quotidienne de détection : Vercel l'envoie lui-même à `/api/detection?tache=cron`. Une longue chaîne aléatoire suffit | 🔒 oui |
 | `RESEND_API_KEY` | Envoi des alertes e-mail (resend.com) — sans elle, aucune alerte n'est envoyée et le reste du site fonctionne | 🔒 oui |
 | `ALERTS_FROM` | *(optionnel)* expéditeur des alertes (défaut : `EBOK <alertes@ebok.fr>`) | non |
