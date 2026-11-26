@@ -32,7 +32,7 @@
     return `Bonjour,
 
 Nous avons ajouté votre événement « ${ev.title} »${quand ? ` (${quand}${lieu ? ', ' + lieu : ''})` : ''} sur EBOK, l'agenda collaboratif du basket francophone :
-${location.origin}/evenement/${ev.id}
+${location.origin}${urlEvenement(ev)}
 
 Vous pouvez le modifier et le compléter vous-même (affiche, horaires, tarifs, liens d'inscription et de billetterie) :
 1. créez un compte gratuit sur ${location.origin}
