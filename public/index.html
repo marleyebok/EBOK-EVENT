@@ -34,6 +34,8 @@
      et l'affiche dès la première image ; le moteur est js/intro.js, en bas. -->
 <link rel="stylesheet" href="/css/intro.css">
 <script src="/js/intro-boot.js"></script>
+  <!-- Mesure d'audience Vercel Web Analytics : anonyme, sans cookie. -->
+  <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 
@@ -1133,6 +1135,19 @@
           <summary aria-labelledby="al-regions-lbl"><span id="al-regions-resume">Toute la France</span></summary>
           <div class="pick-panel" id="al-regions"></div>
         </details>
+      </div>
+
+      <div class="field">
+        <label for="al-ville">Ou autour d'une ville <span class="field-hint">(facultatif)</span></label>
+        <div class="ac-wrap">
+          <input type="text" id="al-ville" placeholder="Ex. Lyon" autocomplete="off">
+          <div class="ac-list hidden" id="al-ville-ac" role="listbox"></div>
+        </div>
+        <div class="rayon hidden" id="al-rayon-wrap">
+          <label for="al-rayon">Dans un rayon de <output id="al-rayon-val" for="al-rayon">30 km</output></label>
+          <input type="range" id="al-rayon" min="5" max="100" step="5" value="30">
+        </div>
+        <p class="field-hint">Avec une ville, les régions ne comptent plus.</p>
       </div>
 
       <div class="field">

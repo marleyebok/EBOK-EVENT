@@ -224,7 +224,7 @@ Le filtre « autour de moi » repose encore sur un rayon approximatif.
 - [x] Ville du membre et ses coordonnées, collectées au questionnaire de
       bienvenue (`ville`, `villeLat`, `villeLng`) — le point de départ du
       filtre « autour de moi » est donc déjà en base
-- [ ] Remplacer le rayon approximatif par la **formule de Haversine**
+- [x] Remplacer le rayon approximatif par la **formule de Haversine** *(recherche avancée et alertes, 26/11/2026)*
 - [ ] Trier les résultats par distance réelle
 
 ### 2. Popularité des événements ✅
@@ -406,7 +406,7 @@ Reste à faire :
 
 ### 4. Ajouter à mon agenda *(petit effort)*
 
-- [ ] Génération d'un fichier `.ics` (Google / Apple Agenda), côté navigateur
+- [x] Génération d'un fichier `.ics` (Google / Apple Agenda), côté navigateur *(bouton « Agenda » de la fiche, 26/11/2026)*
 
 ### 5. Répertoire des playgrounds 3x3 *(gros chantier)*
 
@@ -424,7 +424,7 @@ communautaire, mais dépend de la géolocalisation.
 
 ### 6. Plus tard
 
-- [ ] **Alertes par ville + rayon** — la zone se choisit aujourd'hui par région,
+- [x] **Alertes par ville + rayon** *(26/11/2026 : ville + 5 à 100 km, depuis la recherche ou le formulaire d'alerte)* — la zone se choisit aujourd'hui par région,
       ce qui reste large. Le rayon autour d'une ville demande les coordonnées
       des événements, donc le chantier géolocalisation.
 - [ ] **Alertes par SMS** — écartées pour l'instant : environ 0,05 € par envoi,
@@ -542,7 +542,7 @@ dans le code — le reste est à faire.
 - [ ] **Poids des pages** — `cities-fr.js` pèse **244 Ko** et `france-map.js`
       **88 Ko**. `cities-fr.js` est déjà chargé à la demande ; vérifier que rien
       d'autre ne bloque le premier affichage.
-- [ ] **Compression des images** — `demo-ligue-c.jpg` fait 136 Ko et les trois
+- [x] **Compression des images** — *(affiche de démo supprimée le 26/11/2026)* `demo-ligue-c.jpg` fait 136 Ko et les trois
       favicons 64 Ko à eux seuls. Les affiches déposées sont déjà compressées à
       l'envoi (`compressImage`, 1200 px / qualité 0.8) ✅, mais servir aussi du
       **WebP** allégerait nettement.
@@ -562,22 +562,22 @@ dans le code — le reste est à faire.
 - [x] ~~**En-têtes de sécurité**~~ — HTTPS et HSTS assurés par Vercel ;
       `vercel.json` ajoute `X-Content-Type-Options`, `Referrer-Policy`,
       `X-Frame-Options`, `Permissions-Policy`.
-- [ ] **Passer la Content-Security-Policy en mode bloquant** — elle est posée en
+- [x] **Passer la Content-Security-Policy en mode bloquant** *(26/11/2026)* — elle est posée en
       `Content-Security-Policy-Report-Only` : le navigateur signale les
       écarts dans sa console sans rien bloquer. Après une semaine sans
       signalement (connexion, Google, publication avec affiche, autocomplétion
       de ville), renommer l'en-tête en `Content-Security-Policy`.
 - [x] ~~**Page 404 personnalisée**~~ — `public/404.html`, aux couleurs du site.
-- [ ] **Liens cassés** — à passer au crible avant lancement, y compris les liens
+- [x] **Liens cassés** *(vérification automatique : `GET /api/detection?tache=liens` avec le secret des tâches, 26/11/2026)* — à passer au crible avant lancement, y compris les liens
       externes des diffuseurs (site, Instagram).
 - [x] ~~**Validation des formulaires**~~ — le parcours de publication vérifie
       chaque étape avec des messages clairs (obligatoires, e-mail, dates).
       Reste le formulaire de modification d'un événement (fenêtre admin).
-- [ ] **Anti-spam** — ⚠️ rien aujourd'hui. La publication exige un compte et
+- [x] **Anti-spam** *(limite de 5 créations par jour et par compte, 26/11/2026)* — ⚠️ rien aujourd'hui. La publication exige un compte et
       passe en modération, ce qui limite déjà beaucoup les dégâts. À renforcer
       si besoin : limitation du nombre de publications par compte et par jour.
       Voir aussi `/api/views`, en écriture ouverte (cf. dette technique).
-- [ ] **Mesure d'audience** — rien aujourd'hui. **Recommandation :** Vercel Web
+- [x] **Mesure d'audience** *(script Vercel Web Analytics posé le 26/11/2026 — à activer dans Vercel → Analytics)* — rien aujourd'hui. **Recommandation :** Vercel Web
       Analytics ou Plausible — sans cookie, donc **pas de bandeau de
       consentement** et conformes RGPD. Google Analytics imposerait le bandeau.
 
@@ -637,10 +637,10 @@ Reste à faire :
 - [x] **Poser `CRON_SECRET`** sur Vercel *(26/11/2026)* : sans elle, n'importe qui pouvait
       déclencher la détection hebdomadaire (au plus une fois par 20 h et par
       source, rien n'est publié, mais chaque analyse consomme l'IA).
-- [ ] **Rendre la CSP bloquante** (`Content-Security-Policy` au lieu de
+- [x] **Rendre la CSP bloquante** *(26/11/2026)* (`Content-Security-Policy` au lieu de
       `-Report-Only` dans `vercel.json`) après un test complet de connexion
       Clerk : c'est le filet qui aurait neutralisé la faille de la galerie.
-- [ ] Limiter côté serveur la taille d'une fiche événement et d'un profil, et
+- [x] Limiter côté serveur la taille d'une fiche événement *(300 Ko, 5 créations par jour, 26/11/2026)* et d'un profil, et
       le nombre de fichiers déposés par membre (aucun plafond aujourd'hui).
 - [ ] Limitation de débit sur `/api` (pare-feu Vercel).
 - [ ] Compteur de vues : l'empreinte inclut le navigateur déclaré, on peut donc
@@ -648,7 +648,7 @@ Reste à faire :
 - [ ] Activer « Secret scanning » et « Push protection » sur le dépôt GitHub
       (public) ; `zod` vulnérable via `@vercel/blob`, à mettre à jour dès qu'une
       version corrigée existe.
-- [ ] Ancienne clé web Firebase visible dans l'historique Git (script de
+- [ ] *(à faire par toi : supprimer le projet Firebase dans la console Google)* Ancienne clé web Firebase visible dans l'historique Git (script de
       migration supprimé) : vérifier que l'ancien projet Firebase est fermé ou
       que ses règles interdisent tout accès anonyme.
 

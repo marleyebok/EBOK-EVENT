@@ -137,6 +137,41 @@ async function analyser(source) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Vérification des liens des fiches                                   */
+/* ------------------------------------------------------------------ */
+const CHAMPS_LIENS = [["lienInscription", "Inscription"], ["lienBilletterie", "Billetterie"], ["siteOfficiel", "Site officiel"], ["org.site", "Site de l'organisateur"]];
+async function verifierLiens() {
+  const rows = await sql()`SELECT id, status, data FROM event.events WHERE status IN ('approved', 'pending')`;
+  const liens = [];
+  for (const r of rows) {
+    const d = r.data || {};
+    for (const [champ, libelle] of CHAMPS_LIENS) {
+      const v = champ === "org.site" ? (d.org || {}).site : d[champ];
+      if (v && /^https?:\/\//i.test(String(v))) liens.push({ id: r.id, statut: r.status, titre: d.title || "", champ: libelle, url: String(v) });
+    }
+  }
+  const uniques = [...new Set(liens.map((l) => l.url))];
+  const resultat = new Map();
+  const tester = async (url) => {
+    try {
+      // Adresses internes : jamais appelées (les liens viennent de fiches saisies par n'importe quel compte).
+      if (isBlockedHost(new URL(url).hostname)) { resultat.set(url, "adresse interdite"); return; }
+      const r = await fetch(url, { redirect: "follow", signal: AbortSignal.timeout(10000), headers: { "User-Agent": "Mozilla/5.0 (compatible; EBOK-verif-liens)", Accept: "text/html,*/*" } });
+      resultat.set(url, r.status);
+    } catch (e) { resultat.set(url, String(e && e.name === "TimeoutError" ? "délai dépassé" : (e && e.cause && e.cause.code) || "injoignable")); }
+  };
+  for (let i = 0; i < uniques.length; i += 10) await Promise.all(uniques.slice(i, i + 10).map(tester));
+  // 401/403/429 : souvent un site qui bloque les robots, pas un lien mort.
+  const mort = (c) => typeof c === "string" || c === 404 || c === 410 || c >= 500;
+  const douteux = (c) => c === 401 || c === 403 || c === 429 || c === 999;
+  return {
+    verifies: uniques.length,
+    morts: liens.filter((l) => mort(resultat.get(l.url))).map((l) => ({ ...l, code: resultat.get(l.url) })),
+    douteux: liens.filter((l) => douteux(resultat.get(l.url))).map((l) => ({ ...l, code: resultat.get(l.url) })),
+  };
+}
+
+/* ------------------------------------------------------------------ */
 /* Handler                                                             */
 /* ------------------------------------------------------------------ */
 export default async function handler(req, res) {
@@ -154,6 +189,14 @@ export default async function handler(req, res) {
       if (!secret || (req.headers.authorization || "") !== `Bearer ${secret}`) return json(res, 401, { error: "cron" });
       const { testerStockageDocs } = await import("../lib/documents.js");
       return json(res, 200, { documents: await testerStockageDocs() });
+    }
+
+    // Vérification des liens des fiches (même secret que les tâches) : elle
+    // tourne chez Vercel, qui joint tous les sites.
+    if (req.method === "GET" && tache === "liens") {
+      const secret = process.env.CRON_SECRET;
+      if (!secret || (req.headers.authorization || "") !== `Bearer ${secret}`) return json(res, 401, { error: "cron" });
+      return json(res, 200, await verifierLiens());
     }
 
     if (req.method === "GET" && (tache === "cron" || tache === "source")) {
