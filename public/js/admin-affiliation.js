@@ -95,6 +95,7 @@ ${suite(true)}`;
     sans_email: "pas d'e-mail sur la fiche", deja_gere: 'une fiche est déjà gérée par un organisateur', desabonne: 'a demandé à ne plus recevoir de message',
     quota: "limite d'envoi du jour atteinte (80 mails) : réessaie demain", echec: "l'envoi a échoué", introuvable: 'fiche introuvable', vide: 'message vide',
     emails_differents: "les fiches n'ont pas la même adresse",
+    organisateur_connu: 'organisateur déjà inscrit : rattache la fiche à son compte (bouton Organisateur)',
   };
 
   /* Autres fiches du même organisateur (même adresse), encore à prévenir. */
@@ -118,8 +119,28 @@ ${suite(true)}`;
     $('affilMessage').value = messageGroupe(fichesDuMessage());
   }
 
+  /* Organisateur déjà rattaché à un compte (une autre de ses fiches) : pas de
+     premier message, on rattache directement. Renvoie le compte à proposer. */
+  function compteDeLOrganisateur(ev){
+    const mail = mailDe(ev).toLowerCase();
+    if(!mail || !organisateurConnu(mail)) return null;
+    const soeur = adminList.find(x => x.id !== ev.id && mailDe(x).toLowerCase() === mail && x.userId && !(currentUser && x.userId === currentUser.uid));
+    return { uid: soeur ? soeur.userId : null };
+  }
+
   function majEtat(){
     const ev = evenement, el = $('affilEtat');
+    const connu = !ev.recupere && compteDeLOrganisateur(ev);
+    for(const id of ['affilMessage', 'affilCopy', 'affilAide']) $(id).classList.toggle('hidden', !!connu);
+    if(connu){
+      const u = connu.uid && adminUsersByUid[connu.uid];
+      el.textContent = `Cet organisateur a déjà un compte EBOK${u ? ` (${nomMembre(u)})` : ''} : il ne reçoit plus le message de présentation. Rattache cette fiche directement à son compte ci-dessous.`;
+      el.classList.remove('hidden');
+      $('affilSend').classList.add('hidden');
+      $('affilSansMail').classList.add('hidden');
+      $('affilGroupeBloc').classList.add('hidden');
+      return;
+    }
     const txt = ev.recupere && ev.recupere.le ? `Fiche récupérée par son organisateur le ${jour(ev.recupere.le)}.`
       : ev.prevenu && ev.prevenu.le ? `Organisateur déjà prévenu le ${jour(ev.prevenu.le)}${ev.prevenu.n > 1 ? ` (${ev.prevenu.n} fois)` : ''}. Un nouvel envoi remplace son lien personnel.` : '';
     el.textContent = txt;
@@ -177,6 +198,8 @@ ${suite(true)}`;
     let liste = adminUsers.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
     if(q) liste = liste.filter(u => [u.pseudo, u.name, u.email, u.favClub, u.practice].join(' ').toLowerCase().includes(q));
     else liste = liste.slice(0, 8);
+    // Le compte présélectionné (organisateur déjà inscrit) reste toujours visible.
+    if(choisi && !liste.some(u => u.uid === choisi) && adminUsersByUid[choisi]) liste.unshift(adminUsersByUid[choisi]);
     const boite = $('affilList');
     boite.innerHTML = liste.length
       ? liste.map(u => `<button type="button" class="affil-item${u.uid === choisi ? ' is-selected' : ''}" role="option" aria-selected="${u.uid === choisi}" data-uid="${esc(u.uid)}">
@@ -210,6 +233,9 @@ ${suite(true)}`;
     $('affilGroupe').checked = true;
     majGroupe();
     majEtat();
+    // Organisateur déjà inscrit : son compte est présélectionné à l'étape 2.
+    const compte = !ev.recupere && compteDeLOrganisateur(ev);
+    if(compte && compte.uid && compte.uid !== ev.userId){ choisi = compte.uid; $('affilSave').disabled = false; }
     dessinerMembres();
     modale.classList.add('open');
     modale.setAttribute('aria-hidden', 'false');
@@ -237,6 +263,8 @@ ${suite(true)}`;
     try{
       await window.EBOK_DATA.updateEvent(id, { userId: uid });
       evenement.userId = uid;
+      // Confiée à un organisateur : son adresse ne recevra plus le premier message.
+      if(uid && !(currentUser && uid === currentUser.uid) && mailDe(evenement)) emailsConnus.add(mailDe(evenement).toLowerCase());
       const local = events.find(e => e.id === id);
       if(local) local.userId = uid;
       ouvreur = null;                 // la liste va être redessinée : l'ancien bouton disparaît
@@ -283,6 +311,7 @@ ${suite(true)}`;
         }catch(e){
           etat.textContent = e && e.code === 'deja_gere'
             ? 'Cette fiche est déjà gérée par un organisateur : pas de lien de récupération.'
+            : e && e.code === 'organisateur_connu' ? 'Cet organisateur a déjà un compte : rattache la fiche directement à son compte.'
             : 'Impossible de créer son lien personnel. Réessaie dans un instant.';
           return;
         }

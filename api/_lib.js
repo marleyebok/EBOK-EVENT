@@ -221,6 +221,13 @@ export async function ensureSchema() {
       email TEXT PRIMARY KEY,
       le    TIMESTAMPTZ NOT NULL DEFAULT now()
     )`;
+  /* Organisateurs déjà rattachés à un compte : plus jamais de premier message. */
+  await q`
+    CREATE TABLE IF NOT EXISTS event.contacts_rattaches (
+      email  TEXT PRIMARY KEY,
+      source TEXT NOT NULL DEFAULT '',
+      le     TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`;
   ready = true;
 }
 

@@ -412,6 +412,10 @@ export function lienRecuperation(id) {
 export function envoyerAuxOrganisateurs(envois) {
   return api(`${ORGA}&action=envoyer`, { method: "POST", body: { envois } });
 }
+/** Admin : adresses déjà rattachées à un compte d'organisateur → { emails }. */
+export function organisateursConnus() {
+  return api(`${ORGA}&action=connus`, { method: "POST", body: {} });
+}
 /** Organisateur connecté : récupère sa fiche avec son lien personnel. */
 export function reclamerFiche(id, jeton) {
   return api(`${ORGA}&action=reclamer`, { method: "POST", body: { id, jeton } });
