@@ -1896,6 +1896,7 @@ function initCreatePage(){
         const msg  = String((err && err.message) || '');
         const tooBig = /longer than|exceeds the maximum|invalid-argument|maximum allowed size/i.test(code + ' ' + msg);
         let banner;
+        if(code === 'trop'){ showCreateBanner(messageQuota(), true); verifierQuotaCreation(); return; }
         if(tooBig){
           banner = "Enregistrement impossible : l'affiche ou les photos sont trop lourdes. Réessaie avec une image plus légère.";
         }else if(code.includes('permission-denied') || code.includes('unauthenticated')){
@@ -1940,9 +1941,30 @@ function initCreatePage(){
   });
 }
 
-function showCreateBanner(msg){
+/* Limite de 5 créations par jour (copies comprises) : au-delà, on invite à
+   écrire à l'équipe. L'adresse est reconstituée ici, jamais écrite en clair
+   dans la page (robots collecteurs d'e-mails). */
+const CREATIONS_PAR_JOUR = 5;
+function messageQuota(){
+  const a = ['contact', 'ebok.fr'].join('@');
+  return `Tu as déjà créé ${CREATIONS_PAR_JOUR} événements aujourd'hui, la limite quotidienne. Tu en as d'autres à ajouter ? Écris à l'équipe EBOK à <a href="mailto:${a}">${a}</a> : on les ajoute avec toi. Sinon, tu pourras en créer de nouveau demain.`;
+}
+async function verifierQuotaCreation(){
+  const note = document.getElementById('createQuota');
+  if(!note) return;
+  note.classList.add('hidden');
+  if(!currentUser || currentIsAdmin || !window.EBOK_DATA || !window.EBOK_DATA.getEventsByUser) return;
+  try{
+    const liste = await window.EBOK_DATA.getEventsByUser(currentUser.uid);
+    const depuis = Date.now() - 24 * 3600 * 1000;
+    const n = (liste || []).filter(e=> (e.createdAt || 0) > depuis && e.userId === currentUser.uid).length;
+    if(n >= CREATIONS_PAR_JOUR){ note.innerHTML = messageQuota(); note.classList.remove('hidden'); }
+  }catch(e){ /* le serveur refusera de toute façon au-delà de la limite */ }
+}
+
+function showCreateBanner(msg, html){
   const banner = document.getElementById('createSuccess');
-  banner.textContent = msg;
+  if(html) banner.innerHTML = msg; else banner.textContent = msg;
   banner.classList.remove('hidden');
   banner.scrollIntoView({behavior:'smooth', block:'center'});
 }
@@ -3187,7 +3209,7 @@ function showPage(name){
   // Publier exige un compte : on propose la connexion sans masquer le formulaire.
   if(name === 'create' && !currentUser && window.EBOK_AUTH){ openAuth('login'); }
   // Précharge la base des villes dès qu'on arrive sur la page de publication.
-  if(name === 'create'){ ensureCitiesLoaded(); prefillOrgFromProfile(); }
+  if(name === 'create'){ ensureCitiesLoaded(); prefillOrgFromProfile(); verifierQuotaCreation(); }
   if(name === 'profile'){ renderProfile(); renderOnboardingNudge(); }
   if(name === 'admin' && typeof renderAdminPage === 'function') renderAdminPage();
   if(name === 'mes' && typeof renderMes === 'function') renderMes();
@@ -3303,7 +3325,10 @@ async function dupliquerEvenement(id){
   if(!confirm(`Dupliquer ${nom} ?\n\nUne copie est créée avec la même affiche, les mêmes infos et les mêmes réglages d'inscription. Tu changes ensuite les dates, le lieu ou le public. La copie reste invisible tant que l'équipe EBOK ne l'a pas validée.`)) return;
   let copie;
   try{ copie = await D.dupliquerEvent(id); }
-  catch(err){ alert('Duplication impossible : ' + (err && err.message ? err.message : 'réessaie dans un instant.')); return; }
+  catch(err){
+    if(err && err.code === 'trop'){ alert(messageQuota().replace(/<[^>]+>/g, '')); return; }
+    alert('Duplication impossible : ' + (err && err.message ? err.message : 'réessaie dans un instant.')); return;
+  }
   if(!copie || !copie.id){ alert('Duplication impossible pour le moment.'); return; }
   // Un co-organisateur n'est pas propriétaire : le serveur l'a autorisé, on le note pour l'édition.
   if(!peutModifier(copie)) copie.__coorg = true;
