@@ -201,7 +201,9 @@ export default async function handler(req, res) {
 
   let ev = null;
   let introuvable = false;
-  if (slug && !id) {
+  // Pages de l'app (/recherche, /publier…) : la page normale, jamais un 404.
+  const PAGES_APP = new Set(["recherche", "publier", "profil", "admin", "mes-evenements"]);
+  if (slug && !id && !PAGES_APP.has(slug)) {
     introuvable = true;
     if (/^[a-z0-9-]{3,40}$/.test(slug) && !RESERVES.has(slug) && hasDb()) {
       try {
