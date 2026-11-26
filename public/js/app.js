@@ -46,13 +46,12 @@ function ageLabel(age){
   return list.length ? list.join(', ') : 'Non renseigné';
 }
 
-/* Public, niveau et âges d'un événement pour les listes : seulement ce que
-   l'organisateur a vraiment renseigné (ni « Non renseigné », ni le niveau
-   par défaut), pour que chaque mot affiché apprenne quelque chose. */
+/* Public d'un événement pour les listes (âges, sexe) : seulement ce que
+   l'organisateur a vraiment renseigné, pour que chaque mot affiché apprenne
+   quelque chose. */
 function publicCourt(ev){
-  const niv = ev.niveau && niveauEvent(ev.niveau) !== NIVEAU_TOUT ? niveauEvent(ev.niveau) : '';
   const ages = ageList(ev.age).join(', ');
-  return [ages, niv, ev.sexe].filter(Boolean);
+  return [ages, ev.sexe].filter(Boolean);
 }
 
 /* Remplit un conteneur de cases à cocher (les 11 tranches) et coche `selected`. */
@@ -800,182 +799,12 @@ function initHomeFilters(){
     }
   });
 
-  // Calendrier de période (date début / date fin). Il s'ouvrait sur juin 2026,
-  // codé en dur : on part du mois courant.
-  const today = new Date();
-  let pickerMonth = new Date(today.getFullYear(), today.getMonth());
-  let selectionMode = 'range'; // 'range' ou 'single'
-  
-  function formatDateDisplay(d){ return d ? new Date(d+'T00:00').toLocaleDateString('fr-FR', {day:'numeric', month:'short'}) : null; }
-  function updatePeriodDisplay(){
-    if(!periodStart && !periodEnd){
-      document.getElementById('periodText').textContent = 'Indifférent';
-    }else if(selectionMode === 'single'){
-      // Mode jour unique : afficher juste la date
-      document.getElementById('periodText').textContent = `${formatDateDisplay(periodStart) || 'Indifférent'}`;
-    }else if(periodStart && !periodEnd){
-      // Mode plage : une seule date sélectionnée
-      document.getElementById('periodText').textContent = `À partir du ${formatDateDisplay(periodStart)}`;
-    }else if(periodStart && periodEnd){
-      // Mode plage : plage complète
-      document.getElementById('periodText').textContent = `${formatDateDisplay(periodStart)} → ${formatDateDisplay(periodEnd)}`;
-    }
-  }
-  
-  function renderPicker(){
-    const year = pickerMonth.getFullYear();
-    const month = pickerMonth.getMonth();
-    const monthName = pickerMonth.toLocaleDateString('fr-FR', {month:'long', year:'numeric'});
-    document.getElementById('pickerMonth').textContent = monthName.charAt(0).toUpperCase() + monthName.slice(1);
-    
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const startingDayOfWeek = firstDay.getDay();
-    const daysGrid = document.getElementById('pickerDays');
-    let html = '';
-    
-    // Jours du mois précédent (grisés)
-    const prevMonthLastDay = new Date(year, month, 0).getDate();
-    for(let i = (startingDayOfWeek || 7) - 1; i > 0; i--){
-      html += `<button type="button" class="day-cell other" disabled>${prevMonthLastDay - i + 1}</button>`;
-    }
-    
-    // Jours du mois courant
-    for(let d = 1; d <= lastDay.getDate(); d++){
-      const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      let cellClass = 'day-cell';
-      
-      if(selectionMode === 'range'){
-        if(periodStart && periodEnd){
-          const s = new Date(periodStart);
-          const e = new Date(periodEnd);
-          const cur = new Date(dateStr);
-          if(cur >= s && cur <= e) cellClass += ' inrange';
-          if(dateStr === periodStart || dateStr === periodEnd) cellClass += ' selected';
-        }else if(periodStart && dateStr === periodStart){
-          cellClass += ' selected';
-        }
-      }else if(selectionMode === 'single'){
-        if(periodStart && dateStr === periodStart) cellClass += ' selected';
-      }
-      
-      html += `<button type="button" class="${cellClass}" data-date="${dateStr}">${d}</button>`;
-    }
-    
-    // Jours du mois suivant (grisés)
-    const remainingDays = 42 - (html.match(/<button/g)||[]).length;
-    for(let d = 1; d <= remainingDays; d++){
-      html += `<button type="button" class="day-cell other" disabled>${d}</button>`;
-    }
-    
-    daysGrid.innerHTML = html;
-    daysGrid.querySelectorAll('[data-date]').forEach(btn=>{
-      btn.addEventListener('click', (e)=>{
-        e.preventDefault();
-        // On stoppe la propagation : renderPicker() remplace les boutons de
-        // jour, donc l'écouteur "clic dehors" verrait sinon une cible détachée
-        // et fermerait le calendrier dès le 1er clic (bug période).
-        e.stopPropagation();
-        const date = btn.dataset.date;
-
-        if(selectionMode === 'range'){
-          if(!periodStart){
-            periodStart = date;
-            periodEnd = '';
-          }else if(!periodEnd && date >= periodStart){
-            periodEnd = date;
-          }else if(date < periodStart){
-            periodStart = date;
-            periodEnd = '';
-          }else{
-            periodStart = '';
-            periodEnd = '';
-          }
-        }else if(selectionMode === 'single'){
-          if(periodStart === date){
-            periodStart = ''; periodEnd = ''; // Déselectionner au 2e clic
-          }else{
-            periodStart = date;
-            periodEnd = date; // Jour unique = même date de début et de fin (filtre live immédiat)
-          }
-        }
-        
-        updatePeriodDisplay();
-        renderPicker();
-        applyMapFilters();   // filtre en direct, sans attendre "Appliquer"
-      });
-    });
-  }
-  
-  document.getElementById('periodDisplay').addEventListener('click', (e)=>{
-    e.stopPropagation();
-    document.getElementById('periodPicker').classList.toggle('hidden');
+  // Calendrier de période (composant partagé avec la recherche avancée).
+  const calAccueil = calendrierPeriode(document.getElementById('periodSelector'), (du, au)=>{
+    periodStart = du; periodEnd = au; applyMapFilters();
   });
-  
-  document.getElementById('prevMonth').addEventListener('click', (e)=>{
-    e.preventDefault();
-    pickerMonth = new Date(pickerMonth.getFullYear(), pickerMonth.getMonth() - 1);
-    renderPicker();
-  });
-  
-  document.getElementById('nextMonth').addEventListener('click', (e)=>{
-    e.preventDefault();
-    pickerMonth = new Date(pickerMonth.getFullYear(), pickerMonth.getMonth() + 1);
-    renderPicker();
-  });
-  
-  document.getElementById('pickerClear').addEventListener('click', (e)=>{
-    e.preventDefault();
-    periodStart = '';
-    periodEnd = '';
-    updatePeriodDisplay();
-    renderPicker();
-    applyMapFilters();
-  });
-  
-  // Boutons de mode (Plage / Jour unique)
-  document.querySelectorAll('.mode-btn').forEach(btn=>{
-    btn.addEventListener('click', (e)=>{
-      e.preventDefault();
-      const mode = btn.dataset.mode;
-      selectionMode = mode;
-      document.querySelectorAll('.mode-btn').forEach(b=> b.classList.toggle('active', b===btn));
-      periodStart = '';
-      periodEnd = '';
-      updatePeriodDisplay();
-      renderPicker();
-      applyMapFilters();
-    });
-  });
-
-  // Bouton Appliquer (ferme et valide)
-  document.getElementById('pickerApply').addEventListener('click', (e)=>{
-    e.preventDefault();
-    if(selectionMode === 'single' && periodStart){
-      periodEnd = periodStart; // En mode single, on met la même date pour les deux
-    }
-    updatePeriodDisplay();
-    applyMapFilters();
-    document.getElementById('periodPicker').classList.add('hidden');
-  });
-  
-  // Fermer le picker au clic dehors
-  document.addEventListener('click', (e)=>{
-    if(!document.getElementById('periodSelector').contains(e.target)){
-      document.getElementById('periodPicker').classList.add('hidden');
-    }
-  });
-  
-  renderPicker();
-  updatePeriodDisplay();
   // La barre de recherche de l'accueil pose une période (un mois, l'été).
-  setHomePeriod = (debut, fin)=>{
-    selectionMode = 'range';
-    document.querySelectorAll('.mode-btn').forEach(b=> b.classList.toggle('active', b.dataset.mode === 'range'));
-    periodStart = debut || ''; periodEnd = fin || '';
-    if(periodStart) pickerMonth = new Date(periodStart + 'T00:00');
-    updatePeriodDisplay(); renderPicker();
-  };
+  setHomePeriod = (debut, fin)=>{ calAccueil.poser(debut || '', fin || ''); periodStart = debut || ''; periodEnd = fin || ''; };
 
   const typeWrap = document.getElementById('typeFilterHome');
   typeWrap.classList.add('type-list');
@@ -1022,6 +851,93 @@ function initHomeFilters(){
 
   updateTypeLabel();
   applyMapFilters();
+}
+
+/* =========================================================
+   CALENDRIER DE PÉRIODE (accueil et recherche avancée)
+   ---------------------------------------------------------
+   Un seul champ « Date » : on choisit un jour unique ou une période
+   (début → fin). `onChange(du, au)` reçoit des dates AAAA-MM-JJ ; en
+   période, `au` vide = « à partir du ». Les jours se choisissent en
+   direct ; « OK » referme, « Réinitialiser » vide.
+   ========================================================= */
+function calendrierPeriode(racine, onChange){
+  const auj = new Date();
+  let mois = new Date(auj.getFullYear(), auj.getMonth());
+  let mode = 'range', du = '', au = '';
+  racine.classList.add('period-selector');
+  racine.innerHTML = `
+    <button type="button" class="period-display" aria-haspopup="true" aria-expanded="false"><span class="period-text">Indifférent</span>
+      <span class="period-icon">${ico('chevron')}</span></button>
+    <div class="period-picker hidden">
+      <div class="picker-header">
+        <button type="button" class="picker-nav" data-nav-mois="-1" aria-label="Mois précédent">‹</button>
+        <span class="picker-month"></span>
+        <button type="button" class="picker-nav" data-nav-mois="1" aria-label="Mois suivant">›</button>
+      </div>
+      <div class="picker-weekdays"><div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div></div>
+      <div class="picker-days"></div>
+      <div class="picker-footer">
+        <div class="mode-toggle">
+          <button type="button" class="mode-btn active" data-mode="range">Période</button>
+          <button type="button" class="mode-btn" data-mode="single">Jour unique</button>
+        </div>
+        <div class="picker-actions">
+          <button type="button" class="btn btn-ghost btn-sm" data-cal="vider">Réinitialiser</button>
+          <button type="button" class="btn btn-primary btn-sm" data-cal="ok">OK</button>
+        </div>
+      </div>
+    </div>`;
+  const affichage = racine.querySelector('.period-display'), panneau = racine.querySelector('.period-picker');
+  const jourCourt = d=> new Date(d + 'T00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  const texte = ()=>{
+    racine.querySelector('.period-text').textContent = !du ? 'Indifférent'
+      : mode === 'single' || du === au ? jourCourt(du)
+      : !au ? `À partir du ${jourCourt(du)}` : `${jourCourt(du)} → ${jourCourt(au)}`;
+  };
+  const ouvrir = on=>{ panneau.classList.toggle('hidden', !on); affichage.setAttribute('aria-expanded', on); };
+  const dessiner = ()=>{
+    const y = mois.getFullYear(), m = mois.getMonth();
+    const nom = mois.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    racine.querySelector('.picker-month').textContent = nom.charAt(0).toUpperCase() + nom.slice(1);
+    const premier = new Date(y, m, 1).getDay() || 7, nbJours = new Date(y, m + 1, 0).getDate(), finPrec = new Date(y, m, 0).getDate();
+    let h = '', n = 0;
+    for(let i = premier - 1; i > 0; i--, n++) h += `<button type="button" class="day-cell other" disabled>${finPrec - i + 1}</button>`;
+    for(let d = 1; d <= nbJours; d++, n++){
+      const iso = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      let c = 'day-cell';
+      if(du && au && iso >= du && iso <= au) c += ' inrange';
+      if(iso === du || iso === au) c += ' selected';
+      h += `<button type="button" class="${c}" data-date="${iso}">${d}</button>`;
+    }
+    for(let d = 1; n < 42; d++, n++) h += `<button type="button" class="day-cell other" disabled>${d}</button>`;
+    racine.querySelector('.picker-days').innerHTML = h;
+  };
+  const changer = ()=>{ texte(); dessiner(); onChange(du, au); };
+  affichage.addEventListener('click', e=>{ e.stopPropagation(); ouvrir(panneau.classList.contains('hidden')); });
+  panneau.addEventListener('click', e=>{
+    // Les jours sont redessinés à chaque clic : sans ceci, le « clic dehors »
+    // verrait une cible détachée et refermerait le calendrier.
+    e.stopPropagation();
+    const j = e.target.closest('[data-date]'), nav = e.target.closest('[data-nav-mois]'), md = e.target.closest('[data-mode]'), act = e.target.closest('[data-cal]');
+    if(j){
+      const d = j.dataset.date;
+      if(mode === 'single'){ if(du === d){ du = ''; au = ''; } else { du = d; au = d; } }
+      else if(!du || (du && au) || d < du){ du = d; au = ''; }
+      else au = d;
+      changer();
+    }else if(nav){ mois = new Date(mois.getFullYear(), mois.getMonth() + Number(nav.dataset.navMois)); dessiner(); }
+    else if(md){ mode = md.dataset.mode; racine.querySelectorAll('.mode-btn').forEach(b=> b.classList.toggle('active', b === md)); du = ''; au = ''; changer(); }
+    else if(act && act.dataset.cal === 'vider'){ du = ''; au = ''; changer(); }
+    else if(act && act.dataset.cal === 'ok'){ ouvrir(false); affichage.focus(); }
+  });
+  panneau.addEventListener('keydown', e=>{ if(e.key === 'Escape'){ ouvrir(false); affichage.focus(); } });
+  document.addEventListener('click', e=>{ if(!racine.contains(e.target)) ouvrir(false); });
+  texte(); dessiner();
+  return {
+    poser(d, f){ mode = 'range'; racine.querySelectorAll('.mode-btn').forEach(b=> b.classList.toggle('active', b.dataset.mode === 'range')); du = d || ''; au = f || ''; if(du) mois = new Date(du + 'T00:00'); texte(); dessiner(); },
+    vider(){ du = ''; au = ''; texte(); dessiner(); },
+  };
 }
 
 /* Met à jour l'intitulé du bouton "Types" selon la sélection.
@@ -1386,6 +1302,7 @@ document.getElementById('viewBtnList').addEventListener('click', ()=> setHomeVie
    SEARCH PAGE
    ========================================================= */
 let searchAbroad = false;   // Recherche restreinte aux événements hors de France
+let searchDu = '', searchAu = '';   // période choisie dans le calendrier de la recherche
 function initSearchPage(){
   const typeSel = document.getElementById('f-type');
   Object.keys(TYPE_COLORS).forEach(t=>{
@@ -1395,9 +1312,12 @@ function initSearchPage(){
   fillRegionSelect('f-region', 'Toutes les régions');
   document.getElementById('f-region').addEventListener('change', renderResults);
   document.getElementById('searchForm').addEventListener('submit',(e)=>{ e.preventDefault(); renderResults(); });
+  // Date : un seul calendrier (jour unique ou période).
+  const calRecherche = calendrierPeriode(document.getElementById('f-dates'), (du, au)=>{ searchDu = du; searchAu = au; renderResults(); });
   document.getElementById('resetSearch').addEventListener('click', ()=>{
     document.getElementById('searchForm').reset();
     searchAbroad = false;
+    searchDu = ''; searchAu = ''; calRecherche.vider();
     choisirVilleRecherche(null);
     renderResults();
   });
@@ -1443,11 +1363,9 @@ function renderResults(){
   const lieu = document.getElementById('f-lieu').value.trim().toLowerCase();
   const regionChoisie = document.getElementById('f-region').value;
   const type = document.getElementById('f-type').value;
-  const dStart = document.getElementById('f-date-start').value;
-  const dEnd = document.getElementById('f-date-end').value;
+  const dStart = searchDu, dEnd = searchAu;
   const sexe = document.getElementById('f-sexe').value;
   const age = document.getElementById('f-age').value;
-  const niveau = document.getElementById('f-niveau').value;
   const afficheOnly = document.getElementById('f-affiche').checked;
   const rayonKm = searchCity ? Number(document.getElementById('f-rayon').value) : 0;
 
@@ -1463,7 +1381,6 @@ function renderResults(){
     if(dEnd && ev.dateStart > dEnd) return false;
     if(sexe !== 'all' && ev.sexe !== sexe && ev.sexe !== 'Mixte') return false;
     if(age !== 'all' && !ageList(ev.age).includes(age)) return false;
-    if(niveau !== 'all' && niveauEvent(ev.niveau) !== niveau && niveauEvent(ev.niveau) !== NIVEAU_TOUT) return false;
     if(afficheOnly && !ev.poster) return false;
     return true;
   }).sort(parDateRecente);
@@ -1487,7 +1404,7 @@ function renderResults(){
   const cta = searchAbroad ? '' : alerteCtaHtml(results.length);
   const enTete = results.length <= 3;
   if(results.length===0){
-    grid.innerHTML = `${abroadNote}<div class="empty-state"><h4>Aucun événement ne correspond</h4><p>${searchAbroad ? 'Aucun événement à l’étranger n’est publié pour le moment.' : 'Essaie d’élargir tes filtres — lieu, dates ou niveau.'}</p></div>${cta}`;
+    grid.innerHTML = `${abroadNote}<div class="empty-state"><h4>Aucun événement ne correspond</h4><p>${searchAbroad ? 'Aucun événement à l’étranger n’est publié pour le moment.' : 'Essaie d’élargir tes filtres — lieu, dates ou public.'}</p></div>${cta}`;
     bindAbroadClear();
     bindAlerteCta();
     return;
@@ -1529,25 +1446,23 @@ const ALERTE_EN_ATTENTE = 'ebok-alerte-en-attente';
 /* Critères d'alerte tirés des filtres de la page Recherche. */
 function criteresRecherche(){
   const val = id=> (document.getElementById(id) || {}).value || '';
-  const c = { regions: [], types: [], ages: [], niveaux: [] };
+  const c = { regions: [], types: [], ages: [] };
   const region = val('f-region');
   if(region) c.regions = [region];
   const type = val('f-type');
   if(TYPE_COLORS[type]) c.types = [type];
   const age = val('f-age');
   if(AGES_ALERTE.includes(age)) c.ages = [age];
-  const niveau = val('f-niveau');
-  if(NIVEAUX_EVENT.includes(niveau) && niveau !== NIVEAU_TOUT) c.niveaux = [niveau];
   return c;
 }
-const criteresVides = c=> !c.regions.length && !c.types.length && !c.ages.length && !c.niveaux.length;
-const memesCriteres = (a, b)=> ['regions', 'types', 'ages', 'niveaux'].every(k=>
+const criteresVides = c=> !c.regions.length && !c.types.length && !c.ages.length;
+const memesCriteres = (a, b)=> ['regions', 'types', 'ages'].every(k=>
   JSON.stringify([...(a[k] || [])].sort()) === JSON.stringify([...(b[k] || [])].sort())) && !a.du && !a.au;
 
 function alerteCtaHtml(nbResultats){
   const c = criteresRecherche();
   if(criteresVides(c)) return '';
-  const quoi = [...c.types, ...c.ages, ...c.niveaux].join(' · ');
+  const quoi = [...c.types, ...c.ages].join(' · ');
   const ou = c.regions.length ? c.regions[0] : 'toute la France';
   const deja = currentUser && mesAlertes.some(a=> a.actif && memesCriteres(a.criteres || {}, c));
   const titre = nbResultats === 0 ? 'Rien pour l’instant ? Sois le premier prévenu.'
@@ -1681,9 +1596,9 @@ function renderRegionMap(regionName, results){
   const pins = inView.map(ev=>{
     const c = TYPE_COLORS[ev.type] || '#607D8B';
     return `<g class="rmap-pin" data-id="${esc(ev.id)}" tabindex="0" role="button" aria-label="${esc(ev.title)}">
-      <circle class="rmap-halo" cx="${ev.x}" cy="${ev.y}" r="9" fill="${c}"></circle>
-      <circle class="rmap-core" cx="${ev.x}" cy="${ev.y}" r="4.6" fill="${c}"></circle>
-      <circle cx="${ev.x}" cy="${ev.y}" r="1.7" fill="#fff"></circle>
+      <circle class="rmap-halo" cx="${Number(ev.x)}" cy="${Number(ev.y)}" r="9" fill="${c}"></circle>
+      <circle class="rmap-core" cx="${Number(ev.x)}" cy="${Number(ev.y)}" r="4.6" fill="${c}"></circle>
+      <circle cx="${Number(ev.x)}" cy="${Number(ev.y)}" r="1.7" fill="#fff"></circle>
       <title>${esc(ev.title)} · ${esc(ev.city || '')}</title>
     </g>`;
   }).join('');
@@ -1930,7 +1845,6 @@ function initCreatePage(){
       dateStart, dateEnd,
       sexe: val('c-sexe') || 'Mixte',
       age: readAgeChoices('c-age'),
-      niveau: val('c-niveau') || NIVEAU_TOUT,
       tarif: val('c-tarif'),
       lienInscription: lienPropre(val('c-inscription')),
       lienBilletterie: lienPropre(val('c-billetterie')),
@@ -2374,16 +2288,18 @@ function attachCityAutocomplete(inputId, listId, onPick){
 /* Mini-carte de France (sous l'affiche) situant l'événement par un point.
    Réutilise les tracés des régions ; cadre limité à la métropole. */
 function miniMapHtml(ev){
-  if(ev.x == null || ev.y == null || typeof FRANCE_REGIONS === 'undefined') return '';
+  // Coordonnées forcées en nombres : elles vont dans des attributs SVG.
+  const x = Number(ev.x), y = Number(ev.y);
+  if(ev.x == null || ev.y == null || !Number.isFinite(x) || !Number.isFinite(y) || typeof FRANCE_REGIONS === 'undefined') return '';
   const shapes = FRANCE_REGIONS.map(r=> `<path d="${r.d}"/>`).join('');
   const c = TYPE_COLORS[ev.type] || '#607D8B';
   return `<div class="event-mini-map">
     <div class="mini-map-title">${ico('pin')}${esc(ev.city || ev.region || 'France')}</div>
     <svg class="mini-france" viewBox="192 122 396 512" role="img" aria-label="Localisation de l'événement sur la carte de France">
       <g class="mini-regions">${shapes}</g>
-      <circle class="mini-pin-halo" cx="${ev.x}" cy="${ev.y}" r="15" fill="${c}"></circle>
-      <circle class="mini-pin" cx="${ev.x}" cy="${ev.y}" r="7" fill="${c}"></circle>
-      <circle cx="${ev.x}" cy="${ev.y}" r="2.6" fill="#fff"></circle>
+      <circle class="mini-pin-halo" cx="${x}" cy="${y}" r="15" fill="${c}"></circle>
+      <circle class="mini-pin" cx="${x}" cy="${y}" r="7" fill="${c}"></circle>
+      <circle cx="${x}" cy="${y}" r="2.6" fill="#fff"></circle>
     </svg>
     <div class="mini-map-foot">${esc(ev.region || '')}</div>
   </div>`;
@@ -2662,7 +2578,6 @@ async function openEvent(id, opts){
     ['Horaires', infos.horaires],
     ['Lieu', infos.adresse || ev.lieu || ev.city, lieuSous],
     ['Public', [ev.sexe, ageList(ev.age).join(', ')].filter(Boolean).join(', ')],
-    ['Niveau', ev.niveau && niveauEvent(ev.niveau) !== NIVEAU_TOUT ? niveauEvent(ev.niveau) : ''],
     ['Tarif', ev.tarif],
     ['Places', placesValue],
     ['Buvette', infos.buvette],
@@ -3525,14 +3440,6 @@ const SOCIAL_LABELS = [
   ["instagram", "Instagram"], ["tiktok", "TikTok"], ["snapchat", "Snapchat"],
   ["facebook", "Facebook"], ["linkedin", "LinkedIn"],
 ];
-/* Niveaux d'un événement (création, modification, filtre). « Tous les niveaux »
-   (valeur par défaut) ressort dans toutes les recherches par niveau. */
-const NIVEAU_TOUT = "Tous les niveaux";
-const NIVEAUX_EVENT = [NIVEAU_TOUT, "Loisir", "Départemental", "Régional", "National", "Espoirs", "Pros"];
-/* Anciennes valeurs (ex. import collé), ramenées sur la nouvelle liste. */
-const NIVEAUX_ANCIENS = { "Tous niveaux": NIVEAU_TOUT, "Tout niveau": NIVEAU_TOUT, "Amateur": "Départemental",
-  "Débutant": "Départemental", "Confirmé": "Régional", "Semi-pro": "National", "Semi-pro / Pro": "Pros", "Pro": "Pros" };
-function niveauEvent(v){ return NIVEAUX_ANCIENS[v] || v || NIVEAU_TOUT; }
 const INTEREST_OPTIONS = ["Tournois", "Camps", "Stages", "Circuit 3x3", "Détections", "Clinic Coachs", "Show", "Voyage", "Match Pro", "Handibasket"];
 const MAX_INTERESTS = 3;
 /* Niveaux de pratique, du plus accessible au plus élevé. Posés aux joueurs à
@@ -4327,7 +4234,6 @@ function resumeCriteres(c){
   bouts.push(c.regions && c.regions.length ? c.regions.join(', ') : 'toute la France');
   bouts.push(c.types && c.types.length ? c.types.join(', ') : 'tous les types');
   if(c.ages && c.ages.length) bouts.push(c.ages.join(', '));
-  if(c.niveaux && c.niveaux.length) bouts.push(c.niveaux.join(', '));
   if(c.du && c.au) bouts.push(`du ${dateAlerteFr(c.du)} au ${dateAlerteFr(c.au)}`);
   else if(c.du) bouts.push(`à partir du ${dateAlerteFr(c.du)}`);
   else if(c.au) bouts.push(`jusqu'au ${dateAlerteFr(c.au)}`);
@@ -4386,7 +4292,6 @@ function openAlertModal(id, depart){
   remplirMenuAlerte('al-regions', regionsDisponibles(), c.regions, 'Toute la France', 'régions');
   remplirMenuAlerte('al-types', Object.keys(TYPE_COLORS), c.types, 'Tous les types', 'types');
   remplirMenuAlerte('al-ages', AGES_ALERTE, c.ages, 'Tous les âges', 'âges');
-  remplirMenuAlerte('al-niveaux', NIVEAUX_EVENT.filter(n=> n !== NIVEAU_TOUT), c.niveaux, 'Tous les niveaux', 'niveaux');
 
   document.getElementById('alertError').classList.add('hidden');
   m.classList.add('open');
@@ -4461,7 +4366,7 @@ function initAlertes(){
     }
     const donnees = {
       nom: document.getElementById('al-nom').value.trim(),
-      criteres: { regions: coches('al-regions'), types: coches('al-types'), ages: coches('al-ages'), niveaux: coches('al-niveaux'), du, au },
+      criteres: { regions: coches('al-regions'), types: coches('al-types'), ages: coches('al-ages'), du, au },
     };
     try{
       if(alerteEnCours){
@@ -4937,7 +4842,6 @@ function prefillCreateFromImport(ev, poster){
   set('c-date-debut', ev.dateStart);
   set('c-date-fin', ev.dateEnd);
   set('c-sexe', ev.sexe);
-  set('c-niveau', niveauEvent(ev.niveau));
   set('c-desc', ev.description);
   set('c-orgname', ev.orgName);
   set('c-insta', ev.insta);
@@ -5171,7 +5075,6 @@ function openEditModal(id){
   ensureCitiesLoaded();
   setFieldVal('e-title', ev.title);
   setFieldVal('e-type', ev.type || 'Divers');
-  setFieldVal('e-niveau', niveauEvent(ev.niveau));
   setFieldVal('e-city', ev.city);
   setRegionValue('e-region', ev.region);
   setFieldVal('e-address', (ev.infos && ev.infos.adresse) || ev.lieu || '');
@@ -5207,7 +5110,7 @@ function openEditModal(id){
   const feat = document.getElementById('e-featured'); if(feat) feat.checked = !!ev.featured;
   const prev = document.getElementById('e-poster-preview');
   if(prev){
-    if(ev.poster){ prev.src = ev.poster; prev.classList.remove('hidden'); }
+    if(safeImg(ev.poster)){ prev.src = safeImg(ev.poster); prev.classList.remove('hidden'); }
     else{ prev.src = ''; prev.classList.add('hidden'); }
   }
   const fileInput = document.getElementById('e-poster-file'); if(fileInput) fileInput.value = '';
@@ -5256,7 +5159,6 @@ function initEditModal(){
     const patch = {
       title: gv('e-title') || 'Événement sans nom',
       type: gv('e-type') || 'Divers',
-      niveau: gv('e-niveau'),
       city: gv('e-city'),
       region: gv('e-region'),
       lieu: gv('e-address') || gv('e-city'),

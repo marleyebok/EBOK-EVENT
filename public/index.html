@@ -226,34 +226,8 @@
           </div>
 
           <div class="filter-group fg-period">
-            <label for="periodSelector">Date</label>
-            <div class="period-selector" id="periodSelector">
-              <div class="period-display" id="periodDisplay">
-                <span id="periodText">Indifférent</span>
-                <span class="period-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span>
-              </div>
-              <div class="period-picker hidden" id="periodPicker">
-                <div class="picker-header">
-                  <button type="button" class="picker-nav" id="prevMonth">‹</button>
-                  <span id="pickerMonth" class="picker-month">Juin 2026</span>
-                  <button type="button" class="picker-nav" id="nextMonth">›</button>
-                </div>
-                <div class="picker-weekdays">
-                  <div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div>
-                </div>
-                <div class="picker-days" id="pickerDays"></div>
-                <div class="picker-footer">
-                  <div class="mode-toggle">
-                    <button type="button" class="mode-btn active" data-mode="range">Période</button>
-                    <button type="button" class="mode-btn" data-mode="single">Jour unique</button>
-                  </div>
-                  <div class="picker-actions">
-                    <button type="button" class="btn btn-ghost" id="pickerClear" style="font-size:12px;padding:6px 12px;">Réinitialiser</button>
-                    <button type="button" class="btn btn-primary" id="pickerApply" style="font-size:12px;padding:6px 12px;">Fermer</button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <label id="periodLabel">Date</label>
+            <div class="period-selector" id="periodSelector" role="group" aria-labelledby="periodLabel"></div>
           </div>
         </aside>
         <p class="hs-publish">Tu organises un événement ? <button type="button" class="link-btn" data-nav="create">Publie-le gratuitement</button></p>
@@ -314,7 +288,7 @@
     <div class="page-head">
       <p class="eyebrow">Recherche avancée</p>
       <h2>Trouve ton prochain événement</h2>
-      <p class="hero-sub">Tous les filtres possibles pour affiner ta recherche : lieu, type, date, public et niveau.</p>
+      <p class="hero-sub">Affine par lieu, type, date, sexe et âge.</p>
     </div>
 
     <form class="search-form" id="searchForm">
@@ -340,15 +314,11 @@
         </select>
       </div>
       <div class="field">
-        <label for="f-date-start">À partir du</label>
-        <input type="date" id="f-date-start">
+        <label id="f-date-lbl">Date</label>
+        <div class="period-selector" id="f-dates" role="group" aria-labelledby="f-date-lbl"></div>
       </div>
       <div class="field">
-        <label for="f-date-end">Jusqu'au</label>
-        <input type="date" id="f-date-end">
-      </div>
-      <div class="field">
-        <label for="f-sexe">Public — sexe</label>
+        <label for="f-sexe">Sexe</label>
         <select id="f-sexe">
           <option value="all">Indifférent</option>
           <option value="Masculin">Masculin</option>
@@ -357,7 +327,7 @@
         </select>
       </div>
       <div class="field">
-        <label for="f-age">Public — âge</label>
+        <label for="f-age">Âge</label>
         <select id="f-age">
           <option value="all">Indifférent</option>
           <option value="Tout public">Tout public</option>
@@ -371,18 +341,6 @@
           <option value="U21">U21</option>
           <option value="Adulte">Adulte</option>
           <option value="Non renseigné">Non renseigné</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="f-niveau">Niveau</label>
-        <select id="f-niveau">
-          <option value="all">Tous les niveaux</option>
-          <option>Loisir</option>
-          <option>Départemental</option>
-          <option>Régional</option>
-          <option>National</option>
-          <option>Espoirs</option>
-          <option>Pros</option>
         </select>
       </div>
       <div class="field field-check" style="align-self:end;">
@@ -580,18 +538,6 @@
                   <option>Mixte</option>
                   <option>Masculin</option>
                   <option>Féminin</option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="c-niveau">Niveau</label>
-                <select id="c-niveau">
-                  <option selected>Tous les niveaux</option>
-                  <option>Loisir</option>
-                  <option>Départemental</option>
-                  <option>Régional</option>
-                  <option>National</option>
-                  <option>Espoirs</option>
-                  <option>Pros</option>
                 </select>
               </div>
             </div>
@@ -1203,13 +1149,6 @@
             <div class="pick-panel" id="al-ages"></div>
           </details>
         </div>
-        <div class="field">
-          <label id="al-niveaux-lbl">Niveaux</label>
-          <details class="pick-drop" id="al-niveaux-drop">
-            <summary aria-labelledby="al-niveaux-lbl"><span id="al-niveaux-resume">Tous les niveaux</span></summary>
-            <div class="pick-panel" id="al-niveaux"></div>
-          </details>
-        </div>
       </div>
 
       <div class="form-row">
@@ -1320,18 +1259,6 @@
             <option value="Handibasket">Handibasket</option>
             <option value="Match Pro">Match Pro</option>
             <option value="Divers">Divers</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="e-niveau">Niveau</label>
-          <select id="e-niveau">
-            <option selected>Tous les niveaux</option>
-            <option>Loisir</option>
-            <option>Départemental</option>
-            <option>Régional</option>
-            <option>National</option>
-            <option>Espoirs</option>
-            <option>Pros</option>
           </select>
         </div>
       </div>

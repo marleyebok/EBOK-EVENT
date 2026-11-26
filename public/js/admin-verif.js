@@ -17,7 +17,6 @@
    ========================================================= */
 (function(){
   const SEXES = ['Masculin', 'Féminin', 'Mixte'];
-  const NIVEAUX = NIVEAUX_EVENT;
 
   /* Champs modifiables sur place. t = type de saisie. */
   const CHAMPS = {
@@ -29,7 +28,6 @@
     tarif:           { l: 'Tarif', ph: 'ex. 10 € par équipe, Gratuit' },
     sexe:            { l: 'Public', t: 'select', o: SEXES },
     age:             { l: 'Âges', t: 'ages' },
-    niveau:          { l: 'Niveau', t: 'select', o: NIVEAUX },
     lienInscription: { l: "Lien d'inscription", t: 'url', ph: 'https://…' },
     lienBilletterie: { l: 'Lien de billetterie', t: 'url', ph: 'https://…' },
     reservation:     { l: 'Inscription / réservation' },

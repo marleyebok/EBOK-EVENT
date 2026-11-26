@@ -100,7 +100,7 @@ function metaBlock(ev, id, req) {
   const title = [ev.title, dates && `${dates}`, ev.city].filter(Boolean).join(" — ");
   const description = clamp(
     ev.description ||
-      [ev.type, ev.niveau, ev.age, ev.sexe].filter(Boolean).join(" · ") ||
+      [ev.type, ev.age, ev.sexe].filter(Boolean).join(" · ") ||
       `Événement basket à ${ev.city || "découvrir"}.`,
     200
   );

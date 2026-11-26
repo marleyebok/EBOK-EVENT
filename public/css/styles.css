@@ -2516,7 +2516,7 @@ input,select,textarea{font-family:var(--font-body);}
 }
 .home-board .type-dd-btn:hover,.home-board .period-display:hover{border-color:var(--line-strong);}
 .home-board .type-dd-btn,.home-board .period-display{display:flex;align-items:center;justify-content:space-between;gap:8px;}
-.home-board #typeDdLabel,.home-board #periodText{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.home-board #typeDdLabel,.home-board .period-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .home-board .dd-caret,.home-board .period-icon{display:flex;color:var(--chalk-mute);font-size:14px;}
 .home-board #citySearch::placeholder{color:var(--chalk);opacity:1;}
 .home-board .map-wrap{border:0;border-radius:0;background:none;min-height:0;padding:8px 8px 0;}
@@ -3094,7 +3094,7 @@ input,select,textarea{font-family:var(--font-body);}
 }
 .home-hero .type-dd-btn:hover,.home-hero .period-display:hover,.home-hero #citySearch:hover{border-color:var(--line-strong);}
 .home-hero .type-dd-btn,.home-hero .period-display{display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;}
-.home-hero #typeDdLabel,.home-hero #periodText{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.home-hero #typeDdLabel,.home-hero .period-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .home-hero .dd-caret,.home-hero .period-icon{display:flex;color:var(--chalk-mute);font-size:14px;}
 .home-hero #citySearch::placeholder{color:var(--chalk);opacity:1;}
 .home-hero .period-picker{left:auto;right:0;}
@@ -3314,3 +3314,14 @@ input,select,textarea{font-family:var(--font-body);}
 /* Liste des types : « OK » valide et referme. */
 .type-dd-actions .type-dd-ok{background:var(--accent);border-color:var(--accent);color:#fff;}
 .type-dd-actions .type-dd-ok:hover{background:var(--accent-2);border-color:var(--accent-2);color:#fff;}
+
+/* Calendrier de période (accueil, recherche) : le champ est un vrai bouton. */
+.period-display{width:100%;font:inherit;text-align:left;gap:8px;}
+.period-display:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.period-text{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.period-icon{display:flex;color:var(--chalk-mute);}
+.period-icon .ico{width:16px;height:16px;}
+.search-form .period-display{height:44px;padding:0 12px;border-radius:var(--r-ctl);background:var(--asphalt-3);border:1px solid var(--line-strong);font-size:14px;font-weight:400;color:var(--chalk);}
+.search-form .period-picker{min-width:300px;z-index:30;}
+.picker-actions .btn-sm{height:32px;padding:0 12px;font-size:13px;}
+.search-form .ac-wrap,.search-form .ac-wrap input{width:100%;box-sizing:border-box;}

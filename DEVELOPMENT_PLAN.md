@@ -278,6 +278,13 @@ adjoindre des statistiques exploitables par un organisateur.
       clubs précédents, sélections, coach, motivations, vidéo, traitement,
       blessures, autorisation parentale, départ seul, droit à l'image,
       règlement, adresse, passeport, voyageurs, équipes engagées…).
+- [x] **Recherche avancée allégée** *(26/11/2026)* — « Sexe » et « Âge » (sans
+      « Public — »), un seul calendrier « Date » (jour unique ou période, le
+      même composant que sur l'accueil : `calendrierPeriode()` dans app.js).
+      Le **niveau de jeu des événements est supprimé** partout : filtres,
+      fiche, cartes, publication, modification, alertes, import en lot, IA.
+      Restent : le niveau du joueur dans son profil, et la question
+      facultative « Niveau » des formulaires d'inscription.
 - [x] **Région déduite de la ville** *(25/11/2026)* — à la saisie (publication,
       modification, import IA) et côté serveur à chaque création ou
       modification (`lib/geo.js`, Base Adresse Nationale), en France
@@ -355,7 +362,7 @@ vers la source. Rien n'est publié sans validation.
       pages d'agenda en HTML classique. Les pages construites en JavaScript
       (beaucoup de sites modernes, HelloAsso) sont lues vides : l'admin le voit
       dans le résultat (« page sans contenu exploitable »).
-- [ ] **Poser `CRON_SECRET`** sur Vercel (voir README).
+- [x] **Poser `CRON_SECRET`** sur Vercel (voir README) *(26/11/2026 ; sans lui, les tâches sont refusées)*.
 - [ ] Plus tard : recherche web automatique (API de recherche, payante au-delà
       d'un quota) pour découvrir de nouvelles pages sans les saisir à la main.
 
@@ -619,7 +626,7 @@ Corrigé :
 
 Reste à faire :
 
-- [ ] **Poser `CRON_SECRET`** sur Vercel : sans elle, n'importe qui peut
+- [x] **Poser `CRON_SECRET`** sur Vercel *(26/11/2026)* : sans elle, n'importe qui pouvait
       déclencher la détection hebdomadaire (au plus une fois par 20 h et par
       source, rien n'est publié, mais chaque analyse consomme l'IA).
 - [ ] **Rendre la CSP bloquante** (`Content-Security-Policy` au lieu de
