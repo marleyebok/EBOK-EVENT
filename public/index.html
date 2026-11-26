@@ -1263,6 +1263,11 @@
         <label for="e-title">Nom de l'événement</label>
         <input type="text" id="e-title" required>
       </div>
+      <div class="field">
+        <label for="e-slug">Lien court</label>
+        <div class="slug-field"><span class="slug-prefix">ebok.fr/</span><input type="text" id="e-slug" maxlength="40" autocomplete="off" spellcheck="false" inputmode="url" placeholder="liguecourtcuts"></div>
+        <p class="field-hint" id="e-slug-hint">Lettres, chiffres et tirets. À partager partout : il ne change pas si le titre change.</p>
+      </div>
       <div class="form-row">
         <div class="field">
           <label for="e-type">Type</label>

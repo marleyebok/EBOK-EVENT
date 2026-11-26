@@ -180,7 +180,7 @@ function eventCardHtml(ev){
         ${currentIsAdmin ? `<button class="edit-btn" data-edit="${esc(ev.id)}" aria-label="Modifier cet événement" title="Modifier">${ico('edit')}</button>` : ``}
       </div>
       <div class="card-body">
-        <h4>${esc(ev.title)}</h4>
+        <h4><a class="card-link" href="${esc(urlEvenement(ev))}" data-spa>${esc(ev.title)}</a></h4>
         <div class="card-meta">
           <b>${esc(ev.city)}</b> · ${fmtDateRange(ev.dateStart, ev.dateEnd)}<br>
           ${esc(publicCourt(ev).join(' · '))}
@@ -1075,13 +1075,13 @@ function renderAgenda(){
     box.querySelector('[data-nav]').addEventListener('click', ()=> showPage('create'));
     return;
   }
-  box.innerHTML = avenir.slice(0, AGENDA_MAX).map(ev=>`<button type="button" class="ag-row" data-open="${esc(ev.id)}">
+  box.innerHTML = avenir.slice(0, AGENDA_MAX).map(ev=>`<a class="ag-row" href="${esc(urlEvenement(ev))}" data-spa data-open="${esc(ev.id)}">
       ${tableauDeMarque(ev)}
       <span class="ag-main"><span class="ag-title">${esc(ev.title)}</span><span class="ag-where">${ico('pin')}${esc(ev.city || '')}${ev.region ? ' · ' + esc(ev.region) : ''}</span></span>
       <span class="ag-type"><span class="ag-dot" style="background:${safeColor(typeColor(ev.type))}"></span>${esc(ev.type || '')}</span>
       <span class="ag-meta">${esc(publicCourt(ev).join(' · '))}</span>
       <span class="ag-go">${ico('chevronRight')}</span>
-    </button>`).join('');
+    </a>`).join('');
   box.querySelectorAll('[data-open]').forEach(b=> b.addEventListener('click', ()=> openEvent(b.dataset.open)));
 }
 
@@ -2185,7 +2185,7 @@ function ensureCitiesLoaded(){
   if(_citiesPromise) return _citiesPromise;
   _citiesPromise = new Promise(resolve=>{
     const s = document.createElement('script');
-    s.src = 'js/cities-fr.js';
+    s.src = '/js/cities-fr.js';
     s.onload = ()=> resolve();
     s.onerror = ()=> resolve();   // pas grave : on basculera sur la recherche en ligne
     document.head.appendChild(s);
@@ -2575,7 +2575,7 @@ async function openEvent(id, opts){
   const termine = isPast(ev);
   const favOn = favorites.has(ev.id);
   const orgSite = safeUrl(org.site);
-  const shareUrl = `${location.origin}/evenement/${ev.id}`;
+  const shareUrl = location.origin + urlEvenement(ev);
   const shareText = encodeURIComponent(`${ev.title} — ${fmtDateRange(ev.dateStart,ev.dateEnd)} à ${ev.city}. Plus d'infos :`);
 
   /* ---- Bloc 2 : l'organisateur (s'inscrire, billetterie, contacter) ----
@@ -2653,10 +2653,8 @@ async function openEvent(id, opts){
 
         <!-- Bloc 1 : ce qu'on fait de l'événement sur EBOK -->
         <div class="ev-bar" role="group" aria-label="Actions sur l'événement">
-          <button type="button" class="ev-bar-btn fav-btn fav-btn-lg ${favOn ? 'active' : ''}" data-fav="${esc(ev.id)}" aria-pressed="${favOn}">${favLgHtml(favOn, Number(ev.favCount) || 0)}</button>
           <button type="button" class="ev-bar-btn" id="btnShare" aria-haspopup="true" aria-expanded="false">${ico('share')}<span>Partager</span></button>
           ${termine ? '' : `<button type="button" class="ev-bar-btn" id="btnAgenda" aria-haspopup="true" aria-expanded="false">${ico('calendar')}<span>Agenda</span></button>`}
-          <button type="button" class="ev-bar-btn ev-bar-quiet" id="btnReport" aria-haspopup="dialog">${ico('flag')}<span>Signaler</span></button>
         </div>
 
         <div class="popover" id="popShare">
@@ -2692,6 +2690,7 @@ async function openEvent(id, opts){
         <strong>${fmtDateRange(ev.dateStart, ev.dateEnd)}</strong>
         <span>${esc([ev.city, ev.region].filter(Boolean).join(', '))}</span>
         ${peutModifier(ev) ? `<button class="edit-inline" data-edit="${esc(ev.id)}" title="Modifier cet événement">${ico('edit')}Modifier</button><button class="edit-inline" data-dupliquer="${esc(ev.id)}" title="Créer une copie pour une autre date ou un autre lieu">${ico('copy')}Dupliquer</button>` : ``}
+        ${currentIsAdmin ? `<button class="edit-inline edit-danger" data-supprimer="${esc(ev.id)}" title="Supprimer définitivement cet événement">${ico('trash')}Supprimer</button>` : ``}
         ${currentIsAdmin ? `<button class="edit-inline" data-insta="${esc(ev.id)}" title="Générer la carte Instagram de cet événement">${ico('instagram')}Carte Insta</button>` : ``}
       </p>
 
@@ -2738,6 +2737,7 @@ async function openEvent(id, opts){
         </div>
         <span class="cc-num" id="vcNumBottom">···</span>
       </div>
+      <p class="ev-report"><button type="button" class="ev-report-btn" id="btnReport" aria-haspopup="dialog">${ico('flag')}<span>Signaler une erreur ou un abus sur cette fiche</span></button></p>
     </div>`;
 
   // Menus Partager / Signaler : un seul à la fois.
@@ -2831,7 +2831,7 @@ async function openEvent(id, opts){
   }
 
   showPage('event');
-  if(!fromUrl) setUrl('/evenement/' + encodeURIComponent(ev.id));
+  if(!fromUrl) setUrl(urlEvenement(ev));
   loadAndAnimateViews(ev.id);
   return true;
 }
@@ -3187,23 +3187,54 @@ function renderFeatured(){
    NAVIGATION
    ========================================================= */
 /* =========================================================
-   URL PAR ÉVÉNEMENT (History API)
+   ADRESSES (History API)
    ---------------------------------------------------------
-   Chaque fiche a sa propre adresse `/evenement/<id>` : les liens partagés
-   fonctionnent, le retour arrière du navigateur aussi, et une fiche peut être
-   mise en favori. On reste pour autant sur une seule page — aucun rechargement
-   à la navigation, la carte et les filtres ne sont jamais reconstruits.
-
-   Côté hébergement, `/evenement/*` est réécrit vers index.html (voir
-   vercel.json), sinon un accès direct renverrait un 404.
+   Chaque page a son adresse, et chaque fiche un lien court :
+     /                    accueil          /recherche       recherche avancée
+     /publier             publier          /mes-evenements[/favoris|alertes|inscriptions|organise]
+     /profil              mon profil       /admin           administration
+     /<lien>              une fiche        (ex. ebok.fr/liguecourtcuts)
+     /evenement/<id>      ancienne adresse d'une fiche, toujours valable
+   On reste sur une seule page : rien ne se recharge à la navigation, mais
+   l'adresse suit, le retour arrière marche, et un lien s'ouvre dans un nouvel
+   onglet (clic molette, Ctrl/Cmd + clic).
+   Côté hébergement, ces adresses sont réécrites dans vercel.json.
    ========================================================= */
 const EVENT_PATH = /^\/evenement\/([^/]+)\/?$/;
+const PAGE_URLS = { home:'/', search:'/recherche', create:'/publier', mes:'/mes-evenements', profile:'/profil', admin:'/admin' };
+const ONGLETS_URL = ['favoris', 'alertes', 'inscriptions', 'organise'];
 
-/** ID d'événement présent dans l'URL courante, ou null. */
-function eventIdFromUrl(){
-  const m = EVENT_PATH.exec(location.pathname);
-  return m ? decodeURIComponent(m[1]) : null;
+/** Adresse d'une fiche : son lien court s'il existe. */
+function urlEvenement(evOuId){
+  const ev = evOuId && typeof evOuId === 'object' ? evOuId : events.find(e=> e.id === evOuId);
+  if(ev && ev.slug) return '/' + encodeURIComponent(ev.slug);
+  return '/evenement/' + encodeURIComponent(ev ? ev.id : evOuId);
 }
+/** Adresse d'une page de l'app (null : la page n'a pas d'adresse propre). */
+function urlPage(nom){
+  if(nom === 'favoris' || nom === 'alertes') return '/mes-evenements/' + nom;
+  if(nom === 'mes'){
+    const o = window.mesOnglet;
+    return '/mes-evenements' + (o && o !== 'favoris' && ONGLETS_URL.includes(o) ? '/' + o : '');
+  }
+  return PAGE_URLS[nom] || null;
+}
+
+/** Ce que demande l'adresse courante. */
+function routeDeUrl(){
+  const p = location.pathname.replace(/\/+$/, '') || '/';
+  const m = EVENT_PATH.exec(p);
+  if(m) return { event: decodeURIComponent(m[1]) };
+  if(p === '/') return { page: 'home' };
+  const mes = /^\/mes-evenements(?:\/([a-z]+))?$/.exec(p);
+  if(mes) return { page: 'mes', onglet: ONGLETS_URL.includes(mes[1]) ? mes[1] : null };
+  for(const [nom, url] of Object.entries(PAGE_URLS)) if(url === p) return { page: nom };
+  const lien = /^\/([A-Za-z0-9-]{3,40})$/.exec(p);
+  if(lien) return { slug: lien[1].toLowerCase() };
+  return { page: 'home', introuvable: true };
+}
+function eventIdFromUrl(){ return routeDeUrl().event || null; }
+const surUneFiche = ()=>{ const r = routeDeUrl(); return Boolean(r.event || r.slug); };
 
 /** Change l'URL sans recharger, en évitant les entrées d'historique en double. */
 function setUrl(path){
@@ -3211,27 +3242,106 @@ function setUrl(path){
   history.pushState({}, '', path);
 }
 
-// Vrai le temps d'aligner l'affichage sur l'URL (retour arrière) : dans ce cas
-// c'est le navigateur qui a déjà changé l'URL, il ne faut pas y retoucher.
+// Vrai le temps d'aligner l'affichage sur l'URL (retour arrière, chargement) :
+// c'est le navigateur qui a déjà l'URL, il ne faut pas y retoucher.
 let syncingFromUrl = false;
 
-// Fiche demandée par l'URL au chargement, tant qu'elle n'a pas pu être ouverte.
-// Les événements arrivent en deux temps (données locales, puis la base via
+// Adresse demandée au chargement, tant qu'elle n'a pas pu être servie. Les
+// événements arrivent en deux temps (données locales, puis la base via
 // clerk-init.js) : on retente donc à l'arrivée des données.
-let pendingUrlEventId = eventIdFromUrl();
+let routeEnAttente = routeDeUrl();
+let baseChargee = false;
+
+function pageIntrouvable(){
+  syncingFromUrl = true; showPage('home'); syncingFromUrl = false;
+  history.replaceState({}, '', '/');
+  afficherBandeau("Cette page n'existe pas (ou plus). Voici l'agenda du basket : cherche ton événement sur la carte ou dans la recherche.", 'Rechercher', ()=> showPage('search'));
+}
+
+/** Ouvre une fiche par son lien court : liste chargée, sinon la base. */
+async function ouvrirParLien(slug, attendreBase){
+  let ev = events.find(e=> String(e.slug || '').toLowerCase() === slug);
+  if(!ev && window.EBOK_DATA && window.EBOK_DATA.getEventBySlug) ev = await window.EBOK_DATA.getEventBySlug(slug);
+  if(ev){ if(!events.some(e=> e.id === ev.id)) events.push(ev); return openEvent(ev.id, {fromUrl:true}); }
+  if(!attendreBase) pageIntrouvable();
+  return false;
+}
 
 async function tryOpenFromUrl(){
-  if(!pendingUrlEventId) return;
-  if(await openEvent(pendingUrlEventId, {fromUrl:true})) pendingUrlEventId = null;
+  const r = routeEnAttente;
+  if(!r) return;
+  if(r.event){ if(await openEvent(r.event, {fromUrl:true})) routeEnAttente = null; return; }
+  if(r.slug){
+    // Tant que la base n'a pas répondu, un lien inconnu n'est pas encore un 404.
+    const attendre = !baseChargee;
+    if(await ouvrirParLien(r.slug, attendre) || !attendre) routeEnAttente = null;
+    return;
+  }
+}
+
+/** Page demandée par l'adresse au chargement (hors fiche). */
+function ouvrirPageDeUrl(){
+  const r = routeEnAttente;
+  if(!r || !r.page) return;
+  // Profil et administration attendent de savoir qui est connecté.
+  if(r.page === 'profile' || r.page === 'admin') return;
+  routeEnAttente = null;
+  if(r.introuvable){ pageIntrouvable(); return; }
+  if(r.page === 'home') return;
+  if(r.onglet) window.mesOnglet = r.onglet;
+  syncingFromUrl = true; showPage(r.page); syncingFromUrl = false;
+}
+/** Appelé à la première réponse du service de comptes. */
+function ouvrirPageApresConnexion(){
+  const r = routeEnAttente;
+  if(!r || (r.page !== 'profile' && r.page !== 'admin')) return;
+  routeEnAttente = null;
+  if(r.page === 'admin' && !currentIsAdmin){ pageIntrouvable(); return; }
+  syncingFromUrl = true; showPage(r.page); syncingFromUrl = false;
 }
 
 // Retour / avance du navigateur.
 window.addEventListener('popstate', ()=>{
-  const id = eventIdFromUrl();
-  if(id){ openEvent(id, {fromUrl:true}); return; }
+  const r = routeDeUrl();
+  if(r.event){ openEvent(r.event, {fromUrl:true}); return; }
+  if(r.slug){ ouvrirParLien(r.slug, false); return; }
+  if(r.onglet) window.mesOnglet = r.onglet;
+  else if(r.page === 'mes') window.mesOnglet = 'favoris';
   syncingFromUrl = true;
-  showPage('home');
+  showPage(r.page || 'home');
   syncingFromUrl = false;
+});
+
+/* Nouvel onglet : Ctrl/Cmd/Maj + clic ou clic molette sur un lien de l'app.
+   Les vrais liens (<a href>) sont laissés au navigateur ; pour les boutons
+   (menus, cartes, lignes d'agenda), on ouvre l'adresse correspondante. */
+function urlCible(el){
+  if(el.dataset.nav) return urlPage(el.dataset.nav);
+  const id = el.dataset.open || el.dataset.id || el.dataset.voir;
+  return id ? urlEvenement(id) : null;
+}
+const CIBLES_ONGLET = '[data-nav], [data-open], .event-card[data-id], .rmini[data-id], .feat-card[data-id], [data-voir]';
+function ouvrirDansUnOnglet(e){
+  const lien = e.target.closest && e.target.closest('a[href]');
+  if(lien){
+    // Lien interne : un clic simple reste dans l'app (sans rechargement).
+    if(lien.hasAttribute('data-spa') && e.type === 'click' && !(e.ctrlKey || e.metaKey || e.shiftKey || e.altKey)) e.preventDefault();
+    else if(lien.hasAttribute('data-spa')) e.stopPropagation();
+    return;
+  }
+  const nouvelOnglet = e.type === 'auxclick' ? e.button === 1 : (e.ctrlKey || e.metaKey || e.shiftKey);
+  if(!nouvelOnglet) return;
+  const el = e.target.closest && e.target.closest(CIBLES_ONGLET);
+  const url = el && !el.closest('.wz-card') && urlCible(el);
+  if(!url) return;
+  e.preventDefault(); e.stopPropagation();
+  window.open(url, '_blank', 'noopener');
+}
+document.addEventListener('click', ouvrirDansUnOnglet, true);
+document.addEventListener('auxclick', ouvrirDansUnOnglet, true);
+// Le clic molette ne doit pas lancer le défilement automatique sur ces cibles.
+document.addEventListener('mousedown', e=>{
+  if(e.button === 1 && e.target.closest && e.target.closest(CIBLES_ONGLET) && !e.target.closest('a[href]')) e.preventDefault();
 });
 
 function showPage(name){
@@ -3255,7 +3365,7 @@ function showPage(name){
   if(name === 'admin' && typeof renderAdminPage === 'function') renderAdminPage();
   if(name === 'mes' && typeof renderMes === 'function') renderMes();
   // Quitter une fiche événement : on revient à l'URL racine.
-  if(!syncingFromUrl && name !== 'event' && eventIdFromUrl()) setUrl('/');
+  if(!syncingFromUrl && name !== 'event'){ const u = urlPage(name); if(u) setUrl(u); }
   syncMenuActif(name);
   window.scrollTo({top:0, behavior:'instant'});
 }
@@ -3344,6 +3454,23 @@ document.addEventListener('click', (e)=>{
 document.addEventListener('click', (e)=>{
   const btn = e.target.closest && e.target.closest('[data-edit]');
   if(btn){ e.preventDefault(); e.stopPropagation(); openEditModal(btn.dataset.edit); }
+}, true);
+
+// Supprimer depuis la fiche (admin seulement ; le serveur vérifie aussi).
+document.addEventListener('click', async (e)=>{
+  const btn = e.target.closest && e.target.closest('[data-supprimer]');
+  if(!btn) return;
+  e.preventDefault(); e.stopPropagation();
+  const id = btn.dataset.supprimer;
+  const ev = events.find(x=> x.id === id);
+  if(!confirm(`Supprimer « ${ev ? ev.title : 'cet événement'} » ? Cette action est définitive.`)) return;
+  try{
+    await window.EBOK_DATA.deleteEvent(id);
+    events = events.filter(x=> x.id !== id);
+    renderAll();
+    rafraichirVues();
+    showPage('home');
+  }catch(err){ showAdminRulesAlert(err); }
 }, true);
 
 // Dupliquer un événement (admin, diffuseur, co-organisateur).
@@ -5167,6 +5294,8 @@ function openEditModal(id){
   editPickedLocation = null;
   ensureCitiesLoaded();
   setFieldVal('e-title', ev.title);
+  setFieldVal('e-slug', ev.slug || '');
+  { const h = document.getElementById('e-slug-hint'); if(h){ h.classList.remove('is-error'); h.textContent = "Lettres, chiffres et tirets. À partager partout : il ne change pas si le titre change."; } }
   setFieldVal('e-type', ev.type || 'Divers');
   setFieldVal('e-city', ev.city);
   setRegionValue('e-region', ev.region);
@@ -5270,6 +5399,9 @@ function initEditModal(){
       status: gv('e-status') === 'approved' ? 'approved' : 'pending',
       featured: document.getElementById('e-featured').checked
     };
+    // Lien court : envoyé seulement s'il a changé (le serveur vérifie qu'il est libre).
+    const slugSaisi = gv('e-slug').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9-]+/g, '');
+    if(slugSaisi && slugSaisi !== ((ev && ev.slug) || '')) patch.slug = slugSaisi;
     // Le statut et la une ne sont pas à l'organisateur : on ne les envoie pas.
     if(!currentIsAdmin){ delete patch.status; delete patch.featured; }
     const placesRaw = gv('e-places');
@@ -5308,6 +5440,15 @@ function initEditModal(){
 
     try{ await window.EBOK_DATA.updateEvent(editingId, patch); }
     catch(err){
+      if(err && (err.code === 'slug_pris' || err.code === 'slug_invalide')){
+        const h = document.getElementById('e-slug-hint');
+        h.textContent = err.code === 'slug_pris'
+          ? `ebok.fr/${patch.slug} est déjà pris par un autre événement. Choisis-en un autre.`
+          : 'Ce lien n\'est pas valable : 3 à 40 caractères, lettres, chiffres et tirets (et pas un mot réservé du site).';
+        h.classList.add('is-error');
+        document.getElementById('e-slug').focus();
+        return;
+      }
       if(!currentIsAdmin){
         const boite = document.getElementById('editError');
         boite.textContent = "Enregistrement impossible. Réessaie dans un instant.";
@@ -5363,7 +5504,7 @@ function renderAll(){
    de data.js. */
 window.EBOK = {
   get events(){ return events; },
-  setEvents(list){ if(Array.isArray(list)) events = list; renderAll(); tryOpenFromUrl(); },
+  setEvents(list){ if(Array.isArray(list)) events = list; baseChargee = true; renderAll(); tryOpenFromUrl(); },
   addEvent(ev){ events = [ev, ...events]; renderAll(); },
   // Appelé par clerk-init.js selon que le service de comptes répond ou non.
   setAuthAvailable,
@@ -5387,6 +5528,7 @@ window.EBOK = {
     if(document.getElementById('page-profile').classList.contains('active')) renderProfile();
     // Pastille « à traiter » sur le lien Admin (admin seulement).
     if(typeof majPastilleAdmin === 'function') majPastilleAdmin(currentIsAdmin);
+    ouvrirPageApresConnexion();   // /profil ou /admin ouvert directement
   }
 };
 
@@ -5424,6 +5566,10 @@ initAlertes();
 initAiImport();
 initPostersMaintenance();
 
-// Lien partagé vers une fiche : on l'ouvre dès le démarrage.
+// Adresse ouverte directement (lien partagé, nouvel onglet, rechargement).
+// Après le chargement de tous les scripts (Mes événements vit dans organisateur.js).
+document.addEventListener('DOMContentLoaded', ouvrirPageDeUrl);
 tryOpenFromUrl();
+// Service de comptes muet : /profil et /admin ne seront jamais confirmés.
+setTimeout(()=>{ if(routeEnAttente && routeEnAttente.page){ const r = routeEnAttente; routeEnAttente = null; syncingFromUrl = true; showPage(r.page === 'admin' ? 'home' : r.page); syncingFromUrl = false; } }, 5000);
 

@@ -107,6 +107,7 @@ cd public && python3 -m http.server 8080
 - **Recherche** : formulaire multi-critères + grille de résultats.
 - **Publier** : formulaire diffuseur complet (infos, affiche, galerie, contact, options de visibilité). **L'événement publié apparaît immédiatement** sur la carte, dans la liste et la recherche (en mémoire tant que Neon n'est pas branché ; enregistré en base ensuite).
 - **Détail événement** : affiche, infos pratiques, galerie photos (lightbox), compteur de « curieux », boutons se renseigner / partager.
+- **Adresses** : chaque page a son URL (`/recherche`, `/publier`, `/mes-evenements[/favoris|alertes|inscriptions|organise]`, `/profil`, `/admin`) et chaque fiche un **lien court** `ebok.fr/<lien>` (champ `slug`, tiré du titre, unique, modifiable par l'organisateur et l'admin dans « Modifier » ; `lib/slug.js`). L'ancienne adresse `/evenement/<id>` reste valable. Réécritures dans `vercel.json` (le `/:slug` final passe par `api/evenement.js`, qui renvoie 404 sur un lien inconnu). Ctrl/Cmd + clic ou clic molette ouvrent un nouvel onglet.
 
 **Données actuelles** : 20 événements en dur dans `public/js/data.js`, 5 en avant.
 

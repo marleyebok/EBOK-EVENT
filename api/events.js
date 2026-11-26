@@ -22,6 +22,7 @@ import { ensureSchema, hasDb, sql, json, readBody, newId, ms, sessionUid, isAdmi
 import { correspond, message, envoyer } from "../lib/alertes.js";
 import { inscriptions, roleSur, effacerInscriptions } from "../lib/inscriptions.js";
 import { regionDeVille, enFrance } from "../lib/geo.js";
+import { lienPropre, lienDepuisTitre, lienLibre, lienPris } from "../lib/slug.js";
 
 /* Champs gérés par les outils d'organisateur (lib/inscriptions.js) : jamais
    renvoyés au public (les e-mails des co-organisateurs sont privés) et jamais
@@ -145,7 +146,7 @@ export default async function handler(req, res) {
   }
 
   const uid = await sessionUid(req);
-  const { id, mine, all } = req.query || {};
+  const { id, mine, all, slug } = req.query || {};
 
   // Inscriptions et outils d'organisateur : même fonction serveur (le forfait
   // Vercel limite leur nombre), logique dans lib/inscriptions.js.
@@ -170,8 +171,11 @@ export default async function handler(req, res) {
         const rows = await sql()`SELECT * FROM event.events_lecture ORDER BY created_at DESC`;
         return json(res, 200, { events: rows.map(toEvent) });
       }
-      if (id) {
-        const rows = await sql()`SELECT * FROM event.events_lecture WHERE id = ${id}`;
+      if (id || slug) {
+        // Par identifiant ou par lien court (ebok.fr/<lien>).
+        const rows = id
+          ? await sql()`SELECT * FROM event.events_lecture WHERE id = ${id}`
+          : await sql()`SELECT * FROM event.events_lecture WHERE data->>'slug' = ${String(slug).toLowerCase()} LIMIT 1`;
         const row = rows[0];
         if (!row) return json(res, 404, { error: "introuvable" });
         if (row.status !== "approved" && row.user_id !== uid && !(await isAdminUid(uid))) {
@@ -207,6 +211,7 @@ export default async function handler(req, res) {
       // photos des éditions précédentes, justement).
       for (const k of ["aRelire", "interetOutils", "detection", "importe", "dupliqueDe"]) delete data[k];
       data.dupliqueDe = srcId;
+      data.slug = await lienLibre(lienDepuisTitre(data.title));
       const eid = newId();
       await sql()`
         INSERT INTO event.events (id, status, user_id, featured, data)
@@ -226,6 +231,9 @@ export default async function handler(req, res) {
       const eid = newId();
       const data = ficheSure(dataBlob(body), admin);
       if (JSON.stringify(data).length > TAILLE_MAX_FICHE) return json(res, 413, { error: "trop_lourd" });
+      // Lien court : celui demandé s'il est libre, sinon tiré du titre.
+      const voulu = lienPropre(data.slug);
+      data.slug = voulu && !(await lienPris(voulu)) ? voulu : await lienLibre(lienDepuisTitre(data.title));
       // Un compte ordinaire ne publie pas des dizaines de fiches par jour :
       // au-delà, c'est un robot ou un abus.
       if (!admin && (await creationsDuJour(uid)) >= CREATIONS_PAR_JOUR) return json(res, 429, { error: "trop", max: CREATIONS_PAR_JOUR });
@@ -273,6 +281,13 @@ export default async function handler(req, res) {
       const hasOwner = admin && aLaCle("userId");
       const nextOwner = hasOwner && patch.userId ? String(patch.userId).slice(0, 200) : null;
       const rest = ficheSure(dataBlob(patch), true);
+      // Lien court modifié à la main : format et disponibilité vérifiés.
+      if (aLaCle("slug")) {
+        const voulu = lienPropre(rest.slug);
+        if (!voulu) return json(res, 400, { error: "slug_invalide" });
+        if (voulu !== (row.data || {}).slug && (await lienPris(voulu, id))) return json(res, 409, { error: "slug_pris" });
+        rest.slug = voulu;
+      }
       if (JSON.stringify({ ...row.data, ...rest }).length > TAILLE_MAX_FICHE) return json(res, 413, { error: "trop_lourd" });
       // Un organisateur qui modifie sa fiche la garde en ligne, mais l'admin est
       // prévenu qu'il y a quelque chose à relire (drapeau `aRelire`). Il ne peut

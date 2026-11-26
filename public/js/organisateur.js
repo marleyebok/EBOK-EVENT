@@ -127,7 +127,7 @@ function renderMes(){
   if(onglet === 'inscriptions') renderMesInscriptions();
   if(onglet === 'organise') renderOrga();
 }
-document.querySelectorAll('.mes-tab').forEach(t=> t.addEventListener('click', ()=>{ window.mesOnglet = t.dataset.mes; renderMes(); }));
+document.querySelectorAll('.mes-tab').forEach(t=> t.addEventListener('click', ()=>{ window.mesOnglet = t.dataset.mes; renderMes(); setUrl(urlPage('mes')); }));
 
 /* =========================================================
    MES INSCRIPTIONS (participant)
@@ -1220,6 +1220,6 @@ function poserQuestionOutils(eventId){
   // /?mes=organise&evt=ID (e-mail des documents) : ouvre cet événement, onglet Inscrits.
   const evt = new URLSearchParams(location.search).get('evt');
   if(m[1] === 'organise' && evt){ orga.sel = evt; orga.sous = 'inscrits'; }
-  history.replaceState(null, '', '/');
+  history.replaceState(null, '', urlPage('mes'));
   showPage('mes');
 })();

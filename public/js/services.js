@@ -109,6 +109,15 @@ export async function getAllEventsForAdmin() {
 }
 
 /** Récupère un événement par son id (null si introuvable / privé). */
+/** Un événement par son lien court (ebok.fr/<lien>), ou null. */
+export async function getEventBySlug(slug) {
+  try {
+    return (await api("/api/events?slug=" + encodeURIComponent(slug))).event || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getEvent(id) {
   try {
     return (await api("/api/events?id=" + encodeURIComponent(id))).event || null;
