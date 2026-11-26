@@ -1223,3 +1223,58 @@ function poserQuestionOutils(eventId){
   history.replaceState(null, '', urlPage('mes'));
   showPage('mes');
 })();
+
+/* =========================================================
+   RÉCUPÉRER SA FICHE — lien personnel envoyé par l'équipe EBOK
+   ---------------------------------------------------------
+   /?gerer=JETON&e=ID : l'organisateur ouvre le lien reçu par e-mail. On le
+   garde de côté (il peut devoir créer son compte d'abord, ce qui recharge la
+   page), puis, une fois connecté, la fiche passe à son compte et s'ouvre
+   dans Mes événements › J'organise. Le serveur vérifie le lien.
+   ========================================================= */
+const CLE_RECLAMER = 'ebok-reclamer';
+(function(){
+  const p = new URLSearchParams(location.search);
+  const jeton = p.get('gerer'), id = p.get('e');
+  if(!jeton || !id) return;
+  try{ localStorage.setItem(CLE_RECLAMER, JSON.stringify({ id, jeton, at: Date.now() })); }catch(e){}
+  history.replaceState(null, '', '/');
+})();
+
+let reclamationEnCours = false;
+async function reprendreReclamation(){
+  let r = null;
+  try{ r = JSON.parse(localStorage.getItem(CLE_RECLAMER) || 'null'); }catch(e){}
+  const oublier = ()=>{ try{ localStorage.removeItem(CLE_RECLAMER); }catch(e){} };
+  if(!r || !r.id || !r.jeton) return;
+  if(Date.now() - (r.at || 0) > 7 * 864e5){ oublier(); return; }
+  if(!currentUser){
+    let titre = (events.find(e=> e.id === r.id) || {}).title;
+    if(!titre && D().getEvent){ try{ titre = ((await D().getEvent(r.id)) || {}).title; }catch(e){} }
+    afficherBandeau(`Crée ton compte gratuit (ou connecte-toi) pour récupérer ${titre ? `« ${titre} »` : 'ta fiche'} et la gérer toi-même.`, 'Créer mon compte', ()=> openAuth('signup'), { garder: true });
+    return;
+  }
+  if(reclamationEnCours || !D().reclamerFiche) return;
+  reclamationEnCours = true;
+  try{
+    const res = await D().reclamerFiche(r.id, r.jeton);
+    oublier();
+    const ev = events.find(e=> e.id === r.id);
+    if(ev) ev.userId = currentUser.uid;
+    orga.sel = r.id;
+    window.mesOnglet = 'organise';
+    showPage('mes');
+    afficherBandeau(`C'est fait : « ${res.titre} » est à ton nom. Modifie-la quand tu veux, et active les inscriptions si tu le souhaites.`, 'Voir la fiche', ()=> openEvent(r.id), { garder: true });
+  }catch(e){
+    const definitif = {
+      lien_expire: "Ce lien a expiré (il est valable 30 jours). Écris-nous à contact@ebok.fr et on t'en renvoie un.",
+      lien_invalide: "Ce lien n'est plus valable : un lien plus récent t'a peut-être été envoyé. Sinon, écris-nous à contact@ebok.fr.",
+      deja_gere: "Cette fiche est déjà gérée par un autre compte. Si c'est une erreur, écris-nous à contact@ebok.fr.",
+      introuvable: "Cette fiche n'existe plus. Écris-nous à contact@ebok.fr si besoin.",
+    }[e && e.code];
+    if(definitif) oublier();
+    afficherBandeau(definitif || "Impossible de récupérer la fiche pour l'instant. Réessaie dans un instant en rouvrant le lien.", null, null, { garder: true });
+  }finally{
+    reclamationEnCours = false;
+  }
+}

@@ -23,16 +23,17 @@ import { correspond, message, envoyer } from "../lib/alertes.js";
 import { inscriptions, roleSur, effacerInscriptions } from "../lib/inscriptions.js";
 import { regionDeVille, enFrance } from "../lib/geo.js";
 import { lienPropre, lienDepuisTitre, lienLibre, lienPris } from "../lib/slug.js";
+import { organisateurs, CHAMPS_RECUP } from "../lib/organisateurs.js";
 
 /* Champs gérés par les outils d'organisateur (lib/inscriptions.js) : jamais
    renvoyés au public (les e-mails des co-organisateurs sont privés) et jamais
    modifiables par la route générale de modification. */
-const CHAMPS_ORGA = ["coorgs"];
-const CHAMPS_ORGA_ECRITURE = ["coorgs", "interetOutils", "inscription", "visibilite"];
+const CHAMPS_ORGA = ["coorgs", "reclamation"];
+const CHAMPS_ORGA_ECRITURE = ["coorgs", "interetOutils", "inscription", "visibilite", ...CHAMPS_RECUP];
 
 /* Champs posés par l'administration ou par les outils d'organisateur :
    jamais acceptés tels quels à la création par un compte ordinaire. */
-const CHAMPS_ADMIN_CREATION = ["coorgs", "interetOutils", "inscription", "visibilite", "aRelire", "detection", "importe", "dupliqueDe"];
+const CHAMPS_ADMIN_CREATION = ["coorgs", "interetOutils", "inscription", "visibilite", "aRelire", "detection", "importe", "dupliqueDe", ...CHAMPS_RECUP];
 /* Champs numériques : ils sont injectés tels quels dans la carte (attributs
    SVG). Tout ce qui n'est pas un nombre fini devient null. */
 const CHAMPS_NUMERIQUES = ["x", "y", "lat", "lng", "placesTotal"];
@@ -150,6 +151,16 @@ export default async function handler(req, res) {
 
   // Inscriptions et outils d'organisateur : même fonction serveur (le forfait
   // Vercel limite leur nombre), logique dans lib/inscriptions.js.
+  // Prévenir les organisateurs, lien personnel de récupération (lib/organisateurs.js).
+  if ((req.query || {}).r === "orga") {
+    try {
+      return await organisateurs(req, res, uid);
+    } catch (e) {
+      console.error("organisateurs:", e);
+      return json(res, 500, { error: "server" });
+    }
+  }
+
   if ((req.query || {}).r === "insc") {
     try {
       return await inscriptions(req, res, uid, { notifierAlertes, toEvent });
@@ -209,7 +220,7 @@ export default async function handler(req, res) {
       // Ce qui appartient à l'original seulement : relecture, provenance,
       // réponse au questionnaire, galerie de l'édition (gardée : ce sont les
       // photos des éditions précédentes, justement).
-      for (const k of ["aRelire", "interetOutils", "detection", "importe", "dupliqueDe"]) delete data[k];
+      for (const k of ["aRelire", "interetOutils", "detection", "importe", "dupliqueDe", ...CHAMPS_RECUP]) delete data[k];
       data.dupliqueDe = srcId;
       data.slug = await lienLibre(lienDepuisTitre(data.title));
       const eid = newId();

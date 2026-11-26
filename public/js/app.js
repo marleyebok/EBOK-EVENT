@@ -1533,7 +1533,7 @@ async function reprendreAlerteEnAttente(){
 }
 
 /* Petit bandeau de confirmation en bas de l'écran. */
-function afficherBandeau(texte, libelleAction, action){
+function afficherBandeau(texte, libelleAction, action, opts){
   let b = document.getElementById('ebokBandeau');
   if(!b){
     b = document.createElement('div');
@@ -1555,7 +1555,8 @@ function afficherBandeau(texte, libelleAction, action){
   b.appendChild(x);
   requestAnimationFrame(()=> b.classList.add('is-visible'));
   clearTimeout(afficherBandeau._t);
-  afficherBandeau._t = setTimeout(()=> b.classList.remove('is-visible'), 9000);
+  // { garder: true } : reste affiché jusqu'à ce qu'on le ferme ou qu'on agisse.
+  if(!(opts && opts.garder)) afficherBandeau._t = setTimeout(()=> b.classList.remove('is-visible'), 9000);
 }
 
 function bindAbroadClear(){
@@ -4792,6 +4793,16 @@ async function renderAdminEvents(){
    modifié par son organisateur depuis la dernière relecture. */
 function adminATraiter(ev){ return ev.status !== 'approved' || !!ev.aRelire; }
 
+/* « À prévenir » : fiche avec un e-mail de contact, sans organisateur (aucun
+   compte, ou le compte de l'admin), jamais prévenue ni récupérée. Le serveur
+   revérifie tout à l'envoi (désinscrits, quota du jour…). */
+function aPrevenir(ev){
+  const mail = String((ev.org && ev.org.email) || '').trim();
+  const sansOrga = !ev.userId || (currentUser && ev.userId === currentUser.uid);
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail) && sansOrga && !ev.prevenu && !ev.recupere;
+}
+let adminModePrevenir = false;
+
 let adminFiltre = '';
 function adminFiltrer(texte){
   adminFiltre = String(texte || '').trim().toLowerCase();
@@ -4809,9 +4820,13 @@ function afficherAdminEvenements(){
   const wrap = document.getElementById('adminGrid');
   if(wrap){
     const q = adminFiltre;
-    const liste = q
+    let liste = q
       ? adminList.filter(ev=> [ev.title, ev.city, ev.type, ev.org && ev.org.name].join(' ').toLowerCase().includes(q))
       : adminList;
+    const nPrevenir = adminList.filter(aPrevenir).length;
+    const n = document.getElementById('adminAPrevenirN');
+    if(n) n.textContent = `(${nPrevenir})`;
+    if(adminModePrevenir) liste = liste.filter(aPrevenir);
     const compte = document.getElementById('adminCount');
     if(compte) compte.textContent = `${liste.length} événement${liste.length > 1 ? 's' : ''}${q ? (liste.length > 1 ? ' trouvés' : ' trouvé') : ''}`;
     wrap.innerHTML = liste.length
@@ -4863,7 +4878,16 @@ function adminRowHtml(ev){
   const meta = [ev.type, ev.city, fmtDateRange(ev.dateStart, ev.dateEnd)].filter(Boolean).join(' · ');
   const metaFull = meta ? `${esc(meta)} · ${creatorLabel(ev)}` : creatorLabel(ev);
   const classes = (pending || relire) ? ' is-pending' : '';
-  return `<div class="admin-item${classes}">
+  const coche = adminModePrevenir && aPrevenir(ev)
+    ? `<input type="checkbox" class="prevenir-coche" data-prevenir="${esc(ev.id)}" aria-label="Sélectionner ${esc(ev.title)}">` : '';
+  const jour = d=> new Date(d).toLocaleDateString('fr-FR', { day:'numeric', month:'short' });
+  const suivi = ev.recupere && ev.recupere.le
+    ? `<div class="admin-item-det is-ok">${ico('check')}Récupérée par son organisateur le ${esc(jour(ev.recupere.le))}</div>`
+    : ev.prevenu && ev.prevenu.le
+      ? `<div class="admin-item-det">${ico('mail')}Organisateur prévenu le ${esc(jour(ev.prevenu.le))}${ev.prevenu.n > 1 ? ` (${ev.prevenu.n} fois)` : ''}</div>`
+      : '';
+  return `<div class="admin-item${classes}${coche ? ' has-coche' : ''}">
+    ${coche}
     <button class="star-toggle ${feat ? 'on' : ''}" data-feature="${esc(ev.id)}" aria-pressed="${feat}" title="${feat ? 'Retirer de la une' : 'Mettre à la une'}">${ico('star')}</button>
     <div class="admin-item-body">
       <div class="admin-item-title admin-title-link" data-open="${esc(ev.id)}">
@@ -4873,6 +4897,7 @@ function adminRowHtml(ev){
       </div>
       <div class="admin-item-meta">${metaFull}</div>
       ${relire ? `<div class="admin-item-det">${ico('edit')}Modifié par l'organisateur : vérifie les changements.</div>` : ''}
+      ${suivi}
       ${ev.detection && ev.detection.auto ? `<div class="admin-item-det">Détecté${ev.detection.sourceNom ? ' sur ' + esc(ev.detection.sourceNom) : ''} · <a href="${esc(safeUrl(ev.detection.lien || ev.detection.sourceUrl))}" target="_blank" rel="noopener">vérifier à la source ↗</a></div>` : ''}
       ${ev.visibilite === 'prive' ? `<div class="admin-item-det">${ico('lock')}Privé : accessible par lien seulement</div>` : ''}
       ${ev.interetOutils && ev.interetOutils.reponse ? `<div class="admin-item-det">Outils EBOK : ${esc({oui:'intéressé', plus_tard:'plus tard', non:'pas intéressé'}[ev.interetOutils.reponse] || ev.interetOutils.reponse)}</div>` : ''}
@@ -5529,6 +5554,7 @@ window.EBOK = {
     // Pastille « à traiter » sur le lien Admin (admin seulement).
     if(typeof majPastilleAdmin === 'function') majPastilleAdmin(currentIsAdmin);
     ouvrirPageApresConnexion();   // /profil ou /admin ouvert directement
+    if(typeof reprendreReclamation === 'function') reprendreReclamation();   // lien personnel d'un organisateur
   }
 };
 

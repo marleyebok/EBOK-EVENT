@@ -921,6 +921,12 @@
       <div class="adm-tools">
         <input type="search" id="adminSearch" class="adm-search" placeholder="Chercher un titre, une ville, un organisateur…" aria-label="Chercher dans les événements" autocomplete="off">
         <span class="admin-count" id="adminCount"></span>
+        <label class="adm-check"><input type="checkbox" id="adminAPrevenir"> À prévenir <span id="adminAPrevenirN"></span></label>
+      </div>
+      <div class="prevenir-bar hidden" id="prevenirBar" role="region" aria-label="Envoi groupé">
+        <label class="adm-check"><input type="checkbox" id="prevenirTout"> Tout sélectionner</label>
+        <button type="button" class="btn btn-primary btn-sm" id="prevenirEnvoyer" disabled>Envoyer</button>
+        <span class="prevenir-info" id="prevenirInfo" role="status"></span>
       </div>
       <div id="adminGrid"></div>
     </div>
@@ -1199,12 +1205,14 @@
 
     <section class="affil-step" aria-labelledby="affilH1">
       <h4 class="affil-h" id="affilH1">1. Prévenir l'organisateur</h4>
-      <p class="affil-help">Envoie-lui ce message, tu peux le modifier avant. Il créera un compte gratuit pour compléter ou corriger sa fiche.</p>
-      <textarea id="affilMessage" class="report-text affil-message" rows="10" aria-label="Message à l'organisateur"></textarea>
+      <p class="affil-help">Le message part de <b>contact@ebok.fr</b> (les réponses y arrivent). Tu peux le modifier avant. <b>[lien personnel]</b> est remplacé par son lien de récupération : en l'ouvrant, il crée son compte et la fiche passe à son nom, sans rien faire de ton côté.</p>
+      <p class="affil-etat hidden" id="affilEtat"></p>
+      <textarea id="affilMessage" class="report-text affil-message" rows="12" aria-label="Message à l'organisateur"></textarea>
       <div class="affil-actions">
-        <button type="button" class="btn btn-primary" id="affilCopy">Copier le message</button>
-        <a class="btn btn-ghost hidden" id="affilMail" href="#">Écrire un e-mail</a>
+        <button type="button" class="btn btn-primary hidden" id="affilSend">Envoyer</button>
+        <button type="button" class="btn btn-ghost" id="affilCopy">Copier avec son lien</button>
       </div>
+      <p class="affil-help affil-sans-mail hidden" id="affilSansMail">Pas d'e-mail sur cette fiche : copie le message (son lien personnel est inclus) et envoie-le en message privé (Instagram, WhatsApp…).</p>
       <p class="affil-state" id="affilCopied" role="status"></p>
     </section>
 
