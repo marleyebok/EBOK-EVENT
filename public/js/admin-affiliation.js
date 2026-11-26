@@ -24,8 +24,11 @@
 
   function nomMembre(u){ return (u && (u.pseudo || u.name || u.email)) || 'Membre'; }
 
-  /* Message à l'organisateur : vouvoiement, court, avec le lien de la fiche et
-     la marche à suivre. L'admin peut le retoucher avant de l'envoyer. */
+  /* Message à l'organisateur : vouvoiement, court, avec le lien de la fiche.
+     « [lien personnel] » est remplacé à l'envoi (ou à la copie) par son lien
+     de récupération : il l'ouvre, crée son compte, et la fiche passe à son
+     nom. L'admin peut retoucher le texte avant l'envoi. */
+  const MARQUE = '[lien personnel]';
   function message(ev){
     const quand = fmtDateRange(ev.dateStart, ev.dateEnd);
     const lieu = [ev.city, ev.region].filter(Boolean).join(', ');
@@ -34,21 +37,59 @@
 Nous avons ajouté votre événement « ${ev.title} »${quand ? ` (${quand}${lieu ? ', ' + lieu : ''})` : ''} sur EBOK, l'agenda collaboratif du basket francophone :
 ${location.origin}${urlEvenement(ev)}
 
-Vous pouvez le modifier et le compléter vous-même (affiche, horaires, tarifs, liens d'inscription et de billetterie) :
-1. créez un compte gratuit sur ${location.origin}
-2. répondez-moi avec l'adresse e-mail de votre compte : je rattache l'événement à ce compte.
+C'est gratuit, et vous pouvez gérer la fiche vous-même : affiche, horaires, tarifs, liens d'inscription et de billetterie, et même les inscriptions de vos participants.
+
+Pour la récupérer, ouvrez votre lien personnel (valable 30 jours), puis connectez-vous ou créez votre compte :
+${MARQUE}
+
+Une question, une correction ? Répondez simplement à ce message.
 
 Bien sportivement,
 L'équipe EBOK`;
   }
+  window.messageOrganisateur = message;
 
-  function lienMail(){
-    const mail = evenement && evenement.org && evenement.org.email;
-    const a = $('affilMail');
-    if(!mail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)){ a.classList.add('hidden'); return; }
-    const sujet = `Votre événement « ${evenement.title} » est sur EBOK`;
-    a.href = `mailto:${encodeURIComponent(mail)}?subject=${encodeURIComponent(sujet)}&body=${encodeURIComponent($('affilMessage').value)}`;
-    a.classList.remove('hidden');
+  const mailDe = ev => { const m = String((ev && ev.org && ev.org.email) || '').trim(); return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m) ? m : ''; };
+  const jour = d => new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+  const RAISONS = {
+    sans_email: "pas d'e-mail sur la fiche", deja_gere: 'déjà gérée par un organisateur', desabonne: 'a demandé à ne plus recevoir de message',
+    quota: "limite d'envoi du jour atteinte (80) : réessaie demain", echec: "l'envoi a échoué", introuvable: 'fiche introuvable', vide: 'message vide',
+  };
+
+  function majEtat(){
+    const ev = evenement, el = $('affilEtat');
+    const txt = ev.recupere && ev.recupere.le ? `Fiche récupérée par son organisateur le ${jour(ev.recupere.le)}.`
+      : ev.prevenu && ev.prevenu.le ? `Organisateur déjà prévenu le ${jour(ev.prevenu.le)}${ev.prevenu.n > 1 ? ` (${ev.prevenu.n} fois)` : ''}. Un nouvel envoi remplace son lien personnel.` : '';
+    el.textContent = txt;
+    el.classList.toggle('hidden', !txt);
+    const mail = mailDe(ev);
+    $('affilSend').textContent = mail ? `Envoyer à ${mail}` : 'Envoyer';
+    $('affilSend').classList.toggle('hidden', !mail);
+    $('affilSend').disabled = false;
+    $('affilSansMail').classList.toggle('hidden', !!mail);
+  }
+
+  async function envoyerUn(){
+    const ev = evenement;
+    const etat = $('affilCopied');
+    $('affilSend').disabled = true;
+    etat.textContent = 'Envoi…';
+    try{
+      const r = await window.EBOK_DATA.envoyerAuxOrganisateurs([{ id: ev.id, texte: $('affilMessage').value }]);
+      if(r.envoyes && r.envoyes.includes(ev.id)){
+        ev.prevenu = { le: new Date().toISOString(), n: ((ev.prevenu && ev.prevenu.n) || 0) + 1 };
+        etat.textContent = `Message envoyé à ${mailDe(ev)}.`;
+        majEtat();
+        afficherAdminEvenements();
+      }else{
+        const raison = (r.ignores && r.ignores[0] && r.ignores[0].raison) || 'echec';
+        etat.textContent = `Pas envoyé : ${RAISONS[raison] || raison}.`;
+        $('affilSend').disabled = false;
+      }
+    }catch(e){
+      etat.textContent = 'Pas envoyé : réessaie dans un instant.';
+      $('affilSend').disabled = false;
+    }
   }
 
   function proprietaireActuel(){
@@ -96,7 +137,7 @@ L'équipe EBOK`;
     $('affilDetach').disabled = false;
     $('affilDetach').classList.toggle('hidden', !ev.userId || (currentUser && ev.userId === currentUser.uid));
     erreur('');
-    lienMail();
+    majEtat();
     dessinerMembres();
     modale.classList.add('open');
     modale.setAttribute('aria-hidden', 'false');
@@ -154,16 +195,29 @@ L'équipe EBOK`;
       if(e.shiftKey && document.activeElement === premier){ e.preventDefault(); dernier.focus(); }
       else if(!e.shiftKey && document.activeElement === dernier){ e.preventDefault(); premier.focus(); }
     });
-    $('affilMessage').addEventListener('input', lienMail);
+    $('affilSend').addEventListener('click', envoyerUn);
     $('affilCopy').addEventListener('click', async () => {
-      const texte = $('affilMessage').value;
+      let texte = $('affilMessage').value;
+      const etat = $('affilCopied');
+      if(texte.includes(MARQUE)){
+        try{
+          const { url } = await window.EBOK_DATA.lienRecuperation(evenement.id);
+          texte = texte.split(MARQUE).join(url);
+        }catch(e){
+          etat.textContent = e && e.code === 'deja_gere'
+            ? 'Cette fiche est déjà gérée par un organisateur : pas de lien de récupération.'
+            : 'Impossible de créer son lien personnel. Réessaie dans un instant.';
+          return;
+        }
+      }
       try{
         await navigator.clipboard.writeText(texte);
-        $('affilCopied').textContent = 'Message copié.';
+        etat.textContent = 'Message copié, avec son lien personnel.';
       }catch(e){
-        // Sans accès au presse-papiers : on sélectionne le texte, il reste à copier.
+        // Sans accès au presse-papiers : on affiche le texte final, à copier à la main.
+        $('affilMessage').value = texte;
         $('affilMessage').select();
-        $('affilCopied').textContent = 'Sélectionne le texte et copie-le (Ctrl + C).';
+        etat.textContent = 'Sélectionne le texte et copie-le (Ctrl + C).';
       }
     });
     $('affilSearch').addEventListener('input', dessinerMembres);
@@ -180,5 +234,58 @@ L'équipe EBOK`;
       if(confirm("Détacher cet événement de son compte ? L'organisateur ne pourra plus le modifier.")) rattacher(null);
     });
   }
+  /* ---- Envoi groupé : filtre « À prévenir » de la liste admin ---- */
+  function cochees(){ return [...new Set([...document.querySelectorAll('#adminGrid .prevenir-coche:checked')].map(c => c.dataset.prevenir))]; }
+  function majBarre(){
+    const n = cochees().length;
+    const bouton = $('prevenirEnvoyer');
+    bouton.disabled = !n;
+    bouton.textContent = n ? `Envoyer à ${n} organisateur${n > 1 ? 's' : ''}` : 'Envoyer';
+    const toutes = document.querySelectorAll('#adminGrid .prevenir-coche');
+    $('prevenirTout').checked = toutes.length > 0 && [...toutes].every(c => c.checked);
+  }
+  function brancherGroupe(){
+    const filtre = $('adminAPrevenir');
+    if(!filtre || filtre.dataset.ready) return;
+    filtre.dataset.ready = '1';
+    filtre.addEventListener('change', () => {
+      adminModePrevenir = filtre.checked;
+      $('prevenirBar').classList.toggle('hidden', !filtre.checked);
+      $('prevenirInfo').textContent = '';
+      afficherAdminEvenements();
+      majBarre();
+    });
+    $('prevenirTout').addEventListener('change', e => {
+      document.querySelectorAll('#adminGrid .prevenir-coche').forEach(c => { c.checked = e.target.checked; });
+      majBarre();
+    });
+    document.addEventListener('change', e => { if(e.target.classList && e.target.classList.contains('prevenir-coche')) majBarre(); });
+    $('prevenirEnvoyer').addEventListener('click', async () => {
+      const ids = cochees();
+      if(!ids.length) return;
+      if(!confirm(`Envoyer le message de présentation à ${ids.length} organisateur${ids.length > 1 ? 's' : ''} ? Chacun reçoit son message personnalisé, avec son lien personnel, depuis contact@ebok.fr.`)) return;
+      const info = $('prevenirInfo');
+      $('prevenirEnvoyer').disabled = true;
+      info.textContent = 'Envoi en cours…';
+      const envois = ids.map(id => adminList.find(e => e.id === id)).filter(Boolean).map(ev => ({ id: ev.id, texte: message(ev) }));
+      try{
+        const r = await window.EBOK_DATA.envoyerAuxOrganisateurs(envois);
+        const le = new Date().toISOString();
+        for(const id of r.envoyes || []){ const ev = adminList.find(e => e.id === id); if(ev) ev.prevenu = { le, n: ((ev.prevenu && ev.prevenu.n) || 0) + 1 }; }
+        const nb = (r.envoyes || []).length;
+        const parRaison = {};
+        for(const i of r.ignores || []) parRaison[i.raison] = (parRaison[i.raison] || 0) + 1;
+        const details = Object.entries(parRaison).map(([k, v]) => `${v} non envoyé${v > 1 ? 's' : ''} (${RAISONS[k] || k})`);
+        info.textContent = `${nb} message${nb > 1 ? 's' : ''} envoyé${nb > 1 ? 's' : ''}.${details.length ? ' ' + details.join(', ') + '.' : ''}`;
+      }catch(e){
+        info.textContent = "L'envoi a échoué. Réessaie dans un instant.";
+      }
+      afficherAdminEvenements();
+      majBarre();
+    });
+  }
+
   brancher();
+  brancherGroupe();
 })();
+

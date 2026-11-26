@@ -401,3 +401,18 @@ export async function supprimerInscrits(eventId, ids) {
 export async function pointerInscrit(eventId, inscriptionId, present = true) {
   return api(`${INSC}&event=${e(eventId)}&pointage=${e(inscriptionId)}`, { method: "POST", body: { present } });
 }
+
+/* ---- Prévenir les organisateurs et leur confier leur fiche (lib/organisateurs.js) ---- */
+const ORGA = "/api/events?r=orga";
+/** Admin : lien personnel de récupération d'une fiche → { url }. */
+export function lienRecuperation(id) {
+  return api(`${ORGA}&action=lien`, { method: "POST", body: { id } });
+}
+/** Admin : envoie les messages [{ id, texte, sujet }] → { envoyes, ignores, quotaRestant }. */
+export function envoyerAuxOrganisateurs(envois) {
+  return api(`${ORGA}&action=envoyer`, { method: "POST", body: { envois } });
+}
+/** Organisateur connecté : récupère sa fiche avec son lien personnel. */
+export function reclamerFiche(id, jeton) {
+  return api(`${ORGA}&action=reclamer`, { method: "POST", body: { id, jeton } });
+}

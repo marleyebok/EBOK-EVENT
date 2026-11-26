@@ -22,6 +22,7 @@ import {
   etatInscriptions, sInscrire, mesInscriptions, annulerInscription, deposerDocument, lireDocument,
   mesEvenementsOrganises, tableauOrganisateur, statsOrganisateur, majInscription, majReglagesInscription,
   envoyerMessageInscrits, repondreInteretOutils, actionLotInscrits, supprimerInscrits, pointerInscrit,
+  lienRecuperation, envoyerAuxOrganisateurs, reclamerFiche,
 } from "./services.js";
 import { loadClerk } from "./clerk.js";
 
@@ -40,6 +41,7 @@ window.EBOK_DATA = {
   etatInscriptions, sInscrire, mesInscriptions, annulerInscription, deposerDocument, lireDocument,
   mesEvenementsOrganises, tableauOrganisateur, statsOrganisateur, majInscription, majReglagesInscription,
   envoyerMessageInscrits, repondreInteretOutils, actionLotInscrits, supprimerInscrits, pointerInscrit,
+  lienRecuperation, envoyerAuxOrganisateurs, reclamerFiche,
 };
 
 // Couche authentification exposée à app.js. Tout passe par le widget Clerk :

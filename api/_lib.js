@@ -215,6 +215,12 @@ export async function ensureSchema() {
       GROUP BY 1
     ) f ON f.event_id = e.id`;
 
+  /* Organisateurs qui ne veulent plus recevoir de message d'EBOK (lib/organisateurs.js). */
+  await q`
+    CREATE TABLE IF NOT EXISTS event.desabonnes (
+      email TEXT PRIMARY KEY,
+      le    TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`;
   ready = true;
 }
 
