@@ -3329,3 +3329,25 @@ input,select,textarea{font-family:var(--font-body);}
 /* Publier : limite quotidienne atteinte. */
 .quota-note{margin:0 0 20px;padding:14px 16px;border-radius:12px;background:color-mix(in srgb, var(--accent) 8%, var(--asphalt-2));border:1px solid color-mix(in srgb, var(--accent) 35%, transparent);color:var(--chalk);font-size:15px;line-height:1.5;}
 .quota-note a,#createSuccess a{color:var(--accent-text);font-weight:600;text-decoration:underline;}
+
+/* Documents d'inscription : statuts, fichier temporaire (14 jours). */
+.doc-redo{color:#B4432E;}
+.doc-miss{color:var(--chalk-mute);}
+.doc-etat.doc-redo,.doc-etat.doc-wait,.doc-etat.doc-ok{font-weight:600;}
+.ins-docs{display:flex;flex-direction:column;gap:10px;}
+.ins-doc{display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:12px;border:1px solid var(--line);border-radius:10px;}
+.ins-doc > span:first-child{flex:none;min-width:0;}
+.ins-doc-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.ins-doc-nom{font-weight:600;min-width:0;}
+.ins-doc-statut{width:auto;min-width:140px;}
+.ins-doc-info{font-size:13px;color:var(--chalk-dim);}
+.ins-doc-btns{display:flex;gap:8px;flex-wrap:wrap;}
+.ins-doc-btns .ico{width:15px;height:15px;}
+.doc-dl-ok{color:#17745A;font-weight:600;}
+.doc-dl-non{color:#B4432E;font-weight:600;}
+.od-docs-note{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 14px;padding:12px 14px;border-radius:10px;background:var(--asphalt-3);font-size:14px;line-height:1.45;color:var(--chalk-dim);}
+.od-docs-note > .ico{flex:none;width:18px;height:18px;color:var(--chalk);}
+.od-docs-note > div{flex:1;min-width:220px;}
+.od-docs-note b{color:var(--chalk);}
+.od-docs-note .btn .ico{width:15px;height:15px;}
+.mi-doc-motif{color:#B4432E !important;}

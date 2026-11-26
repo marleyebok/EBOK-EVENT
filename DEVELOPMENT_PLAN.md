@@ -278,6 +278,14 @@ adjoindre des statistiques exploitables par un organisateur.
       clubs précédents, sélections, coach, motivations, vidéo, traitement,
       blessures, autorisation parentale, départ seul, droit à l'image,
       règlement, adresse, passeport, voyageurs, équipes engagées…).
+- [x] **Documents d'inscription : EBOK, simple point de passage** *(26/11/2026)* —
+      statuts En attente / Reçu / Validé / À refaire (posés par l'organisateur,
+      même sans fichier), motif envoyé au participant pour « À refaire ».
+      Fichiers dans un store Vercel Blob **privé à Paris** (`DOCS_READ_WRITE_TOKEN`),
+      lus seulement par l'API (Voir / Télécharger, « Tout télécharger »),
+      **effacés 14 jours après l'envoi** ; le listing garde statut et dates.
+      E-mail quotidien à l'organisateur (nouveaux documents, effacement dans
+      3 jours sans téléchargement). Code : `lib/documents.js`.
 - [x] **Recherche avancée allégée** *(26/11/2026)* — « Sexe » et « Âge » (sans
       « Public — »), un seul calendrier « Date » (jour unique ou période, le
       même composant que sur l'accueil : `calendrierPeriode()` dans app.js).

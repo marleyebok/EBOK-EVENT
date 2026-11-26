@@ -19,7 +19,7 @@ import {
   signalerEvenement, getSignalements, getSignalementsOuverts, majSignalement, supprimerSignalement,
   getStats,
   uploadCarteInsta, getInstagram, publierInstagram,
-  etatInscriptions, sInscrire, mesInscriptions, annulerInscription, deposerDocument,
+  etatInscriptions, sInscrire, mesInscriptions, annulerInscription, deposerDocument, lireDocument,
   mesEvenementsOrganises, tableauOrganisateur, statsOrganisateur, majInscription, majReglagesInscription,
   envoyerMessageInscrits, repondreInteretOutils, actionLotInscrits, supprimerInscrits, pointerInscrit,
 } from "./services.js";
@@ -37,7 +37,7 @@ window.EBOK_DATA = {
   signalerEvenement, getSignalements, getSignalementsOuverts, majSignalement, supprimerSignalement,
   getStats,
   uploadCarteInsta, getInstagram, publierInstagram,
-  etatInscriptions, sInscrire, mesInscriptions, annulerInscription, deposerDocument,
+  etatInscriptions, sInscrire, mesInscriptions, annulerInscription, deposerDocument, lireDocument,
   mesEvenementsOrganises, tableauOrganisateur, statsOrganisateur, majInscription, majReglagesInscription,
   envoyerMessageInscrits, repondreInteretOutils, actionLotInscrits, supprimerInscrits, pointerInscrit,
 };

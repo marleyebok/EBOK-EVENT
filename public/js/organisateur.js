@@ -24,7 +24,30 @@ const STATUT_INSC = {
   annulee:       { label: 'Annulée',          cls: 'st-off' },
 };
 const STATUTS_ORDRE = ['en_attente', 'validee', 'liste_attente', 'refusee', 'annulee'];
-const DOC_STATUT = { depose: 'Déposé, à vérifier', valide: 'Validé', a_refaire: 'À refaire' };
+/* Documents demandés aux inscrits : quatre statuts, posés par l'organisateur
+   (même pour un document remis en main propre). Le fichier, lui, est effacé
+   14 jours après son envoi : EBOK ne conserve aucun document. */
+const DOC_STATUT = { attente: 'En attente', recu: 'Reçu', valide: 'Validé', a_refaire: 'À refaire' };
+const DOC_CLASSE = { attente: 'doc-miss', recu: 'doc-wait', valide: 'doc-ok', a_refaire: 'doc-redo' };
+const DOC_JOURS = 14;
+const docDe = (i, id)=> (i.documents || {})[id] || { statut: 'attente' };
+const jourCourt = d=> d ? new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '';
+/* Enregistre un Blob reçu de l'API sous son nom. */
+function enregistrerFichier(blob, nom){
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = nom; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=> URL.revokeObjectURL(url), 30000);
+}
+/* Voir (nouvel onglet) ou télécharger un document. */
+async function ouvrirDocument(inscId, docId, telecharger, nomFichier){
+  const onglet = telecharger ? null : window.open('', '_blank');
+  try{
+    const { blob, nom } = await D().lireDocument(inscId, docId, telecharger);
+    if(telecharger) enregistrerFichier(blob, nomFichier || nom);
+    else{ const url = URL.createObjectURL(blob); if(onglet) onglet.location = url; else window.open(url, '_blank'); setTimeout(()=> URL.revokeObjectURL(url), 120000); }
+    return true;
+  }catch(e){ if(onglet) onglet.close(); alert(e && e.code === 'efface' ? 'Ce fichier a été effacé : EBOK ne conserve les documents que 14 jours.' : messageErreur(e)); return false; }
+}
 const ICO_OUTILS = '<svg class="ico ico-outils" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 18H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3"/><path d="M7 7V5.5A1.5 1.5 0 0 1 8.5 4h3A1.5 1.5 0 0 1 13 5.5V7"/><path d="M2 11.5h16"/><path d="M8.5 11.5v2h3v-2"/><path class="cle" d="M21.6 14.1a2.6 2.6 0 0 1-3.4 3.4l-3.1 3.1a1 1 0 0 1-1.4-1.4l3.1-3.1a2.6 2.6 0 0 1 3.4-3.4l-1.5 1.5.7.7.7.7z"/></svg>';
 
 const pastille = statut=>{
@@ -45,7 +68,8 @@ function messageErreur(e){
   if(c === 'equipe_incomplete') return `Ton équipe doit compter au moins ${e.min || 1} joueurs.`;
   if(c === 'nom_equipe') return 'Donne un nom à ton équipe.';
   if(c === 'tarif') return 'Choisis un tarif.';
-  if(c === 'trop_lourd') return 'Fichier trop lourd (8 Mo au maximum).';
+  if(c === 'trop_lourd') return 'Fichier trop lourd (4 Mo au maximum). Prends une photo plutôt qu\'un scan, ou réduis le PDF.';
+  if(c === 'deja_valide') return 'Ce document est déjà validé par l\'organisateur.';
   if(c === 'type_non_supporte') return 'Format non accepté : envoie une image ou un PDF.';
   if(/^stockage/.test(c)) return "Le dépôt de fichiers n'est pas disponible pour le moment.";
   return 'Action impossible pour le moment. Réessaie dans un instant.';
@@ -130,14 +154,14 @@ async function renderMesInscriptions(){
     const docs = i.documentsDemandes || [];
     const actif = !['annulee', 'refusee'].includes(i.statut);
     const docsHtml = docs.length ? `<div class="mi-docs">${docs.map(d=>{
-      const depot = (i.documents || {})[d.id];
-      const etat = depot ? (DOC_STATUT[depot.statut] || 'Déposé') : 'À fournir';
-      const cls = !depot ? 'doc-miss' : depot.statut === 'valide' ? 'doc-ok' : depot.statut === 'a_refaire' ? 'doc-miss' : 'doc-wait';
+      const dep = docDe(i, d.id), st = dep.statut;
+      const etat = st === 'attente' ? 'À fournir' : DOC_STATUT[st];
+      const info = st === 'a_refaire' && dep.motif ? `<em class="mi-doc-motif">Motif : ${esc(dep.motif)}</em>`
+        : dep.envoyeLe ? `<em>Envoyé le ${jourCourt(dep.envoyeLe)}</em>` : '';
       return `<div class="mi-doc">
-        <span class="mi-doc-nom">${ico('clipboard')}${esc(d.nom)}${d.aide ? `<em>${esc(d.aide)}</em>` : ''}</span>
-        <span class="doc-etat ${cls}">${esc(etat)}</span>
-        ${actif && !(depot && depot.statut === 'valide') ? `<label class="btn btn-ghost btn-sm mi-up">${depot ? 'Remplacer' : 'Déposer'}<input type="file" accept="image/*,application/pdf" data-up="${esc(i.id)}" data-doc="${esc(d.id)}" hidden></label>` : ''}
-        ${depot && depot.url ? `<a class="mi-voir" href="${esc(depot.url)}" target="_blank" rel="noopener">Voir</a>` : ''}
+        <span class="mi-doc-nom">${ico('clipboard')}${esc(d.nom)}${d.aide ? `<em>${esc(d.aide)}</em>` : ''}${info}</span>
+        <span class="doc-etat ${DOC_CLASSE[st]}">${esc(etat)}</span>
+        ${actif && st !== 'valide' ? `<label class="btn btn-ghost btn-sm mi-up">${dep.fichier ? 'Remplacer' : 'Déposer'}<input type="file" accept="image/*,application/pdf" data-up="${esc(i.id)}" data-doc="${esc(d.id)}" hidden></label>` : ''}
       </div>`;
     }).join('')}</div>` : '';
     return `<div class="mi-row">
@@ -156,7 +180,7 @@ async function renderMesInscriptions(){
       <p class="mi-err hidden" data-err="${esc(i.id)}"></p>
     </div>`;
   }).join('')}</div>
-  <p class="section-hint">Les documents déposés ne sont visibles que par l'organisateur de l'événement et ses co-organisateurs.</p>`;
+  <p class="section-hint">Tes documents ne sont visibles que par l'organisateur de l'événement et ses co-organisateurs. EBOK ne les conserve pas : chaque fichier est effacé ${DOC_JOURS} jours après son envoi, une fois transmis à l'organisateur.</p>`;
   box.querySelectorAll('[data-open]').forEach(b=> b.addEventListener('click', ()=> openEvent(b.dataset.open)));
   box.querySelectorAll('[data-qr]').forEach(el=> dessinerQr(el, el.dataset.qr));
   box.querySelectorAll('[data-annuler]').forEach(b=> b.addEventListener('click', async ()=>{
@@ -169,9 +193,18 @@ async function renderMesInscriptions(){
     const f = inp.files && inp.files[0];
     if(!f) return;
     const err = box.querySelector(`[data-err="${CSS.escape(inp.dataset.up)}"]`);
-    if(f.size > 8 * 1024 * 1024){ err.textContent = messageErreur({ code: 'trop_lourd' }); err.classList.remove('hidden'); return; }
     const lab = inp.closest('label'); lab.classList.add('is-busy'); lab.firstChild.textContent = 'Envoi…';
-    try{ await D().deposerDocument(inp.dataset.up, inp.dataset.doc, f); renderMesInscriptions(); }
+    try{
+      // Une photo est allégée avant l'envoi (≈ 300 Ko au lieu de plusieurs Mo).
+      let fichier = f;
+      if(/^image\//.test(f.type) && typeof compressImage === 'function'){
+        const url = await compressImage(f, 1800, 0.82);
+        const b = await (await fetch(url)).blob();
+        fichier = new File([b], (f.name || 'document').replace(/\.[a-z0-9]+$/i, '') + '.jpg', { type: b.type || 'image/jpeg' });
+      }
+      if(fichier.size > 4 * 1024 * 1024){ const e = new Error('trop_lourd'); e.code = 'trop_lourd'; throw e; }
+      await D().deposerDocument(inp.dataset.up, inp.dataset.doc, fichier); renderMesInscriptions();
+    }
     catch(e){ err.textContent = messageErreur(e); err.classList.remove('hidden'); lab.classList.remove('is-busy'); lab.firstChild.textContent = 'Déposer'; }
   }));
 }
@@ -427,7 +460,7 @@ const CLES_TRI = {
   statut: i=> STATUTS_ORDRE.indexOf(i.statut),
   personnes: i=> Number(i.demande.nb) || 1,
   categories: i=> (i.categories || []).join(', ').toLowerCase(),
-  documents: i=> orga.data.reglages.documents.filter(d=> (i.documents[d.id] || {}).statut === 'valide').length,
+  documents: i=> orga.data.reglages.documents.filter(d=> docDe(i, d.id).statut === 'valide').length,
 };
 function trier(liste){
   const { col, sens } = orga.tri, cle = CLES_TRI[col] || CLES_TRI.date;
@@ -436,10 +469,10 @@ function trier(liste){
 function docsResume(i){
   const demandes = orga.data.reglages.documents;
   if(!demandes.length) return '';
-  const ok = demandes.filter(d=> (i.documents[d.id] || {}).statut === 'valide').length;
-  const deposes = demandes.filter(d=> i.documents[d.id]).length;
-  const cls = ok === demandes.length ? 'doc-ok' : deposes > ok ? 'doc-wait' : 'doc-miss';
-  return `<span class="doc-etat ${cls}">${ok}/${demandes.length}${deposes > ok ? ` · ${deposes - ok} à vérifier` : ''}</span>`;
+  const n = st=> demandes.filter(d=> docDe(i, d.id).statut === st).length;
+  const ok = n('valide'), recus = n('recu'), refaire = n('a_refaire');
+  const cls = ok === demandes.length ? 'doc-ok' : refaire ? 'doc-redo' : recus ? 'doc-wait' : 'doc-miss';
+  return `<span class="doc-etat ${cls}">${ok}/${demandes.length} validé${ok > 1 ? 's' : ''}${recus ? ` · ${recus} reçu${recus > 1 ? 's' : ''}` : ''}${refaire ? ` · ${refaire} à refaire` : ''}</span>`;
 }
 function menuExport(id, libelle){
   return `<div class="od-menu"><button type="button" class="btn btn-ghost" data-menu="${id}" aria-expanded="false">${ico('download')}${libelle}${ico('chevron')}</button>
@@ -478,7 +511,12 @@ function vueInscrits(){
     return l.join(' ');
   };
   const optionsSel = (id, libelle, liste)=> liste.length ? `<select class="od-select od-select-sm" id="${id}" aria-label="${libelle}"><option value="">${libelle}…</option>${liste.map(x=> `<option value="${esc(x)}">${esc(x)}</option>`).join('')}<option value="__vide">Retirer</option></select>` : '';
+  // Fichiers encore disponibles (effacés 14 jours après leur envoi).
+  const fichiers = docs ? d.inscriptions.flatMap(i=> d.reglages.documents.filter(dm=> docDe(i, dm.id).fichier).map(dm=> ({ i, dm }))) : [];
+  const nonTele = fichiers.filter(x=> !docDe(x.i, x.dm.id).telecharge).length;
   body.innerHTML = `
+    ${docs ? `<div class="od-docs-note" role="note">${ico('clipboard')}<div><b>EBOK ne conserve aucun document.</b> Chaque fichier est effacé ${DOC_JOURS} jours après son envoi : télécharge-les pour les garder dans tes dossiers. Les statuts (en attente, reçu, validé, à refaire) restent dans ton listing.</div>
+      ${fichiers.length ? `<button type="button" class="btn btn-sm btn-primary" id="odToutDl">${ico('download')}Tout télécharger <b>${fichiers.length}</b>${nonTele ? ` · ${nonTele} nouveau${nonTele > 1 ? 'x' : ''}` : ''}</button>` : ''}</div>` : ''}
     <div class="od-tools">
       <div class="od-chips" role="group" aria-label="Filtrer par statut">
         <button type="button" class="chip" data-f-statut="" aria-pressed="${!f.statut}">Tous <b>${d.inscriptions.length - c.annulee}</b></button>
@@ -497,7 +535,7 @@ function vueInscrits(){
       <button type="button" class="btn btn-sm btn-ghost" data-lot="liste_attente">Liste d'attente</button>
       <button type="button" class="btn btn-sm btn-ghost" data-lot="refusee">Refuser</button>
       ${d.reglages.categories.length ? `<select class="od-select od-select-sm" id="odLotCat" aria-label="Catégorie"><option value="">Catégorie…</option>${d.reglages.categories.map(x=> `<option value="+${esc(x)}">Ajouter « ${esc(x)} »</option>`).join('')}${d.reglages.categories.map(x=> `<option value="-${esc(x)}">Retirer « ${esc(x)} »</option>`).join('')}</select>` : ''}
-      ${docs ? `<button type="button" class="btn btn-sm btn-ghost" data-lot-docs>Valider les documents déposés</button>` : ''}
+      ${docs ? `<button type="button" class="btn btn-sm btn-ghost" data-lot-docs>Valider les documents reçus</button>` : ''}
       ${d.reglages.tarifs.length ? `<select class="od-select od-select-sm" id="odLotPaie" aria-label="Paiement"><option value="">Paiement…</option>${Object.entries(PAIEMENT).map(([k, l])=> `<option value="${k}">${l}</option>`).join('')}</select>` : ''}
       ${optionsSel('odLotGroupe', 'Groupe', lg.groupes)}${optionsSel('odLotChambre', 'Chambre', lg.chambres)}
       <button type="button" class="btn btn-sm btn-ghost" data-lot-ecrire>${ico('send')}Écrire</button>
@@ -572,6 +610,19 @@ function vueInscrits(){
   });
   [['odLotPaie', v=> ({ gestion: { paiement: { statut: v } } })], ['odLotGroupe', v=> ({ gestion: { groupe: v === '__vide' ? '' : v } })], ['odLotChambre', v=> ({ gestion: { chambre: v === '__vide' ? '' : v } })]].forEach(([id, f])=>{
     const s = document.getElementById(id); if(s) s.addEventListener('change', ()=>{ if(s.value) actionLot(f(s.value)); });
+  });
+  const toutDl = document.getElementById('odToutDl');
+  if(toutDl) toutDl.addEventListener('click', async ()=>{
+    toutDl.disabled = true;
+    let n = 0;
+    for(const { i, dm } of fichiers){
+      toutDl.innerHTML = `${ico('download')}Téléchargement ${++n}/${fichiers.length}…`;
+      const ext = (/\.([a-z0-9]+)$/i.exec(docDe(i, dm.id).nom || '') || [])[1];
+      const nom = `${(i.nom || 'inscrit').replace(/[^\wÀ-ÿ -]+/g, '')} - ${dm.nom.replace(/[^\wÀ-ÿ -]+/g, '')}${ext ? '.' + ext : ''}`;
+      if(await ouvrirDocument(i.id, dm.id, true, nom)) i.documents[dm.id] = { ...docDe(i, dm.id), telecharge: new Date().toISOString() };
+      await new Promise(r=> setTimeout(r, 400));   // le navigateur accepte mieux des téléchargements espacés
+    }
+    vueInscrits();
   });
   const lotDocs = body.querySelector('[data-lot-docs]');
   if(lotDocs) lotDocs.addEventListener('click', ()=> actionLot({ docsValides: true }));
@@ -666,12 +717,21 @@ function ouvrirInscrit(id){
     ${reg.categories.length
       ? `<div class="ins-cats" role="group" aria-label="Catégories">${reg.categories.map(x=> `<button type="button" class="chip" data-cat="${esc(x)}" aria-pressed="${(i.categories || []).includes(x)}">${esc(x)}</button>`).join('')}</div>`
       : `<p class="field-hint">Crée tes catégories (U15, Payé, Équipe A…) dans l'onglet Réglages.</p>`}
-    ${reg.documents.length ? `<h4 class="ins-h">Documents</h4><div class="ins-docs">${reg.documents.map(dm=>{
-      const dep = i.documents[dm.id];
-      return `<div class="ins-doc"><span>${esc(dm.nom)}</span>${dep
-        ? `<a href="${esc(dep.url)}" target="_blank" rel="noopener">${ico('external')}Ouvrir</a><div class="ins-doc-act"><span class="doc-etat ${dep.statut === 'valide' ? 'doc-ok' : dep.statut === 'a_refaire' ? 'doc-miss' : 'doc-wait'}">${esc(DOC_STATUT[dep.statut] || 'Déposé')}</span>
-           ${dep.statut === 'valide' ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-docstat="valide" data-doc="${esc(dm.id)}">Valider</button>`}${dep.statut === 'a_refaire' ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-docstat="a_refaire" data-doc="${esc(dm.id)}">À refaire</button>`}</div>`
-        : '<span class="doc-etat doc-miss">Pas encore déposé</span>'}</div>`;
+    ${reg.documents.length ? `<h4 class="ins-h">Documents</h4>
+    <p class="field-hint">EBOK ne conserve aucun document : chaque fichier est effacé ${DOC_JOURS} jours après son envoi. Télécharge-les pour les garder.</p>
+    <div class="ins-docs">${reg.documents.map(dm=>{
+      const dep = docDe(i, dm.id), st = dep.statut;
+      const fichier = dep.fichier
+        ? `<span class="ins-doc-info">Envoyé le ${jourCourt(dep.envoyeLe)} · effacé le ${jourCourt(dep.effaceLe)} · ${dep.telecharge ? `<b class="doc-dl-ok">téléchargé ✓</b>` : `<b class="doc-dl-non">pas encore téléchargé</b>`}</span>
+           <span class="ins-doc-btns"><button type="button" class="btn btn-sm btn-ghost" data-voir="${esc(dm.id)}">${ico('eye')}Voir</button><button type="button" class="btn btn-sm btn-ghost" data-dl="${esc(dm.id)}">${ico('download')}Télécharger</button></span>`
+        : dep.efface ? `<span class="ins-doc-info">Fichier effacé le ${jourCourt(dep.effaceLe)}${dep.telecharge ? ' · téléchargé ✓' : ''}</span>`
+        : `<span class="ins-doc-info">Aucun fichier sur EBOK</span>`;
+      return `<div class="ins-doc">
+        <div class="ins-doc-top"><span class="ins-doc-nom">${esc(dm.nom)}</span>
+          <select class="od-select ins-doc-statut" data-docstat="${esc(dm.id)}" aria-label="Statut : ${esc(dm.nom)}">${Object.entries(DOC_STATUT).map(([k, l])=> `<option value="${k}" ${k === st ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+        ${st === 'a_refaire' && dep.motif ? `<span class="ins-doc-info">Motif : ${esc(dep.motif)}</span>` : ''}
+        ${fichier}
+      </div>`;
     }).join('')}</div>` : ''}
     <h4 class="ins-h">Commentaire privé</h4>
     <textarea id="inscritCom" rows="3" maxlength="2000" placeholder="Visible seulement par toi et tes co-organisateurs">${esc(i.commentaire || '')}</textarea>
@@ -686,8 +746,24 @@ function ouvrirInscrit(id){
     cur.has(b.dataset.cat) ? cur.delete(b.dataset.cat) : cur.add(b.dataset.cat);
     if(await enregistrerInscrit(i.id, { categories: [...cur] })) ouvrirInscrit(i.id), ok();
   }));
-  corps.querySelectorAll('[data-docstat]').forEach(b=> b.addEventListener('click', async ()=>{
-    if(await enregistrerInscrit(i.id, { docs: { [b.dataset.doc]: b.dataset.docstat } })) ouvrirInscrit(i.id), ok();
+  corps.querySelectorAll('[data-docstat]').forEach(sel=> sel.addEventListener('change', async ()=>{
+    let val = sel.value;
+    if(val === 'a_refaire'){
+      const motif = prompt('Pourquoi ce document est-il à refaire ? (le participant reçoit ce message par e-mail)', '');
+      if(motif === null){ ouvrirInscrit(i.id); return; }
+      val = { statut: 'a_refaire', motif };
+    }
+    if(await enregistrerInscrit(i.id, { docs: { [sel.dataset.docstat]: val } })) ouvrirInscrit(i.id), ok();
+  }));
+  const nomFichier = (dm, ext)=> `${(i.nom || 'inscrit').replace(/[^\wÀ-ÿ -]+/g, '')} - ${dm.nom.replace(/[^\wÀ-ÿ -]+/g, '')}`;
+  corps.querySelectorAll('[data-voir]').forEach(b=> b.addEventListener('click', ()=> ouvrirDocument(i.id, b.dataset.voir, false)));
+  corps.querySelectorAll('[data-dl]').forEach(b=> b.addEventListener('click', async ()=>{
+    const dm = reg.documents.find(x=> x.id === b.dataset.dl);
+    const dep = docDe(i, dm.id);
+    b.disabled = true;
+    const ext = (/\.([a-z0-9]+)$/i.exec(dep.nom || '') || [])[1];
+    if(await ouvrirDocument(i.id, dm.id, true, `${nomFichier(dm)}${ext ? '.' + ext : ''}`)){ dep.telecharge = new Date().toISOString(); ouvrirInscrit(i.id); }
+    else b.disabled = false;
   }));
   const gPaieOk = document.getElementById('gPaieOk');
   if(gPaieOk) gPaieOk.addEventListener('click', async ()=>{
@@ -748,12 +824,12 @@ function exporter(format, liste){
   if(!window.EBOK_EXPORT){ alert('Export indisponible pour le moment.'); return; }
   const titre = d.event.title || 'Événement';
   const nom = `inscrits-${titre.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40)}`;
-  const etatDoc = (i, x)=>{ const dep = i.documents[x.id]; return dep ? (DOC_STATUT[dep.statut] || 'Déposé') : 'Manquant'; };
+  const etatDoc = (i, x)=> DOC_STATUT[docDe(i, x.id).statut];
   const date = v=> new Date(v).toLocaleDateString('fr-FR');
   if(format === 'pdf'){
     const entetes = ['Inscrit', 'E-mail', 'Téléphone', 'Équipe / club', 'Pers.', 'Statut', 'Catégories', ...(docs.length ? ['Documents'] : []), 'Demande'];
     const lignes = liste.map(i=> [i.nom || i.email || 'Membre', i.email || '', i.demande.tel || '', i.demande.equipe || '', String(i.demande.nb || 1), (STATUT_INSC[i.statut] || {}).label || '', (i.categories || []).join(', '),
-      ...(docs.length ? [`${docs.filter(x=> (i.documents[x.id] || {}).statut === 'valide').length}/${docs.length} validé(s)`] : []), date(i.createdAt)]);
+      ...(docs.length ? [`${docs.filter(x=> docDe(i, x.id).statut === 'valide').length}/${docs.length} validé(s)`] : []), date(i.createdAt)]);
     const poids = [1.5, 1.9, 1.1, 1.4, 0.45, 1.15, 1.2, ...(docs.length ? [1.05] : []), 0.85];
     const sous = `Liste des inscrits · ${liste.length} inscrit${liste.length > 1 ? 's' : ''} · ${[d.event.city, d.event.dateStart ? fmtDateRange(d.event.dateStart, d.event.dateEnd) : ''].filter(Boolean).join(' · ')} · édité le ${new Date().toLocaleDateString('fr-FR')}`;
     window.EBOK_EXPORT.pdf(nom, titre, sous, entetes, lignes, poids);
@@ -877,7 +953,7 @@ function vueReglages(){
       <fieldset class="od-field"><legend>Documents demandés aux inscrits</legend>
         <div id="rgDocs">${reg.documents.map(ligneDoc).join('')}</div>
         <button type="button" class="btn btn-ghost btn-sm" id="rgAddDoc">${ico('plus')}Ajouter un document</button>
-        <p class="field-hint od-legal">Droit à l'image, autorisation parentale, règlement signé… Ne demande pas de certificat médical ni de donnée de santé : prévois plutôt une attestation, et vérifie le document original sur place.</p>
+        <p class="field-hint od-legal">Droit à l'image, autorisation parentale, règlement signé… Ne demande <b>ni pièce d'identité ni certificat médical</b> : prévois plutôt une attestation, et vérifie l'original sur place. Les fichiers sont effacés de EBOK 14 jours après leur envoi : tu reçois un e-mail par jour quand il y a des documents à télécharger.</p>
       </fieldset>
       ${fmEditeur(reg, (orga.liste.find(x=> x.id === orga.sel) || events.find(x=> x.id === orga.sel) || {}).type)}
       <p class="form-error hidden" id="rgErr"></p>
@@ -1141,6 +1217,9 @@ function poserQuestionOutils(eventId){
   const m = /[?&]mes=(favoris|alertes|inscriptions|organise)/.exec(location.search);
   if(!m) return;
   window.mesOnglet = m[1];
+  // /?mes=organise&evt=ID (e-mail des documents) : ouvre cet événement, onglet Inscrits.
+  const evt = new URLSearchParams(location.search).get('evt');
+  if(m[1] === 'organise' && evt){ orga.sel = evt; orga.sous = 'inscrits'; }
   history.replaceState(null, '', '/');
   showPage('mes');
 })();

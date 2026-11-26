@@ -343,6 +343,18 @@ export async function deposerDocument(inscriptionId, docId, fichier) {
   if (!res.ok || !data.url) throw new Error(data.error || "upload_" + res.status);
   return api(`${INSC}&id=${e(inscriptionId)}&doc=${e(docId)}`, { method: "PATCH", body: { url: data.url, nom: fichier.name || "" } });
 }
+/** Un document déposé, lu par l'API (jamais par son adresse) : renvoie un Blob.
+    `telecharger` note le téléchargement côté organisateur. */
+export async function lireDocument(inscriptionId, docId, telecharger) {
+  const res = await fetch(`${INSC}&id=${e(inscriptionId)}&fichier=${e(docId)}${telecharger ? "&dl=1" : ""}`, { headers: { ...(await authHeader()) } });
+  if (!res.ok) {
+    let data = {};
+    try { data = await res.json(); } catch { /* corps non JSON */ }
+    const err = new Error(data.error || "http_" + res.status); err.code = data.error || ""; throw err;
+  }
+  const nom = (/filename="([^"]+)"/.exec(res.headers.get("content-disposition") || "") || [])[1] || "document";
+  return { blob: await res.blob(), nom };
+}
 /** Les événements que j'organise (propriétaire ou co-organisateur). */
 export async function mesEvenementsOrganises() {
   return (await api(`${INSC}&orga=1`)).events || [];
