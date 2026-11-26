@@ -3391,3 +3391,5 @@ a.ag-row{text-decoration:none;}
 .admin-item-det .ico{width:13px;height:13px;vertical-align:-2px;margin-right:5px;}
 .admin-item-det.is-ok{color:var(--green);}
 .affil-etat{margin:0 0 10px;padding:8px 12px;border-radius:10px;background:var(--asphalt-3);font-size:13.5px;color:var(--chalk);}
+.affil-groupe{display:flex;align-items:flex-start;margin:0 0 10px;font-weight:500;line-height:1.4;}
+.affil-groupe input{margin-top:2px;flex:none;}
