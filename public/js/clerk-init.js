@@ -9,7 +9,7 @@
    data.js (mode démo, sans compte).
    ========================================================= */
 import {
-  getAllEvents, getAllEventsForAdmin, getEvent, getEventsByUser,
+  getAllEvents, getAllEventsForAdmin, getEvent, getEventBySlug, getEventsByUser,
   createEvent, updateEvent, dupliquerEvent, approveEvent, deleteEvent, incrementViews,
   getFavorites, toggleFavorite, updateUserProfile, getAllUsers,
   openSignIn, signOutUser, getSession, hostStoredPosters,
@@ -27,7 +27,7 @@ import { loadClerk } from "./clerk.js";
 
 // Couche données exposée à app.js (mêmes clés qu'avant).
 window.EBOK_DATA = {
-  getAllEvents, getAllEventsForAdmin, getEvent, getEventsByUser,
+  getAllEvents, getAllEventsForAdmin, getEvent, getEventBySlug, getEventsByUser,
   createEvent, updateEvent, dupliquerEvent, approveEvent, deleteEvent, incrementViews,
   getFavorites, toggleFavorite, updateUserProfile, getAllUsers,
   uploadImage,

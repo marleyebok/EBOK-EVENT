@@ -17,6 +17,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { hasDb, sql } from "./_lib.js";
+import { RESERVES } from "../lib/slug.js";
 
 const OG_START = "<!-- og:start";
 const OG_END = "<!-- og:end -->";
@@ -93,7 +94,8 @@ async function shell(req) {
 /* --- Injection des métadonnées -------------------------------------------- */
 function metaBlock(ev, id, req) {
   const base = origin(req);
-  const url = `${base}/evenement/${encodeURIComponent(id)}`;
+  // Adresse canonique : le lien court (ebok.fr/liguecourtcuts) s'il existe.
+  const url = ev.slug ? `${base}/${encodeURIComponent(ev.slug)}` : `${base}/evenement/${encodeURIComponent(id)}`;
   const dates = frDates(ev.dateStart, ev.dateEnd);
   const place = ev.lieu || [ev.city, ev.region].filter(Boolean).join(", ");
 
@@ -181,7 +183,11 @@ export function inject(html, ev, id, req) {
 
 /* --- Handler --------------------------------------------------------------- */
 export default async function handler(req, res) {
-  const id = String((req.query || {}).id || "").trim();
+  const q = req.query || {};
+  let id = String(q.id || "").trim();
+  // Lien court ebok.fr/<lien> : réécrit ici avec ?slug=. Une adresse inconnue
+  // sert la page d'accueil en 404 (l'app affiche « page introuvable »).
+  const slug = String(q.slug || "").trim().toLowerCase();
 
   let html;
   try {
@@ -194,7 +200,19 @@ export default async function handler(req, res) {
   }
 
   let ev = null;
-  if (id && hasDb()) {
+  let introuvable = false;
+  if (slug && !id) {
+    introuvable = true;
+    if (/^[a-z0-9-]{3,40}$/.test(slug) && !RESERVES.has(slug) && hasDb()) {
+      try {
+        const rows = await sql()`
+          SELECT id, data FROM event.events WHERE data->>'slug' = ${slug} AND status = 'approved' LIMIT 1`;
+        if (rows[0]) { id = rows[0].id; ev = rows[0].data; introuvable = false; }
+      } catch {
+        introuvable = false; // base indisponible : on ne conclut pas à un 404
+      }
+    }
+  } else if (id && hasDb()) {
     try {
       // Uniquement les événements publiés : on n'expose pas au partage ni aux
       // moteurs une fiche en attente de validation.
@@ -216,7 +234,8 @@ export default async function handler(req, res) {
 
   // 200 même sans métadonnées : certains événements ne vivent pas en base
   // (données locales de data.js) et la page reste parfaitement fonctionnelle.
-  res.statusCode = 200;
+  if (introuvable) html = html.replace("</head>", '<meta name="robots" content="noindex">\n</head>');
+  res.statusCode = introuvable ? 404 : 200;
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.setHeader(
     "Cache-Control",

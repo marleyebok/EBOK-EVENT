@@ -25,6 +25,7 @@ import { ensureSchema, hasDb, sql, json, readBody, newId, sessionUid, isAdminUid
 import { isBlockedHost, fetchUrl } from "./import-event.js";
 import { AIService } from "../lib/services/AIService.js";
 import { analyserSource, resumeBilan, memeEvenement } from "../lib/detection.js";
+import { lienDepuisTitre, lienLibre } from "../lib/slug.js";
 
 const INTERVALLE_HEURES = 20;
 
@@ -97,6 +98,7 @@ function dependances(today, mesures) {
     },
     async creer(fiche, empreinte) {
       const id = newId();
+      if (!fiche.slug) fiche = { ...fiche, slug: await lienLibre(lienDepuisTitre(fiche.title)) };
       await sql()`
         INSERT INTO event.events (id, status, user_id, featured, data)
         VALUES (${id}, 'pending', NULL, false, ${JSON.stringify(fiche)}::jsonb)`;

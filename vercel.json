@@ -51,12 +51,40 @@
   ],
   "rewrites": [
     {
+      "source": "/recherche",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/publier",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/profil",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/mes-evenements",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/mes-evenements/:onglet",
+      "destination": "/index.html"
+    },
+    {
       "source": "/evenement/:id",
       "destination": "/api/evenement?id=:id"
     },
     {
       "source": "/sitemap.xml",
       "destination": "/api/sitemap"
+    },
+    {
+      "source": "/:slug",
+      "destination": "/api/evenement?slug=:slug"
     }
   ],
   "headers": [

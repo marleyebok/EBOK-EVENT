@@ -54,7 +54,7 @@ export default async function handler(req, res) {
   if (hasDb()) {
     try {
       const rows = await sql()`
-        SELECT id, created_at, data->>'dateEnd' AS date_end
+        SELECT id, created_at, data->>'dateEnd' AS date_end, data->>'slug' AS slug
         FROM event.events
         WHERE status = 'approved' AND COALESCE(data->>'visibilite', 'public') <> 'prive'
         ORDER BY created_at DESC
@@ -64,7 +64,7 @@ export default async function handler(req, res) {
         // Un événement passé reste consultable (archives) mais intéresse moins.
         const aVenir = !r.date_end || r.date_end >= aujourdhui;
         entrees.push(url({
-          loc: `/evenement/${encodeURIComponent(r.id)}`,
+          loc: r.slug ? `/${encodeURIComponent(r.slug)}` : `/evenement/${encodeURIComponent(r.id)}`,
           lastmod: jour(r.created_at),
           changefreq: aVenir ? "weekly" : "yearly",
           priority: aVenir ? "0.8" : "0.3",
