@@ -598,7 +598,7 @@ dans le code — le reste est à faire.
       l'accueil : elle est reconstituée au clic (`initContactFooter`). Elle
       reste en clair dans les CGU et la politique de confidentialité, où la loi
       demande un contact joignable.
-- [ ] **Créer les comptes Instagram et LinkedIn**, puis coller les adresses des
+- [x] **Créer les comptes Instagram et LinkedIn** *(26/11/2026 : liens dans le pied de page et dans les données structurées)*, puis coller les adresses des
       profils dans `RESEAUX_EBOK` (`public/js/app.js`) : la rubrique
       « Suivez-nous » du pied de page apparaît alors toute seule. Une adresse
       laissée vide masque sa ligne, les deux vides masquent la rubrique.

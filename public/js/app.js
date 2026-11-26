@@ -3782,8 +3782,8 @@ function syncMenu(){
    réseaux sans lien donne l'impression d'un site inachevé.
    Pour en ajouter un : colle l'adresse complète du profil. */
 const RESEAUX_EBOK = {
-  instagram: '',
-  linkedin: '',
+  instagram: 'https://www.instagram.com/ebok.fr/',
+  linkedin: 'https://www.linkedin.com/in/ebok-l-agenda-du-basket-francais-2bbbab425/',
 };
 
 function initFooter(){
