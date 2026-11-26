@@ -13,6 +13,7 @@
  */
 import { put } from "@vercel/blob";
 import { json, sessionUid, blobTokenState } from "./_lib.js";
+import { jetonDocs, DOC_TAILLE_MAX } from "../lib/documents.js";
 
 export const config = { api: { bodyParser: false } };
 
@@ -41,9 +42,12 @@ export default async function handler(req, res) {
   try {
     const chunks = [];
     let size = 0;
+    // Documents d'inscription : 4 Mo au plus (ils repassent par l'API pour
+    // être consultés, et une réponse Vercel ne dépasse pas 4,5 Mo).
+    const max = dossierDocs ? DOC_TAILLE_MAX : MAX;
     for await (const c of req) {
       size += c.length;
-      if (size > MAX) return json(res, 413, { error: "trop_lourd" });
+      if (size > max) return json(res, 413, { error: "trop_lourd" });
       chunks.push(c);
     }
     const buf = Buffer.concat(chunks);
@@ -59,10 +63,14 @@ export default async function handler(req, res) {
     }
     const name = rawName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-80);
 
+    // Documents d'inscription : store PRIVÉ (Paris) quand il est branché ;
+    // ils ne sont lisibles que par l'API, qui vérifie qui les demande.
+    const prive = dossierDocs && jetonDocs();
     const { url } = await put(`event/${uid}/${folder}/${Date.now()}_${name}`, buf, {
-      access: "public",
+      access: prive ? "private" : "public",
       addRandomSuffix: true,
       contentType,
+      ...(prive ? { token: jetonDocs() } : {}),
     });
     return json(res, 200, { url });
   } catch (e) {
