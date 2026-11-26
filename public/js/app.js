@@ -4782,7 +4782,7 @@ async function renderAdminEvents(){
   let list;
   try{ list = await window.EBOK_DATA.getAllEventsForAdmin(); }
   catch(err){ message(`<div class="empty-state"><h4>Erreur</h4><p>Impossible de charger les événements.</p></div>`); return; }
-  await loadAdminUsers();   // pour afficher le nom des organisateurs
+  await Promise.all([loadAdminUsers(), chargerOrganisateursConnus()]);   // noms des organisateurs, adresses déjà rattachées
   list.sort((a,b)=> (b.createdAt || 0) - (a.createdAt || 0));
   adminList = list;
   afficherAdminEvenements();
@@ -4799,7 +4799,16 @@ function adminATraiter(ev){ return ev.status !== 'approved' || !!ev.aRelire; }
 function aPrevenir(ev){
   const mail = String((ev.org && ev.org.email) || '').trim();
   const sansOrga = !ev.userId || (currentUser && ev.userId === currentUser.uid);
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail) && sansOrga && !ev.prevenu && !ev.recupere;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail) && sansOrga && !ev.prevenu && !ev.recupere && !organisateurConnu(mail);
+}
+/* Adresses déjà rattachées à un compte d'organisateur (chargées par le
+   serveur à l'ouverture de l'administration) : plus jamais de premier message. */
+let emailsConnus = new Set();
+function organisateurConnu(mail){ return emailsConnus.has(String(mail || '').trim().toLowerCase()); }
+async function chargerOrganisateursConnus(){
+  if(!window.EBOK_DATA || !window.EBOK_DATA.organisateursConnus) return;
+  try{ emailsConnus = new Set(((await window.EBOK_DATA.organisateursConnus()).emails || []).map(e=> String(e).toLowerCase())); }
+  catch(e){ /* on garde la dernière liste connue */ }
 }
 let adminModePrevenir = false;
 

@@ -23,7 +23,7 @@ import { correspond, message, envoyer } from "../lib/alertes.js";
 import { inscriptions, roleSur, effacerInscriptions } from "../lib/inscriptions.js";
 import { regionDeVille, enFrance } from "../lib/geo.js";
 import { lienPropre, lienDepuisTitre, lienLibre, lienPris } from "../lib/slug.js";
-import { organisateurs, CHAMPS_RECUP } from "../lib/organisateurs.js";
+import { organisateurs, CHAMPS_RECUP, noterOrganisateurConnu } from "../lib/organisateurs.js";
 
 /* Champs gérés par les outils d'organisateur (lib/inscriptions.js) : jamais
    renvoyés au public (les e-mails des co-organisateurs sont privés) et jamais
@@ -328,6 +328,12 @@ export default async function handler(req, res) {
         WHERE id = ${id}`;
       const out = await sql()`SELECT * FROM event.events_lecture WHERE id = ${id}`;
       const fiche = toEvent(out[0]);
+
+      // L'admin confie la fiche à un organisateur : son adresse est désormais
+      // « connue », il ne recevra plus jamais le premier message de contact.
+      if (nextOwner && nextOwner !== uid && !(await isAdminUid(nextOwner))) {
+        await noterOrganisateurConnu((fiche.org || {}).email, "affiliation").catch((e) => console.error("contact connu:", e));
+      }
 
       // Un événement qui vient d'être validé déclenche les alertes. On le fait
       // APRÈS l'écriture et sans l'attendre : un service d'e-mail lent ou en
