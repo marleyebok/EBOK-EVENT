@@ -362,7 +362,7 @@ vers la source. Rien n'est publié sans validation.
       pages d'agenda en HTML classique. Les pages construites en JavaScript
       (beaucoup de sites modernes, HelloAsso) sont lues vides : l'admin le voit
       dans le résultat (« page sans contenu exploitable »).
-- [ ] **Poser `CRON_SECRET`** sur Vercel (voir README).
+- [x] **Poser `CRON_SECRET`** sur Vercel (voir README) *(26/11/2026 ; sans lui, les tâches sont refusées)*.
 - [ ] Plus tard : recherche web automatique (API de recherche, payante au-delà
       d'un quota) pour découvrir de nouvelles pages sans les saisir à la main.
 
@@ -626,7 +626,7 @@ Corrigé :
 
 Reste à faire :
 
-- [ ] **Poser `CRON_SECRET`** sur Vercel : sans elle, n'importe qui peut
+- [x] **Poser `CRON_SECRET`** sur Vercel *(26/11/2026)* : sans elle, n'importe qui pouvait
       déclencher la détection hebdomadaire (au plus une fois par 20 h et par
       source, rien n'est publié, mais chaque analyse consomme l'IA).
 - [ ] **Rendre la CSP bloquante** (`Content-Security-Policy` au lieu de

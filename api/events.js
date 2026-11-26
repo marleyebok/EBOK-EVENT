@@ -29,6 +29,28 @@ import { regionDeVille, enFrance } from "../lib/geo.js";
 const CHAMPS_ORGA = ["coorgs"];
 const CHAMPS_ORGA_ECRITURE = ["coorgs", "interetOutils", "inscription", "visibilite"];
 
+/* Champs posés par l'administration ou par les outils d'organisateur :
+   jamais acceptés tels quels à la création par un compte ordinaire. */
+const CHAMPS_ADMIN_CREATION = ["coorgs", "interetOutils", "inscription", "visibilite", "aRelire", "detection", "importe", "dupliqueDe"];
+/* Champs numériques : ils sont injectés tels quels dans la carte (attributs
+   SVG). Tout ce qui n'est pas un nombre fini devient null. */
+const CHAMPS_NUMERIQUES = ["x", "y", "lat", "lng", "placesTotal"];
+/* Au-delà, ce n'est plus une fiche mais un dépôt de données. */
+const TAILLE_MAX_FICHE = 300000;
+const CREATIONS_PAR_JOUR = 20;
+
+/** Types sûrs pour les champs numériques ; champs réservés retirés hors admin. */
+function ficheSure(data, admin) {
+  for (const k of CHAMPS_NUMERIQUES) {
+    if (!(k in data)) continue;
+    const v = data[k];
+    const n = v === null || v === "" ? NaN : Number(v);
+    data[k] = Number.isFinite(n) ? n : null;
+  }
+  if (!admin) for (const k of CHAMPS_ADMIN_CREATION) delete data[k];
+  return data;
+}
+
 /* Champs promus en colonnes : ils ne sont pas dupliqués dans `data`. */
 const COLUMN_FIELDS = ["id", "status", "user_id", "userId", "featured", "createdAt", "created_at"];
 
@@ -195,7 +217,14 @@ export default async function handler(req, res) {
       const status = admin && body.status === "approved" ? "approved" : "pending";
       const featured = admin ? Boolean(body.featured) : false;
       const eid = newId();
-      const data = dataBlob(body);
+      const data = ficheSure(dataBlob(body), admin);
+      if (JSON.stringify(data).length > TAILLE_MAX_FICHE) return json(res, 413, { error: "trop_lourd" });
+      // Un compte ordinaire ne publie pas des dizaines de fiches par jour :
+      // au-delà, c'est un robot ou un abus.
+      if (!admin) {
+        const [{ n }] = await sql()`SELECT count(*)::int AS n FROM event.events WHERE user_id = ${uid} AND created_at > now() - interval '1 day'`;
+        if (n >= CREATIONS_PAR_JOUR) return json(res, 429, { error: "trop" });
+      }
       // Ville en France sans région : on la déduit (sinon la fiche manque
       // sur la carte régionale et dans les filtres par région).
       if (data.city && !data.region && enFrance(data.pays)) {
@@ -239,7 +268,8 @@ export default async function handler(req, res) {
       // dataBlob() l'écarte de ses modifications.
       const hasOwner = admin && aLaCle("userId");
       const nextOwner = hasOwner && patch.userId ? String(patch.userId).slice(0, 200) : null;
-      const rest = dataBlob(patch);
+      const rest = ficheSure(dataBlob(patch), true);
+      if (JSON.stringify({ ...row.data, ...rest }).length > TAILLE_MAX_FICHE) return json(res, 413, { error: "trop_lourd" });
       // Un organisateur qui modifie sa fiche la garde en ligne, mais l'admin est
       // prévenu qu'il y a quelque chose à relire (drapeau `aRelire`). Il ne peut
       // pas le retirer lui-même, et un simple changement de disponibilité ne

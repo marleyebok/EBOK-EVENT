@@ -220,7 +220,9 @@ export default async function handler(req, res) {
     // --- Tâche planifiée : renouvellement de la clé -------------------------
     if (req.method === "GET" && q.tache === "refresh") {
       const secret = process.env.CRON_SECRET;
-      if (secret && (req.headers.authorization || "") !== `Bearer ${secret}`) {
+      // Sans secret configuré, on refuse : une tâche qui coûte (IA) ne doit
+      // jamais pouvoir être lancée par n'importe qui.
+      if (!secret || (req.headers.authorization || "") !== `Bearer ${secret}`) {
         return json(res, 401, { error: "cron" });
       }
       const ligne = await cle();

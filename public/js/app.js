@@ -1596,9 +1596,9 @@ function renderRegionMap(regionName, results){
   const pins = inView.map(ev=>{
     const c = TYPE_COLORS[ev.type] || '#607D8B';
     return `<g class="rmap-pin" data-id="${esc(ev.id)}" tabindex="0" role="button" aria-label="${esc(ev.title)}">
-      <circle class="rmap-halo" cx="${ev.x}" cy="${ev.y}" r="9" fill="${c}"></circle>
-      <circle class="rmap-core" cx="${ev.x}" cy="${ev.y}" r="4.6" fill="${c}"></circle>
-      <circle cx="${ev.x}" cy="${ev.y}" r="1.7" fill="#fff"></circle>
+      <circle class="rmap-halo" cx="${Number(ev.x)}" cy="${Number(ev.y)}" r="9" fill="${c}"></circle>
+      <circle class="rmap-core" cx="${Number(ev.x)}" cy="${Number(ev.y)}" r="4.6" fill="${c}"></circle>
+      <circle cx="${Number(ev.x)}" cy="${Number(ev.y)}" r="1.7" fill="#fff"></circle>
       <title>${esc(ev.title)} · ${esc(ev.city || '')}</title>
     </g>`;
   }).join('');
@@ -2288,16 +2288,18 @@ function attachCityAutocomplete(inputId, listId, onPick){
 /* Mini-carte de France (sous l'affiche) situant l'événement par un point.
    Réutilise les tracés des régions ; cadre limité à la métropole. */
 function miniMapHtml(ev){
-  if(ev.x == null || ev.y == null || typeof FRANCE_REGIONS === 'undefined') return '';
+  // Coordonnées forcées en nombres : elles vont dans des attributs SVG.
+  const x = Number(ev.x), y = Number(ev.y);
+  if(ev.x == null || ev.y == null || !Number.isFinite(x) || !Number.isFinite(y) || typeof FRANCE_REGIONS === 'undefined') return '';
   const shapes = FRANCE_REGIONS.map(r=> `<path d="${r.d}"/>`).join('');
   const c = TYPE_COLORS[ev.type] || '#607D8B';
   return `<div class="event-mini-map">
     <div class="mini-map-title">${ico('pin')}${esc(ev.city || ev.region || 'France')}</div>
     <svg class="mini-france" viewBox="192 122 396 512" role="img" aria-label="Localisation de l'événement sur la carte de France">
       <g class="mini-regions">${shapes}</g>
-      <circle class="mini-pin-halo" cx="${ev.x}" cy="${ev.y}" r="15" fill="${c}"></circle>
-      <circle class="mini-pin" cx="${ev.x}" cy="${ev.y}" r="7" fill="${c}"></circle>
-      <circle cx="${ev.x}" cy="${ev.y}" r="2.6" fill="#fff"></circle>
+      <circle class="mini-pin-halo" cx="${x}" cy="${y}" r="15" fill="${c}"></circle>
+      <circle class="mini-pin" cx="${x}" cy="${y}" r="7" fill="${c}"></circle>
+      <circle cx="${x}" cy="${y}" r="2.6" fill="#fff"></circle>
     </svg>
     <div class="mini-map-foot">${esc(ev.region || '')}</div>
   </div>`;
@@ -5108,7 +5110,7 @@ function openEditModal(id){
   const feat = document.getElementById('e-featured'); if(feat) feat.checked = !!ev.featured;
   const prev = document.getElementById('e-poster-preview');
   if(prev){
-    if(ev.poster){ prev.src = ev.poster; prev.classList.remove('hidden'); }
+    if(safeImg(ev.poster)){ prev.src = safeImg(ev.poster); prev.classList.remove('hidden'); }
     else{ prev.src = ''; prev.classList.add('hidden'); }
   }
   const fileInput = document.getElementById('e-poster-file'); if(fileInput) fileInput.value = '';

@@ -16,10 +16,9 @@
  *   POST /api/detection  {action:"activer", id, actif}     (admin)
  *   POST /api/detection  {action:"analyser", id}           (admin) → tout de suite
  *
- * Sécurité de la tâche : si la variable CRON_SECRET est définie sur Vercel,
- * Vercel l'envoie dans l'en-tête Authorization et elle est exigée. Sans elle,
- * la tâche reste sans danger : une seule source par 20 h, et rien n'est jamais
- * publié — tout arrive « en attente ».
+ * Sécurité de la tâche : la variable CRON_SECRET (définie sur Vercel) est
+ * exigée dans l'en-tête Authorization ; Vercel l'envoie de lui-même aux tâches
+ * planifiées. Sans elle, la tâche est refusée : elle appelle l'IA, donc coûte.
  */
 import { maintenanceInscriptions } from "../lib/inscriptions.js";
 import { ensureSchema, hasDb, sql, json, readBody, newId, sessionUid, isAdminUid } from "./_lib.js";
@@ -151,7 +150,9 @@ export default async function handler(req, res) {
     // --- Tâche planifiée --------------------------------------------------
     if (req.method === "GET" && (tache === "cron" || tache === "source")) {
       const secret = process.env.CRON_SECRET;
-      if (secret && (req.headers.authorization || "") !== `Bearer ${secret}`) {
+      // Sans secret configuré, on refuse : une tâche qui coûte (IA) ne doit
+      // jamais pouvoir être lancée par n'importe qui.
+      if (!secret || (req.headers.authorization || "") !== `Bearer ${secret}`) {
         return json(res, 401, { error: "cron" });
       }
 
