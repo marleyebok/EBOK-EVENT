@@ -355,7 +355,7 @@ peut changer le propriétaire d'un événement (`PATCH /api/events` avec `userId
 
 **Prévenir automatiquement** (`lib/organisateurs.js`, route `/api/events?r=orga`) :
 - fenêtre « Organisateur » : **Envoyer à …** part de `contact@ebok.fr` (réponses sur la même adresse) ; `[lien personnel]` est remplacé par un lien de récupération (30 jours, empreinte SHA-256 seulement en base, un nouvel envoi remplace l'ancien) ; **Copier avec son lien** pour un message privé ;
-- filtre **À prévenir** (fiche avec e-mail, sans organisateur, jamais prévenue) + cases + envoi groupé ; 80 envois par jour au plus (forfait Resend 100/jour) ;
+- filtre **À prévenir** (fiche avec e-mail, sans organisateur, jamais prévenue) + cases + envoi groupé ; **un seul mail par adresse**, qui liste toutes ses fiches avec un lien personnel chacune (`{ ids, texte }`, marques `[lien personnel ID]`) ; la fenêtre propose aussi d'inclure les autres fiches du même organisateur ; 80 mails par jour au plus (forfait Resend 100/jour) ;
 - l'organisateur ouvre `/?gerer=…&e=ID`, se connecte ou crée son compte : la fiche passe à son compte (`recupere`), l'équipe reçoit un e-mail ;
 - désinscription : « Répondez STOP » ou lien signé (HMAC, `CRON_SECRET`) → table `event.desabonnes`, jamais relancée. Expéditeur modifiable par `CONTACT_FROM`.
 ### Être admin
