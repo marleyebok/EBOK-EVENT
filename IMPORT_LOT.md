@@ -28,7 +28,7 @@ ou même ville et titres proches) et décoche les doublons probables.
   le champ à confirmer, modifiable sur place, dans l'aperçu du lot puis dans
   « À traiter ». Une simple phrase reste acceptée (le champ est deviné d'après
   ses mots). Champs possibles : `title`, `dateStart`, `dateEnd`, `address`,
-  `horaires`, `tarif`, `sexe`, `age`, `niveau`, `lienInscription`,
+  `horaires`, `tarif`, `sexe`, `age`, `lienInscription`,
   `lienBilletterie`, `reservation`, `orgName`, `insta`, `tel`, `email`, `site`,
   `description`.
 - **Ne pas écrire de doute pour une information simplement absente** (tarif,
@@ -67,7 +67,6 @@ Un objet avec la liste `evenements` (une liste seule est aussi acceptée).
       "address": "Gymnase Jean Bouin",
       "sexe": "Mixte",
       "age": ["U15", "U17"],
-      "niveau": "Régional",
       "tarif": "10 € par équipe",
       "horaires": "9h à 18h",
       "orgName": "Mosson Basket",
@@ -92,7 +91,6 @@ Un objet avec la liste `evenements` (une liste seule est aussi acceptée).
 | `address` | non | adresse ou nom de la salle |
 | `sexe` | non | `Masculin`, `Féminin`, `Mixte` (défaut `Mixte`) |
 | `age` | non | liste parmi `Tout public`, `U7`, `U9`, `U11`, `U13`, `U15`, `U17`, `U18`, `U21`, `Adulte`, `Non renseigné` |
-| `niveau` | non | `Tous les niveaux` (ouvert à tous : ressort dans toutes les recherches), `Loisir`, `Départemental`, `Régional`, `National`, `Espoirs`, `Pros` (défaut `Tous les niveaux`) |
 | `tarif`, `horaires`, `buvette`, `reservation` | non | texte libre |
 | `placesTotal` | non | nombre |
 | `description` | non | texte (3 000 caractères au plus) |

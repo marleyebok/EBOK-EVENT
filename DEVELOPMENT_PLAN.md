@@ -278,6 +278,13 @@ adjoindre des statistiques exploitables par un organisateur.
       clubs précédents, sélections, coach, motivations, vidéo, traitement,
       blessures, autorisation parentale, départ seul, droit à l'image,
       règlement, adresse, passeport, voyageurs, équipes engagées…).
+- [x] **Recherche avancée allégée** *(26/11/2026)* — « Sexe » et « Âge » (sans
+      « Public — »), un seul calendrier « Date » (jour unique ou période, le
+      même composant que sur l'accueil : `calendrierPeriode()` dans app.js).
+      Le **niveau de jeu des événements est supprimé** partout : filtres,
+      fiche, cartes, publication, modification, alertes, import en lot, IA.
+      Restent : le niveau du joueur dans son profil, et la question
+      facultative « Niveau » des formulaires d'inscription.
 - [x] **Région déduite de la ville** *(25/11/2026)* — à la saisie (publication,
       modification, import IA) et côté serveur à chaque création ou
       modification (`lib/geo.js`, Base Adresse Nationale), en France

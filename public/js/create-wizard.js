@@ -180,7 +180,7 @@
           <h4>${titre}</h4>
           <div class="card-meta">
             ${ville} · ${dates}<br>
-            ${esc(val('c-sexe') || 'Mixte')} · ${esc(ages.length ? ageLabel(ages) : 'Tous âges')} · ${esc(val('c-niveau') || 'Tous les niveaux')}
+            ${esc(val('c-sexe') || 'Mixte')} · ${esc(ages.length ? ageLabel(ages) : 'Tous âges')}
           </div>
         </div>
       </div>`;
@@ -215,7 +215,7 @@
       ]],
       ['public', 'Pour qui', [
         ['Âge', readAgeChoices('c-age').join(', ')], ['Public', val('c-sexe')],
-        ['Niveau', val('c-niveau')], ['Tarifs', val('c-tarif')],
+        ['Tarifs', val('c-tarif')],
       ]],
       ['affiche', 'Affiche et description', [
         ['Affiche', affichePresente() ? 'Ajoutée ✓' : 'Pas d\'affiche'],

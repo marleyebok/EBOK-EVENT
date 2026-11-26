@@ -18,7 +18,6 @@
   const $ = id => document.getElementById(id);
   const MAX_LIGNES = 50;
   const SEXES = ['Masculin', 'Féminin', 'Mixte'];
-  const NIVEAUX = NIVEAUX_EVENT;
   const VOYAGE = ['dateDepart', 'dateRetour', 'lieuxDepart', 'lieuRetour', 'destination', 'logement'];
 
   let lignes = [];
@@ -36,7 +35,6 @@
       "address": "Gymnase Jean Bouin",
       "sexe": "Mixte",
       "age": ["U15", "U17"],
-      "niveau": "Régional",
       "tarif": "10 € par équipe",
       "horaires": "9h à 18h",
       "orgName": "Mosson Basket",
@@ -103,8 +101,6 @@
     }
     l.sexe = dans(b.sexe, SEXES);
     if(!l.sexe){ if(b.sexe) alertes.push(`Public « ${court(b.sexe, 30)} » inconnu : remis à Mixte.`); l.sexe = 'Mixte'; }
-    l.niveau = dans(niveauEvent(b.niveau), NIVEAUX);
-    if(!l.niveau){ if(b.niveau) alertes.push(`Niveau « ${court(b.niveau, 30)} » inconnu : remis à Tous les niveaux.`); l.niveau = NIVEAU_TOUT; }
 
     const ages = Array.isArray(b.age) ? b.age : (b.age ? [b.age] : []);
     l.age = [];
@@ -178,7 +174,7 @@
   }
 
   function metaTexte(l){
-    const publicTexte = [l.sexe, l.age.length ? l.age.join(', ') : '', l.niveau].filter(Boolean).join(', ');
+    const publicTexte = [l.sexe, l.age.length ? l.age.join(', ') : ''].filter(Boolean).join(', ');
     return [fmtDateRange(l.dateStart, l.dateEnd) || 'date ?', l.city || 'ville ?', publicTexte].filter(Boolean).join(' · ');
   }
 
@@ -320,7 +316,7 @@
       lat: coords.lat != null ? coords.lat : null,
       lng: coords.lng != null ? coords.lng : null,
       dateStart: l.dateStart, dateEnd: l.dateEnd,
-      sexe: l.sexe, age: l.age, niveau: l.niveau, tarif: l.tarif,
+      sexe: l.sexe, age: l.age, tarif: l.tarif,
       lienInscription: l.lienInscription, lienBilletterie: l.lienBilletterie, siteOfficiel: l.siteOfficiel,
       voyage: l.voyage,
       poster: poster || null,

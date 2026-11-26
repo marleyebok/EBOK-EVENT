@@ -39,7 +39,7 @@ const TYPES = [
   "Clinic Coachs", "Circuit 3x3", "Handibasket", "Match Pro", "Divers"
 ];
 const FIELDS = ["title", "type", "city", "region", "pays", "address", "dateStart", "dateEnd",
-  "sexe", "niveau", "description", "orgName", "insta", "site", "tarif"];
+  "sexe", "description", "orgName", "insta", "site", "tarif"];
 
 // Un événement peut viser plusieurs catégories : `age` est une liste.
 const AGE_OPTIONS = ["Tout public", "U7", "U9", "U11", "U13", "U15", "U17",
@@ -300,7 +300,7 @@ function normalizeEvent(e) {
 }
 
 const RULES =
-`Réponds avec un OBJET JSON aux clés EXACTES : title, type, city, region, pays, address, dateStart, dateEnd, sexe, age, niveau, description, orgName, insta, site, tarif, voyage.
+`Réponds avec un OBJET JSON aux clés EXACTES : title, type, city, region, pays, address, dateStart, dateEnd, sexe, age, description, orgName, insta, site, tarif, voyage.
 Règles :
 - "type" : une seule valeur parmi [${TYPES.join(", ")}] (par défaut "Divers").
 - "dateStart" / "dateEnd" : format AAAA-MM-JJ. S'il n'y a qu'une date, mets-la dans les deux. Si une date manque, mets "". N'INVENTE JAMAIS de date.
@@ -308,7 +308,6 @@ Règles :
 - "age" : TABLEAU de catégories parmi [${AGE_OPTIONS.join(", ")}]. Les mentions "U13", "moins de 13 ans", "benjamins" donnent "U13", etc. Si l'événement est ouvert à tous, mets ["Tout public"]. Si rien n'est indiqué, mets [].
 - "pays" : le pays de l'événement, en français ("France", "Belgique", "Suisse", "Canada"…). Le Québec est au Canada. Par défaut "France".
 - "region" : la région déduite de la ville si possible, sinon "" — France : région administrative (ex. "Occitanie") ; Belgique : province (ex. "Liège") ; Suisse : canton (ex. "Vaud") ; Canada : province (ex. "Québec").
-- "niveau" : une valeur parmi ["Tous les niveaux", "Loisir", "Départemental", "Régional", "National", "Espoirs", "Pros"] ("Tous les niveaux" si ouvert à tous ou si rien n'est indiqué).
 - "description" : 2 à 4 phrases synthétiques en français.
 - "insta" : identifiant Instagram sans le @, sinon "".
 - "tarif" : le ou les prix indiqués, tels quels (ex. "15 € par joueur, gratuit -12 ans"), sinon "".
