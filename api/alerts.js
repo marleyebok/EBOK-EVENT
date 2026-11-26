@@ -24,7 +24,13 @@ function critresPropres(brut) {
   const liste = (v) =>
     Array.isArray(v) ? v.map((x) => String(x).trim()).filter(Boolean).slice(0, 30) : [];
   const date = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || "")) ? String(v) : "");
-  return { regions: liste(c.regions), types: liste(c.types), ages: liste(c.ages), du: date(c.du), au: date(c.au) };
+  // Ville + rayon (5 à 100 km) : remplace la région quand elle est donnée.
+  const v = c.ville && typeof c.ville === "object" ? c.ville : null;
+  const lat = v ? Number(v.lat) : NaN, lng = v ? Number(v.lng) : NaN;
+  const ville = v && Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 && String(v.nom || "").trim()
+    ? { nom: String(v.nom).trim().slice(0, 80), lat, lng, rayon: Math.min(100, Math.max(5, Math.round((Number(v.rayon) || 30) / 5) * 5)) }
+    : null;
+  return { regions: ville ? [] : liste(c.regions), types: liste(c.types), ages: liste(c.ages), du: date(c.du), au: date(c.au), ...(ville ? { ville } : {}) };
 }
 
 function versAlerte(row) {

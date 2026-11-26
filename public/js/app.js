@@ -1448,27 +1448,32 @@ function criteresRecherche(){
   const val = id=> (document.getElementById(id) || {}).value || '';
   const c = { regions: [], types: [], ages: [] };
   const region = val('f-region');
-  if(region) c.regions = [region];
+  if(searchCity) c.ville = { nom: searchCity.city, lat: searchCity.lat, lng: searchCity.lng, rayon: Number(val('f-rayon')) || 30 };
+  else if(region) c.regions = [region];
+  if(searchDu) c.du = searchDu;
+  if(searchAu) c.au = searchAu;
   const type = val('f-type');
   if(TYPE_COLORS[type]) c.types = [type];
   const age = val('f-age');
   if(AGES_ALERTE.includes(age)) c.ages = [age];
   return c;
 }
-const criteresVides = c=> !c.regions.length && !c.types.length && !c.ages.length;
+const criteresVides = c=> !c.regions.length && !c.types.length && !c.ages.length && !c.ville && !c.du && !c.au;
 const memesCriteres = (a, b)=> ['regions', 'types', 'ages'].every(k=>
-  JSON.stringify([...(a[k] || [])].sort()) === JSON.stringify([...(b[k] || [])].sort())) && !a.du && !a.au;
+  JSON.stringify([...(a[k] || [])].sort()) === JSON.stringify([...(b[k] || [])].sort()))
+  && (a.du || '') === (b.du || '') && (a.au || '') === (b.au || '')
+  && ((!a.ville && !b.ville) || (a.ville && b.ville && normalizeCity(a.ville.nom) === normalizeCity(b.ville.nom) && Number(a.ville.rayon) === Number(b.ville.rayon)));
 
 function alerteCtaHtml(nbResultats){
   const c = criteresRecherche();
   if(criteresVides(c)) return '';
   const quoi = [...c.types, ...c.ages].join(' · ');
-  const ou = c.regions.length ? c.regions[0] : 'toute la France';
+  const ou = c.ville ? `à ${c.ville.rayon} km de ${c.ville.nom}` : c.regions.length ? c.regions[0] : 'toute la France';
   const deja = currentUser && mesAlertes.some(a=> a.actif && memesCriteres(a.criteres || {}, c));
   const titre = nbResultats === 0 ? 'Rien pour l’instant ? Sois le premier prévenu.'
     : nbResultats <= 3 ? 'Peu d’événements pour l’instant. Sois prévenu des prochains.'
     : 'Ne rate pas les prochains.';
-  const phrase = `Dès qu'un nouvel événement${quoi ? ` <b>${esc(quoi)}</b>` : ''} est publié${c.regions.length ? ' en' : ' dans'} <b>${esc(ou)}</b>, on t'envoie un e-mail.`;
+  const phrase = `Dès qu'un nouvel événement${quoi ? ` <b>${esc(quoi)}</b>` : ''} est publié${c.ville ? '' : c.regions.length ? ' en' : ' dans'} <b>${esc(ou)}</b>, on t'envoie un e-mail.`;
   const action = deja
     ? `<span class="alerte-cta-ok">✓ Tu as déjà une alerte pour cette recherche. <button type="button" class="alerte-cta-lien" data-alerte-gerer>Mes alertes</button></span>`
     : `<button type="button" class="btn btn-primary alerte-cta-btn" data-alerte-cta>${ico('bell')}${currentUser ? 'Créer l’alerte' : 'Créer l’alerte, c’est gratuit'}</button>
@@ -2507,10 +2512,29 @@ function initReport(){
 /* Menu Partager de la fiche : fermé par un clic ailleurs ou Échap. */
 let menusFicheBranches = false;
 function fermerMenusFiche(){
-  const m = document.getElementById('popShare');
-  if(m) m.classList.remove('open');
-  const b = document.getElementById('btnShare');
-  if(b) b.setAttribute('aria-expanded', 'false');
+  for(const [menu, bouton] of [['popShare', 'btnShare'], ['popAgenda', 'btnAgenda']]){
+    const m = document.getElementById(menu); if(m) m.classList.remove('open');
+    const b = document.getElementById(bouton); if(b) b.setAttribute('aria-expanded', 'false');
+  }
+}
+
+/* « Ajouter à mon agenda » : lien Google Agenda et fichier .ics (Apple,
+   Outlook, Android). Événement sur journée entière : la fin d'un .ics est
+   exclusive, donc le lendemain du dernier jour. */
+function agendaEvenement(ev){
+  const jour = d=> String(d || '').replace(/-/g, '');
+  const lendemain = d=>{ const x = new Date((d || '') + 'T12:00'); x.setDate(x.getDate() + 1); return x.toISOString().slice(0, 10).replace(/-/g, ''); };
+  const debut = jour(ev.dateStart), fin = lendemain(ev.dateEnd || ev.dateStart);
+  const lieu = [ev.lieu, ev.city, isAbroad(ev) ? eventCountry(ev) : ''].filter(Boolean).filter((v, i, a)=> a.indexOf(v) === i).join(', ');
+  const lien = `${location.origin}/evenement/${ev.id}`;
+  const details = `${ev.type || 'Événement basket'} — toutes les infos sur EBOK : ${lien}`;
+  const google = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(ev.title || 'Événement')}&dates=${debut}/${fin}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(lieu)}`;
+  const icsTexte = v=> String(v || '').replace(/\\/g, '\\\\').replace(/[,;]/g, m=> '\\' + m).replace(/\r?\n/g, '\\n');
+  const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//EBOK//Agenda du basket//FR', 'CALSCALE:GREGORIAN', 'BEGIN:VEVENT',
+    `UID:${ev.id}@ebok.fr`, `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').slice(0, 15)}Z`,
+    `DTSTART;VALUE=DATE:${debut}`, `DTEND;VALUE=DATE:${fin}`, `SUMMARY:${icsTexte(ev.title)}`,
+    `LOCATION:${icsTexte(lieu)}`, `DESCRIPTION:${icsTexte(details)}`, `URL:${lien}`, 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+  return { google, ics };
 }
 
 /* Contenu du bouton « Enregistrer » de la fiche (étoile + libellé + total). */
@@ -2631,6 +2655,7 @@ async function openEvent(id, opts){
         <div class="ev-bar" role="group" aria-label="Actions sur l'événement">
           <button type="button" class="ev-bar-btn fav-btn fav-btn-lg ${favOn ? 'active' : ''}" data-fav="${esc(ev.id)}" aria-pressed="${favOn}">${favLgHtml(favOn, Number(ev.favCount) || 0)}</button>
           <button type="button" class="ev-bar-btn" id="btnShare" aria-haspopup="true" aria-expanded="false">${ico('share')}<span>Partager</span></button>
+          ${termine ? '' : `<button type="button" class="ev-bar-btn" id="btnAgenda" aria-haspopup="true" aria-expanded="false">${ico('calendar')}<span>Agenda</span></button>`}
           <button type="button" class="ev-bar-btn ev-bar-quiet" id="btnReport" aria-haspopup="dialog">${ico('flag')}<span>Signaler</span></button>
         </div>
 
@@ -2641,6 +2666,10 @@ async function openEvent(id, opts){
           <button type="button" class="popover-item" id="btnCopyLink"><span class="ic">${ico('link')}</span>Copier le lien</button>
           <div class="share-copied" id="shareCopied" role="status">Lien copié ✓</div>
         </div>
+        ${termine ? '' : `<div class="popover" id="popAgenda">
+          <a class="popover-item" target="_blank" rel="noopener noreferrer" href="${esc(agendaEvenement(ev).google)}"><span class="ic">${ico('calendar')}</span>Google Agenda</a>
+          <button type="button" class="popover-item" id="btnIcs"><span class="ic">${ico('download')}</span>Apple, Outlook, autre (.ics)</button>
+        </div>`}
       </div>
       ${miniMapHtml(ev)}
     </div>
@@ -2733,6 +2762,18 @@ async function openEvent(id, opts){
     }
     basculerMenu('popShare', 'btnShare');
   });
+  const btnAgenda = document.getElementById('btnAgenda');
+  if(btnAgenda){
+    btnAgenda.addEventListener('click', e=>{ e.stopPropagation(); basculerMenu('popAgenda', 'btnAgenda'); });
+    document.getElementById('btnIcs').addEventListener('click', e=>{
+      e.stopPropagation();
+      const blob = new Blob([agendaEvenement(ev).ics], { type: 'text/calendar;charset=utf-8' });
+      const url = URL.createObjectURL(blob), a = document.createElement('a');
+      a.href = url; a.download = `${(ev.title || 'evenement').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w -]+/g, '').trim().replace(/\s+/g, '-').slice(0, 60) || 'evenement'}.ics`;
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=> URL.revokeObjectURL(url), 10000);
+      fermerMenusFiche();
+    });
+  }
   document.getElementById('btnReport').addEventListener('click', (e)=>{
     e.stopPropagation();
     fermerMenusFiche();
@@ -4256,13 +4297,24 @@ function dateAlerteFr(v){
 function resumeCriteres(c){
   c = c || {};
   const bouts = [];
-  bouts.push(c.regions && c.regions.length ? c.regions.join(', ') : 'toute la France');
+  bouts.push(c.ville && c.ville.nom ? `à ${c.ville.rayon || 30} km de ${c.ville.nom}` : c.regions && c.regions.length ? c.regions.join(', ') : 'toute la France');
   bouts.push(c.types && c.types.length ? c.types.join(', ') : 'tous les types');
   if(c.ages && c.ages.length) bouts.push(c.ages.join(', '));
   if(c.du && c.au) bouts.push(`du ${dateAlerteFr(c.du)} au ${dateAlerteFr(c.au)}`);
   else if(c.du) bouts.push(`à partir du ${dateAlerteFr(c.du)}`);
   else if(c.au) bouts.push(`jusqu'au ${dateAlerteFr(c.au)}`);
   return bouts.join(' · ');
+}
+
+let alerteVille = null;   // { nom, lat, lng } : centre du rayon de l'alerte en cours d'édition
+function majRayonAlerte(){
+  const r = document.getElementById('al-rayon');
+  document.getElementById('al-rayon-wrap').classList.toggle('hidden', !alerteVille);
+  document.getElementById('al-rayon-val').textContent = r.value + ' km';
+  r.style.setProperty('--p', ((r.value - r.min) / (r.max - r.min) * 100) + '%');
+  // Avec une ville, les régions ne comptent plus : on les grise.
+  const drop = document.getElementById('al-regions-drop');
+  if(drop){ drop.classList.toggle('is-off', !!alerteVille); if(alerteVille) drop.removeAttribute('open'); }
 }
 
 function closeAlertModal(){
@@ -4315,6 +4367,10 @@ function openAlertModal(id, depart){
   document.getElementById('al-au').value = c.au || '';
 
   remplirMenuAlerte('al-regions', regionsDisponibles(), c.regions, 'Toute la France', 'régions');
+  alerteVille = c.ville && c.ville.nom ? { nom: c.ville.nom, lat: c.ville.lat, lng: c.ville.lng } : null;
+  document.getElementById('al-ville').value = alerteVille ? alerteVille.nom : '';
+  document.getElementById('al-rayon').value = (c.ville && c.ville.rayon) || 30;
+  majRayonAlerte();
   remplirMenuAlerte('al-types', Object.keys(TYPE_COLORS), c.types, 'Tous les types', 'types');
   remplirMenuAlerte('al-ages', AGES_ALERTE, c.ages, 'Tous les âges', 'âges');
 
@@ -4346,6 +4402,17 @@ function initAlertes(){
       openAlertModal(null, depart);
     });
   }
+  // Ville + rayon : la même autocomplétion que la recherche avancée.
+  attachCityAutocomplete('al-ville', 'al-ville-ac', pick=>{ alerteVille = { nom: pick.city, lat: pick.lat, lng: pick.lng }; majRayonAlerte(); });
+  const champVille = document.getElementById('al-ville');
+  champVille.addEventListener('input', ()=>{ if(alerteVille && normalizeCity(champVille.value) !== normalizeCity(alerteVille.nom)){ alerteVille = null; majRayonAlerte(); } });
+  champVille.addEventListener('change', async ()=>{
+    if(alerteVille || normalizeCity(champVille.value).length < 2) return;
+    await ensureCitiesLoaded();
+    const v = searchCitiesLocal(champVille.value).find(x=> normalizeCity(x.city) === normalizeCity(champVille.value));
+    if(v){ alerteVille = { nom: v.city, lat: v.lat, lng: v.lng }; majRayonAlerte(); }
+  });
+  document.getElementById('al-rayon').addEventListener('input', majRayonAlerte);
   document.getElementById('alertClose').addEventListener('click', closeAlertModal);
   document.getElementById('alertCancel').addEventListener('click', closeAlertModal);
   bindBackdropClose(m, closeAlertModal);
@@ -4391,7 +4458,8 @@ function initAlertes(){
     }
     const donnees = {
       nom: document.getElementById('al-nom').value.trim(),
-      criteres: { regions: coches('al-regions'), types: coches('al-types'), ages: coches('al-ages'), du, au },
+      criteres: { regions: alerteVille ? [] : coches('al-regions'), types: coches('al-types'), ages: coches('al-ages'), du, au,
+        ...(alerteVille ? { ville: { ...alerteVille, rayon: Number(document.getElementById('al-rayon').value) } } : {}) },
     };
     try{
       if(alerteEnCours){

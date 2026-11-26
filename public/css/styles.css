@@ -3351,3 +3351,8 @@ input,select,textarea{font-family:var(--font-body);}
 .od-docs-note b{color:var(--chalk);}
 .od-docs-note .btn .ico{width:15px;height:15px;}
 .mi-doc-motif{color:#B4432E !important;}
+
+/* Alertes : ville + rayon (mêmes réglages que la recherche avancée). */
+#alertForm .ac-wrap,#alertForm .ac-wrap input{width:100%;box-sizing:border-box;}
+#alertForm .rayon input[type=range]{border:0;padding:0;background:transparent;box-shadow:none;height:24px;min-height:0;border-radius:0;}
+.pick-drop.is-off{opacity:.45;pointer-events:none;}
