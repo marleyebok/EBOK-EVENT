@@ -37,10 +37,19 @@
 Nous avons ajouté votre événement « ${ev.title} »${quand ? ` (${quand}${lieu ? ', ' + lieu : ''})` : ''} sur EBOK, l'agenda collaboratif du basket francophone :
 ${location.origin}${urlEvenement(ev)}
 
-C'est gratuit, et vous pouvez gérer la fiche vous-même : affiche, horaires, tarifs, liens d'inscription et de billetterie, et même les inscriptions de vos participants.
+C'est gratuit, et vous pouvez gérer la fiche vous-même : affiche, horaires, tarifs, liens d'inscription et de billetterie.
 
 Pour la récupérer, ouvrez votre lien personnel (valable 30 jours), puis connectez-vous ou créez votre compte :
 ${MARQUE}
+
+Votre compte vous donne aussi accès, gratuitement, aux outils de gestion d'événements d'EBOK :
+- inscriptions en ligne, avec validation, liste d'attente et export ;
+- formulaire d'inscription sur mesure (questions, catégories, tarifs, options) ;
+- collecte et suivi des documents (autorisation parentale, certificat médical…) ;
+- messages groupés à vos participants, pointage le jour J par QR code.
+
+Suivez-nous aussi sur Instagram : https://www.instagram.com/ebok.fr/
+Pour donner plus de visibilité à votre événement, invitez @ebok.fr en collaboration sur votre publication : elle apparaîtra aussi sur notre compte.
 
 Une question, une correction ? Répondez simplement à ce message.
 
