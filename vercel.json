@@ -52,27 +52,27 @@
   "rewrites": [
     {
       "source": "/recherche",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/publier",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/profil",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/admin",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/mes-evenements",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/mes-evenements/:onglet",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/evenement/:id",
