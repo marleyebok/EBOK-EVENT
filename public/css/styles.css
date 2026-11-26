@@ -3325,3 +3325,7 @@ input,select,textarea{font-family:var(--font-body);}
 .search-form .period-picker{min-width:300px;z-index:30;}
 .picker-actions .btn-sm{height:32px;padding:0 12px;font-size:13px;}
 .search-form .ac-wrap,.search-form .ac-wrap input{width:100%;box-sizing:border-box;}
+
+/* Publier : limite quotidienne atteinte. */
+.quota-note{margin:0 0 20px;padding:14px 16px;border-radius:12px;background:color-mix(in srgb, var(--accent) 8%, var(--asphalt-2));border:1px solid color-mix(in srgb, var(--accent) 35%, transparent);color:var(--chalk);font-size:15px;line-height:1.5;}
+.quota-note a,#createSuccess a{color:var(--accent-text);font-weight:600;text-decoration:underline;}

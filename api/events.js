@@ -37,7 +37,13 @@ const CHAMPS_ADMIN_CREATION = ["coorgs", "interetOutils", "inscription", "visibi
 const CHAMPS_NUMERIQUES = ["x", "y", "lat", "lng", "placesTotal"];
 /* Au-delà, ce n'est plus une fiche mais un dépôt de données. */
 const TAILLE_MAX_FICHE = 300000;
-const CREATIONS_PAR_JOUR = 20;
+const CREATIONS_PAR_JOUR = 5;   // au-delà : contacter l'équipe (message côté site)
+
+/** Fiches créées par ce compte sur les dernières 24 heures (copies comprises). */
+async function creationsDuJour(uid) {
+  const [{ n }] = await sql()`SELECT count(*)::int AS n FROM event.events WHERE user_id = ${uid} AND created_at > now() - interval '1 day'`;
+  return n;
+}
 
 /** Types sûrs pour les champs numériques ; champs réservés retirés hors admin. */
 function ficheSure(data, admin) {
@@ -194,6 +200,7 @@ export default async function handler(req, res) {
       if (!src) return json(res, 404, { error: "introuvable" });
       const admin = await isAdminUid(uid);
       if (!admin && src.user_id !== uid && !(await roleSur(src, uid))) return json(res, 403, { error: "prive" });
+      if (!admin && (await creationsDuJour(uid)) >= CREATIONS_PAR_JOUR) return json(res, 429, { error: "trop", max: CREATIONS_PAR_JOUR });
       const data = { ...(src.data || {}) };
       // Ce qui appartient à l'original seulement : relecture, provenance,
       // réponse au questionnaire, galerie de l'édition (gardée : ce sont les
@@ -221,10 +228,7 @@ export default async function handler(req, res) {
       if (JSON.stringify(data).length > TAILLE_MAX_FICHE) return json(res, 413, { error: "trop_lourd" });
       // Un compte ordinaire ne publie pas des dizaines de fiches par jour :
       // au-delà, c'est un robot ou un abus.
-      if (!admin) {
-        const [{ n }] = await sql()`SELECT count(*)::int AS n FROM event.events WHERE user_id = ${uid} AND created_at > now() - interval '1 day'`;
-        if (n >= CREATIONS_PAR_JOUR) return json(res, 429, { error: "trop" });
-      }
+      if (!admin && (await creationsDuJour(uid)) >= CREATIONS_PAR_JOUR) return json(res, 429, { error: "trop", max: CREATIONS_PAR_JOUR });
       // Ville en France sans région : on la déduit (sinon la fiche manque
       // sur la carte régionale et dans les filtres par région).
       if (data.city && !data.region && enFrance(data.pays)) {
