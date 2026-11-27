@@ -5562,12 +5562,135 @@ function renderCompteur(){
   el.textContent = `${n} événements à venir`;
 }
 
+/* =========================================================
+   ACCUEIL TÉLÉPHONE (≤ 760 px) — maquette 7c validée le 27/11/2026
+   ---------------------------------------------------------
+   « À la une » : un défilement horizontal natif (glisser au doigt, aimanté
+   sur chaque affiche), les affiches voisines dépassent sur les bords, le fond
+   reprend l'affiche courante floutée. Sous l'affiche : type · dates · lieu,
+   le titre en grand, puis 01 ━━ 06 et les flèches ‹ ›.
+   « Derniers publiés » : les 5 derniers événements mis en ligne.
+   Sur ordinateur, ces deux blocs sont masqués (CSS) : le carrousel et
+   l'agenda habituels restent en place.
+   ========================================================= */
+const deux = n=> String(n).padStart(2, '0');
+const mouvementReduit = ()=> !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+function renderUneMobile(){
+  const slot = document.getElementById('uneMob');
+  const piste = document.getElementById('uneMobPiste');
+  if(!slot || !piste) return;
+  const une = events.filter(e=> e.featured);
+  if(!une.length){ slot.hidden = true; piste.innerHTML = ''; return; }
+  slot.hidden = false;
+  piste.innerHTML = une.map(ev=>{
+    const img = safeImg(ev.poster);
+    return `<a class="une-mob-item" href="${esc(urlEvenement(ev))}" data-spa data-open="${esc(ev.id)}" aria-label="${esc(ev.title)}">${img
+      ? `<img src="${esc(img)}" alt="" loading="lazy">`
+      : `<span class="une-mob-ph" style="background:${safeColor(typeColor(ev.type))}"><b>${esc(ev.type || 'Événement')}</b>${esc(ev.title)}</span>`}</a>`;
+  }).join('');
+  piste.querySelectorAll('[data-open]').forEach(a=> a.addEventListener('click', ()=> openEvent(a.dataset.open)));
+  document.getElementById('uneMobTotal').textContent = deux(une.length);
+  const fond = document.getElementById('uneMobFond');
+  const legende = document.getElementById('uneMobLegende');
+  const prev = document.getElementById('uneMobPrev'), next = document.getElementById('uneMobNext');
+  let courant = -1;
+  const afficher = i=>{
+    if(i === courant) return;
+    courant = i;
+    const ev = une[i];
+    [...piste.children].forEach((it, k)=> it.classList.toggle('is-active', k === i));
+    document.getElementById('uneMobMeta').textContent = [ev.type, fmtDateRange(ev.dateStart, ev.dateEnd), ev.city].filter(Boolean).join(' · ');
+    document.getElementById('uneMobTitreEv').textContent = ev.title;
+    legende.setAttribute('href', urlEvenement(ev));
+    legende.dataset.open = ev.id;
+    document.getElementById('uneMobPos').textContent = deux(i + 1);
+    document.getElementById('uneMobBarre').style.width = `${((i + 1) / une.length) * 100}%`;
+    prev.disabled = i === 0;
+    next.disabled = i === une.length - 1;
+    // Fond : l'affiche courante, floutée (fondu court pour changer d'image).
+    const img = safeImg(ev.poster);
+    if(img && img !== fond.getAttribute('src')){
+      fond.classList.remove('is-on');
+      setTimeout(()=>{ fond.src = img; }, mouvementReduit() ? 0 : 180);
+    }else if(!img){ fond.removeAttribute('src'); fond.classList.remove('is-on'); }
+  };
+  fond.onload = ()=> fond.classList.add('is-on');
+  // Affiche la plus proche du centre = affiche courante.
+  const proche = ()=>{
+    const centre = piste.scrollLeft + piste.clientWidth / 2;
+    let best = 0, d = Infinity;
+    [...piste.children].forEach((it, k)=>{ const c = it.offsetLeft + it.offsetWidth / 2; const dd = Math.abs(c - centre); if(dd < d){ d = dd; best = k; } });
+    return best;
+  };
+  let raf = 0;
+  piste.onscroll = ()=>{ if(!raf) raf = requestAnimationFrame(()=>{ raf = 0; afficher(proche()); }); };
+  const aller = i=>{
+    const it = piste.children[Math.max(0, Math.min(une.length - 1, i))];
+    if(it) piste.scrollTo({ left: it.offsetLeft - (piste.clientWidth - it.offsetWidth) / 2, behavior: mouvementReduit() ? 'auto' : 'smooth' });
+  };
+  prev.onclick = ()=> aller(courant - 1);
+  next.onclick = ()=> aller(courant + 1);
+  legende.onclick = e=>{ if(e.ctrlKey || e.metaKey || e.shiftKey) return; e.preventDefault(); openEvent(legende.dataset.open); };
+  afficher(0);
+  piste.scrollLeft = 0;
+}
+
+/* Les 5 derniers événements publiés (date de mise en ligne). */
+function renderDerniers(){
+  const liste = document.getElementById('derniersListe');
+  if(!liste) return;
+  const derniers = events.slice()
+    .sort((a, b)=> (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0)).slice(0, 5);
+  document.getElementById('derniersSlot').hidden = !derniers.length;
+  liste.innerHTML = derniers.map((ev, i)=>{
+    const img = safeImg(ev.poster);
+    const couleur = safeColor(typeColor(ev.type));
+    return `<a class="dp-item" href="${esc(urlEvenement(ev))}" data-spa data-open="${esc(ev.id)}" style="--i:${i}">
+      ${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : `<span class="dp-ph" style="background:${couleur}">${esc(String(ev.type || '·').slice(0, 1))}</span>`}
+      <span class="dp-txt">
+        <span class="dp-type" style="--c:${couleur}">${esc(ev.type || 'Événement')}</span>
+        <b class="dp-titre">${esc(ev.title)}</b>
+        <span class="dp-date">${fmtDateRange(ev.dateStart, ev.dateEnd)}</span>
+        <span class="dp-lieu">${esc(ev.city || '')}</span>
+      </span>
+    </a>`;
+  }).join('');
+  liste.querySelectorAll('[data-open]').forEach(a=> a.addEventListener('click', ()=> openEvent(a.dataset.open)));
+  revelerAuDefilement();
+}
+
+/* Apparition des blocs au défilement (téléphone, hors « réduire les
+   animations ») : chaque bloc monte en fondu quand il entre à l'écran, les
+   lignes d'une liste l'une après l'autre. Sans JavaScript ou si
+   IntersectionObserver manque, rien n'est caché. */
+let observateurRevele = null;
+function revelerAuDefilement(){
+  if(mouvementReduit() || !('IntersectionObserver' in window) || !matchMedia('(max-width: 760px)').matches) return;
+  if(!observateurRevele){
+    observateurRevele = new IntersectionObserver(entrees=>{
+      for(const e of entrees) if(e.isIntersecting){ e.target.classList.add('rv-in'); observateurRevele.unobserve(e.target); }
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.12 });
+  }
+  const cibles = document.querySelectorAll('#page-home .home-board, #uneMob, #derniersSlot .section-head, #derniersListe .dp-item, #derniersSlot .agenda-more, .site-footer');
+  for(const el of cibles){
+    if(el.classList.contains('rv')) continue;
+    // Déjà à l'écran au chargement : on ne le cache pas.
+    const r = el.getBoundingClientRect();
+    if(r.top < innerHeight * 0.92 && r.bottom > 0) continue;
+    el.classList.add('rv');
+    observateurRevele.observe(el);
+  }
+}
+
 function renderAll(){
   renderCompteur();
   buildMap();
   renderFeatured();
+  renderUneMobile();
   applyMapFilters();
   renderAgenda();
+  renderDerniers();
   renderResults();
 }
 
@@ -5623,9 +5746,11 @@ initMapZoom();
 fillRegionSelect('c-region', 'Choisis une région');
 fillRegionSelect('e-region', 'Choisis une région');
 renderFeatured();
+renderUneMobile();
 initHomeFilters();
 initHomeSearch();
 renderAgenda();
+renderDerniers();
 initSearchPage();
 initCreatePage();
 initAuth();
