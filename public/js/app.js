@@ -5401,31 +5401,48 @@ function renderUneMobile(){
   const une = events.filter(e=> e.featured);
   if(!une.length){ slot.hidden = true; piste.innerHTML = ''; return; }
   slot.hidden = false;
-  piste.innerHTML = une.map(ev=>{
+  const n = une.length;
+  // En boucle : deux copies de la fin avant le début, deux du début après la
+  // fin. Le premier événement a donc toujours une affiche à sa gauche ; quand
+  // on s'arrête sur une copie, on saute sans animation sur l'original.
+  const bord = n > 1 ? Math.min(2, n) : 0;
+  const liste = [
+    ...une.slice(n - bord).map((ev, k)=> ({ ev, reel: n - bord + k, copie: true })),
+    ...une.map((ev, k)=> ({ ev, reel: k, copie: false })),
+    ...une.slice(0, bord).map((ev, k)=> ({ ev, reel: k, copie: true })),
+  ];
+  piste.innerHTML = liste.map(({ ev, copie })=>{
     const img = safeImg(ev.poster);
-    return `<a class="une-mob-item" href="${esc(urlEvenement(ev))}" data-spa data-open="${esc(ev.id)}" aria-label="${esc(ev.title)}">${img
+    return `<a class="une-mob-item" href="${esc(urlEvenement(ev))}" data-spa data-open="${esc(ev.id)}" ${copie ? 'aria-hidden="true" tabindex="-1"' : `aria-label="${esc(ev.title)}"`}>${img
       ? `<img src="${esc(img)}" alt="" loading="lazy">`
       : `<span class="une-mob-ph" style="background:${safeColor(typeColor(ev.type))}"><b>${esc(ev.type || 'Événement')}</b>${esc(ev.title)}</span>`}</a>`;
   }).join('');
-  piste.querySelectorAll('[data-open]').forEach(a=> a.addEventListener('click', ()=> openEvent(a.dataset.open)));
-  document.getElementById('uneMobTotal').textContent = deux(une.length);
+  const items = [...piste.children];
+  items.forEach(a=> a.addEventListener('click', e=>{
+    if(e.ctrlKey || e.metaKey || e.shiftKey) return;
+    e.preventDefault();
+    // Une affiche voisine : on la fait venir au centre ; l'affiche du centre : on l'ouvre.
+    const k = items.indexOf(a);
+    if(k !== courant) aller(k); else openEvent(a.dataset.open);
+  }));
+  document.getElementById('uneMobTotal').textContent = deux(n);
+  slot.classList.toggle('is-seule', n === 1);
   const fond = document.getElementById('uneMobFond');
   const legende = document.getElementById('uneMobLegende');
   const prev = document.getElementById('uneMobPrev'), next = document.getElementById('uneMobNext');
   let courant = -1;
-  const afficher = i=>{
-    if(i === courant) return;
-    courant = i;
-    const ev = une[i];
-    [...piste.children].forEach((it, k)=> it.classList.toggle('is-active', k === i));
+  const afficher = k=>{
+    if(k === courant) return;
+    courant = k;
+    const { ev, reel } = liste[k];
+    items.forEach((it, j)=> it.classList.toggle('is-active', j === k));
     document.getElementById('uneMobMeta').textContent = [ev.type, fmtDateRange(ev.dateStart, ev.dateEnd), ev.city].filter(Boolean).join(' · ');
     document.getElementById('uneMobTitreEv').textContent = ev.title;
     legende.setAttribute('href', urlEvenement(ev));
     legende.dataset.open = ev.id;
-    document.getElementById('uneMobPos').textContent = deux(i + 1);
-    document.getElementById('uneMobBarre').style.width = `${((i + 1) / une.length) * 100}%`;
-    prev.disabled = i === 0;
-    next.disabled = i === une.length - 1;
+    document.getElementById('uneMobPos').textContent = deux(reel + 1);
+    const barre = document.getElementById('uneMobBarre');
+    if(barre) barre.style.width = `${((reel + 1) / n) * 100}%`;
     // Fond : l'affiche courante, floutée (fondu court pour changer d'image).
     const img = safeImg(ev.poster);
     if(img && img !== fond.getAttribute('src')){
@@ -5434,24 +5451,46 @@ function renderUneMobile(){
     }else if(!img){ fond.removeAttribute('src'); fond.classList.remove('is-on'); }
   };
   fond.onload = ()=> fond.classList.add('is-on');
-  // Affiche la plus proche du centre = affiche courante.
+  const gauche = k=> items[k].offsetLeft - (piste.clientWidth - items[k].offsetWidth) / 2;
+  const aller = (k, sec)=>{
+    k = Math.max(0, Math.min(items.length - 1, k));
+    piste.scrollTo({ left: gauche(k), behavior: sec || mouvementReduit() ? 'auto' : 'smooth' });
+  };
+  // Saut invisible d'une copie vers l'original (transitions coupées le temps du saut).
+  const recaler = ()=>{
+    const k = proche();
+    if(!liste[k] || !liste[k].copie) return;
+    const vrai = bord + liste[k].reel;
+    piste.classList.add('sans-transition');
+    piste.scrollLeft = gauche(vrai);
+    afficher(vrai);
+    requestAnimationFrame(()=> requestAnimationFrame(()=> piste.classList.remove('sans-transition')));
+  };
   const proche = ()=>{
     const centre = piste.scrollLeft + piste.clientWidth / 2;
     let best = 0, d = Infinity;
-    [...piste.children].forEach((it, k)=>{ const c = it.offsetLeft + it.offsetWidth / 2; const dd = Math.abs(c - centre); if(dd < d){ d = dd; best = k; } });
+    items.forEach((it, j)=>{ const c = it.offsetLeft + it.offsetWidth / 2; const dd = Math.abs(c - centre); if(dd < d){ d = dd; best = j; } });
     return best;
   };
-  let raf = 0;
-  piste.onscroll = ()=>{ if(!raf) raf = requestAnimationFrame(()=>{ raf = 0; afficher(proche()); }); };
-  const aller = i=>{
-    const it = piste.children[Math.max(0, Math.min(une.length - 1, i))];
-    if(it) piste.scrollTo({ left: it.offsetLeft - (piste.clientWidth - it.offsetWidth) / 2, behavior: mouvementReduit() ? 'auto' : 'smooth' });
+  let raf = 0, fin = 0;
+  piste.onscroll = ()=>{
+    if(!raf) raf = requestAnimationFrame(()=>{ raf = 0; afficher(proche()); });
+    clearTimeout(fin); fin = setTimeout(recaler, 140);
   };
   prev.onclick = ()=> aller(courant - 1);
   next.onclick = ()=> aller(courant + 1);
   legende.onclick = e=>{ if(e.ctrlKey || e.metaKey || e.shiftKey) return; e.preventDefault(); openEvent(legende.dataset.open); };
-  afficher(0);
-  piste.scrollLeft = 0;
+  piste.classList.add('sans-transition');
+  afficher(bord);
+  piste.scrollLeft = gauche(bord);
+  requestAnimationFrame(()=> requestAnimationFrame(()=> piste.classList.remove('sans-transition')));
+  if(!renderUneMobile.redim){
+    renderUneMobile.redim = true;
+    // Seulement si la largeur change : sur téléphone, la barre d'adresse qui
+    // apparaît ou disparaît en défilant déclenche aussi « resize ».
+    let t = 0, largeur = innerWidth;
+    addEventListener('resize', ()=>{ clearTimeout(t); t = setTimeout(()=>{ if(innerWidth === largeur) return; largeur = innerWidth; if(!document.getElementById('uneMob').hidden) renderUneMobile(); }, 200); });
+  }
 }
 
 /* Les 5 derniers événements publiés (date de mise en ligne). */
