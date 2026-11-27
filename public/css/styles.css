@@ -3450,12 +3450,19 @@ html,body{overflow-x:clip;}
 .une-mob-legende,.une-mob-legende:hover,.une-mob-legende *{text-decoration:none !important;}
 .une-mob-meta{font-size:13px;color:rgba(255,255,255,.78);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .une-mob-titre{font-family:var(--font-titre);font-weight:600;font-size:clamp(17px, 1.7vw, 23px);line-height:1.25;letter-spacing:-.02em;}
-.une-mob-nav{display:flex;align-items:center;gap:18px;}
-.une-mob.is-seule .une-mob-nav{display:none;}
-.une-mob-compte{font-family:var(--font-mono);font-size:13px;color:rgba(255,255,255,.8);min-width:64px;text-align:center;}
-.une-mob-fl{width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.14);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;
+.une-mob-scene{position:relative;align-self:stretch;}
+.une-mob-fl{position:absolute;top:50%;z-index:2;transform:translate(-50%, -50%);}
+.une-mob-fl-g{left:calc(50% - min(36vw, 150px));}
+.une-mob-fl-d{left:calc(50% + min(36vw, 150px));}
+.une-mob.is-seule .une-mob-fl,.une-mob.is-seule .une-mob-points{display:none;}
+.une-mob-points{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px;max-width:calc(100% - 40px);}
+.une-mob-pt{width:22px;height:22px;padding:0;border:0;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.une-mob-pt::before{content:"";display:block;width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.45);transition:width .3s var(--ease), background .3s ease, border-radius .3s ease;}
+.une-mob-pt.on{width:34px;}
+.une-mob-pt.on::before{width:26px;border-radius:4px;background:#fff;}
+.une-mob-fl{width:42px;height:42px;border-radius:50%;border:0;background:rgba(20,17,15,.55);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;
   backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:background .15s ease;}
-.une-mob-fl:hover{background:rgba(255,255,255,.26);}
+.une-mob-fl:hover{background:rgba(20,17,15,.75);}
 .une-mob-fl .ico{width:18px;height:18px;}
 
 /* « Derniers publiés » : étiquette du type, titre, date, ville. */
