@@ -414,7 +414,7 @@ function pinSvg(ev, x, y){
 
 /* Affichage de la carte vue d'ensemble — À L'ESSAI (aperçu de test) :
    ?carte=regions  → une pastille par région (forme du logo) ;
-   ?carte=alveoles → alvéoles hexagonales teintées selon le nombre ;
+   ?carte=alveoles → tuiles à la forme du logo, teintées selon le nombre ;
    ?carte=bulles   → bulles bordeaux (actuel, par défaut).
    Le choix est gardé dans le navigateur. Au-delà du zoom ×1,5, on revient
    au détail habituel (bulles puis épingles). */
@@ -486,12 +486,13 @@ function renderMapOverlay(){
     }else{
       const max = Math.max(1, ...mapClusters.map(g=> g.items.length));
       pinLayer.innerHTML = mapClusters.map((g, i)=>{
-        const n = g.items.length, r = ALVEOLE_R * mapView.k - 0.8;
-        const pts = [0, 1, 2, 3, 4, 5].map(j=>{ const a = Math.PI / 180 * (60 * j - 30); return `${(g.x + r * Math.cos(a)).toFixed(1)},${(g.y + r * Math.sin(a)).toFixed(1)}`; }).join(' ');
+        // Tuile à la forme du logo EBOK (coins arrondis en diagonale), même
+        // grille, même taille et mêmes teintes que les alvéoles.
+        const n = g.items.length, t = 19.5 * mapView.k;
         const niveau = n >= 5 ? 4 : n >= 3 ? 3 : n === 2 ? 2 : 1;
         return `<g class="pin pin-cluster pin-alveole" data-cluster="${i}" data-sx="${g.x.toFixed(1)}" data-sy="${g.y.toFixed(1)}"
             tabindex="0" role="button" aria-label="${n} événement${n > 1 ? 's' : ''} ici — zoomer">
-          <polygon class="alveole niv-${niveau}" points="${pts}"></polygon>
+          <path class="alveole niv-${niveau}" d="${formeLogo(g.x - t / 2, g.y - t / 2, t, t, t * 0.36, t * 0.08)}"></path>
         </g>`;
       }).join('') +
       // Les noms des grandes villes restent, par-dessus, pour se repérer.
@@ -545,11 +546,10 @@ function renderMapOverlay(){
       </g>`;
     }
     if(MODE_CARTE === 'alveoles'){
-      const rr = 15 * mapUnit, niveau = n >= 5 ? 4 : n >= 3 ? 3 : 2;
-      const pts = [0, 1, 2, 3, 4, 5].map(j=>{ const a = Math.PI / 180 * (60 * j - 30); return `${(g.x + rr * Math.cos(a)).toFixed(1)},${(g.y + rr * Math.sin(a)).toFixed(1)}`; }).join(' ');
+      const t = 28 * mapUnit, niveau = n >= 5 ? 4 : n >= 3 ? 3 : 2;
       return `<g class="pin pin-cluster pin-alveole" data-cluster="${i}" data-sx="${g.x.toFixed(1)}" data-sy="${g.y.toFixed(1)}"
           tabindex="0" role="button" aria-label="${n} événements ici — zoomer">
-        <polygon class="alveole niv-${niveau}" points="${pts}"></polygon>
+        <path class="alveole niv-${niveau}" d="${formeLogo(g.x - t / 2, g.y - t / 2, t, t, t * 0.36, t * 0.08)}"></path>
         <text class="alveole-count${niveau >= 3 ? ' is-clair' : ''}" x="${g.x.toFixed(1)}" y="${(g.y + 4.2 * mapUnit).toFixed(1)}" font-size="${(12 * mapUnit).toFixed(1)}">${n}</text>
       </g>`;
     }
@@ -5720,6 +5720,25 @@ initFooter();
 initAlertes();
 initAiImport();
 initPostersMaintenance();
+
+/* Loupe du header (téléphone) : sur l'accueil, elle ramène à la barre de
+   recherche de la page ; ailleurs, elle ouvre la recherche avancée. Elle se
+   cache tant que la barre de l'accueil est à l'écran (pas de doublon). */
+(function(){
+  const loupe = document.getElementById('topbarLoupe');
+  if(loupe) loupe.addEventListener('click', ()=>{
+    const accueil = document.getElementById('page-home');
+    const champ = document.getElementById('homeQ');
+    if(accueil && accueil.classList.contains('active') && champ){
+      champ.closest('.home-search').scrollIntoView({ behavior: mouvementReduit() ? 'auto' : 'smooth', block: 'center' });
+      setTimeout(()=> champ.focus({ preventScroll: true }), mouvementReduit() ? 0 : 350);
+    }else showPage('search');
+  });
+  const barre = document.querySelector('.home-search');
+  if(barre && 'IntersectionObserver' in window){
+    new IntersectionObserver(([e])=> document.documentElement.classList.toggle('recherche-accueil-visible', e.isIntersecting), { rootMargin: '-64px 0px 0px 0px' }).observe(barre);
+  }
+})();
 
 // Adresse ouverte directement (lien partagé, nouvel onglet, rechargement).
 // Après le chargement de tous les scripts (Mes événements vit dans organisateur.js).
