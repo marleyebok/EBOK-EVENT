@@ -3447,7 +3447,7 @@ html,body{overflow-x:clip;}
 .une-mob-ph{display:flex;flex-direction:column;justify-content:flex-end;gap:6px;height:100%;padding:18px;color:#fff;font-weight:700;font-size:18px;line-height:1.2;}
 .une-mob-ph b{font-family:var(--font-mono);font-weight:500;font-size:12px;opacity:.85;}
 .une-mob-legende{display:flex;flex-direction:column;gap:6px;max-width:640px;padding:0 28px;text-align:center;color:#fff;text-decoration:none;}
-.une-mob-legende:hover .une-mob-titre{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:5px;}
+.une-mob-legende,.une-mob-legende:hover,.une-mob-legende *{text-decoration:none !important;}
 .une-mob-meta{font-size:13px;color:rgba(255,255,255,.78);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .une-mob-titre{font-family:var(--font-titre);font-weight:600;font-size:clamp(17px, 1.7vw, 23px);line-height:1.25;letter-spacing:-.02em;}
 .une-mob-nav{display:flex;align-items:center;gap:18px;}
