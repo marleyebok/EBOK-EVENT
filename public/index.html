@@ -28,7 +28,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="/assets/favicon-192.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600&family=Inter+Tight:wght@300;600&family=JetBrains+Mono:wght@400;500&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/styles.css">
 <!-- Intro (plan-séquence d'ouverture) : intro-boot.js décide si elle se joue
      et l'affiche dès la première image ; le moteur est js/intro.js, en bas. -->
@@ -278,6 +278,36 @@
         <div class="carousel-dots" id="carouselDots" role="tablist" aria-label="Événements à la une"></div>
       </div>
     </div>
+
+    <!-- Téléphone (≤ 760 px) : « À la une » en carrousel natif (affiches
+         voisines visibles, fond = affiche floutée), puis les 5 derniers
+         événements publiés. Rendu par js/app.js (renderUneMobile,
+         renderDerniers) ; masqués sur ordinateur, qui garde le carrousel et
+         l'agenda ci-dessus et ci-dessous. -->
+    <section class="une-mob" id="uneMob" aria-labelledby="uneMobTitre" hidden>
+      <img class="une-mob-fond" id="uneMobFond" alt="" aria-hidden="true">
+      <h2 id="uneMobTitre">À la une</h2>
+      <div class="une-mob-piste" id="uneMobPiste"></div>
+      <a class="une-mob-legende" id="uneMobLegende" href="/" data-spa>
+        <span class="une-mob-meta" id="uneMobMeta"></span>
+        <span class="une-mob-titre" id="uneMobTitreEv"></span>
+      </a>
+      <div class="une-mob-nav">
+        <span class="une-mob-num" id="uneMobPos">01</span>
+        <span class="une-mob-barre" aria-hidden="true"><span id="uneMobBarre"></span></span>
+        <span class="une-mob-num une-mob-total" id="uneMobTotal">01</span>
+        <div class="une-mob-fleches">
+          <button type="button" id="uneMobPrev" aria-label="Événement précédent"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
+          <button type="button" id="uneMobNext" aria-label="Événement suivant"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="home-section derniers" id="derniersSlot" aria-labelledby="derniersTitre">
+      <div class="section-head"><h2 id="derniersTitre">Derniers publiés</h2></div>
+      <div class="derniers-liste" id="derniersListe"></div>
+      <div class="agenda-more"><button class="btn btn-ghost btn-lg" data-nav="search">Voir tous les événements</button></div>
+    </section>
 
     <div class="home-section" id="agendaSlot">
       <div class="section-head"><h2>Agenda</h2><span class="section-meta">Les prochains événements</span></div>
