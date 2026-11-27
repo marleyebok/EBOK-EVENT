@@ -339,7 +339,12 @@ function buildMap(){
   // leur calque plutôt que chacune.
   const pinLayer = svg.querySelector('#pinLayer');
   const activer = pin=>{
-    if(pin.dataset.cluster != null) zoomOnCluster(Number(pin.dataset.cluster));
+    if(pin.dataset.cluster != null){
+      // Alvéole ou pastille d'un seul événement : on ouvre sa fiche directement.
+      const g = mapClusters[Number(pin.dataset.cluster)];
+      if(g && g.items.length === 1) openEvent(g.items[0].id);
+      else zoomOnCluster(Number(pin.dataset.cluster));
+    }
     else openEvent(pin.dataset.id);
   };
   pinLayer.addEventListener('mouseover', e=>{ const pin = e.target.closest('.pin'); if(pin) showTooltip(pin); });
@@ -407,6 +412,51 @@ function pinSvg(ev, x, y){
   </g>`;
 }
 
+/* Affichage de la carte vue d'ensemble — À L'ESSAI (aperçu de test) :
+   ?carte=regions  → une pastille par région (forme du logo) ;
+   ?carte=alveoles → alvéoles hexagonales teintées selon le nombre ;
+   ?carte=bulles   → bulles bordeaux (actuel, par défaut).
+   Le choix est gardé dans le navigateur. Au-delà du zoom ×1,5, on revient
+   au détail habituel (bulles puis épingles). */
+const MODE_CARTE = (()=>{
+  const m = new URLSearchParams(location.search).get('carte');
+  try{
+    if(m) localStorage.setItem('ebok-carte', m);
+    return m || localStorage.getItem('ebok-carte') || 'bulles';
+  }catch(e){ return m || 'bulles'; }
+})();
+const ZOOM_DETAIL = 1.5;
+
+/* Une pastille par région : au barycentre des événements de la région. */
+function grouperParRegion(list){
+  const par = new Map();
+  for(const ev of list){
+    const k = ev.region || '—';
+    if(!par.has(k)) par.set(k, []);
+    par.get(k).push(ev);
+  }
+  return [...par.entries()].map(([region, items])=>{
+    const mx = items.reduce((a, e)=> a + e.x, 0) / items.length, my = items.reduce((a, e)=> a + e.y, 0) / items.length;
+    const [x, y] = mapPt(mx, my);
+    return { x, y, items, region };
+  });
+}
+/* Alvéoles hexagonales (repère de la carte, donc elles suivent le zoom). */
+const ALVEOLE_R = 13;
+function grouperEnAlveoles(list){
+  const w = Math.sqrt(3) * ALVEOLE_R, h = 1.5 * ALVEOLE_R, bins = new Map();
+  for(const ev of list){
+    const row = Math.round(ev.y / h), off = (row & 1) ? w / 2 : 0, col = Math.round((ev.x - off) / w), k = row + ':' + col;
+    if(!bins.has(k)) bins.set(k, { cx: col * w + off, cy: row * h, items: [] });
+    bins.get(k).items.push(ev);
+  }
+  return [...bins.values()].map(b=>{ const [x, y] = mapPt(b.cx, b.cy); return { x, y, items: b.items }; });
+}
+/* Rectangle aux coins arrondis en diagonale (forme du logo). */
+function formeLogo(x, y, w, h, r, r2){
+  return `M${x + r},${y}H${x + w - r2}Q${x + w},${y} ${x + w},${y + r2}V${y + h - r}Q${x + w},${y + h} ${x + w - r},${y + h}H${x + r2}Q${x},${y + h} ${x},${y + h - r2}V${y + r}Q${x},${y} ${x + r},${y}Z`;
+}
+
 function renderMapOverlay(){
   const pinLayer = document.getElementById('pinLayer');
   const cityLayer = document.getElementById('cityLayer');
@@ -417,6 +467,43 @@ function renderMapOverlay(){
   // Les événements à l'étranger n'ont pas de place sur la carte des régions :
   // ils sont repris par la vignette mondiale.
   const shown = events.filter(ev=> !isAbroad(ev) && (!mapVisibleIds || mapVisibleIds.has(ev.id)));
+  const vueEnsemble = mapView.k < ZOOM_DETAIL && (MODE_CARTE === 'regions' || MODE_CARTE === 'alveoles');
+  if(vueEnsemble){
+    mapClusters = MODE_CARTE === 'regions' ? grouperParRegion(shown) : grouperEnAlveoles(shown);
+    const fond = document.getElementById('homeMapView');
+    if(fond) fond.dataset.carte = MODE_CARTE;
+    cityLayer.innerHTML = '';
+    if(MODE_CARTE === 'regions'){
+      pinLayer.innerHTML = mapClusters.map((g, i)=>{
+        const n = g.items.length, u = mapUnit;
+        const w = (n >= 10 ? 34 : 28) * u, h = 24 * u;
+        return `<g class="pin pin-cluster pin-region" data-cluster="${i}" data-sx="${g.x.toFixed(1)}" data-sy="${g.y.toFixed(1)}"
+            tabindex="0" role="button" aria-label="${esc(g.region)} : ${n} événement${n > 1 ? 's' : ''} — zoomer">
+          <path class="region-pastille" d="${formeLogo(g.x - w / 2, g.y - h / 2, w, h, 10 * u, 2.5 * u)}"></path>
+          <text class="region-count" x="${g.x.toFixed(1)}" y="${(g.y + 4.4 * u).toFixed(1)}" font-size="${(13 * u).toFixed(1)}">${n}</text>
+        </g>`;
+      }).join('');
+    }else{
+      const max = Math.max(1, ...mapClusters.map(g=> g.items.length));
+      pinLayer.innerHTML = mapClusters.map((g, i)=>{
+        const n = g.items.length, r = ALVEOLE_R * mapView.k - 0.8;
+        const pts = [0, 1, 2, 3, 4, 5].map(j=>{ const a = Math.PI / 180 * (60 * j - 30); return `${(g.x + r * Math.cos(a)).toFixed(1)},${(g.y + r * Math.sin(a)).toFixed(1)}`; }).join(' ');
+        const niveau = n >= 5 ? 4 : n >= 3 ? 3 : n === 2 ? 2 : 1;
+        return `<g class="pin pin-cluster pin-alveole" data-cluster="${i}" data-sx="${g.x.toFixed(1)}" data-sy="${g.y.toFixed(1)}"
+            tabindex="0" role="button" aria-label="${n} événement${n > 1 ? 's' : ''} ici — zoomer">
+          <polygon class="alveole niv-${niveau}" points="${pts}"></polygon>
+        </g>`;
+      }).join('') +
+      // Les noms des grandes villes restent, par-dessus, pour se repérer.
+      Object.entries(CITY_LABELS).map(([name, [cx, cy]])=>{
+        const [x, y] = mapPt(cx, cy);
+        return visible(x, y) ? `<text class="city-name city-name-alveole" x="${(x + 9).toFixed(1)}" y="${(y + 3.5).toFixed(1)}">${name}</text>` : '';
+      }).join('');
+    }
+    return;
+  }
+  const fond = document.getElementById('homeMapView');
+  if(fond) delete fond.dataset.carte;
   mapClusters = clusterEvents(shown);
   // Libellés des villes : si une bulle ou une épingle est posée sur la ville,
   // le nom passe à droite de la bulle au lieu d'être caché dessous.
@@ -447,6 +534,24 @@ function renderMapOverlay(){
         const a = (j / n) * 2 * Math.PI - Math.PI / 2;
         return pinSvg(ev, g.x + rayon * Math.cos(a), g.y + rayon * Math.sin(a));
       }).join('');
+    }
+    // Modes à l'essai : même langage visuel une fois zoomé (pas de bulles bordeaux).
+    if(MODE_CARTE === 'regions'){
+      const u = mapUnit, w = (n >= 10 ? 32 : 26) * u, h = 22 * u;
+      return `<g class="pin pin-cluster pin-region" data-cluster="${i}" data-sx="${g.x.toFixed(1)}" data-sy="${g.y.toFixed(1)}"
+          tabindex="0" role="button" aria-label="${n} événements ici — zoomer">
+        <path class="region-pastille" d="${formeLogo(g.x - w / 2, g.y - h / 2, w, h, 9 * u, 2.5 * u)}"></path>
+        <text class="region-count" x="${g.x.toFixed(1)}" y="${(g.y + 4.2 * u).toFixed(1)}" font-size="${(12 * u).toFixed(1)}">${n}</text>
+      </g>`;
+    }
+    if(MODE_CARTE === 'alveoles'){
+      const rr = 15 * mapUnit, niveau = n >= 5 ? 4 : n >= 3 ? 3 : 2;
+      const pts = [0, 1, 2, 3, 4, 5].map(j=>{ const a = Math.PI / 180 * (60 * j - 30); return `${(g.x + rr * Math.cos(a)).toFixed(1)},${(g.y + rr * Math.sin(a)).toFixed(1)}`; }).join(' ');
+      return `<g class="pin pin-cluster pin-alveole" data-cluster="${i}" data-sx="${g.x.toFixed(1)}" data-sy="${g.y.toFixed(1)}"
+          tabindex="0" role="button" aria-label="${n} événements ici — zoomer">
+        <polygon class="alveole niv-${niveau}" points="${pts}"></polygon>
+        <text class="alveole-count${niveau >= 3 ? ' is-clair' : ''}" x="${g.x.toFixed(1)}" y="${(g.y + 4.2 * mapUnit).toFixed(1)}" font-size="${(12 * mapUnit).toFixed(1)}">${n}</text>
+      </g>`;
     }
     const r = Math.min(12 + 3 * Math.sqrt(n), 30) * mapUnit;
     return `<g class="pin pin-cluster" data-cluster="${i}" data-sx="${g.x.toFixed(1)}" data-sy="${g.y.toFixed(1)}"
@@ -728,7 +833,7 @@ function showTooltip(pin){
     const g = mapClusters[Number(pin.dataset.cluster)];
     if(!g) return;
     const villes = [...new Set(g.items.map(e=> e.city).filter(Boolean))];
-    tt.innerHTML = `<div class="tt-title">${g.items.length} événements</div>
+    tt.innerHTML = `<div class="tt-title">${g.region ? esc(g.region) + ' · ' : ''}${g.items.length} événement${g.items.length > 1 ? 's' : ''}</div>
       <div class="tt-meta">${esc(villes.slice(0, 3).join(', '))}${villes.length > 3 ? '…' : ''}<br>Clique pour zoomer</div>`;
     tt.classList.add('show');
     return;

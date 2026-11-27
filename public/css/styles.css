@@ -3557,3 +3557,20 @@ html,body{overflow-x:clip;}
 :root{--forme-carte:24px 4px 24px 4px;}
 .dp-item{border-radius:var(--forme-carte);}
 .dp-item > img,.dp-ph{border-radius:14px 3px 14px 3px;}
+
+/* Carte, vue d'ensemble À L'ESSAI (?carte=regions | ?carte=alveoles). */
+.pin-region{cursor:pointer;}
+.pin-region .region-pastille{fill:#FBF9F4;stroke:var(--accent);stroke-width:1.6;filter:drop-shadow(0 2px 4px rgba(28,26,23,.14));transition:fill .15s ease;}
+.pin-region .region-count{fill:#8E1F2E;font-family:var(--font-titre);font-weight:600;text-anchor:middle;pointer-events:none;}
+.pin-region:hover .region-pastille,.pin-region:focus-visible .region-pastille{fill:var(--accent);}
+.pin-region:hover .region-count,.pin-region:focus-visible .region-count{fill:#fff;}
+.pin-alveole{cursor:pointer;}
+.alveole{stroke:#FBF9F4;stroke-width:1;transition:filter .15s ease, opacity .15s ease;opacity:.92;}
+.alveole.niv-1{fill:#EBC7CA;}
+.alveole.niv-2{fill:#DE959C;}
+.alveole.niv-3{fill:#C9555F;}
+.alveole.niv-4{fill:#B32A3B;}
+.pin-alveole:hover .alveole,.pin-alveole:focus-visible .alveole{opacity:1;filter:brightness(.88);}
+.city-name-alveole{pointer-events:none;}
+.alveole-count{fill:#5E1420;font-family:var(--font-titre);font-weight:600;text-anchor:middle;pointer-events:none;}
+.alveole-count.is-clair{fill:#fff;}
