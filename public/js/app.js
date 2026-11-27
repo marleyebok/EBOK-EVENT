@@ -2712,7 +2712,9 @@ async function openEvent(id, opts){
         <div class="photo-card" data-photo="${i}"><div class="ph" style="background:${safeColor(g.color)}">${esc(g.caption)}</div><div class="cap">${esc(g.caption)}</div></div>`).join('')}</div>`
     : `<div class="gallery-empty">Aucune photo d'édition précédente pour le moment.</div>`;
 
-  el.innerHTML = `
+  const essaiFiche = ficheEssai();
+  el.classList.toggle('fm-on', !!essaiFiche);
+  el.innerHTML = essaiFiche ? ficheMobileHtml({ ev, posterHtml, org, infos, voyage, termine, favOn, lienInscription, inscEbok, lienBilletterie, lienSite, shareText, shareUrl, lieuSous, placesValue, galleryHtml, gallery }) : `
     <div class="event-side">
       <div class="ev-poster-card">
         <div class="event-poster">
@@ -2894,6 +2896,7 @@ async function openEvent(id, opts){
   if(posterZoom && ev.poster){
     posterZoom.addEventListener('click', ()=> openLightbox({ img: ev.poster, caption: ev.title }));
   }
+  if(essaiFiche) brancherFicheMobile(ev, el);
   if(!menusFicheBranches){
     menusFicheBranches = true;
     document.addEventListener('click', fermerMenusFiche);
@@ -2904,6 +2907,129 @@ async function openEvent(id, opts){
   if(!fromUrl) setUrl(urlEvenement(ev));
   loadAndAnimateViews(ev.id);
   return true;
+}
+
+/* ---- Fiche événement sur téléphone ----
+   Affiche entière, Partager · Enregistrer · Signaler, onglets (Infos,
+   Description, Contact, Photos) et barre d'actions fixe en bas. Sur
+   ordinateur, la fiche en deux colonnes ne change pas. */
+function ficheEssai(){
+  return window.matchMedia && window.matchMedia('(max-width: 760px)').matches ? 'a' : '';
+}
+
+function ficheMobileHtml(c){
+  const { ev, posterHtml, org, infos, voyage, termine, favOn, lienInscription, inscEbok, lienBilletterie, lienSite, shareText, shareUrl, lieuSous, placesValue, galleryHtml, gallery } = c;
+  const point = '<i class="fm-pt" aria-hidden="true"></i>';
+  const dates = fmtDateRange(ev.dateStart, ev.dateEnd);
+  const adresse = infos.adresse || ev.lieu || ev.city || '';
+  const itineraire = adresse ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent([adresse, ev.city].filter(Boolean).join(', ')) : '';
+  const publicTxt = [ageList(ev.age).join(', '), ev.sexe].filter(Boolean).join(' · ');
+
+  /* Bouton principal (barre du bas), en rouge, par ordre de priorité :
+     inscription (EBOK ou lien), billetterie, contacter l'organisateur,
+     site officiel. */
+  const aContacts = Boolean(org.email || org.tel || org.insta);
+  let principal, modePrincipal = '';
+  if(inscEbok){ principal = `<button type="button" class="fm-go" id="btnInscEbok" data-insc="${esc(ev.id)}"><span>S'inscrire</span></button>`; modePrincipal = 'insc'; }
+  else if(lienInscription){ principal = `<a class="fm-go" href="${esc(lienInscription)}" target="_blank" rel="noopener noreferrer" data-clic="inscription"><span>S'inscrire</span></a>`; modePrincipal = 'insc'; }
+  else if(lienBilletterie){ principal = `<a class="fm-go" href="${esc(lienBilletterie)}" target="_blank" rel="noopener noreferrer" data-clic="billetterie"><span>Billetterie</span></a>`; modePrincipal = 'insc'; }
+  else if(aContacts) principal = `<button type="button" class="fm-go" data-fm-contact><span>Contacter</span></button>`;
+  else if(lienSite) principal = `<a class="fm-go" href="${esc(lienSite)}" target="_blank" rel="noopener noreferrer" data-clic="site"><span>Site officiel</span></a>`;
+  else principal = `<span class="fm-go is-off" aria-disabled="true"><span>${termine ? 'Événement terminé' : 'Infos à venir'}</span></span>`;
+
+  const ligne = (icone, titre, sous, lien)=> titre ? `<div class="fm-lig"><span class="fm-ic">${ico(icone)}</span><div><b>${esc(titre)}</b>${sous || lien ? `<span>${sous ? esc(sous) : ''}${sous && lien ? ' · ' : ''}${lien || ''}</span>` : ''}</div></div>` : '';
+  const infosHtml = [
+    ligne('calendar', dates, infos.horaires || '', termine ? '' : `<button type="button" class="fm-lien" id="btnAgenda" aria-haspopup="true" aria-expanded="false">Ajouter à mon agenda</button>`),
+    ligne('pin', ev.lieu && ev.lieu !== adresse ? ev.lieu : adresse, [ev.lieu && ev.lieu !== adresse ? adresse : '', lieuSous].filter(Boolean).join(', '), itineraire ? `<a class="fm-lien" href="${esc(itineraire)}" target="_blank" rel="noopener noreferrer">Itinéraire</a>` : ''),
+    ligne('ticket', ev.tarif, infos.reservation || ''),
+    ligne('users', publicTxt, placesValue),
+    ligne('coffee', infos.buvette ? 'Buvette' : '', infos.buvette || ''),
+    ligne('map', voyage.destination ? 'Destination : ' + voyage.destination : '', [
+      (voyage.dateDepart || voyage.lieuxDepart) ? 'Départ ' + fmtVoyageLeg(voyage.dateDepart, voyage.lieuxDepart) : '',
+      (voyage.dateRetour || voyage.lieuRetour) ? 'Retour ' + fmtVoyageLeg(voyage.dateRetour, voyage.lieuRetour) : '',
+      voyage.logement || ''
+    ].filter(Boolean).join(' · ')),
+  ].join('');
+
+  const contacts = [];
+  if(org.name) contacts.push(`<div class="fm-lig"><span class="fm-ic fm-ic-org">${esc(String(org.name).replace(/[^A-Za-zÀ-ÿ0-9 ]/g,'').split(/\s+/).filter(Boolean).slice(0,2).map(m=>m[0]).join('').toUpperCase() || '·')}</span><div><b>${esc(org.name)}</b><span>Organisateur</span></div></div>`);
+  if(lienSite) contacts.push(`<a class="fm-lig" href="${esc(lienSite)}" target="_blank" rel="noopener noreferrer" data-clic="site"><span class="fm-ic">${ico('globe')}</span><div><b>Site officiel</b><span class="fm-lien">${esc(lienSite.replace(/^https?:\/\/(www\.)?/i,'').replace(/\/$/,''))}</span></div></a>`);
+  if(org.insta) contacts.push(`<a class="fm-lig" href="https://instagram.com/${encodeURIComponent(org.insta)}" target="_blank" rel="noopener noreferrer" data-clic="instagram"><span class="fm-ic">${ico('instagram')}</span><div><b>Instagram</b><span class="fm-lien">@${esc(org.insta)}</span></div></a>`);
+  if(org.email) contacts.push(`<a class="fm-lig" href="mailto:${encodeURIComponent(org.email)}" data-clic="email"><span class="fm-ic">${ico('mail')}</span><div><b>E-mail</b><span class="fm-lien">${esc(org.email)}</span></div></a>`);
+  if(org.tel) contacts.push(`<a class="fm-lig" href="tel:${encodeURIComponent(String(org.tel).replace(/\s/g,''))}" data-clic="telephone"><span class="fm-ic">${ico('phone')}</span><div><b>Téléphone</b><span class="fm-lien">${esc(org.tel)}</span></div></a>`);
+  if(lienInscription) contacts.push(`<a class="fm-lig" href="${esc(lienInscription)}" target="_blank" rel="noopener noreferrer" data-clic="inscription"><span class="fm-ic">${ico('clipboard')}</span><div><b>Inscription</b><span class="fm-lien">Formulaire en ligne</span></div></a>`);
+  if(lienBilletterie) contacts.push(`<a class="fm-lig" href="${esc(lienBilletterie)}" target="_blank" rel="noopener noreferrer" data-clic="billetterie"><span class="fm-ic">${ico('ticket')}</span><div><b>Billetterie</b><span class="fm-lien">Acheter une place</span></div></a>`);
+  const contactHtml = contacts.length > (org.name ? 1 : 0) ? contacts.join('') : contacts.join('') + `<p class="fm-vide">Aucune coordonnée renseignée pour le moment.</p>`;
+
+  const onglets = [['infos', 'Infos'], ev.description ? ['desc', 'Description'] : null, ['contact', 'Contact'], gallery.length ? ['photos', 'Photos'] : null].filter(Boolean);
+  const tabsHtml = `<div class="fm-tabs" role="tablist" aria-label="Sections de la fiche">${onglets.map(([k, l], i)=>
+    `<button type="button" role="tab" class="fm-tab${i ? '' : ' on'}" data-fm-tab="${k}" aria-selected="${i ? 'false' : 'true'}" aria-controls="fmP-${k}">${point}${l}</button>`).join('')}</div>`;
+  const panneaux = `
+    <div class="fm-panel" id="fmP-infos" role="tabpanel">${infosHtml}
+      <div class="curieux-counter fm-curieux hidden"><span class="cc-eye">${ico('eye')}</span><div><div class="cc-label">Nombre de curieux</div><div class="cc-sub">personnes ont consulté cet événement</div></div><span class="cc-num" id="vcNumBottom">···</span></div>
+    </div>
+    ${ev.description ? `<div class="fm-panel" id="fmP-desc" role="tabpanel" hidden><h3 class="fm-h">${point}Présentation</h3><p class="fm-desc">${esc(ev.description)}</p></div>` : ''}
+    <div class="fm-panel" id="fmP-contact" role="tabpanel" hidden>${contactHtml}</div>
+    ${gallery.length ? `<div class="fm-panel" id="fmP-photos" role="tabpanel" hidden><h3 class="fm-h">${point}Éditions précédentes</h3>${galleryHtml}</div>` : ''}`;
+
+  const actions = `
+    <div class="fm-acts" role="group" aria-label="Actions sur l'événement">
+      <button type="button" class="fm-act" id="btnShare" aria-haspopup="true" aria-expanded="false">${ico('share')}<span>Partager</span></button>
+      <button type="button" class="fm-act fav-btn ${favOn ? 'active' : ''}" data-fav="${esc(ev.id)}" aria-pressed="${favOn}">${ico('star')}<span>Enregistrer</span></button>
+      <button type="button" class="fm-act" id="btnReport" aria-haspopup="dialog">${ico('flag')}<span>Signaler</span></button>
+    </div>
+    <div class="popover fm-pop" id="popShare">
+      <a class="popover-item" target="_blank" rel="noopener noreferrer" href="https://wa.me/?text=${shareText}%20${encodeURIComponent(shareUrl)}"><span class="ic">${ico('message')}</span>WhatsApp</a>
+      <a class="popover-item" href="sms:?&body=${shareText}%20${encodeURIComponent(shareUrl)}"><span class="ic">${ico('mobile')}</span>SMS</a>
+      <a class="popover-item" href="mailto:?subject=${encodeURIComponent(ev.title)}&body=${shareText}%20${encodeURIComponent(shareUrl)}"><span class="ic">${ico('mail')}</span>E-mail</a>
+      <button type="button" class="popover-item" id="btnCopyLink"><span class="ic">${ico('link')}</span>Copier le lien</button>
+      <div class="share-copied" id="shareCopied" role="status">Lien copié ✓</div>
+    </div>
+    ${termine ? '' : `<div class="popover fm-pop" id="popAgenda">
+      <a class="popover-item" target="_blank" rel="noopener noreferrer" href="${esc(agendaEvenement(ev).google)}"><span class="ic">${ico('calendar')}</span>Google Agenda</a>
+      <button type="button" class="popover-item" id="btnIcs"><span class="ic">${ico('download')}</span>Apple, Outlook, autre (.ics)</button>
+    </div>`}`;
+
+  const badges = `<span class="badge solid" style="background:${typeColor(ev.type)}">${esc(ev.type)}</span>${termine ? `<span class="badge">Terminé</span>` : ''}${!termine && ev.dispo && DISPO_META[ev.dispo] ? `<span class="badge badge-dispo ${DISPO_META[ev.dispo].cls}">${DISPO_META[ev.dispo].label}</span>` : ''}`;
+  const outilsAdmin = (peutModifier(ev) || currentIsAdmin) ? `<p class="fm-admin">
+    ${peutModifier(ev) ? `<button class="edit-inline" data-edit="${esc(ev.id)}">${ico('edit')}Modifier</button><button class="edit-inline" data-dupliquer="${esc(ev.id)}">${ico('copy')}Dupliquer</button>` : ''}
+    ${currentIsAdmin ? `<button class="edit-inline edit-danger" data-supprimer="${esc(ev.id)}">${ico('trash')}Supprimer</button><button class="edit-inline" data-insta="${esc(ev.id)}">${ico('instagram')}Carte Insta</button>` : ''}</p>` : '';
+  const prive = ev.visibilite === 'prive' ? `<p class="ev-prive">${ico('lock')}<span><b>Événement privé.</b> Seules les personnes qui ont ce lien le voient.</span></p>` : '';
+
+  const barre = `
+    <div class="fm-bar" role="group" aria-label="Actions rapides">
+      <button type="button" class="fm-rond fav-btn ${favOn ? 'active' : ''}" data-fav="${esc(ev.id)}" aria-pressed="${favOn}">${ico('star')}<span>Enreg.</span></button>
+      <button type="button" class="fm-rond" data-fm-share>${ico('share')}<span>Partager</span></button>
+      <button type="button" class="fm-rond" data-fm-report>${ico('flag')}<span>Signaler</span></button>
+      ${modePrincipal === 'insc' && aContacts ? `<button type="button" class="fm-rond" data-fm-contact>${ico('message')}<span>Contact</span></button>` : ''}
+      ${principal}
+    </div>`;
+
+  return `<div class="fm fm-a">
+    <div class="fm-affiche">${posterHtml}</div>
+    ${actions}
+    <div class="fm-tete"><div class="fm-badges">${badges}</div><h2 class="fm-titre">${esc(ev.title)}</h2></div>
+    ${prive}${outilsAdmin}
+    ${tabsHtml}${panneaux}
+    ${barre}
+  </div>`;
+}
+
+function brancherFicheMobile(ev, el){
+  const ouvrirOnglet = (k)=>{
+    el.querySelectorAll('.fm-tab').forEach(t=>{ const on = t.dataset.fmTab === k; t.classList.toggle('on', on); t.setAttribute('aria-selected', String(on)); });
+    el.querySelectorAll('.fm-panel').forEach(p=>{ p.hidden = p.id !== 'fmP-' + k; });
+  };
+  const versOnglets = ()=>{
+    const t = el.querySelector('.fm-tabs');
+    if(t) window.scrollTo({ top: t.getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth' });
+  };
+  el.querySelectorAll('.fm-tab').forEach(t=> t.addEventListener('click', ()=> ouvrirOnglet(t.dataset.fmTab)));
+  el.querySelectorAll('[data-fm-contact]').forEach(c=> c.addEventListener('click', ()=>{ compterClic(ev.id, 'contact'); ouvrirOnglet('contact'); versOnglets(); }));
+  const r = el.querySelector('[data-fm-report]');
+  if(r) r.addEventListener('click', (e)=>{ e.stopPropagation(); document.getElementById('btnReport').click(); });
+  const s = el.querySelector('[data-fm-share]');
+  if(s) s.addEventListener('click', (e)=>{ e.stopPropagation(); document.getElementById('btnShare').click(); });
 }
 
 /* ---- compteur de « curieux » ----
