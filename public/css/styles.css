@@ -3557,3 +3557,62 @@ html,body{overflow-x:clip;}
 :root{--forme-carte:24px 4px 24px 4px;}
 .dp-item{border-radius:var(--forme-carte);}
 .dp-item > img,.dp-ph{border-radius:14px 3px 14px 3px;}
+
+/* Carte, vue d'ensemble : tuiles à la forme du logo, teintées selon le nombre. */
+.pin-alveole{cursor:pointer;}
+.alveole{stroke:#FBF9F4;stroke-width:1;transition:filter .15s ease, opacity .15s ease;opacity:.92;}
+.alveole.niv-1{fill:#EBC7CA;}
+.alveole.niv-2{fill:#DE959C;}
+.alveole.niv-3{fill:#C9555F;}
+.alveole.niv-4{fill:#B32A3B;}
+.pin-alveole:hover .alveole,.pin-alveole:focus-visible .alveole{opacity:1;filter:brightness(.88);}
+.city-name-alveole{pointer-events:none;}
+.alveole-count{fill:#5E1420;font-family:var(--font-titre);font-weight:600;text-anchor:middle;pointer-events:none;}
+.alveole-count.is-clair{fill:#fff;}
+
+/* Header téléphone : menu à gauche, logo centré, compte à droite. */
+@media(max-width:950px){
+  .topbar{display:grid !important;grid-template-columns:minmax(0, 1fr) auto minmax(0, 1fr);align-items:center;}
+  .topbar .topbar-mobile{display:contents !important;}
+  .topbar .topbar-mobile .icon-btn-cta{display:none;}
+  .topbar #btnMenu{grid-column:1;grid-row:1;justify-self:start;width:42px;height:42px;}
+  .topbar .brand{grid-column:2;grid-row:1;justify-self:center;margin:0;}
+  .topbar .topbar-right{grid-column:3;grid-row:1;justify-self:end;display:flex !important;align-items:center;gap:6px;margin:0;}
+  .topbar #btnMenu svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;}
+}
+/* Le menu s'ouvre du côté de son bouton (à gauche sur téléphone). */
+@media(max-width:950px){
+  .side-menu{right:auto;left:0;border-left:0;border-right:1px solid var(--line-strong);animation-name:menu-in-gauche;}
+}
+@keyframes menu-in-gauche{from{transform:translateX(-100%);}to{transform:translateX(0);}}
+
+/* Menu : petite précision sous un intitulé. */
+.side-menu-sub{display:block;margin-left:auto;font-size:12px;font-weight:400;color:var(--chalk-mute);}
+
+/* Accueil téléphone : titre, recherche, filtres et carte tiennent dans
+   l'écran (au-dessus de la barre du bas). Plus petit, plus épuré. */
+@media(max-width:760px){
+  .home-hero .hero-text{padding:14px 16px 12px;}
+  .home-hero .home-search{margin-top:12px;}
+  .home-hero .hs-form{height:44px;padding-left:14px;gap:6px;}
+  .home-hero .hs-form > .ico{width:16px;height:16px;}
+  .home-hero .hs-form input{font-size:15px;}
+  .home-hero .hs-form .btn{height:34px;padding:0 14px;font-size:14px;}
+  .home-hero .hs-understood{margin-top:4px;min-height:0;}
+  .home-hero .filter-panel{margin-top:10px;gap:6px;}
+  .home-hero .filter-panel .filter-group label{font-size:11px;margin-bottom:3px;}
+  .home-hero .type-dd-btn,.home-hero #citySearch,.home-hero .period-display{height:36px;min-height:36px;font-size:13px;padding-left:12px;padding-right:10px;}
+  /* Pied de la carte sur une ligne : compteur, alerte (picto), Carte/Liste. */
+  .home-hero .content-header.board-foot{display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:8px;padding:8px 10px 8px 14px;}
+  .home-hero .board-foot .content-count{flex:1 1 auto;flex-basis:auto;font-size:13px;}
+  .home-hero .board-foot .btn-alert{grid-column:auto;grid-row:auto;width:36px;height:36px;padding:0;justify-content:center;font-size:0;gap:0;}
+  .home-hero .board-foot .btn-alert .ico{width:18px;height:18px;}
+  .home-hero .board-foot .view-toggle{margin-left:0;}
+  .home-hero .board-foot .toggle-btn{height:32px;padding:0 9px;font-size:13px;}
+}
+@media(max-width:760px){
+  /* La carte se réduit à la hauteur disponible (écran moins header, titre,
+     recherche, filtres, pied de carte et barre du bas), pour que tout le
+     bloc tienne d'un coup d'œil même sur un petit téléphone. */
+  .home-hero #franceMap{display:block;width:auto;max-width:100%;max-height:max(220px, calc(100svh - 388px));margin:0 auto;}
+}

@@ -158,10 +158,20 @@ export function loadClerk() {
 
 /** En-tête d'authentification pour les appels API (token de session Clerk). */
 export async function authHeader() {
-  const clerk = await loadClerk();
-  if (!clerk.session) return {};
-  const token = await clerk.session.getToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  // Service de comptes injoignable (bloqueur de publicité, réseau, adresse de
+  // test) : on appelle l'API sans jeton plutôt que de bloquer tout le site.
+  // Les données publiques (événements, carte) s'affichent quand même.
+  try {
+    const clerk = await Promise.race([
+      loadClerk(),
+      new Promise((_, refuse) => setTimeout(() => refuse(new Error("Clerk trop lent")), 6000)),
+    ]);
+    if (!clerk.session) return {};
+    const token = await clerk.session.getToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch {
+    return {};
+  }
 }
 
 /** Utilisateur Clerk connecté (ou null). */
