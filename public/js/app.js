@@ -412,35 +412,12 @@ function pinSvg(ev, x, y){
   </g>`;
 }
 
-/* Affichage de la carte vue d'ensemble — À L'ESSAI (aperçu de test) :
-   ?carte=regions  → une pastille par région (forme du logo) ;
-   ?carte=alveoles → tuiles à la forme du logo, teintées selon le nombre ;
-   ?carte=bulles   → bulles bordeaux (actuel, par défaut).
-   Le choix est gardé dans le navigateur. Au-delà du zoom ×1,5, on revient
-   au détail habituel (bulles puis épingles). */
-const MODE_CARTE = (()=>{
-  const m = new URLSearchParams(location.search).get('carte');
-  try{
-    if(m) localStorage.setItem('ebok-carte', m);
-    return m || localStorage.getItem('ebok-carte') || 'bulles';
-  }catch(e){ return m || 'bulles'; }
-})();
+/* Carte, vue d'ensemble (zoom < 1,5) : tuiles à la forme du logo EBOK,
+   teintées selon le nombre d'événements (choix du 27/11/2026, à la place des
+   bulles bordeaux). Une fois zoomé : tuiles chiffrées pour les groupes,
+   épingles de couleur pour les événements seuls. */
 const ZOOM_DETAIL = 1.5;
 
-/* Une pastille par région : au barycentre des événements de la région. */
-function grouperParRegion(list){
-  const par = new Map();
-  for(const ev of list){
-    const k = ev.region || '—';
-    if(!par.has(k)) par.set(k, []);
-    par.get(k).push(ev);
-  }
-  return [...par.entries()].map(([region, items])=>{
-    const mx = items.reduce((a, e)=> a + e.x, 0) / items.length, my = items.reduce((a, e)=> a + e.y, 0) / items.length;
-    const [x, y] = mapPt(mx, my);
-    return { x, y, items, region };
-  });
-}
 /* Alvéoles hexagonales (repère de la carte, donc elles suivent le zoom). */
 const ALVEOLE_R = 13;
 function grouperEnAlveoles(list){
@@ -467,44 +444,27 @@ function renderMapOverlay(){
   // Les événements à l'étranger n'ont pas de place sur la carte des régions :
   // ils sont repris par la vignette mondiale.
   const shown = events.filter(ev=> !isAbroad(ev) && (!mapVisibleIds || mapVisibleIds.has(ev.id)));
-  const vueEnsemble = mapView.k < ZOOM_DETAIL && (MODE_CARTE === 'regions' || MODE_CARTE === 'alveoles');
+  const vueEnsemble = mapView.k < ZOOM_DETAIL;
   if(vueEnsemble){
-    mapClusters = MODE_CARTE === 'regions' ? grouperParRegion(shown) : grouperEnAlveoles(shown);
-    const fond = document.getElementById('homeMapView');
-    if(fond) fond.dataset.carte = MODE_CARTE;
+    mapClusters = grouperEnAlveoles(shown);
     cityLayer.innerHTML = '';
-    if(MODE_CARTE === 'regions'){
-      pinLayer.innerHTML = mapClusters.map((g, i)=>{
-        const n = g.items.length, u = mapUnit;
-        const w = (n >= 10 ? 34 : 28) * u, h = 24 * u;
-        return `<g class="pin pin-cluster pin-region" data-cluster="${i}" data-sx="${g.x.toFixed(1)}" data-sy="${g.y.toFixed(1)}"
-            tabindex="0" role="button" aria-label="${esc(g.region)} : ${n} événement${n > 1 ? 's' : ''} — zoomer">
-          <path class="region-pastille" d="${formeLogo(g.x - w / 2, g.y - h / 2, w, h, 10 * u, 2.5 * u)}"></path>
-          <text class="region-count" x="${g.x.toFixed(1)}" y="${(g.y + 4.4 * u).toFixed(1)}" font-size="${(13 * u).toFixed(1)}">${n}</text>
-        </g>`;
-      }).join('');
-    }else{
-      const max = Math.max(1, ...mapClusters.map(g=> g.items.length));
-      pinLayer.innerHTML = mapClusters.map((g, i)=>{
-        // Tuile à la forme du logo EBOK (coins arrondis en diagonale), même
-        // grille, même taille et mêmes teintes que les alvéoles.
-        const n = g.items.length, t = 19.5 * mapView.k;
-        const niveau = n >= 5 ? 4 : n >= 3 ? 3 : n === 2 ? 2 : 1;
-        return `<g class="pin pin-cluster pin-alveole" data-cluster="${i}" data-sx="${g.x.toFixed(1)}" data-sy="${g.y.toFixed(1)}"
-            tabindex="0" role="button" aria-label="${n} événement${n > 1 ? 's' : ''} ici — zoomer">
-          <path class="alveole niv-${niveau}" d="${formeLogo(g.x - t / 2, g.y - t / 2, t, t, t * 0.36, t * 0.08)}"></path>
-        </g>`;
-      }).join('') +
-      // Les noms des grandes villes restent, par-dessus, pour se repérer.
-      Object.entries(CITY_LABELS).map(([name, [cx, cy]])=>{
-        const [x, y] = mapPt(cx, cy);
-        return visible(x, y) ? `<text class="city-name city-name-alveole" x="${(x + 9).toFixed(1)}" y="${(y + 3.5).toFixed(1)}">${name}</text>` : '';
-      }).join('');
-    }
+    pinLayer.innerHTML = mapClusters.map((g, i)=>{
+      // Tuile à la forme du logo EBOK (coins arrondis en diagonale), même
+      // grille, même taille et mêmes teintes que les alvéoles.
+      const n = g.items.length, t = 19.5 * mapView.k;
+      const niveau = n >= 5 ? 4 : n >= 3 ? 3 : n === 2 ? 2 : 1;
+      return `<g class="pin pin-cluster pin-alveole" data-cluster="${i}" data-sx="${g.x.toFixed(1)}" data-sy="${g.y.toFixed(1)}"
+          tabindex="0" role="button" aria-label="${n} événement${n > 1 ? 's' : ''} ici — zoomer">
+        <path class="alveole niv-${niveau}" d="${formeLogo(g.x - t / 2, g.y - t / 2, t, t, t * 0.36, t * 0.08)}"></path>
+      </g>`;
+    }).join('') +
+    // Les noms des grandes villes restent, par-dessus, pour se repérer.
+    Object.entries(CITY_LABELS).map(([name, [cx, cy]])=>{
+      const [x, y] = mapPt(cx, cy);
+      return visible(x, y) ? `<text class="city-name city-name-alveole" x="${(x + 9).toFixed(1)}" y="${(y + 3.5).toFixed(1)}">${name}</text>` : '';
+    }).join('');
     return;
   }
-  const fond = document.getElementById('homeMapView');
-  if(fond) delete fond.dataset.carte;
   mapClusters = clusterEvents(shown);
   // Libellés des villes : si une bulle ou une épingle est posée sur la ville,
   // le nom passe à droite de la bulle au lieu d'être caché dessous.
@@ -536,16 +496,8 @@ function renderMapOverlay(){
         return pinSvg(ev, g.x + rayon * Math.cos(a), g.y + rayon * Math.sin(a));
       }).join('');
     }
-    // Modes à l'essai : même langage visuel une fois zoomé (pas de bulles bordeaux).
-    if(MODE_CARTE === 'regions'){
-      const u = mapUnit, w = (n >= 10 ? 32 : 26) * u, h = 22 * u;
-      return `<g class="pin pin-cluster pin-region" data-cluster="${i}" data-sx="${g.x.toFixed(1)}" data-sy="${g.y.toFixed(1)}"
-          tabindex="0" role="button" aria-label="${n} événements ici — zoomer">
-        <path class="region-pastille" d="${formeLogo(g.x - w / 2, g.y - h / 2, w, h, 9 * u, 2.5 * u)}"></path>
-        <text class="region-count" x="${g.x.toFixed(1)}" y="${(g.y + 4.2 * u).toFixed(1)}" font-size="${(12 * u).toFixed(1)}">${n}</text>
-      </g>`;
-    }
-    if(MODE_CARTE === 'alveoles'){
+    // Groupes une fois zoomé : tuiles chiffrées, même langage que la vue d'ensemble.
+    {
       const t = 28 * mapUnit, niveau = n >= 5 ? 4 : n >= 3 ? 3 : 2;
       return `<g class="pin pin-cluster pin-alveole" data-cluster="${i}" data-sx="${g.x.toFixed(1)}" data-sy="${g.y.toFixed(1)}"
           tabindex="0" role="button" aria-label="${n} événements ici — zoomer">
@@ -3839,27 +3791,11 @@ function fermerMenu(){
 /* Aligne le contenu du volet sur l'état de connexion et le thème. */
 function syncMenu(){
   const connecte = !!currentUser;
-  document.getElementById('menuOut')?.classList.toggle('hidden', connecte);
-  document.getElementById('menuLogged')?.classList.toggle('hidden', !connecte);
   for(const el of document.querySelectorAll('.menu-auth')){
     el.classList.toggle('hidden', !connecte);
   }
   for(const el of document.querySelectorAll('.menu-admin')){
     el.classList.toggle('hidden', !(connecte && currentIsAdmin));
-  }
-  if(connecte){
-    const nom = displayName();
-    document.getElementById('menuName').textContent = nom;
-    document.getElementById('menuMail').textContent = currentUser.email || '';
-    const avatar = document.getElementById('menuAvatar');
-    const photo = currentProfile && safeImg(currentProfile.photo);
-    if(photo){
-      avatar.style.backgroundImage = `url("${encodeURI(photo)}")`;
-      avatar.textContent = '';
-    }else{
-      avatar.style.backgroundImage = '';
-      avatar.textContent = (nom || '?').trim().slice(0, 2).toUpperCase();
-    }
   }
 }
 
@@ -3940,13 +3876,6 @@ function initMenu(){
     });
   }
 
-  document.getElementById('menuLogin').addEventListener('click', ()=>{ fermerMenu(); openAuth('login'); });
-  document.getElementById('menuSignup').addEventListener('click', ()=>{ fermerMenu(); openAuth('signup'); });
-  document.getElementById('menuLogout').addEventListener('click', async ()=>{
-    fermerMenu();
-    if(window.EBOK_AUTH) await window.EBOK_AUTH.signOutUser();
-    showPage('home');
-  });
 }
 
 /* =========================================================
@@ -5720,25 +5649,6 @@ initFooter();
 initAlertes();
 initAiImport();
 initPostersMaintenance();
-
-/* Loupe du header (téléphone) : sur l'accueil, elle ramène à la barre de
-   recherche de la page ; ailleurs, elle ouvre la recherche avancée. Elle se
-   cache tant que la barre de l'accueil est à l'écran (pas de doublon). */
-(function(){
-  const loupe = document.getElementById('topbarLoupe');
-  if(loupe) loupe.addEventListener('click', ()=>{
-    const accueil = document.getElementById('page-home');
-    const champ = document.getElementById('homeQ');
-    if(accueil && accueil.classList.contains('active') && champ){
-      champ.closest('.home-search').scrollIntoView({ behavior: mouvementReduit() ? 'auto' : 'smooth', block: 'center' });
-      setTimeout(()=> champ.focus({ preventScroll: true }), mouvementReduit() ? 0 : 350);
-    }else showPage('search');
-  });
-  const barre = document.querySelector('.home-search');
-  if(barre && 'IntersectionObserver' in window){
-    new IntersectionObserver(([e])=> document.documentElement.classList.toggle('recherche-accueil-visible', e.isIntersecting), { rootMargin: '-64px 0px 0px 0px' }).observe(barre);
-  }
-})();
 
 // Adresse ouverte directement (lien partagé, nouvel onglet, rechargement).
 // Après le chargement de tous les scripts (Mes événements vit dans organisateur.js).
