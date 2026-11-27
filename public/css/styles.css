@@ -3553,3 +3553,7 @@ html,body{overflow-x:clip;}
 .btn-sm,.btn-xs,.edit-inline,.icon-btn,.toggle-btn,.chip,.chip-check,.ev-report-btn{border-radius:var(--forme-bouton-s);}
 .badge,.card-type-badge,.card-past-badge,.dispo-badge,.dp-type,.status-dot,.status-pill,.tag,.rpv-badge,.new-flag,
 .account-badge-admin{border-radius:var(--forme-etiquette);}
+/* Cartes « Derniers publiés » : forme du logo, affiche comprise. */
+:root{--forme-carte:24px 4px 24px 4px;}
+.dp-item{border-radius:var(--forme-carte);}
+.dp-item > img,.dp-ph{border-radius:14px 3px 14px 3px;}
