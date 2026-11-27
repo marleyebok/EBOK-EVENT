@@ -1018,17 +1018,54 @@ function applyMapFilters(){
   if(homeView === 'list') renderHomeList(filtered);
 }
 
+/* Vue liste de l'accueil : 5 événements à la fois, avec ‹ › pour défiler.
+   La page revient au début dès que les filtres changent. */
+const LISTE_ACCUEIL_PAR_PAGE = 5;
+let listeAccueilPage = 0;
+let listeAccueilCle = '';
 function renderHomeList(filtered){
   const grid = document.getElementById('homeListView');
   if(filtered.length === 0){
     grid.innerHTML = `<div class="empty-state"><h4>Aucun événement ne correspond</h4><p>Essaie d'élargir tes filtres — semaine ou type d'événement.</p></div>`;
     return;
   }
-  grid.innerHTML = filtered.slice().sort(parDateRecente).map(ev=>`
-${eventCardHtml(ev)}`).join('');
-  grid.querySelectorAll('.event-card').forEach(card=>{
-    card.addEventListener('click', ()=> openEvent(card.dataset.id));
+  const tries = filtered.slice().sort(parDateRecente);
+  const cle = tries.map(e=> e.id).join(',');
+  if(cle !== listeAccueilCle){ listeAccueilCle = cle; listeAccueilPage = 0; }
+  const pages = Math.ceil(tries.length / LISTE_ACCUEIL_PAR_PAGE);
+  listeAccueilPage = Math.min(Math.max(0, listeAccueilPage), pages - 1);
+  const debut = listeAccueilPage * LISTE_ACCUEIL_PAR_PAGE;
+  const page = tries.slice(debut, debut + LISTE_ACCUEIL_PAR_PAGE);
+  const nav = pages > 1 ? `
+    <nav class="home-list-nav" aria-label="Défiler la liste">
+      <button type="button" class="icon-btn" data-liste-page="-1" aria-label="Événements précédents" ${listeAccueilPage === 0 ? 'disabled' : ''}>${ico('chevronLeft')}</button>
+      <span class="home-list-pos" aria-live="polite">${debut + 1}–${debut + page.length} sur ${tries.length}</span>
+      <button type="button" class="icon-btn" data-liste-page="1" aria-label="Événements suivants" ${listeAccueilPage >= pages - 1 ? 'disabled' : ''}>${ico('chevronRight')}</button>
+    </nav>` : '';
+  // Lignes compactes (vignette, titre, date, lieu, type) : 5 tiennent dans
+  // le cadre de la carte, sur ordinateur comme sur mobile.
+  grid.innerHTML = page.map(ev=>{
+    const img = safeImg(ev.poster);
+    const lieu = [ev.city, ev.region].filter(Boolean).join(' · ');
+    return `<a class="hl-row" href="${esc(urlEvenement(ev))}" data-spa data-open="${esc(ev.id)}">
+      <span class="hl-thumb" style="${img ? '' : `background:${safeColor(typeColor(ev.type))}22`}">${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : `<span>${esc(String(ev.type || '').slice(0, 1))}</span>`}</span>
+      <span class="hl-main">
+        <span class="hl-title">${esc(ev.title)}</span>
+        <span class="hl-meta"><b>${fmtDateRange(ev.dateStart, ev.dateEnd)}</b>${lieu ? ' · ' + esc(lieu) : ''}</span>
+        <span class="hl-type"><span class="ag-dot" style="background:${safeColor(typeColor(ev.type))}"></span>${esc(ev.type || '')}${isPast(ev) ? ' · Terminé' : ''}</span>
+      </span>
+      <span class="ag-go">${ico('chevronRight')}</span>
+    </a>`;
+  }).join('') + nav;
+  grid.querySelectorAll('[data-open]').forEach(row=>{
+    row.addEventListener('click', ()=> openEvent(row.dataset.open));
   });
+  grid.querySelectorAll('[data-liste-page]').forEach(b=> b.addEventListener('click', ()=>{
+    listeAccueilPage += Number(b.dataset.listePage);
+    renderHomeList(filtered);
+    const dest = grid.querySelector(`[data-liste-page="${b.dataset.listePage}"]:not([disabled])`) || grid.querySelector('[data-liste-page]:not([disabled])');
+    if(dest) dest.focus();
+  }));
 }
 
 function setHomeView(view){
@@ -2362,6 +2399,7 @@ const ICONES = {
   ticket: '<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>',
   flag: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>',
   chevron: '<polyline points="6 9 12 15 18 9"/>',
+  chevronLeft: '<path d="m15 18-6-6 6-6"/>',
   chevronRight: '<path d="m9 18 6-6-6-6"/>',
   search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
   plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
