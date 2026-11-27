@@ -264,26 +264,10 @@
       </div>
     </div>
 
-    <div class="home-section" id="featuredSlot">
-      <div class="section-head"><h2>À la une</h2>
-        <div class="carousel-arrows">
-          <button class="carousel-nav carousel-prev" id="carouselPrev" type="button" aria-label="Événement précédent"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
-          <button class="carousel-nav carousel-next" id="carouselNext" type="button" aria-label="Événement suivant"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
-        </div>
-      </div>
-      <div class="featured-carousel">
-        <div class="carousel-wrapper">
-          <div class="carousel-track" id="carouselTrack"></div>
-        </div>
-        <div class="carousel-dots" id="carouselDots" role="tablist" aria-label="Événements à la une"></div>
-      </div>
-    </div>
-
-    <!-- Téléphone (≤ 760 px) : « À la une » en carrousel natif (affiches
-         voisines visibles, fond = affiche floutée), puis les 5 derniers
-         événements publiés. Rendu par js/app.js (renderUneMobile,
-         renderDerniers) ; masqués sur ordinateur, qui garde le carrousel et
-         l'agenda ci-dessus et ci-dessous. -->
+    <!-- « À la une » en carrousel natif (affiches voisines visibles, fond =
+         affiche floutée), puis les 5 derniers événements publiés. Rendu par
+         js/app.js (renderUneMobile, renderDerniers). Même structure sur
+         téléphone et sur ordinateur (maquette 7c). -->
     <section class="une-mob" id="uneMob" aria-labelledby="uneMobTitre" hidden>
       <img class="une-mob-fond" id="uneMobFond" alt="" aria-hidden="true">
       <h2 id="uneMobTitre">À la une</h2>
@@ -308,12 +292,6 @@
       <div class="derniers-liste" id="derniersListe"></div>
       <div class="agenda-more"><button class="btn btn-ghost btn-lg" data-nav="search">Voir tous les événements</button></div>
     </section>
-
-    <div class="home-section" id="agendaSlot">
-      <div class="section-head"><h2>Agenda</h2><span class="section-meta">Les prochains événements</span></div>
-      <div class="agenda" id="homeAgenda"></div>
-      <div class="agenda-more"><button class="btn btn-ghost btn-lg" data-nav="search" id="agendaMore">Voir tous les événements</button></div>
-    </div>
 
   </section>
 

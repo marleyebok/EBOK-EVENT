@@ -1097,32 +1097,6 @@ function tableauDeMarque(ev, grand){
 }
 
 /* =========================================================
-   AGENDA DE L'ACCUEIL — les prochains événements, par date
-   ========================================================= */
-const AGENDA_MAX = 8;
-function renderAgenda(){
-  const box = document.getElementById('homeAgenda');
-  if(!box) return;
-  const avenir = events.filter(ev=> ev && ev.dateStart && !isPast(ev))
-    .sort((a, b)=> String(a.dateStart).localeCompare(String(b.dateStart)));
-  const more = document.getElementById('agendaMore');
-  if(more) more.textContent = avenir.length > AGENDA_MAX ? `Voir les ${avenir.length} événements à venir` : 'Rechercher un événement';
-  if(!avenir.length){
-    box.innerHTML = `<div class="agenda-empty"><p>Aucun événement à venir pour l'instant.</p><button class="btn btn-primary" data-nav="create">${ico('plus')}Publier un événement</button></div>`;
-    box.querySelector('[data-nav]').addEventListener('click', ()=> showPage('create'));
-    return;
-  }
-  box.innerHTML = avenir.slice(0, AGENDA_MAX).map(ev=>`<a class="ag-row" href="${esc(urlEvenement(ev))}" data-spa data-open="${esc(ev.id)}">
-      ${tableauDeMarque(ev)}
-      <span class="ag-main"><span class="ag-title">${esc(ev.title)}</span><span class="ag-where">${ico('pin')}${esc(ev.city || '')}${ev.region ? ' · ' + esc(ev.region) : ''}</span></span>
-      <span class="ag-type"><span class="ag-dot" style="background:${safeColor(typeColor(ev.type))}"></span>${esc(ev.type || '')}</span>
-      <span class="ag-meta">${esc(publicCourt(ev).join(' · '))}</span>
-      <span class="ag-go">${ico('chevronRight')}</span>
-    </a>`).join('');
-  box.querySelectorAll('[data-open]').forEach(b=> b.addEventListener('click', ()=> openEvent(b.dataset.open)));
-}
-
-/* =========================================================
    BARRE DE RECHERCHE DE L'ACCUEIL
    ---------------------------------------------------------
    Lit une phrase libre (« je cherche un camp à Lyon en juillet ») ou un nom
@@ -3065,161 +3039,6 @@ function messageForPosters(err){
   if(/admin|403/.test(code)) return "Action réservée à l'administrateur.";
   console.warn('[EBOK] hébergement des affiches :', err);
   return "L'hébergement a échoué. Réessaie dans un instant.";
-}
-
-let featuredTimer = null;   // défilement automatique du carrousel "à la une"
-
-function renderFeatured(){
-  const featured = events.filter(e=>e.featured);
-  const track = document.getElementById('carouselTrack');
-  const dotsContainer = document.getElementById('carouselDots');
-  const slot = document.getElementById('featuredSlot');
-  if(featuredTimer){ clearInterval(featuredTimer); featuredTimer = null; }
-  if(!track || !slot) return;
-  if(featured.length === 0){ slot.style.display = 'none'; track.innerHTML = ''; if(dotsContainer) dotsContainer.innerHTML = ''; return; }
-  slot.style.display = '';
-
-  let currentSlide = 0;
-
-  // Slides — bannière immersive : affiche floutée en fond + affiche nette à
-  // gauche + texte clair sur voile sombre (rendu premium, jamais "blanc").
-  // Diapositive : l'affiche posée comme une vraie affiche, le texte sur le
-  // bordeaux, la date en tableau de marque.
-  track.innerHTML = featured.map(ev=>{
-    const poster = safeImg(ev.poster)
-      ? `<img src="${esc(safeImg(ev.poster))}" alt="Affiche ${esc(ev.title)}">`
-      : `<div class="fx-poster-ph"><span class="ph-type">${esc(ev.type || 'Événement')}</span><span class="ph-title">${esc(ev.title)}</span><span class="ph-when">${esc(fmtDateRange(ev.dateStart, ev.dateEnd))}<br>${esc(ev.city || '')}</span></div>`;
-    const meta = [ev.type, ...publicCourt(ev)].filter(Boolean).join(' · ');
-    const lieu = ev.lieu || ev.city || '';
-    const ou = [ev.lieu && ev.city && !String(ev.lieu).includes(ev.city) ? ev.city : '', ev.region].filter(Boolean).join(' · ');
-    const phrase = String(ev.description || '').split(/(?<=[.!?])\s/)[0] || '';
-    const resume = phrase.length > 180 ? phrase.slice(0, 177) + '…' : phrase;
-    return `<div class="carousel-item">
-      <div class="fx-content">
-        <div class="fx-poster" data-open="${esc(ev.id)}" role="button" tabindex="0" aria-label="Voir l'événement ${esc(ev.title)}">${poster}</div>
-        <div class="fx-text">
-          <p class="fx-meta">${esc(meta)}</p>
-          <h3>${esc(ev.title)}</h3>
-          <div class="fx-row">${tableauDeMarque(ev, true)}<div class="fx-where"><strong>${esc(lieu)}</strong>${ou ? `<span>${esc(ou)}</span>` : ''}</div></div>
-          ${resume ? `<p class="fx-desc">${esc(resume)}</p>` : ''}
-          <div class="featured-actions">
-            <button class="btn btn-chalk" data-open="${esc(ev.id)}">Voir l'événement</button>
-          </div>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-
-  // Points
-  dotsContainer.innerHTML = featured.map((_, i)=>
-    `<button class="carousel-dot ${i===0 ? 'active' : ''}" data-slide="${i}" role="tab" aria-label="${esc(featured[i].title)}"></button>`).join('');
-
-  const prev = document.getElementById('carouselPrev');
-  const next = document.getElementById('carouselNext');
-  const single = featured.length <= 1;
-  // Un seul événement : pas de flèches, points ni défilement.
-  if(prev) prev.style.display = single ? 'none' : '';
-  if(next) next.style.display = single ? 'none' : '';
-  dotsContainer.style.display = single ? 'none' : '';
-
-  function goToSlide(n){
-    currentSlide = (n + featured.length) % featured.length;
-    track.style.transform = `translateX(-${currentSlide * 100}%)`;
-    dotsContainer.querySelectorAll('.carousel-dot').forEach((d,i)=> d.classList.toggle('active', i===currentSlide));
-  }
-  function stopAuto(){ if(featuredTimer){ clearInterval(featuredTimer); featuredTimer = null; } }
-  function startAuto(){ stopAuto(); if(!single) featuredTimer = setInterval(()=> goToSlide(currentSlide + 1), 5000); }
-
-  if(prev) prev.onclick = ()=>{ goToSlide(currentSlide - 1); startAuto(); };
-  if(next) next.onclick = ()=>{ goToSlide(currentSlide + 1); startAuto(); };
-  dotsContainer.querySelectorAll('.carousel-dot').forEach(dot=>
-    dot.onclick = ()=>{ goToSlide(parseInt(dot.dataset.slide, 10)); startAuto(); });
-  track.querySelectorAll('[data-open]').forEach(b=>{
-    b.addEventListener('click', ()=> openEvent(b.dataset.open));
-    // L'affiche n'est pas un vrai bouton : Entrée doit l'ouvrir aussi.
-    if(b.tagName !== 'BUTTON') b.addEventListener('keydown', e=>{ if(e.key === 'Enter'){ e.preventDefault(); openEvent(b.dataset.open); } });
-  });
-
-  // Pause au survol pour laisser le temps de lire.
-  const wrapper = slot.querySelector('.carousel-wrapper');
-  if(wrapper){ wrapper.onmouseenter = stopAuto; wrapper.onmouseleave = startAuto; }
-
-  // Glisser (doigt, souris ou stylet) : la piste suit le geste, puis passe
-  // à la diapositive voisine si le geste est assez franc, sinon revient. Un
-  // geste vertical laisse la page défiler. (Propriétés on… : la fonction est
-  // rappelée à chaque mise à jour des événements, un écouteur s'empilerait.)
-  if(wrapper){
-    let x0 = 0, y0 = 0, dx = 0, sens = null, actif = false, glisse = false;
-    wrapper.onpointerdown = e=>{
-      if(single || (e.pointerType === 'mouse' && e.button !== 0)) return;
-      actif = true; x0 = e.clientX; y0 = e.clientY; dx = 0; sens = null; glisse = false;
-      stopAuto();
-    };
-    wrapper.onpointermove = e=>{
-      if(!actif || sens === false) return;
-      const mx = e.clientX - x0, my = e.clientY - y0;
-      if(sens === null){
-        if(Math.abs(mx) < 8 && Math.abs(my) < 8) return;
-        sens = Math.abs(mx) > Math.abs(my);
-        if(!sens) return;
-        track.style.transition = 'none';
-        wrapper.classList.add('is-dragging');
-        try { wrapper.setPointerCapture(e.pointerId); } catch(_){}
-      }
-      dx = mx; glisse = true;
-      track.style.transform = `translateX(calc(-${currentSlide * 100}% + ${dx}px))`;
-    };
-    wrapper.onpointerup = wrapper.onpointercancel = ()=>{
-      if(!actif) return;
-      actif = false;
-      wrapper.classList.remove('is-dragging');
-      if(sens === true){
-        track.style.transition = '';
-        const seuil = Math.min(70, wrapper.clientWidth * 0.18);
-        goToSlide(Math.abs(dx) > seuil ? currentSlide + (dx < 0 ? 1 : -1) : currentSlide);
-      }
-      sens = null;
-      if(!wrapper.matches(':hover')) startAuto();
-    };
-    // Après un glisser à la souris, le relâchement ne doit pas ouvrir la fiche.
-    wrapper.addEventListener('click', e=>{
-      if(glisse){ e.stopPropagation(); e.preventDefault(); glisse = false; }
-    }, { capture: true });
-    wrapper.ondragstart = e=> e.preventDefault();   // pas de « fantôme » d'image
-
-    // Pavé tactile / molette horizontale : un balayage = une diapositive.
-    let cumul = 0, verrou = 0;
-    wrapper.onwheel = e=>{
-      if(single || Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
-      e.preventDefault();
-      if(Date.now() < verrou) return;
-      cumul += e.deltaX;
-      if(Math.abs(cumul) > 40){
-        goToSlide(currentSlide + (cumul > 0 ? 1 : -1));
-        cumul = 0; verrou = Date.now() + 600;
-      }
-    };
-  }
-
-  // Clavier : flèches gauche/droite quand le focus est dans le carrousel.
-  const carrousel = slot.querySelector('.featured-carousel');
-  if(carrousel) carrousel.onkeydown = e=>{
-    if(single || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
-    e.preventDefault();
-    goToSlide(currentSlide + (e.key === 'ArrowRight' ? 1 : -1)); startAuto();
-  };
-  const fleches = slot.querySelector('.carousel-arrows');
-  if(fleches){
-    fleches.style.display = single ? 'none' : '';
-    fleches.onkeydown = e=>{
-      if(e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-      e.preventDefault();
-      goToSlide(currentSlide + (e.key === 'ArrowRight' ? 1 : -1)); startAuto();
-    };
-  }
-
-  goToSlide(0);
-  startAuto();
 }
 
 /* =========================================================
@@ -5563,15 +5382,14 @@ function renderCompteur(){
 }
 
 /* =========================================================
-   ACCUEIL TÉLÉPHONE (≤ 760 px) — maquette 7c validée le 27/11/2026
+   ACCUEIL — maquette 7c validée le 27/11/2026 (téléphone et ordinateur)
    ---------------------------------------------------------
    « À la une » : un défilement horizontal natif (glisser au doigt, aimanté
    sur chaque affiche), les affiches voisines dépassent sur les bords, le fond
    reprend l'affiche courante floutée. Sous l'affiche : type · dates · lieu,
    le titre en grand, puis 01 ━━ 06 et les flèches ‹ ›.
-   « Derniers publiés » : les 5 derniers événements mis en ligne.
-   Sur ordinateur, ces deux blocs sont masqués (CSS) : le carrousel et
-   l'agenda habituels restent en place.
+   « Derniers publiés » : les 5 derniers événements mis en ligne (une
+   colonne sur téléphone, une rangée de 5 cartes sur ordinateur).
    ========================================================= */
 const deux = n=> String(n).padStart(2, '0');
 const mouvementReduit = ()=> !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -5660,13 +5478,12 @@ function renderDerniers(){
   revelerAuDefilement();
 }
 
-/* Apparition des blocs au défilement (téléphone, hors « réduire les
-   animations ») : chaque bloc monte en fondu quand il entre à l'écran, les
+/* Apparition des blocs au défilement (hors « réduire les animations ») : chaque bloc monte en fondu quand il entre à l'écran, les
    lignes d'une liste l'une après l'autre. Sans JavaScript ou si
    IntersectionObserver manque, rien n'est caché. */
 let observateurRevele = null;
 function revelerAuDefilement(){
-  if(mouvementReduit() || !('IntersectionObserver' in window) || !matchMedia('(max-width: 760px)').matches) return;
+  if(mouvementReduit() || !('IntersectionObserver' in window)) return;
   if(!observateurRevele){
     observateurRevele = new IntersectionObserver(entrees=>{
       for(const e of entrees) if(e.isIntersecting){ e.target.classList.add('rv-in'); observateurRevele.unobserve(e.target); }
@@ -5686,10 +5503,8 @@ function revelerAuDefilement(){
 function renderAll(){
   renderCompteur();
   buildMap();
-  renderFeatured();
   renderUneMobile();
   applyMapFilters();
-  renderAgenda();
   renderDerniers();
   renderResults();
 }
@@ -5745,11 +5560,9 @@ buildMap();
 initMapZoom();
 fillRegionSelect('c-region', 'Choisis une région');
 fillRegionSelect('e-region', 'Choisis une région');
-renderFeatured();
 renderUneMobile();
 initHomeFilters();
 initHomeSearch();
-renderAgenda();
 renderDerniers();
 initSearchPage();
 initCreatePage();
