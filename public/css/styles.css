@@ -3536,3 +3536,20 @@ html,body{overflow-x:clip;}
 .hs-form .btn{border-radius:var(--forme-logo-s);}
 /* Filtres de l'accueil (Type, Ville, Date) : même forme que la recherche. */
 .home-hero .type-dd-btn,.home-hero #citySearch,.home-hero .period-display{border-radius:var(--forme-logo-s);padding-left:16px;padding-right:14px;}
+
+/* =========================================================
+   FORME DU LOGO sur les boutons et les étiquettes : deux coins arrondis en
+   diagonale (haut gauche, bas droite), deux coins presque carrés. Trois
+   tailles selon la hauteur de l'élément. Les boutons ronds (favori, flèches
+   du carrousel, réseaux, « Publier » de la barre du bas, points) le restent.
+   ========================================================= */
+:root{
+  --forme-bouton:14px 3px 14px 3px;      /* boutons standards et grands */
+  --forme-bouton-s:10px 2px 10px 2px;    /* petits boutons, icônes carrées */
+  --forme-etiquette:8px 2px 8px 2px;     /* étiquettes, pastilles, puces */
+}
+.btn,.btn-lg,.ev-act,.nav-publier,.dash-btn,
+.topbar .btn,.acct-menu .acct-stack .btn{border-radius:var(--forme-bouton);}
+.btn-sm,.btn-xs,.edit-inline,.icon-btn,.toggle-btn,.chip,.chip-check,.ev-report-btn{border-radius:var(--forme-bouton-s);}
+.badge,.card-type-badge,.card-past-badge,.dispo-badge,.dp-type,.status-dot,.status-pill,.tag,.rpv-badge,.new-flag,
+.account-badge-admin{border-radius:var(--forme-etiquette);}
