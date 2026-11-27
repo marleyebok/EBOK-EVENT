@@ -3529,8 +3529,10 @@ html,body{overflow-x:clip;}
 .dp-item.rv{transition-delay:calc(var(--i, 0) * 70ms);}
 @media(prefers-reduced-motion: reduce){ .rv{opacity:1;transform:none;transition:none;} html{scroll-snap-type:none;} }
 
-/* Barre de recherche de l'accueil arrondie. */
-.hs-form{border-radius:999px;padding-left:20px;}
-.hs-form .btn{border-radius:999px;}
-/* Filtres de l'accueil (Type, Ville, Date) arrondis comme la recherche. */
-.home-hero .type-dd-btn,.home-hero #citySearch,.home-hero .period-display{border-radius:999px;padding-left:16px;padding-right:14px;}
+/* Barre de recherche et filtres de l'accueil : la forme du logo EBOK, deux
+   coins arrondis en diagonale (haut gauche, bas droite), deux coins carrés. */
+:root{--forme-logo:26px 4px 26px 4px;--forme-logo-s:18px 3px 18px 3px;}
+.hs-form,.home-hero .hs-form{border-radius:var(--forme-logo);padding-left:20px;}
+.hs-form .btn{border-radius:var(--forme-logo-s);}
+/* Filtres de l'accueil (Type, Ville, Date) : même forme que la recherche. */
+.home-hero .type-dd-btn,.home-hero #citySearch,.home-hero .period-display{border-radius:var(--forme-logo-s);padding-left:16px;padding-right:14px;}
