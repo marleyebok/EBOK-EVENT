@@ -3405,7 +3405,7 @@ function showPage(name){
   // Précharge la base des villes dès qu'on arrive sur la page de publication.
   if(name === 'create'){ ensureCitiesLoaded(); prefillOrgFromProfile(); verifierQuotaCreation(); }
   if(name === 'profile'){ renderProfile(); renderOnboardingNudge(); }
-  if(name === 'admin' && typeof renderAdminPage === 'function') renderAdminPage();
+  if(name === 'admin') chargerScriptsAdmin().then(()=>{ if(typeof renderAdminPage === 'function' && document.getElementById('page-admin').classList.contains('active')) renderAdminPage(); });
   if(name === 'mes' && typeof renderMes === 'function') renderMes();
   // Quitter une fiche événement : on revient à l'URL racine.
   if(!syncingFromUrl && name !== 'event'){ const u = urlPage(name); if(u) setUrl(u); }
@@ -3563,7 +3563,25 @@ document.addEventListener('click', (e)=>{
 
 /* Ouvre le générateur de carte Instagram (js/carte-instagram.js). Réservé à
    l'admin ; rien n'est écrit en base, l'image est faite dans le navigateur. */
+/* Scripts d'administration : téléchargés seulement pour l'admin (à l'ouverture
+   de l'administration, ou en arrière-plan dès qu'un admin est connecté). Les
+   visiteurs n'en téléchargent jamais un octet. Ordre conservé. */
+const SCRIPTS_ADMIN = ['admin-page', 'admin-detection', 'admin-affiliation', 'admin-verif', 'admin-import', 'admin-stats', 'admin-signalements', 'carte-instagram'];
+let scriptsAdmin = null;
+function chargerScriptsAdmin(){
+  if(!scriptsAdmin){
+    scriptsAdmin = SCRIPTS_ADMIN.reduce((p, nom)=> p.then(()=> new Promise(ok=>{
+      const sc = document.createElement('script');
+      sc.src = `/js/${nom}.js`; sc.async = false;
+      sc.onload = ok; sc.onerror = ()=>{ console.warn('[EBOK] Script non chargé :', nom); ok(); };
+      document.body.appendChild(sc);
+    })), Promise.resolve());
+  }
+  return scriptsAdmin;
+}
+
 async function ouvrirCarteInsta(id){
+  if(currentIsAdmin) await chargerScriptsAdmin();
   if(!currentIsAdmin || !window.EbokCarteInsta) return;
   let ev = adminList.find(e=> e.id === id) || events.find(e=> e.id === id);
   if(!ev && window.EBOK_DATA && typeof window.EBOK_DATA.getEvent === 'function'){
@@ -5742,7 +5760,8 @@ window.EBOK = {
     maybeOpenOnboarding();       // première connexion : on pose les 4 questions
     if(document.getElementById('page-profile').classList.contains('active')) renderProfile();
     // Pastille « à traiter » sur le lien Admin (admin seulement).
-    if(typeof majPastilleAdmin === 'function') majPastilleAdmin(currentIsAdmin);
+    if(currentIsAdmin) chargerScriptsAdmin().then(()=>{ if(typeof majPastilleAdmin === 'function') majPastilleAdmin(true); });
+    else if(typeof majPastilleAdmin === 'function') majPastilleAdmin(false);
     ouvrirPageApresConnexion();   // /profil ou /admin ouvert directement
     if(typeof reprendreReclamation === 'function') reprendreReclamation();   // lien personnel d'un organisateur
   }
@@ -5781,6 +5800,10 @@ initFooter();
 initAlertes();
 initAiImport();
 initPostersMaintenance();
+
+// Dernière liste connue (precharge.js) : la carte et les tuiles s'affichent
+// tout de suite, la liste fraîche la remplace dès qu'elle arrive.
+if(window.EBOK_CACHE_LISTE && !baseChargee){ events = window.EBOK_CACHE_LISTE; window.EBOK_CACHE_LISTE = null; renderAll(); }
 
 // Adresse ouverte directement (lien partagé, nouvel onglet, rechargement).
 // Après le chargement de tous les scripts (Mes événements vit dans organisateur.js).
