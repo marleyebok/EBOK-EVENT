@@ -16,11 +16,20 @@
  */
 import { ensureSchema, hasDb, sql, json, readBody, sessionUid, clerkUser, isAdminEmail } from "./_lib.js";
 import { compterStat, compterEvenement } from "../lib/stats.js";
+import { joueurPropre } from "../lib/formulaire.js";
 
 /* Champs d'identité gérés par Clerk : on les retire d'un profil avant stockage. */
 function stripIdentity(profile) {
   const p = { ...(profile || {}) };
   delete p.email;
+  // Fiche joueur : seulement les champs prévus, nettoyés (pré-remplissage des inscriptions).
+  if ("joueur" in p) p.joueur = joueurPropre(p.joueur);
+  // Fiche organisateur et « Je suis » : textes courts seulement.
+  for (const k of ["orgname", "orgtel", "orgemail", "orgsite", "orginsta", "orglinkedin", "orgsalle", "orgadresse", "orgville", "orgcity"]) {
+    if (k in p) p[k] = String(p[k] == null ? "" : p[k]).replace(/\s+/g, " ").trim().slice(0, 200);
+  }
+  for (const k of ["orgsite", "orglinkedin"]) if (p[k] && !/^https?:\/\//i.test(p[k])) p[k] = "";
+  if ("espace" in p && !["joueur", "organisateur", "autre"].includes(p.espace)) delete p.espace;
   return p;
 }
 

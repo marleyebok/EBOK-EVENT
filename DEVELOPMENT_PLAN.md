@@ -68,6 +68,22 @@ barre de navigation ni de pied de page partagés, pas de profil externe.
 - [x] L'intro animée ne se joue plus d'elle-même : seulement via « Revoir
       l'intro » en pied de page (`/?intro=1`).
 
+- [x] **Fiche joueur** *(28/11/2026)* — dans « Mon profil » : naissance,
+      sexe, catégorie, taille, poste, niveau, tenue, club, licence, parcours,
+      sélections, lien highlights, téléphone, responsable légal, contact
+      d'urgence (`public/js/fiche-joueur.js`, nettoyée côté serveur par
+      `joueurPropre`, lib/formulaire.js). Elle pré-remplit les formulaires
+      d'inscription (questions types) ; après une inscription, case pour
+      mettre la fiche à jour. Aucune donnée de santé dans la fiche.
+- [x] **Fiche organisateur + « Je suis »** *(28/11/2026)* — en tête de
+      « Mon profil », Joueur / Organisateur / Autre (`profile.espace`, déduit
+      du rôle d'inscription par défaut) affiche la fiche joueur, la fiche
+      organisateur ou les deux. Fiche organisateur : structure, téléphone,
+      e-mail, site, Instagram, LinkedIn, salle habituelle (nom, adresse,
+      ville) ; à la publication, case « Pré-remplir avec ma fiche
+      organisateur » (cochée d'office) qui remplit contact + lieu, et les
+      vide si on la décoche (`public/js/fiche-orga.js`).
+
 ---
 
 ## 🔁 Bascule vers ebok.fr (10/11/2026)
@@ -452,6 +468,26 @@ communautaire, mais dépend de la géolocalisation.
       s'inscrire, vérification des diplômes / cartes professionnelles,
       modération, et rester gratuit tant qu'il n'y a pas de statut
       professionnel (voir section 7).
+
+### 6 bis. V2 — après la plateforme événementielle *(décidé le 28/11/2026)*
+
+Priorité actuelle : la plateforme d'événements. Ces deux chantiers viennent
+ensuite.
+
+- [ ] **CV Basket** — page publique par joueur (`ebok.fr/joueur/prenom-nom`) :
+      photo, poste, taille, catégorie, club, parcours saison par saison,
+      highlights YouTube intégrés, événements EBOK suivis. Privée par défaut,
+      rendue publique par le joueur, champ par champ. Mineurs : accord
+      parental obligatoire pour la rendre publique ; jamais d'adresse, de
+      téléphone ni d'école en public. Aucune note ni « niveau » calculé par
+      EBOK (déclaratif uniquement). S'appuie sur la **fiche joueur** (déjà
+      codée, voir « Ce qui est fait »).
+- [ ] **Trade** — plateforme de rencontre et de projets : fiches club /
+      équipe, coach et joueur ; un club cherche un meneur U18, un coach
+      cherche un club, un joueur cherche un projet. À cadrer avant de
+      construire : qui peut publier, vérification des clubs et des coachs,
+      modération, protection des mineurs, messagerie ou simple mise en
+      relation. Reprend l'idée de l'annuaire de coachs (section 6).
 
 ### 7. Offres payantes — *seulement avec un statut professionnel*
 

@@ -247,16 +247,16 @@
     <section class="une-mob" id="uneMob" aria-labelledby="uneMobTitre" hidden>
       <img class="une-mob-fond" id="uneMobFond" alt="" aria-hidden="true">
       <h2 id="uneMobTitre">À la une</h2>
-      <div class="une-mob-piste" id="uneMobPiste"></div>
+      <div class="une-mob-scene">
+        <div class="une-mob-piste" id="uneMobPiste"></div>
+        <button type="button" class="une-mob-fl une-mob-fl-g" id="uneMobPrev" aria-label="Événement précédent"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
+        <button type="button" class="une-mob-fl une-mob-fl-d" id="uneMobNext" aria-label="Événement suivant"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+      </div>
       <a class="une-mob-legende" id="uneMobLegende" href="/" data-spa>
         <span class="une-mob-meta" id="uneMobMeta"></span>
         <span class="une-mob-titre" id="uneMobTitreEv"></span>
       </a>
-      <div class="une-mob-nav">
-        <button type="button" class="une-mob-fl" id="uneMobPrev" aria-label="Événement précédent"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
-        <span class="une-mob-compte"><span id="uneMobPos">01</span><span aria-hidden="true"> / </span><span class="sr-only"> sur </span><span id="uneMobTotal">01</span></span>
-        <button type="button" class="une-mob-fl" id="uneMobNext" aria-label="Événement suivant"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
-      </div>
+      <div class="une-mob-points" id="uneMobPoints" role="group" aria-label="Choisir un événement à la une"></div>
     </section>
 
     <section class="home-section derniers" id="derniersSlot" aria-labelledby="derniersTitre">
@@ -621,7 +621,7 @@
           <!-- 6. Contact -->
           <fieldset class="wz-step" data-step="contact" data-title="Contact">
             <h3 class="wz-q">Comment te contacter&nbsp;?</h3>
-            <p class="wz-help">Ces infos apparaissent sur la fiche pour que les joueurs et les clubs puissent te joindre. Elles sont reprises de ton profil quand il est rempli.</p>
+            <p class="wz-help">Ces infos apparaissent sur la fiche pour que les joueurs et les clubs puissent te joindre. Elles sont reprises de ta fiche organisateur si tu as coché « Pré-remplir » au début.</p>
             <div class="field">
               <label for="c-orgname">Nom du diffuseur</label>
               <input type="text" id="c-orgname" placeholder="Ex. Ligue C by Courtcuts">
@@ -1566,6 +1566,8 @@
 <script src="/js/exports.js"></script>
 <script src="/js/formulaire.js"></script>
 <script src="/js/organisateur.js"></script>
+<script src="/js/fiche-joueur.js"></script>
+<script src="/js/fiche-orga.js"></script>
 <!-- Animations (Motion, motion.dev) : décoratives, chargées après le reste.
      Retirer ces deux lignes suffit à les couper. -->
 <script defer src="/js/vendor/motion.js"></script>

@@ -1755,6 +1755,8 @@ function org(key){
    profil diffuseur. On ne touche QU'AUX champs laissés vides : une saisie en
    cours n'est jamais écrasée. */
 function prefillOrgFromProfile(){
+  // Fiche organisateur (js/fiche-orga.js) : case « Pré-remplir » à cocher.
+  if(typeof foMajCasePublication === 'function'){ foMajCasePublication(); return; }
   const p = currentProfile || {};
   const socials = p.socials || {};
   // Pour chaque champ : la valeur du profil diffuseur, sinon ce qu'on sait
@@ -4651,6 +4653,8 @@ async function renderProfile(){
   }
 
   renderProfileAbout();
+  if(typeof renderFicheJoueur === 'function') renderFicheJoueur();
+  if(typeof renderFicheOrga === 'function') renderFicheOrga();
   renderMyEvents();
   // L'administration a sa propre page : le profil n'en garde que le lien.
   document.getElementById('adminLink').classList.toggle('hidden', !currentIsAdmin);
@@ -5585,7 +5589,9 @@ function renderUneMobile(){
     const k = items.indexOf(a);
     if(k !== courant) aller(k); else openEvent(a.dataset.open);
   }));
-  document.getElementById('uneMobTotal').textContent = deux(n);
+  const points = document.getElementById('uneMobPoints');
+  points.innerHTML = une.map((ev, i)=> `<button type="button" class="une-mob-pt" data-pt="${i}" aria-label="${esc(ev.title)} (${i + 1} sur ${n})"></button>`).join('');
+  points.querySelectorAll('.une-mob-pt').forEach(b=> b.addEventListener('click', ()=> aller(bord + Number(b.dataset.pt))));
   slot.classList.toggle('is-seule', n === 1);
   const fond = document.getElementById('uneMobFond');
   const legende = document.getElementById('uneMobLegende');
@@ -5600,9 +5606,7 @@ function renderUneMobile(){
     document.getElementById('uneMobTitreEv').textContent = ev.title;
     legende.setAttribute('href', urlEvenement(ev));
     legende.dataset.open = ev.id;
-    document.getElementById('uneMobPos').textContent = deux(reel + 1);
-    const barre = document.getElementById('uneMobBarre');
-    if(barre) barre.style.width = `${((reel + 1) / n) * 100}%`;
+    points.querySelectorAll('.une-mob-pt').forEach((b, i)=>{ const on = i === reel; b.classList.toggle('on', on); if(on) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); });
     // Fond : l'affiche courante, floutée (fondu court pour changer d'image).
     const img = safeImg(ev.poster);
     if(img && img !== fond.getAttribute('src')){
