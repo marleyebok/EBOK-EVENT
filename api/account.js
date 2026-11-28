@@ -16,11 +16,14 @@
  */
 import { ensureSchema, hasDb, sql, json, readBody, sessionUid, clerkUser, isAdminEmail } from "./_lib.js";
 import { compterStat, compterEvenement } from "../lib/stats.js";
+import { joueurPropre } from "../lib/formulaire.js";
 
 /* Champs d'identité gérés par Clerk : on les retire d'un profil avant stockage. */
 function stripIdentity(profile) {
   const p = { ...(profile || {}) };
   delete p.email;
+  // Fiche joueur : seulement les champs prévus, nettoyés (pré-remplissage des inscriptions).
+  if ("joueur" in p) p.joueur = joueurPropre(p.joueur);
   return p;
 }
 

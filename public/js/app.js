@@ -4651,6 +4651,7 @@ async function renderProfile(){
   }
 
   renderProfileAbout();
+  if(typeof renderFicheJoueur === 'function') renderFicheJoueur();
   renderMyEvents();
   // L'administration a sa propre page : le profil n'en garde que le lien.
   document.getElementById('adminLink').classList.toggle('hidden', !currentIsAdmin);

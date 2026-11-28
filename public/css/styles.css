@@ -3685,3 +3685,14 @@ body:has(#page-event.active .fm-bar) .tabbar{display:none;}
 .fm-go.is-off{background:var(--asphalt-3);color:var(--chalk-mute);cursor:default;}
 .fm-go.is-done{background:#1F8F6B;}
 
+
+/* Fiche joueur (js/fiche-joueur.js) */
+.fj-groupe{border:0;margin:0 0 14px;padding:0;}
+.fj-groupe legend{font:600 14px 'Unbounded',sans-serif;margin-bottom:10px;padding:0;}
+.fj-grille{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+.fj-grille .fj-large{grid-column:1 / -1;}
+.fj-grille .field{margin:0;}
+@media (max-width:560px){ .fj-grille{grid-template-columns:minmax(0,1fr);} .fm-contact .form-grid-3{grid-template-columns:minmax(0,1fr);} }
+.insc-fiche{display:flex;gap:8px;align-items:center;margin:0 0 14px;padding:10px 12px;border-radius:12px 3px 12px 3px;background:var(--asphalt-3);font-size:13.5px;}
+.insc-fiche .ico{width:16px;height:16px;flex:none;color:#1F8F6B;}
+.insc-maj{margin:8px 0 4px;}

@@ -259,6 +259,7 @@ async function ouvrirInscription(ev){
   const zone = document.getElementById('inscSurMesure');
   zone.innerHTML = etat ? fmChamps(etat) : '';
   fmBrancherChamps(zone);
+  if(typeof fjPreRemplir === 'function') fjPreRemplir(zone);
   const equipeEbok = !!(etat && etat.equipes && etat.equipes.active);
   document.getElementById('inscNbField').classList.toggle('hidden', equipeEbok);
   const reg = ev.inscription || {};
@@ -296,6 +297,7 @@ async function ouvrirInscription(ev){
         message: document.getElementById('in-message').value,
         ...surMesure,
       });
+      if(typeof fjApresInscription === 'function') fjApresInscription(surMesure);
       document.getElementById('inscForm').hidden = true;
       document.getElementById('inscSub').innerHTML = r.statut === 'liste_attente'
         ? "C'est complet pour le moment : tu es en <b>liste d'attente</b>. L'organisateur te préviendra si une place se libère."
