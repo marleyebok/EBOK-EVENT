@@ -75,6 +75,14 @@ barre de navigation ni de pied de page partagés, pas de profil externe.
       `joueurPropre`, lib/formulaire.js). Elle pré-remplit les formulaires
       d'inscription (questions types) ; après une inscription, case pour
       mettre la fiche à jour. Aucune donnée de santé dans la fiche.
+- [x] **Fiche organisateur + « Je suis »** *(28/11/2026)* — en tête de
+      « Mon profil », Joueur / Organisateur / Autre (`profile.espace`, déduit
+      du rôle d'inscription par défaut) affiche la fiche joueur, la fiche
+      organisateur ou les deux. Fiche organisateur : structure, téléphone,
+      e-mail, site, Instagram, LinkedIn, salle habituelle (nom, adresse,
+      ville) ; à la publication, case « Pré-remplir avec ma fiche
+      organisateur » (cochée d'office) qui remplit contact + lieu, et les
+      vide si on la décoche (`public/js/fiche-orga.js`).
 
 ---
 

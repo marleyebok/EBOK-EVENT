@@ -1755,6 +1755,8 @@ function org(key){
    profil diffuseur. On ne touche QU'AUX champs laissés vides : une saisie en
    cours n'est jamais écrasée. */
 function prefillOrgFromProfile(){
+  // Fiche organisateur (js/fiche-orga.js) : case « Pré-remplir » à cocher.
+  if(typeof foMajCasePublication === 'function'){ foMajCasePublication(); return; }
   const p = currentProfile || {};
   const socials = p.socials || {};
   // Pour chaque champ : la valeur du profil diffuseur, sinon ce qu'on sait
@@ -4652,6 +4654,7 @@ async function renderProfile(){
 
   renderProfileAbout();
   if(typeof renderFicheJoueur === 'function') renderFicheJoueur();
+  if(typeof renderFicheOrga === 'function') renderFicheOrga();
   renderMyEvents();
   // L'administration a sa propre page : le profil n'en garde que le lien.
   document.getElementById('adminLink').classList.toggle('hidden', !currentIsAdmin);
