@@ -106,11 +106,19 @@ async function relay(clerk) {
 })();
 
 /* Remplace les données locales par celles de la base dès qu'elles arrivent. */
+const CACHE_LISTE = "ebok_evenements_v1";
 async function hydrate() {
+  // Dernière liste connue (visite précédente) : la carte et les tuiles
+  // s'affichent tout de suite, puis la liste fraîche la remplace.
+  try {
+    const c = JSON.parse(localStorage.getItem(CACHE_LISTE) || "null");
+    if (c && Array.isArray(c.events) && c.events.length && Date.now() - c.t < 7 * 86400000 && window.EBOK) window.EBOK.setEvents(c.events, true);
+  } catch { /* stockage indisponible ou illisible */ }
   try {
     const list = await getAllEvents();
     if (Array.isArray(list) && list.length && window.EBOK) {
       window.EBOK.setEvents(list);
+      try { localStorage.setItem(CACHE_LISTE, JSON.stringify({ t: Date.now(), events: list })); } catch { /* quota : tant pis */ }
       console.info(`[EBOK] ${list.length} événement(s) chargé(s) depuis Neon.`);
     } else if (window.EBOK) {
       console.info("[EBOK] Neon branché, base vide — crée un événement pour démarrer.");

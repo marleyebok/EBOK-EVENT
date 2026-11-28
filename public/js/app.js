@@ -5717,7 +5717,9 @@ function renderAll(){
    de data.js. */
 window.EBOK = {
   get events(){ return events; },
-  setEvents(list){ if(Array.isArray(list)) events = list; baseChargee = true; renderAll(); tryOpenFromUrl(); },
+  // provisoire : liste en cache de la visite précédente (un lien inconnu n'y
+  // est pas encore un 404 : on attend la liste fraîche).
+  setEvents(list, provisoire){ if(Array.isArray(list)) events = list; if(!provisoire) baseChargee = true; renderAll(); tryOpenFromUrl(); },
   addEvent(ev){ events = [ev, ...events]; renderAll(); },
   // Appelé par clerk-init.js selon que le service de comptes répond ou non.
   setAuthAvailable,

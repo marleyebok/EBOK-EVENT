@@ -80,6 +80,13 @@ function toEvent(row) {
 }
 
 
+/** Liste publique : une affiche stockée en texte (data-URI, plusieurs
+ *  centaines de Ko) est remplacée par son adresse ?affiche=<id>. */
+function alleger(ev) {
+  if (typeof ev.poster === "string" && ev.poster.startsWith("data:")) ev.poster = "/api/events?affiche=" + encodeURIComponent(ev.id);
+  return ev;
+}
+
 /** Extrait le blob `data` (tout sauf les champs promus en colonnes). */
 function dataBlob(obj) {
   const data = { ...obj };
@@ -146,6 +153,18 @@ export default async function handler(req, res) {
     return json(res, 500, { error: "schema" });
   }
 
+  // Affiche encore stockée en base (image en texte) : servie comme une vraie
+  // image, avec un long cache, au lieu d'alourdir la liste des événements.
+  if (req.method === "GET" && (req.query || {}).affiche) {
+    const rows = await sql()`SELECT data->>'poster' AS p FROM event.events WHERE id = ${String(req.query.affiche)} AND status = 'approved'`;
+    const m = rows[0] && /^data:(image\/(?:png|jpe?g|gif|webp|avif));base64,(.+)$/is.exec(rows[0].p || "");
+    if (!m) { res.statusCode = 404; return res.end(); }
+    res.statusCode = 200;
+    res.setHeader("Content-Type", m[1].toLowerCase());
+    res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800");
+    return res.end(Buffer.from(m[2].replace(/\s+/g, ""), "base64"));
+  }
+
   const uid = await sessionUid(req);
   const { id, mine, all, slug } = req.query || {};
 
@@ -200,7 +219,10 @@ export default async function handler(req, res) {
         SELECT * FROM event.events_lecture
         WHERE status = 'approved' AND COALESCE(data->>'visibilite', 'public') <> 'prive'
         ORDER BY created_at DESC LIMIT 1000`;
-      return json(res, 200, { events: rows.map(toEvent) });
+      // Même liste pour tout le monde : gardée 30 s par le CDN (puis servie
+      // pendant qu'elle se rafraîchit), et sans les images stockées en texte.
+      res.setHeader("Cache-Control", "public, max-age=0, s-maxage=30, stale-while-revalidate=300");
+      return json(res, 200, { events: rows.map(toEvent).map(alleger) });
     }
 
     // Dupliquer : même affiche, mêmes infos, mêmes réglages d'inscription et
