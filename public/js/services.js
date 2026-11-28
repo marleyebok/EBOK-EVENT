@@ -100,7 +100,11 @@ export async function publierInstagram({ eventId, imageUrl, caption, tag }) {
 
 /** Événements publics : uniquement ceux qui sont validés (approved). */
 export async function getAllEvents() {
-  return (await api("/api/events")).events || [];
+  // Liste publique, identique pour tous : pas besoin d'attendre le service de
+  // comptes (plusieurs secondes au premier chargement) pour la demander.
+  const res = await fetch("/api/events");
+  if (!res.ok) throw new Error("http_" + res.status);
+  return (await res.json()).events || [];
 }
 
 /** Tous les événements, quel que soit le statut (réservé à l'admin). */

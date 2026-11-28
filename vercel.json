@@ -5,6 +5,7 @@
   "installCommand": "npm install",
   "outputDirectory": "public",
   "cleanUrls": true,
+  "regions": ["lhr1"],
   "trailingSlash": false,
   "functions": {
     "api/evenement.js": {
