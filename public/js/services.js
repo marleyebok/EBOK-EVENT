@@ -102,6 +102,12 @@ export async function publierInstagram({ eventId, imageUrl, caption, tag }) {
 export async function getAllEvents() {
   // Liste publique, identique pour tous : pas besoin d'attendre le service de
   // comptes (plusieurs secondes au premier chargement) pour la demander.
+  // Première fois : la demande lancée dès l'ouverture de la page (precharge.js).
+  if (window.EBOK_LISTE) {
+    const p = window.EBOK_LISTE;
+    window.EBOK_LISTE = null;
+    try { return await p; } catch { /* on redemande ci-dessous */ }
+  }
   const res = await fetch("/api/events");
   if (!res.ok) throw new Error("http_" + res.status);
   return (await res.json()).events || [];

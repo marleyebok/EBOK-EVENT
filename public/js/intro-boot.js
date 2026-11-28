@@ -24,6 +24,10 @@
     if(accueil && dessin && !robot && force){
       var html = document.documentElement;
       html.classList.add('intro-on');
+      // Le moteur de l'intro n'est téléchargé que lorsqu'elle se joue.
+      document.addEventListener('DOMContentLoaded', function(){
+        var sc = document.createElement('script'); sc.src = '/js/intro.js'; document.body.appendChild(sc);
+      });
       // Garde-fou : si le moteur de l'intro ne démarre pas, on rend le site.
       setTimeout(function(){
         if(!window.EbokIntro) html.classList.remove('intro-on');
